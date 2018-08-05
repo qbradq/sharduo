@@ -15,7 +15,7 @@ type LoginRequest struct {
 
 func doLogin(r *LoginRequest) {
 	log.Println("Login request for", r.Username)
-	r.Client.PacketSend(&server.LoginDenied{
-		Reason: server.LoginDeniedReasonAccountBlocked,
+	r.Client.PacketSend(&server.GameServerList{
+		Name: "ShardUO TC",
 	})
 }

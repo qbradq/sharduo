@@ -2,10 +2,11 @@ package client
 
 import (
 	"github.com/qbradq/sharduo/accounting"
+	"github.com/qbradq/sharduo/packets/common"
 	"github.com/qbradq/sharduo/packets/server"
 )
 
-func x80(r *PacketReader, s server.PacketSender) {
+func x80(r *common.PacketReader, s server.PacketSender) {
 	r.Seek(1)
 	accounting.ServiceRequests <- &accounting.LoginRequest{
 		Client:   s,

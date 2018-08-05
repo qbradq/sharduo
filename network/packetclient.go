@@ -2,7 +2,6 @@ package network
 
 import (
 	"encoding/binary"
-	"fmt"
 	"io"
 	"log"
 	"net"
@@ -11,6 +10,7 @@ import (
 	"time"
 
 	"github.com/qbradq/sharduo/packets/client"
+	"github.com/qbradq/sharduo/packets/common"
 	"github.com/qbradq/sharduo/packets/server"
 )
 
@@ -27,8 +27,8 @@ const clientOutboundPacketQueueDepth = 100
 // packetClient is a client of PacketServer
 type packetClient struct {
 	Conn        *net.TCPConn
-	readBuffer  [clientReadBufferSize]byte
-	writeBuffer [clientWriteBufferSize]byte
+	readBuffer  []byte
+	writeBuffer []byte
 	sendChannel chan server.Packet
 	stopLock    *sync.Mutex
 	stop        bool
@@ -46,6 +46,8 @@ func newPacketClient(conn *net.TCPConn) *packetClient {
 	// Create the object
 	return &packetClient{
 		Conn:        conn,
+		readBuffer:  make([]byte, clientReadBufferSize, clientReadBufferSize),
+		writeBuffer: make([]byte, 0, clientWriteBufferSize),
 		sendChannel: make(chan server.Packet, clientOutboundPacketQueueDepth),
 		stopLock:    new(sync.Mutex),
 	}
@@ -78,7 +80,7 @@ func (p *packetClient) ReadLoop(wg *sync.WaitGroup) {
 
 		// Packet body
 		if length == 0 { // Bad packet
-			fmt.Printf("Client %s sent invalid packet id %2X\n",
+			log.Printf("Client %s sent invalid packet id %2X\n",
 				p.Conn.RemoteAddr().String(),
 				p.readBuffer[0])
 			break
@@ -101,13 +103,16 @@ func (p *packetClient) ReadLoop(wg *sync.WaitGroup) {
 
 		// Packet dispatch
 		if info.Decoder != nil {
-			r := &client.PacketReader{
+			r := &common.PacketReader{
 				Buf: p.readBuffer[0:length],
 			}
 			info.Decoder(r, p)
+		} else {
+			log.Printf("Client %s sent unhandled packet 0x%2X",
+				p.Conn.RemoteAddr().String(),
+				p.readBuffer[0])
 		}
 	}
-	log.Println("End of ReadLoop")
 }
 
 // WriteLoop is the client's write goroutine
@@ -117,18 +122,20 @@ func (p *packetClient) WriteLoop(wg *sync.WaitGroup) {
 
 	for {
 		pkt, open := <-p.sendChannel
-		log.Println("WriteLoop open=", open)
 		if open == false {
 			break
 		}
 		p.Conn.SetWriteDeadline(time.Now().Add(idleTimeoutDuration))
-		_, err := p.Conn.Write(pkt.Compile(p.writeBuffer[:]))
-		log.Println("WriteLoop err=", err)
+		p.writeBuffer = p.writeBuffer[:0]
+		w := &server.PacketWriter{
+			Buf: p.writeBuffer,
+		}
+		pkt.Compile(w)
+		_, err := p.Conn.Write(w.Buf)
 		if p.logClientError(err) {
 			break
 		}
 	}
-	log.Println("End of WriteLoop")
 }
 
 // Stop requests a full stop of the client goroutine

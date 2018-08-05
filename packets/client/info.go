@@ -1,8 +1,11 @@
 package client
 
-import "github.com/qbradq/sharduo/packets/server"
+import (
+	"github.com/qbradq/sharduo/packets/common"
+	"github.com/qbradq/sharduo/packets/server"
+)
 
-type clientPacketDecoder func(r *PacketReader, s server.PacketSender)
+type clientPacketDecoder func(r *common.PacketReader, s server.PacketSender)
 
 // PacketInfo describes a client packet and its decoding function
 type PacketInfo struct {
@@ -174,7 +177,7 @@ var PacketInfos = [256]PacketInfo{
 	PacketInfo{0x9d, 0, nil},
 	PacketInfo{0x9e, 0, nil},
 	PacketInfo{0x9f, -1, nil},
-	PacketInfo{0xa0, 3, nil},
+	PacketInfo{0xa0, 3, xA0},
 	PacketInfo{0xa1, 0, nil},
 	PacketInfo{0xa2, 0, nil},
 	PacketInfo{0xa3, 0, nil},

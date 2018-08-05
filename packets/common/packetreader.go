@@ -1,4 +1,4 @@
-package client
+package common
 
 // PacketReader is a thin wrapper around a byte slice with methods specific to
 // the UO wire protocol useful for decoding
