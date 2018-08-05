@@ -2,7 +2,7 @@ package client
 
 import (
 	"github.com/qbradq/sharduo/accounting"
-	"github.com/qbradq/sharduo/packets/common"
+	"github.com/qbradq/sharduo/common"
 	"github.com/qbradq/sharduo/packets/server"
 )
 

@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/qbradq/sharduo/common"
 	"github.com/qbradq/sharduo/packets/client"
-	"github.com/qbradq/sharduo/packets/common"
 	"github.com/qbradq/sharduo/packets/server"
 )
 
