@@ -19,7 +19,7 @@ func main() {
 	go accounting.Service(wg)
 	defer accounting.Stop()
 
-	login := network.NewPacketServer("127.0.0.1", 2593)
+	login := network.NewPacketServer("0.0.0.0", 2593)
 	go login.Run(wg)
 	defer login.Stop()
 

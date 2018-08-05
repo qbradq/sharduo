@@ -12,7 +12,7 @@ type ConnectToGameServer struct {
 // Compile encodes the state of the Packet object using w
 func (p *ConnectToGameServer) Compile(w *PacketWriter) {
 	w.PutByte(0x8c)
-	w.PutBytes(p.Address.To4())
+	w.PutIP(p.Address)
 	w.PutUInt16(p.Port)
 	w.PutUInt32(p.Key)
 }

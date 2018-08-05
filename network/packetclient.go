@@ -101,6 +101,8 @@ func (p *packetClient) ReadLoop(wg *sync.WaitGroup) {
 			}
 		}
 
+		log.Printf("Client Packet: %#v\n", p.readBuffer[0:length])
+
 		// Packet dispatch
 		if info.Decoder != nil {
 			r := &common.PacketReader{
@@ -131,6 +133,7 @@ func (p *packetClient) WriteLoop(wg *sync.WaitGroup) {
 			Buf: p.writeBuffer,
 		}
 		pkt.Compile(w)
+		log.Printf("Server Packet: %d %#v\n", len(w.Buf), w.Buf)
 		_, err := p.Conn.Write(w.Buf)
 		if p.logClientError(err) {
 			break

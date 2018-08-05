@@ -1,5 +1,7 @@
 package server
 
+import "net"
+
 // A GameServerList packet gives the list of game servers to the client
 type GameServerList struct {
 	Name string
@@ -15,8 +17,5 @@ func (p *GameServerList) Compile(w *PacketWriter) {
 	w.PutASCII(p.Name, 32)
 	w.PutByte(0)
 	w.PutByte(0)
-	w.PutByte(127)
-	w.PutByte(0)
-	w.PutByte(0)
-	w.PutByte(1)
+	w.PutIPReverse(net.IPv4(127, 0, 0, 1))
 }

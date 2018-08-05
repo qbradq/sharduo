@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/binary"
+	"net"
 )
 
 // PacketWriter is a thin wrapper around a byte slice with methods specific to
@@ -32,19 +33,39 @@ func (p *PacketWriter) PutUInt32(v uint32) {
 
 // PutASCII writes a fixed-length, zero-padded string
 func (p *PacketWriter) PutASCII(v string, length int) {
-	var i int
+	var left = length
 	for i, cp := range v {
 		if i >= length {
 			break
 		}
 		p.Buf = append(p.Buf, byte(cp&0x7f))
+		left--
 	}
-	for ; i < length; i++ {
+	for left > 0 {
 		p.Buf = append(p.Buf, 0)
+		left--
 	}
 }
 
 // PutBytes writes a byte slice
 func (p *PacketWriter) PutBytes(b []byte) {
 	p.Buf = append(p.Buf, b...)
+}
+
+// PutIP writes a net.IP in natural byte order
+func (p *PacketWriter) PutIP(ip net.IP) {
+	buf := ip.To4()
+	p.Buf = append(p.Buf, buf[0])
+	p.Buf = append(p.Buf, buf[1])
+	p.Buf = append(p.Buf, buf[2])
+	p.Buf = append(p.Buf, buf[3])
+}
+
+// PutIPReverse writes a net.IP in reverse byte order
+func (p *PacketWriter) PutIPReverse(ip net.IP) {
+	buf := ip.To4()
+	p.Buf = append(p.Buf, buf[3])
+	p.Buf = append(p.Buf, buf[2])
+	p.Buf = append(p.Buf, buf[1])
+	p.Buf = append(p.Buf, buf[0])
 }

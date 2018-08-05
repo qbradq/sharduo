@@ -10,7 +10,7 @@ import (
 func xA0(r *common.PacketReader, s server.PacketSender) {
 	s.PacketSend(&server.ConnectToGameServer{
 		Address: net.IPv4(127, 0, 0, 1),
-		Port:    2594,
-		Key:     0xBAADF00D,
+		Port:    2593,
+		Key:     0x61ADF00D,
 	})
 }
