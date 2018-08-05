@@ -1,24 +1,21 @@
 package accounting
 
-import "log"
+import (
+	"log"
 
-type loginRequest struct {
-	username string
-	password string
+	"github.com/qbradq/sharduo/packets/server"
+)
+
+// A LoginRequest requests account authentication
+type LoginRequest struct {
+	Client   server.PacketSender
+	Username string
+	Password string
 }
 
-var loginChannel = make(chan *loginRequest)
-
-// Login requests an account login
-func Login(username, password string) {
-	if loginChannel != nil {
-		loginChannel <- &loginRequest{
-			username,
-			password,
-		}
-	}
-}
-
-func doLogin(r *loginRequest) {
-	log.Println("Login request for", r.username)
+func doLogin(r *LoginRequest) {
+	log.Println("Login request for", r.Username)
+	r.Client.PacketSend(&server.LoginDenied{
+		Reason: server.LoginDeniedReasonAccountBlocked,
+	})
 }

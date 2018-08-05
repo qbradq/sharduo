@@ -16,7 +16,8 @@ func main() {
 	wg := new(sync.WaitGroup)
 	defer wg.Wait()
 
-	accounting.Start()
+	go accounting.Service(wg)
+	defer accounting.Stop()
 
 	login := network.NewPacketServer("127.0.0.1", 2593)
 	go login.Run(wg)
@@ -40,7 +41,6 @@ func main() {
 			fmt.Println("quit        Stops the server gracefully")
 		case "quit":
 			fmt.Println("Server shutdown requested from the root console")
-			fmt.Println("This may take several seconds")
 			done = true
 		case "default":
 			fmt.Println("Unknown command", command)

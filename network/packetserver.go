@@ -1,30 +1,21 @@
 package network
 
 import (
+	"io"
 	"log"
 	"net"
-	"os"
+	"strings"
 	"sync"
-	"time"
-
-	"github.com/qbradq/sharduo/core"
-	"github.com/satori/go.uuid"
 )
-
-const acceptTimeout = time.Second * 5
-const keepaliveTimeout = time.Second * 5
-const readBufferSize = 1024 * 128  // 128kb OS read buffer per client
-const writeBufferSize = 1024 * 384 // 384kb OS write buffer per client
 
 // PacketServer represents an Ultima Online protocol server
 type PacketServer struct {
 	host        string
 	port        int
-	clients     map[uuid.UUID]*PacketClient
+	clients     map[*packetClient]struct{}
 	clientsLock sync.RWMutex
 	listener    *net.TCPListener
 	wg          *sync.WaitGroup
-	core.Stopper
 }
 
 // NewPacketServer creates a new PacketServer implementation
@@ -32,7 +23,7 @@ func NewPacketServer(host string, port int) *PacketServer {
 	return &PacketServer{
 		host:    host,
 		port:    port,
-		clients: make(map[uuid.UUID]*PacketClient),
+		clients: make(map[*packetClient]struct{}),
 	}
 }
 
@@ -50,27 +41,23 @@ func (p *PacketServer) Run(wg *sync.WaitGroup) {
 	}
 	l, err := net.ListenTCP("tcp", &addr)
 	if err != nil {
-		log.Panicln(err.Error())
-		os.Exit(1)
+		log.Panic(err)
 	}
 	p.listener = l
 	defer p.listener.Close()
 	log.Println("Listening on", p.listener.Addr().String())
 
 	// Main loop
-	for p.Stopping() == false {
-		p.listener.SetDeadline(time.Now().Add(acceptTimeout))
+	for {
 		conn, err := p.listener.AcceptTCP()
 		if err != nil {
-			if noe, ok := err.(*net.OpError); ok && noe.Timeout() {
-				continue
+			if strings.Contains(err.Error(), "use of closed network connection") ||
+				err == io.EOF || err == io.ErrUnexpectedEOF {
+				break
 			} else {
-				log.Fatalln("Listen socket closing because of", err.Error())
+				log.Println("Listen socket closing because of", err.Error())
 				break
 			}
-		}
-		if p.Stopping() {
-			continue
 		}
 		p.addClient(conn)
 	}
@@ -78,9 +65,9 @@ func (p *PacketServer) Run(wg *sync.WaitGroup) {
 
 // Stop signals the server goroutine and all client goroutines to exit
 func (p *PacketServer) Stop() {
-	p.Stopper.Stop()
-	for _, k := range p.clients {
-		k.Stop()
+	p.listener.Close()
+	for client := range p.clients {
+		client.Stop()
 	}
 }
 
@@ -88,28 +75,29 @@ func (p *PacketServer) Stop() {
 func (p *PacketServer) addClient(conn *net.TCPConn) {
 	log.Println("Client connected from", conn.RemoteAddr().String())
 
-	// Configure connection
-	conn.SetKeepAlive(true)
-	conn.SetKeepAlivePeriod(keepaliveTimeout)
-	conn.SetLinger(0)
-	conn.SetNoDelay(true)
-	conn.SetReadBuffer(readBufferSize)
-	conn.SetWriteBuffer(writeBufferSize)
-
 	// Add the client
-	client := &PacketClient{
-		Conn: conn,
-	}
+	client := newPacketClient(conn)
 	p.clientsLock.Lock()
-	p.clients[client.UUID()] = client
+	p.clients[client] = struct{}{}
 	p.clientsLock.Unlock()
+
+	// Start client goroutines
 	go func() {
-		p.wg.Add(1)
-		client.ReadLoop()
+		client.ReadLoop(p.wg)
+
+		// Remove the client
+		client.Stop()
 		p.clientsLock.Lock()
-		delete(p.clients, client.UUID())
+		delete(p.clients, client)
 		p.clientsLock.Unlock()
-		client.Conn.Close()
-		p.wg.Done()
+	}()
+	go func() {
+		client.WriteLoop(p.wg)
+
+		// Remove the client
+		client.Stop()
+		p.clientsLock.Lock()
+		delete(p.clients, client)
+		p.clientsLock.Unlock()
 	}()
 }
