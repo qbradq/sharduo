@@ -11,7 +11,6 @@ import (
 
 	"github.com/qbradq/sharduo/common"
 	"github.com/qbradq/sharduo/packets/client"
-	"github.com/qbradq/sharduo/packets/server"
 )
 
 const tcpReadBufferSize = 1024 * 128
@@ -22,16 +21,19 @@ const headerReadTimeoutDuration = time.Second * 5
 const headerSize = 4
 const clientReadBufferSize = 1024 * 64
 const clientWriteBufferSize = 1024 * 64
+const clientCompressionBufferSize = clientWriteBufferSize * 2
 const clientOutboundPacketQueueDepth = 100
 
 // packetClient is a client of PacketServer
 type packetClient struct {
-	Conn        *net.TCPConn
-	readBuffer  []byte
-	writeBuffer []byte
-	sendChannel chan server.Packet
-	stopLock    *sync.Mutex
-	stop        bool
+	Conn              *net.TCPConn
+	readBuffer        []byte
+	writeBuffer       []byte
+	compressionBuffer []byte
+	sendChannel       chan common.Compiler
+	stopLock          *sync.Mutex
+	stop              bool
+	state             *client.NetState
 }
 
 func newPacketClient(conn *net.TCPConn) *packetClient {
@@ -44,13 +46,16 @@ func newPacketClient(conn *net.TCPConn) *packetClient {
 	conn.SetWriteBuffer(tcpWriteBufferSize)
 
 	// Create the object
-	return &packetClient{
-		Conn:        conn,
-		readBuffer:  make([]byte, clientReadBufferSize, clientReadBufferSize),
-		writeBuffer: make([]byte, 0, clientWriteBufferSize),
-		sendChannel: make(chan server.Packet, clientOutboundPacketQueueDepth),
-		stopLock:    new(sync.Mutex),
+	v := &packetClient{
+		Conn:              conn,
+		readBuffer:        make([]byte, clientReadBufferSize, clientReadBufferSize),
+		writeBuffer:       make([]byte, 0, clientWriteBufferSize),
+		compressionBuffer: make([]byte, 0, clientCompressionBufferSize),
+		sendChannel:       make(chan common.Compiler, clientOutboundPacketQueueDepth),
+		stopLock:          new(sync.Mutex),
 	}
+	v.state = client.NewNetState(v)
+	return v
 }
 
 // ReadLoop is the client's packet reading and dispatching loop
@@ -101,18 +106,23 @@ func (p *packetClient) ReadLoop(wg *sync.WaitGroup) {
 			}
 		}
 
-		log.Printf("Client Packet: %#v\n", p.readBuffer[0:length])
+		//log.Printf("Client Packet: %#v\n", p.readBuffer[0:length])
 
 		// Packet dispatch
-		if info.Decoder != nil {
+		if info.Decoder == nil {
+			log.Printf("Client %s sent unhandled packet 0x%02X",
+				p.Conn.RemoteAddr().String(),
+				p.readBuffer[0])
+		} else if info.IsLoginPacket == false {
+			log.Printf("Client %s disconnected because it sent packet 0x%02X before sending an authentication packet (0x91)",
+				p.Conn.RemoteAddr().String(),
+				p.readBuffer[0])
+			break
+		} else {
 			r := &common.PacketReader{
 				Buf: p.readBuffer[0:length],
 			}
-			info.Decoder(r, p)
-		} else {
-			log.Printf("Client %s sent unhandled packet 0x%2X",
-				p.Conn.RemoteAddr().String(),
-				p.readBuffer[0])
+			info.Decoder(r, p.state)
 		}
 	}
 }
@@ -129,12 +139,18 @@ func (p *packetClient) WriteLoop(wg *sync.WaitGroup) {
 		}
 		p.Conn.SetWriteDeadline(time.Now().Add(idleTimeoutDuration))
 		p.writeBuffer = p.writeBuffer[:0]
-		w := &server.PacketWriter{
+		w := &common.PacketWriter{
 			Buf: p.writeBuffer,
 		}
 		pkt.Compile(w)
-		log.Printf("Server Packet: %d %#v\n", len(w.Buf), w.Buf)
-		_, err := p.Conn.Write(w.Buf)
+		//log.Printf("Server Packet: %d %#v\n", len(w.Buf), w.Buf)
+		var err error
+		if p.state.CompressOutput() {
+			p.compressionBuffer = compressUOHuffman(w.Buf, p.compressionBuffer)
+			_, err = p.Conn.Write(p.compressionBuffer)
+		} else {
+			_, err = p.Conn.Write(w.Buf)
+		}
 		if p.logClientError(err) {
 			break
 		}
@@ -156,7 +172,7 @@ func (p *packetClient) Stop() {
 // PacketSend adds a server.Packet object to the queue of outbound packets. If
 // the queue is full the client is disconnected and the function returns
 // immediately. PacketSend will never block or panic.
-func (p *packetClient) PacketSend(pkt server.Packet) {
+func (p *packetClient) PacketSend(pkt common.Compiler) {
 	select {
 	case p.sendChannel <- pkt:
 		// Success, nothing to do

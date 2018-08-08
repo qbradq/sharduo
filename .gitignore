@@ -11,6 +11,7 @@
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
-# Just that VSCode puts out
+# Stuff that VSCode puts out
 sharduo.exe
 debug
+.vscode/

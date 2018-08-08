@@ -1,4 +1,4 @@
-package server
+package common
 
 import (
 	"encoding/binary"
@@ -50,6 +50,14 @@ func (p *PacketWriter) PutASCII(v string, length int) {
 // PutBytes writes a byte slice
 func (p *PacketWriter) PutBytes(b []byte) {
 	p.Buf = append(p.Buf, b...)
+}
+
+// Fill writes a byte a number of times
+func (p *PacketWriter) Fill(v byte, n int) {
+	for n > 0 {
+		p.Buf = append(p.Buf, v)
+		n--
+	}
 }
 
 // PutIP writes a net.IP in natural byte order

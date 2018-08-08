@@ -1,10 +1,8 @@
 package accounting
 
-import "sync"
-
-type client interface {
-	SendPacket(r interface{})
-}
+import (
+	"sync"
+)
 
 // ServiceRequests recieves structs in the accounting.*Request class for
 // processing

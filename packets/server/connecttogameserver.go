@@ -1,6 +1,10 @@
 package server
 
-import "net"
+import (
+	"net"
+
+	"github.com/qbradq/sharduo/common"
+)
 
 // A ConnectToGameServer packet directs the client to connect to a game server
 type ConnectToGameServer struct {
@@ -10,7 +14,7 @@ type ConnectToGameServer struct {
 }
 
 // Compile encodes the state of the Packet object using w
-func (p *ConnectToGameServer) Compile(w *PacketWriter) {
+func (p *ConnectToGameServer) Compile(w *common.PacketWriter) {
 	w.PutByte(0x8c)
 	w.PutIP(p.Address)
 	w.PutUInt16(p.Port)

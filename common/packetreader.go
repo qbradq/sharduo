@@ -1,5 +1,9 @@
 package common
 
+import (
+	"strings"
+)
+
 // PacketReader is a thin wrapper around a byte slice with methods specific to
 // the UO wire protocol useful for decoding
 type PacketReader struct {
@@ -21,5 +25,5 @@ func (p *PacketReader) GetByte() byte {
 // GetASCII gets a fixed-length ASCII string
 func (p *PacketReader) GetASCII(length int) string {
 	p.ofs += length
-	return string(p.Buf[p.ofs-length : p.ofs])
+	return strings.Trim(string(p.Buf[p.ofs-length:p.ofs]), "\000")
 }

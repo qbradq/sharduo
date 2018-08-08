@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/qbradq/sharduo/common"
+	"github.com/qbradq/sharduo/world"
 
 	"github.com/qbradq/sharduo/accounting"
 	"github.com/qbradq/sharduo/network"
@@ -17,17 +18,22 @@ func main() {
 	wg := new(sync.WaitGroup)
 	defer wg.Wait()
 
+	// Load static data
 	common.Config = common.NewConfigurationFromFile("data/config.txt")
 
+	// Spin up all required services. This also starts all fixed instances.
 	go accounting.Service(wg)
 	defer accounting.Stop()
+	go world.Service(wg)
+	defer world.Stop()
 
-	login := network.NewPacketServer(
+	// Start network services
+	server := network.NewPacketServer(
 		common.Config.GetString("network.internalIP", "127.0.0.1"),
 		common.Config.GetInt("network.port", 2593),
 	)
-	go login.Run(wg)
-	defer login.Stop()
+	go server.Run(wg)
+	defer server.Stop()
 
 	fmt.Println("ShardUO Root Console")
 	fmt.Println("--------------------------------------------------------------------------------")
@@ -47,7 +53,7 @@ func main() {
 			fmt.Println("quit        Stops the server gracefully")
 		case "quit":
 			fmt.Println("Server shutdown requested from the root console")
-			break
+			return
 		case "default":
 			fmt.Println("Unknown command", command)
 		}

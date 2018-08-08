@@ -3,13 +3,12 @@ package client
 import (
 	"github.com/qbradq/sharduo/accounting"
 	"github.com/qbradq/sharduo/common"
-	"github.com/qbradq/sharduo/packets/server"
 )
 
-func x80(r *common.PacketReader, s server.PacketSender) {
+func x80(r *common.PacketReader, s common.NetState) {
 	r.Seek(1)
 	accounting.ServiceRequests <- &accounting.LoginRequest{
-		Client:   s,
+		State:    s,
 		Username: r.GetASCII(30),
 		Password: r.GetASCII(30),
 	}

@@ -1,6 +1,10 @@
 package server
 
-import "net"
+import (
+	"net"
+
+	"github.com/qbradq/sharduo/common"
+)
 
 // A GameServerList packet gives the list of game servers to the client
 type GameServerList struct {
@@ -8,7 +12,7 @@ type GameServerList struct {
 }
 
 // Compile encodes the state of the Packet object using w
-func (p *GameServerList) Compile(w *PacketWriter) {
+func (p *GameServerList) Compile(w *common.PacketWriter) {
 	w.PutByte(0xa8)
 	w.PutUInt16(46)
 	w.PutByte(0x5d)
