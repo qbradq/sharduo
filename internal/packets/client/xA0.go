@@ -3,8 +3,8 @@ package client
 import (
 	"net"
 
-	"github.com/qbradq/sharduo/common"
-	"github.com/qbradq/sharduo/packets/server"
+	"github.com/qbradq/sharduo/internal/common"
+	"github.com/qbradq/sharduo/internal/packets/server"
 )
 
 func xA0(r *PacketReader, s *server.NetState) {

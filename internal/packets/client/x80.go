@@ -1,8 +1,8 @@
 package client
 
 import (
-	"github.com/qbradq/sharduo/accounting"
-	"github.com/qbradq/sharduo/packets/server"
+	"github.com/qbradq/sharduo/internal/accounting"
+	"github.com/qbradq/sharduo/internal/packets/server"
 )
 
 func x80(r *PacketReader, s *server.NetState) {

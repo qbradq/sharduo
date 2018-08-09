@@ -2,6 +2,12 @@ package common
 
 import "math/rand"
 
+// A Serial is a 31-bit value with the following characteristics:
+// The zero value is also the "invalid value" value
+// No Serial will have a value greater than 2^31-1
+// A Serial can always be cast to a uint32 without data loss
+type Serial int32
+
 // A Role represents a single permission domain
 type Role uint32
 

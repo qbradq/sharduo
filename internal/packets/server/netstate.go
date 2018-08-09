@@ -1,7 +1,7 @@
 package server
 
 import (
-	"github.com/qbradq/sharduo/common"
+	"github.com/qbradq/sharduo/internal/common"
 )
 
 // A NetState object represents the state of a client's connection with the server

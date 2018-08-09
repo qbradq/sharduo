@@ -1,6 +1,6 @@
 package client
 
-import "github.com/qbradq/sharduo/packets/server"
+import "github.com/qbradq/sharduo/internal/packets/server"
 
 type clientPacketDecoder func(r *PacketReader, s *server.NetState)
 

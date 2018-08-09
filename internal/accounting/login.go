@@ -3,7 +3,7 @@ package accounting
 import (
 	"log"
 
-	"github.com/qbradq/sharduo/packets/server"
+	"github.com/qbradq/sharduo/internal/packets/server"
 )
 
 // A LoginRequest requests account authentication

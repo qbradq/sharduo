@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/qbradq/sharduo/packets/client"
-	"github.com/qbradq/sharduo/packets/server"
+	"github.com/qbradq/sharduo/internal/packets/client"
+	"github.com/qbradq/sharduo/internal/packets/server"
 )
 
 const tcpReadBufferSize = 1024 * 128

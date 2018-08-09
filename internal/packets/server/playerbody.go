@@ -1,6 +1,6 @@
 package server
 
-import "github.com/qbradq/sharduo/common"
+import "github.com/qbradq/sharduo/internal/common"
 
 // A PlayerBody packet is sent after login and presumably after crossing server
 // boundaries on OSI servers. This must be sent at least once prior to the

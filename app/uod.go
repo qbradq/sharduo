@@ -9,11 +9,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/qbradq/sharduo/common"
-	"github.com/qbradq/sharduo/world"
+	"github.com/qbradq/sharduo/internal/common"
+	"github.com/qbradq/sharduo/internal/world"
 
-	"github.com/qbradq/sharduo/accounting"
-	"github.com/qbradq/sharduo/network"
+	"github.com/qbradq/sharduo/internal/accounting"
+	"github.com/qbradq/sharduo/internal/network"
 )
 
 func main() {
