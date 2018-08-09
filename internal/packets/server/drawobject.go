@@ -1,11 +1,11 @@
 package server
 
-import "github.com/qbradq/sharduo/internal/common"
+import "github.com/qbradq/sharduo/pkg/uo"
 
 // DrawObject packets are used to let the client know what a mobile looks like
 type DrawObject struct {
-	ID                  common.Serial
-	Hue                 common.Hue
+	ID                  uo.Serial
+	Hue                 uo.Hue
 	Body, X, Y          uint16
 	Noto, Flags, Dir, Z byte
 }

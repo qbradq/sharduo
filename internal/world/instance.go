@@ -3,13 +3,13 @@ package world
 import (
 	"sync"
 
-	"github.com/qbradq/sharduo/internal/common"
+	"github.com/qbradq/sharduo/pkg/uo"
 )
 
 // An instance object manages all of the objects and behaviors of a game
 // instance. All exported methods are thread-safe.
 type instance struct {
-	ID       common.Serial
+	ID       uo.Serial
 	requests chan interface{}
 	wg       *sync.WaitGroup
 }
@@ -25,10 +25,10 @@ func (i *instance) Stop() {
 }
 
 // Map of running instances
-var runningInstances = make(map[common.Serial]*instance)
+var runningInstances = make(map[uo.Serial]*instance)
 
 // Create a new instance
-func newInstance(id common.Serial, wg *sync.WaitGroup) *instance {
+func newInstance(id uo.Serial, wg *sync.WaitGroup) *instance {
 	i := &instance{
 		ID:       id,
 		requests: make(chan interface{}, 1000),

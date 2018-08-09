@@ -1,12 +1,12 @@
 package server
 
-import "github.com/qbradq/sharduo/internal/common"
+import "github.com/qbradq/sharduo/pkg/uo"
 
 // A PlayerBody packet is sent after login and presumably after crossing server
 // boundaries on OSI servers. This must be sent at least once prior to the
 // LoginComplete packet or the player will get a random view of the map.
 type PlayerBody struct {
-	ID                                    common.Serial
+	ID                                    uo.Serial
 	Body, X, Y, ServerWidth, ServerHeight uint16
 	Dir, Z                                byte
 }

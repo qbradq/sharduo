@@ -1,13 +1,13 @@
 package server
 
-import "github.com/qbradq/sharduo/internal/common"
+import "github.com/qbradq/sharduo/pkg/uo"
 
 // DrawPlayer packets are used to draw the client's own character on the screen.
 // This seems to work just like a packet 0x77 DrawMobile but is only sent to the
 // client playing the mobile.
 type DrawPlayer struct {
-	ID            common.Serial
-	Hue           common.Hue
+	ID            uo.Serial
+	Hue           uo.Hue
 	Body, X, Y    uint16
 	Flags, Dir, Z byte
 }

@@ -1,15 +1,15 @@
 package client
 
 import (
-	"github.com/qbradq/sharduo/internal/common"
 	"github.com/qbradq/sharduo/internal/packets/server"
+	"github.com/qbradq/sharduo/pkg/uo"
 )
 
 func x5d(r *PacketReader, s *server.NetState) {
 	// The user can only access the one character slot, so this packet is just a trigger
-	skin := common.RandomSkinHue()
+	skin := uo.RandomSkinHue()
 	body := uint16(400)
-	id := common.Serial(0x1337)
+	id := uo.Serial(0x1337)
 	x := uint16(1328)
 	y := uint16(1626)
 	z := byte(50)
