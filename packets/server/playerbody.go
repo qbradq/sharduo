@@ -12,7 +12,7 @@ type PlayerBody struct {
 }
 
 // Compile encodes the state of the Packet object using w
-func (p *PlayerBody) Compile(w *common.PacketWriter) {
+func (p *PlayerBody) Compile(w *PacketWriter) {
 	w.PutByte(0x1b)
 	w.PutUInt32(uint32(p.ID))
 	w.Fill(0, 4)

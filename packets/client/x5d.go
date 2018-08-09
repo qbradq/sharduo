@@ -5,7 +5,7 @@ import (
 	"github.com/qbradq/sharduo/packets/server"
 )
 
-func x5d(r *common.PacketReader, s common.NetState) {
+func x5d(r *PacketReader, s *server.NetState) {
 	// The user can only access the one character slot, so this packet is just a trigger
 	skin := common.RandomSkinHue()
 	body := uint16(400)

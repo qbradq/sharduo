@@ -1,7 +1,5 @@
 package server
 
-import "github.com/qbradq/sharduo/common"
-
 // A CharacterList packet displays the character selection list to the client
 type CharacterList struct {
 	CharacterName string
@@ -9,7 +7,7 @@ type CharacterList struct {
 }
 
 // Compile encodes the state of the Packet object using w
-func (p *CharacterList) Compile(w *common.PacketWriter) {
+func (p *CharacterList) Compile(w *PacketWriter) {
 	w.PutByte(0xa9)
 	w.PutUInt16(372)
 	w.PutByte(1)

@@ -7,7 +7,7 @@ import (
 	"github.com/qbradq/sharduo/packets/server"
 )
 
-func x91(r *common.PacketReader, s common.NetState) {
+func x91(r *PacketReader, s *server.NetState) {
 	s.BeginCompression()
 	s.AddRole(common.RoleAuthenticated)
 	r.Seek(5)

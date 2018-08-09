@@ -1,4 +1,4 @@
-package client
+package server
 
 import (
 	"github.com/qbradq/sharduo/common"
@@ -7,12 +7,12 @@ import (
 // A NetState object represents the state of a client's connection with the server
 type NetState struct {
 	roles    common.Role
-	ps       common.PacketSender
+	ps       PacketSender
 	compress bool
 }
 
 // NewNetState creates a new NetState
-func NewNetState(ps common.PacketSender) *NetState {
+func NewNetState(ps PacketSender) *NetState {
 	return &NetState{
 		roles: common.RoleNone,
 		ps:    ps,
@@ -40,7 +40,7 @@ func (n *NetState) RemoveRole(r common.Role) {
 }
 
 // PacketSender returns the PacketSender object that can be used to reply to this client
-func (n *NetState) PacketSender() common.PacketSender {
+func (n *NetState) PacketSender() PacketSender {
 	return n.ps
 }
 

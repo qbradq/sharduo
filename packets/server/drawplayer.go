@@ -13,7 +13,7 @@ type DrawPlayer struct {
 }
 
 // Compile encodes the state of the Packet object using w
-func (p *DrawPlayer) Compile(w *common.PacketWriter) {
+func (p *DrawPlayer) Compile(w *PacketWriter) {
 	w.PutByte(0x20)
 	w.PutUInt32(uint32(p.ID))
 	w.PutUInt16(p.Body)

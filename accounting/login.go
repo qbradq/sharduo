@@ -3,13 +3,12 @@ package accounting
 import (
 	"log"
 
-	"github.com/qbradq/sharduo/common"
 	"github.com/qbradq/sharduo/packets/server"
 )
 
 // A LoginRequest requests account authentication
 type LoginRequest struct {
-	State    common.NetState
+	State    *server.NetState
 	Username string
 	Password string
 }

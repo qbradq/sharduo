@@ -1,7 +1,5 @@
 package server
 
-import "github.com/qbradq/sharduo/common"
-
 // LoginDeniedReason represents the reason for issuing a LoginDenied packet
 type LoginDeniedReason byte
 
@@ -19,7 +17,7 @@ type LoginDenied struct {
 }
 
 // Compile encodes the state of the Packet object using w
-func (p *LoginDenied) Compile(w *common.PacketWriter) {
+func (p *LoginDenied) Compile(w *PacketWriter) {
 	w.PutByte(0x82)
 	w.PutByte(byte(p.Reason))
 }

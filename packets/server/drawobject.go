@@ -11,7 +11,7 @@ type DrawObject struct {
 }
 
 // Compile encodes the state of the Packet object using w
-func (p *DrawObject) Compile(w *common.PacketWriter) {
+func (p *DrawObject) Compile(w *PacketWriter) {
 	w.PutByte(0x78)
 	w.PutUInt16(28)
 	w.PutUInt32(uint32(p.ID))

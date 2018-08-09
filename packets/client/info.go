@@ -1,10 +1,8 @@
 package client
 
-import (
-	"github.com/qbradq/sharduo/common"
-)
+import "github.com/qbradq/sharduo/packets/server"
 
-type clientPacketDecoder func(r *common.PacketReader, s common.NetState)
+type clientPacketDecoder func(r *PacketReader, s *server.NetState)
 
 // PacketInfo describes a client packet and its decoding function
 type PacketInfo struct {

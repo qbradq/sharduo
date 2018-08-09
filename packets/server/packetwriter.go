@@ -1,9 +1,21 @@
-package common
+package server
 
 import (
 	"encoding/binary"
 	"net"
 )
+
+// A Compiler is an object that can encode its state into a byte slice in Ultima
+// Online wire protocol format
+type Compiler interface {
+	Compile(w *PacketWriter)
+}
+
+// A PacketSender can transmit Packet objects to consumers gracefully and
+// without blocking
+type PacketSender interface {
+	PacketSend(p Compiler)
+}
 
 // PacketWriter is a thin wrapper around a byte slice with methods specific to
 // the UO wire protocol useful for encoding. Buf should be initialized with an
