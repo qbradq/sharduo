@@ -110,7 +110,7 @@ var PacketInfos = [256]PacketInfo{
 	PacketInfo{0x5a, 0, nil, false},
 	PacketInfo{0x5b, 0, nil, false},
 	PacketInfo{0x5c, 0, nil, false},
-	PacketInfo{0x5d, 73, nil, false},
+	PacketInfo{0x5d, 73, x5d, false},
 	PacketInfo{0x5e, 0, nil, false},
 	PacketInfo{0x5f, 0, nil, false},
 	PacketInfo{0x60, 0, nil, false},

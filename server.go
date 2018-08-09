@@ -3,9 +3,11 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"math/rand"
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/qbradq/sharduo/common"
 	"github.com/qbradq/sharduo/world"
@@ -17,6 +19,9 @@ import (
 func main() {
 	wg := new(sync.WaitGroup)
 	defer wg.Wait()
+
+	// Global setup
+	rand.Seed(time.Now().Unix())
 
 	// Load static data
 	common.Config = common.NewConfigurationFromFile("data/config.txt")

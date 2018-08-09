@@ -113,7 +113,7 @@ func (p *packetClient) ReadLoop(wg *sync.WaitGroup) {
 			log.Printf("Client %s sent unhandled packet 0x%02X",
 				p.Conn.RemoteAddr().String(),
 				p.readBuffer[0])
-		} else if info.IsLoginPacket == false {
+		} else if info.IsLoginPacket == false && p.state.Authenticated() == false {
 			log.Printf("Client %s disconnected because it sent packet 0x%02X before sending an authentication packet (0x91)",
 				p.Conn.RemoteAddr().String(),
 				p.readBuffer[0])
@@ -143,7 +143,7 @@ func (p *packetClient) WriteLoop(wg *sync.WaitGroup) {
 			Buf: p.writeBuffer,
 		}
 		pkt.Compile(w)
-		//log.Printf("Server Packet: %d %#v\n", len(w.Buf), w.Buf)
+		log.Printf("Server Packet: %d %#v\n", len(w.Buf), w.Buf)
 		var err error
 		if p.state.CompressOutput() {
 			p.compressionBuffer = compressUOHuffman(w.Buf, p.compressionBuffer)
