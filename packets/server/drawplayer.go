@@ -6,7 +6,7 @@ import "github.com/qbradq/sharduo/common"
 // This seems to work just like a packet 0x77 DrawMobile but is only sent to the
 // client playing the mobile.
 type DrawPlayer struct {
-	ID            common.MagicID
+	ID            common.Serial
 	Hue           common.Hue
 	Body, X, Y    uint16
 	Flags, Dir, Z byte

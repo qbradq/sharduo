@@ -22,15 +22,7 @@ func Service(wg *sync.WaitGroup) {
 	startInstances(wg)
 	defer stopInstances()
 
-	for {
-		_, open := <-serviceRequests
-		if open == false {
-			break
-		}
-		/*
-			switch t := r.(type) {
-			}
-		*/
+	for range serviceRequests {
 	}
 }
 

@@ -1,5 +1,7 @@
 package common
 
+import "math/rand"
+
 // A Role represents a single permission domain
 type Role uint32
 
@@ -19,19 +21,27 @@ func (r Role) HasAny(v Role) bool {
 	return r&v != 0
 }
 
-// ClientFlag represents the client features flags sent in packet 0xA9
-type ClientFlag uint32
+// A Hue is a 16-bit value that describes the rendering mode of an object.
+// Hues have the following characteristics:
+// The zero value means "default rendering mode"
+// Values 1-3000 inclusive select a set of 16 colors from the file "hues.mul"
+//   that replace the first 16 color indicies (the grayscales).
+// The special value -1 (0xffff) will do the shadow dragon alpha effect.
+type Hue uint16
 
-// All documented flags
+// Important hue values
 const (
-	ClientFlagNone                 ClientFlag = 0x00000000
-	ClientFlagSiege                ClientFlag = 0x00000004
-	ClientFlagLeftClickMenus       ClientFlag = 0x00000008
-	ClientFlagAOS                  ClientFlag = 0x00000020
-	ClientFlagSixthCharacterSlot   ClientFlag = 0x00000040
-	ClientFlagAOSProfessions       ClientFlag = 0x00000080
-	ClientFlagElvenRace            ClientFlag = 0x00000100
-	ClientFlagSeventhCharacterSlot ClientFlag = 0x00001000
-	ClientFlagNewMovementPackets   ClientFlag = 0x00004000
-	ClientFlagNewFeluccaAreas      ClientFlag = 0x00008000
+	HueDefault uint16 = 0
+	HueMin     uint16 = 1
+	HueBlack   uint16 = 1
+	HueDieMin  uint16 = 2
+	HueDieMax  uint16 = 1001
+	HueSkinMin uint16 = 1002
+	HueSkinMax uint16 = 1058
+	HueMax     uint16 = 3000
 )
+
+// RandomSkinHue returns a random skin hue
+func RandomSkinHue() Hue {
+	return Hue(uint16(rand.Intn(int(HueSkinMax-HueSkinMin))) + HueSkinMin)
+}

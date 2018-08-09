@@ -6,7 +6,7 @@ import "github.com/qbradq/sharduo/common"
 // boundaries on OSI servers. This must be sent at least once prior to the
 // LoginComplete packet or the player will get a random view of the map.
 type PlayerBody struct {
-	ID                                    common.MagicID
+	ID                                    common.Serial
 	Body, X, Y, ServerWidth, ServerHeight uint16
 	Dir, Z                                byte
 }

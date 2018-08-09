@@ -9,7 +9,7 @@ func x5d(r *common.PacketReader, s common.NetState) {
 	// The user can only access the one character slot, so this packet is just a trigger
 	skin := common.RandomSkinHue()
 	body := uint16(400)
-	id := common.MagicID(0x1337)
+	id := common.Serial(0x1337)
 	x := uint16(1328)
 	y := uint16(1626)
 	z := byte(50)

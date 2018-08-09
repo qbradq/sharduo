@@ -5,7 +5,7 @@ import "github.com/qbradq/sharduo/common"
 // A CharacterList packet displays the character selection list to the client
 type CharacterList struct {
 	CharacterName string
-	Flags         common.ClientFlag
+	Flags         FeatureFlag
 }
 
 // Compile encodes the state of the Packet object using w

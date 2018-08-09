@@ -4,7 +4,7 @@ import "github.com/qbradq/sharduo/common"
 
 // DrawObject packets are used to let the client know what a mobile looks like
 type DrawObject struct {
-	ID                  common.MagicID
+	ID                  common.Serial
 	Hue                 common.Hue
 	Body, X, Y          uint16
 	Noto, Flags, Dir, Z byte

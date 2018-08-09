@@ -13,11 +13,7 @@ func Service(wg *sync.WaitGroup) {
 	wg.Add(1)
 	defer wg.Done()
 
-	for {
-		r, open := <-ServiceRequests
-		if open == false {
-			break
-		}
+	for r := range ServiceRequests {
 		switch t := r.(type) {
 		case *LoginRequest:
 			doLogin(t)

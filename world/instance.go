@@ -10,7 +10,7 @@ import (
 // An instance object manages all of the objects and behaviors of a game
 // instance. All exported methods are thread-safe.
 type instance struct {
-	ID       common.MagicID
+	ID       common.Serial
 	requests chan interface{}
 	wg       *sync.WaitGroup
 }
@@ -26,13 +26,13 @@ func (i *instance) Stop() {
 }
 
 // Map of running instances
-var runningInstances = make(map[common.MagicID]*instance)
+var runningInstances = make(map[common.Serial]*instance)
 
 // Pool of instance ID's
 var instanceIDPool = common.NewMagicIDPool()
 
 // Create a new instance
-func newInstance(id common.MagicID, wg *sync.WaitGroup) *instance {
+func newInstance(id common.Serial, wg *sync.WaitGroup) *instance {
 	if id == 0 {
 		id = instanceIDPool.Get()
 	} else if instanceIDPool.Reserve(id) == false {
