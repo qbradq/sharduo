@@ -14,6 +14,12 @@ type instance struct {
 	wg       *sync.WaitGroup
 }
 
+// SendRequest recieve structs matching world.*Request and dispatches them
+// to the appropriote running instance.
+func SendRequest(r interface{}) {
+
+}
+
 // SendRequest sends a game request to the instance's goroutine
 func (i *instance) SendRequest(r interface{}) {
 	i.requests <- r

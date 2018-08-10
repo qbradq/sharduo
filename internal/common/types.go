@@ -1,6 +1,7 @@
 package common
 
-// A Role represents a single permission domain
+// A Role represents a single permission domain. The zero value of a Role is
+// equal to RoleNone.
 type Role uint32
 
 // Common role names

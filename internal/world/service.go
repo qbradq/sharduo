@@ -4,11 +4,6 @@ import (
 	"sync"
 )
 
-// SendRequest recieve structs in the world.*Request class for dispatch
-func SendRequest(r interface{}) {
-
-}
-
 // Stop must be called to end the service's goroutine
 func Stop() {
 	close(serviceRequests)
