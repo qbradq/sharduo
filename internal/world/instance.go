@@ -34,20 +34,19 @@ func (i *instance) Stop() {
 var runningInstances = make(map[uo.Serial]*instance)
 
 // Create a new instance
-func newInstance(id uo.Serial, wg *sync.WaitGroup) *instance {
+func newInstance(id uo.Serial) *instance {
 	i := &instance{
 		ID:       id,
 		requests: make(chan interface{}, 1000),
-		wg:       wg,
 	}
 	runningInstances[i.ID] = i
 	return i
 }
 
 // Starts internal instance and all shared instances
-func startInstances(wg *sync.WaitGroup) {
+func startInstances() {
 	// The internal instance
-	newInstance(1, wg)
+	newInstance(1)
 }
 
 // Stop all running instances

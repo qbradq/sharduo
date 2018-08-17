@@ -1,6 +1,5 @@
-package network
+package uo
 
-// Attempt at converting more recent JS code
 var huffmanTable = [...]uint16{
 	0x2, 0x000, 0x5, 0x01F, 0x6, 0x022, 0x7, 0x034, 0x7, 0x075, 0x6, 0x028,
 	0x6, 0x03B, 0x7, 0x032, 0x8, 0x0E0, 0x8, 0x062, 0x7, 0x056, 0x8, 0x079,
@@ -47,7 +46,9 @@ var huffmanTable = [...]uint16{
 	0xB, 0x3AF, 0xA, 0x18E, 0xA, 0x2EC, 0x7, 0x062, 0x4, 0x00D,
 }
 
-func compressUOHuffman(in, out []byte) []byte {
+// HuffmanEncodePacket encodes the bytes of in as an Ultima Online packet and
+// appends it to out. A new slice of out is returned with the new data.
+func HuffmanEncodePacket(in, out []byte) []byte {
 	var outBuf, outBufLength uint32
 
 	// Write all data code points

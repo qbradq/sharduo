@@ -4,24 +4,40 @@ import (
 	"sync"
 )
 
-// ServiceRequests recieves structs in the accounting.*Request class for
-// processing
-var ServiceRequests = make(chan interface{}, 100)
+var waitGroup sync.WaitGroup
+var serviceRequests chan interface{}
 
-// Service is the accounting service's main goroutine
-func Service(wg *sync.WaitGroup) {
-	wg.Add(1)
-	defer wg.Done()
+// Start is the main goroutine of this service. Start it with "go accounting.Start()".
+func Start() {
+	serviceRequests = make(chan interface{}, 100)
 
-	for r := range ServiceRequests {
-		switch t := r.(type) {
+	waitGroup.Add(1)
+	defer waitGroup.Done()
+
+	for req := range serviceRequests {
+		switch r := req.(type) {
 		case *LoginRequest:
-			doLogin(t)
+			doLogin(r)
+		case *SelectServerRequest:
+			doSelectServer(r)
+		case *GameServerLoginRequest:
+			doGameServerLogin(r)
 		}
 	}
 }
 
-// Stop must be called to end the service's goroutine
+// Stop blocks until all of the service's goroutines have exited
 func Stop() {
-	close(ServiceRequests)
+	close(serviceRequests)
+	waitGroup.Wait()
+}
+
+// SendRequest sends a request to the service
+func SendRequest(r interface{}) bool {
+	select {
+	case serviceRequests <- r:
+		return true
+	default:
+		return false
+	}
 }
