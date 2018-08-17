@@ -10,7 +10,7 @@ type clientPacketInfo struct {
 var clientPacketInfos = [256]clientPacketInfo{
 	clientPacketInfo{0x00, 104, nil, false},
 	clientPacketInfo{0x01, 5, nil, false},
-	clientPacketInfo{0x02, 7, nil, false},
+	clientPacketInfo{0x02, 7, x02, false},
 	clientPacketInfo{0x03, -1, nil, false},
 	clientPacketInfo{0x04, 2, nil, false},
 	clientPacketInfo{0x05, 5, nil, false},

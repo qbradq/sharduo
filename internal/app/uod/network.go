@@ -117,13 +117,18 @@ func netReadConn(conn *net.TCPConn, ns *netState) {
 	for {
 		conn.SetDeadline(time.Now().Add(netReadTimeout))
 		p, err := r.ReadClientPacket()
-		if netLogClientError(conn, p, err) || p == nil {
+		fatal, logged := netLogClientError(conn, p, err)
+		if fatal || p == nil {
 			break
 		}
 		cmd := p.Command()
 		handler := clientPacketHandlers[cmd]
 		if handler != nil {
 			handler(ns, p)
+		} else if logged == false {
+			log.Printf("Client %s sent unhandled packet 0x%02X\n",
+				conn.RemoteAddr().String(),
+				p.Command())
 		}
 	}
 	log.Printf("Client %s read disconnect\n", conn.RemoteAddr().String())
@@ -139,15 +144,15 @@ func netWriteConn(conn *net.TCPConn, ns *netState) {
 
 	for p := range ns.outboundPackets {
 		if ns.CompressOutput() {
-			log.Printf("(compressed) %#v\n", p[:len(p)])
+			// log.Printf("(compressed) %#v\n", p[:len(p)])
 			cbuf = cbuf[:0]
 			obuf = uo.HuffmanEncodePacket(p, cbuf)
 		} else {
-			log.Printf("%#v\n", p[:len(p)])
+			// log.Printf("%#v\n", p[:len(p)])
 			obuf = p
 		}
 		_, err := conn.Write(obuf)
-		if netLogClientError(conn, nil, err) {
+		if fatal, _ := netLogClientError(conn, nil, err); fatal {
 			break
 		}
 	}
@@ -155,32 +160,32 @@ func netWriteConn(conn *net.TCPConn, ns *netState) {
 	netRemoveActiveConn(conn, ns)
 }
 
-func netLogClientError(c *net.TCPConn, packet interface{}, err error) bool {
+func netLogClientError(c *net.TCPConn, packet interface{}, err error) (bool, bool) {
 	if packet != nil {
 		switch pkt := packet.(type) {
 		case uo.ClientPacketInvalid:
 			log.Printf("Client %s disconnected due to invalid packet 0x%02X\n",
 				c.RemoteAddr().String(),
 				pkt.Command())
-			return true
+			return true, true
 		case uo.ClientPacketNotSupported:
 			log.Printf("Client %s sent unsupported packet 0x%02X\n",
 				c.RemoteAddr().String(),
 				pkt.Command())
-			return false
+			return false, true
 		}
 	}
 	if err == nil {
-		return false
+		return false, false
 	} else if ne, ok := err.(net.Error); ok && ne.Timeout() {
-		return false
+		return false, false
 	} else if strings.Contains(err.Error(), "use of closed network connection") ||
 		err == io.EOF || err == io.ErrUnexpectedEOF {
-		return true
+		return true, false
 	}
 	log.Println("Client",
 		c.RemoteAddr().String(),
 		"disconnected due to",
 		err)
-	return true
+	return true, true
 }

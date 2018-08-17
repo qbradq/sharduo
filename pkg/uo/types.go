@@ -13,15 +13,15 @@ type Dir byte
 
 // Dir value meanings
 const (
-	DirNorth       Dir = 0
-	DirNortheast   Dir = 1
-	DirEast        Dir = 2
-	DirSouteast    Dir = 3
-	DirSouth       Dir = 4
-	DirSouthwest   Dir = 5
-	DirWest        Dir = 6
-	DirNorthwest   Dir = 7
-	DirRunningFalg Dir = 0x80
+	DirNorth       Dir  = 0
+	DirNortheast   Dir  = 1
+	DirEast        Dir  = 2
+	DirSouteast    Dir  = 3
+	DirSouth       Dir  = 4
+	DirSouthwest   Dir  = 5
+	DirWest        Dir  = 6
+	DirNorthwest   Dir  = 7
+	dirRunningFalg byte = 0x80
 )
 
 // A Hue is a 16-bit value that describes the rendering mode of an object.

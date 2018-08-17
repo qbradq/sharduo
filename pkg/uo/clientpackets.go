@@ -130,3 +130,25 @@ func (p ClientPacketSelectServer) ShardSelected() uint {
 func xA0(in []byte) ClientPacket {
 	return ClientPacketSelectServer(in)
 }
+
+// ClientPacketMove is sent when the client attempts a move or facing change
+type ClientPacketMove []byte
+
+// Command returns the command byte of the packet
+func (p ClientPacketMove) Command() byte {
+	return p[0]
+}
+
+// Dir returns direction of movement
+func (p ClientPacketMove) Dir() Dir {
+	return Dir(p[1] & 0x07)
+}
+
+// Running returns true if his is a run request
+func (p ClientPacketMove) Running() bool {
+	return (p[1] & dirRunningFalg) == dirRunningFalg
+}
+
+func x02(in []byte) ClientPacket {
+	return ClientPacketMove(in)
+}
