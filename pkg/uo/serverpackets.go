@@ -2,6 +2,7 @@ package uo
 
 import (
 	"encoding/binary"
+	"log"
 	"net"
 )
 
@@ -314,4 +315,21 @@ func (p *ServerPacketCharacterList) AddStartingLocation(city, area string) {
 func (p *ServerPacketCharacterList) Finish(flags FeatureFlag) {
 	putUInt32((*[]byte)(p), uint32(flags))
 	backPatchLength((*[]byte)(p))
+}
+
+// ServerPacketMoveAck is used to acknowledge a character move
+type ServerPacketMoveAck []byte
+
+// Bytes returns the underlying byte slice
+func (p ServerPacketMoveAck) Bytes() []byte {
+	return ([]byte)(p)
+}
+
+// NewServerPacketMoveAck creates a new packet
+func NewServerPacketMoveAck(p []byte, key byte, noto Noto) ServerPacketMoveAck {
+	putByte(&p, 0x22)
+	putByte(&p, key)
+	log.Printf("key=%d\n", key)
+	putByte(&p, byte(noto))
+	return ServerPacketMoveAck(p)
 }

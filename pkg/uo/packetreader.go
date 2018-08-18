@@ -22,9 +22,9 @@ func NewClientPacketReader(r io.Reader) *ClientPacketReader {
 
 // ReadConnectionHeader reads the 4-byte connection header used by Ultima Online
 // tcp streams
-func (r *ClientPacketReader) ReadConnectionHeader() error {
+func (r *ClientPacketReader) ReadConnectionHeader() ([]byte, error) {
 	_, err := io.ReadFull(r.reader, r.readBuffer[0:4])
-	return err
+	return r.readBuffer[0:4], err
 }
 
 // ReadClientPacket reads the next client packet from the underlying reader
@@ -59,7 +59,7 @@ func (r *ClientPacketReader) ReadClientPacket() (ClientPacket, error) {
 
 	// Packet object creation
 	if info.decoder == nil {
-		return ClientPacketNotSupported(r.readBuffer), nil
+		return ClientPacketNotSupported(r.readBuffer[:length]), nil
 	}
-	return info.decoder(r.readBuffer), nil
+	return info.decoder(r.readBuffer[:length]), nil
 }

@@ -8,6 +8,8 @@ import (
 type ClientPacket interface {
 	// Command returns the command byte of the packet
 	Command() byte
+	// Bytes returns the underlying byte slice of the packet
+	Bytes() []byte
 }
 
 func getASCII(buf []byte, start, length int) string {
@@ -25,6 +27,11 @@ func (p ClientPacketInvalid) Command() byte {
 	return p[0]
 }
 
+// Bytes returns the underlying byte slice of the packet
+func (p ClientPacketInvalid) Bytes() []byte {
+	return ([]byte)(p)
+}
+
 // ClientPacketNotSupported is used to indicate that this is a valid client
 // packet, however no decoder yet exists for it
 type ClientPacketNotSupported []byte
@@ -34,12 +41,22 @@ func (p ClientPacketNotSupported) Command() byte {
 	return p[0]
 }
 
+// Bytes returns the underlying byte slice of the packet
+func (p ClientPacketNotSupported) Bytes() []byte {
+	return ([]byte)(p)
+}
+
 // ClientPacketCharacterLogin is sent from the character selection page
 type ClientPacketCharacterLogin []byte
 
 // Command returns the command byte of the packet
 func (p ClientPacketCharacterLogin) Command() byte {
 	return p[0]
+}
+
+// Bytes returns the underlying byte slice of the packet
+func (p ClientPacketCharacterLogin) Bytes() []byte {
+	return ([]byte)(p)
 }
 
 // CharacterSlot returns the character slot chosen
@@ -57,6 +74,11 @@ type ClientPacketAccountLogin []byte
 // Command returns the command byte of the packet
 func (p ClientPacketAccountLogin) Command() byte {
 	return p[0]
+}
+
+// Bytes returns the underlying byte slice of the packet
+func (p ClientPacketAccountLogin) Bytes() []byte {
+	return ([]byte)(p)
 }
 
 // RequiresLogin returns true if this packet should only be sent after
@@ -93,6 +115,11 @@ func (p ClientPacketGameServerLogin) Command() byte {
 	return p[0]
 }
 
+// Bytes returns the underlying byte slice of the packet
+func (p ClientPacketGameServerLogin) Bytes() []byte {
+	return ([]byte)(p)
+}
+
 // RequiresLogin returns true if this packet should only be sent after
 // a successful packet 0x91 (ClientPacketGameServerLogin)
 func (p ClientPacketGameServerLogin) RequiresLogin() bool {
@@ -122,6 +149,11 @@ func (p ClientPacketSelectServer) Command() byte {
 	return p[0]
 }
 
+// Bytes returns the underlying byte slice of the packet
+func (p ClientPacketSelectServer) Bytes() []byte {
+	return ([]byte)(p)
+}
+
 // ShardSelected returns the index of the selected shard
 func (p ClientPacketSelectServer) ShardSelected() uint {
 	return uint(p[2])
@@ -139,6 +171,11 @@ func (p ClientPacketMove) Command() byte {
 	return p[0]
 }
 
+// Bytes returns the underlying byte slice of the packet
+func (p ClientPacketMove) Bytes() []byte {
+	return ([]byte)(p)
+}
+
 // Dir returns direction of movement
 func (p ClientPacketMove) Dir() Dir {
 	return Dir(p[1] & 0x07)
@@ -147,6 +184,11 @@ func (p ClientPacketMove) Dir() Dir {
 // Running returns true if his is a run request
 func (p ClientPacketMove) Running() bool {
 	return (p[1] & dirRunningFalg) == dirRunningFalg
+}
+
+// Key returns the movement key counter as sent by the client
+func (p ClientPacketMove) Key() byte {
+	return p[2]
 }
 
 func x02(in []byte) ClientPacket {

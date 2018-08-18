@@ -12,7 +12,7 @@ type clientPacketHandler func(ns common.NetState, cp uo.ClientPacket)
 var clientPacketHandlers = [256]clientPacketHandler{
 	nil, //0x00
 	nil, //0x01
-	nil, //0x02
+	x02, //0x02
 	nil, //0x03
 	nil, //0x04
 	nil, //0x05
@@ -266,6 +266,12 @@ var clientPacketHandlers = [256]clientPacketHandler{
 	nil, //0xfd
 	nil, //0xfe
 	nil, //0xff
+}
+
+func x02(ns common.NetState, cp uo.ClientPacket) {
+	p := cp.(uo.ClientPacketMove)
+	ma := uo.NewServerPacketMoveAck(make([]byte, 0, 4), p.Key(), uo.NotoFriend)
+	ns.SendPacket(ma)
 }
 
 func x5d(ns common.NetState, cp uo.ClientPacket) {
