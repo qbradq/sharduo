@@ -46,6 +46,12 @@ var huffmanTable = [...]uint16{
 	0xB, 0x3AF, 0xA, 0x18E, 0xA, 0x2EC, 0x7, 0x062, 0x4, 0x00D,
 }
 
+// HuffmanDecodePacket decodes the bytes of in as an Ultima Online packet as
+// compressed with HuffmanEncodePacket and appends it to out.
+func HuffmanDecodePacket(in, out []byte) []byte {
+
+}
+
 // HuffmanEncodePacket encodes the bytes of in as an Ultima Online packet and
 // appends it to out. A new slice of out is returned with the new data.
 func HuffmanEncodePacket(in, out []byte) []byte {

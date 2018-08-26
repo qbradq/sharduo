@@ -45,7 +45,7 @@ func (r *ClientPacketReader) ReadClientPacket() (ClientPacket, error) {
 		if err != nil {
 			return nil, err
 		}
-		length := binary.BigEndian.Uint16(r.readBuffer[1:3])
+		length = int(binary.BigEndian.Uint16(r.readBuffer[1:3]))
 		_, err = io.ReadFull(r.reader, r.readBuffer[3:length])
 		if err != nil {
 			return nil, err
