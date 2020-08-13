@@ -49,7 +49,7 @@ func TestHuffmanDecompressPacket(t *testing.T) {
 	}
 
 	out := make([]byte, 0)
-	out = HuffmanDecodePacket(compressed, out)
+	_, out = HuffmanDecodePacket(compressed, out)
 	if len(out) != len(expected) {
 		t.Fatal("Length mismatch")
 	}

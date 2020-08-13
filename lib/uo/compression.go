@@ -127,9 +127,9 @@ var huffmanDecodeTable = [][]int{
 }
 
 // HuffmanDecodePacket decodes the bytes of in as Huffman-encoded Ultima Online
-// packet and appends it to out. A new slice of out is returned wiht the new
-// data.
-func HuffmanDecodePacket(in, out []byte) []byte {
+// packet and appends it to out. The number of bytes of in that were used and a
+// new slice of out is returned with the new data.
+func HuffmanDecodePacket(in, out []byte) (int, []byte) {
 	node := 0
 	bitNum := 8
 
@@ -140,7 +140,7 @@ func HuffmanDecodePacket(in, out []byte) []byte {
 		// Halt codeword
 		if leafValue == -256 {
 			idx++
-			return out
+			return idx, out
 		}
 
 		// Data codeword
@@ -160,6 +160,6 @@ func HuffmanDecodePacket(in, out []byte) []byte {
 		}
 	}
 
-	// Runaway decompression ends here
-	return nil
+	// Runaway decompression and incomplete packets end up here
+	return 0, nil
 }

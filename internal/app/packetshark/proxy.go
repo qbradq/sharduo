@@ -81,12 +81,22 @@ func (p *proxy) serverProxy() {
 		_, err = p.client.Write(ob)
 		if err != nil {
 			log.Println("Server proxy closed on write because", err)
-			break
+			return
 		}
 		if p.compressed {
 			cb := make([]byte, 0, 128*1024)
-			ob = uo.HuffmanDecodePacket(ob, cb)
+			for len(ob) > 0 {
+				cb := cb[:0]
+				n, printable := uo.HuffmanDecodePacket(ob, cb)
+				if n == 0 {
+					log.Println("Server proxy closed because of fragmented huffman packet")
+					return
+				}
+				log.Printf("<< %#v\n", printable)
+				ob = ob[n:]
+			}
+		} else {
+			log.Printf("<< %#v\n", ob)
 		}
-		log.Printf("<< %#v\n", ob)
 	}
 }
