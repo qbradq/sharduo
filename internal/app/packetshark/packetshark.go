@@ -22,7 +22,7 @@ func Main() {
 			log.Println("Stopping local packet hook because", err)
 			break
 		}
-		ip, err := net.LookupIP("login.uosecondage.com")
+		ip, err := net.LookupIP("127.0.0.1")
 		if err != nil {
 			log.Fatal(err)
 		}

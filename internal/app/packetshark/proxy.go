@@ -45,6 +45,8 @@ func (p *proxy) clientProxy() {
 			return
 		case uo.ClientPacketSelectServer:
 			p.hack8c = true
+		case uo.ClientPacketGameServerLogin:
+			p.compressed = true
 		}
 		//log.Printf(">> 0x%02X\n", cp.Command())
 		log.Printf(">> %#v\n", cp.Bytes())
@@ -80,6 +82,10 @@ func (p *proxy) serverProxy() {
 		if err != nil {
 			log.Println("Server proxy closed on write because", err)
 			break
+		}
+		if p.compressed {
+			cb := make([]byte, 0, 128*1024)
+			ob = uo.HuffmanDecodePacket(ob, cb)
 		}
 		log.Printf("<< %#v\n", ob)
 	}
