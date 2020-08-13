@@ -4,7 +4,7 @@ import (
 	"log"
 	"net"
 
-	"github.com/qbradq/sharduo/pkg/uo"
+	"github.com/qbradq/sharduo/lib/uo"
 )
 
 type proxy struct {
