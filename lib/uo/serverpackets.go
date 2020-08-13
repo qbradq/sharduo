@@ -2,7 +2,6 @@ package uo
 
 import (
 	"encoding/binary"
-	"log"
 	"net"
 )
 
@@ -329,7 +328,6 @@ func (p ServerPacketMoveAck) Bytes() []byte {
 func NewServerPacketMoveAck(p []byte, key byte, noto Noto) ServerPacketMoveAck {
 	putByte(&p, 0x22)
 	putByte(&p, key)
-	log.Printf("key=%d\n", key)
 	putByte(&p, byte(noto))
 	return ServerPacketMoveAck(p)
 }
