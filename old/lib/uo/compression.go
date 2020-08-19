@@ -1,13 +1,5 @@
 package uo
 
-import (
-	"errors"
-	"io"
-)
-
-// ErrorIncompletePacket is used to flag incomplete decompression of a packet.
-var ErrorIncompletePacket = errors.New("Incomplete packet")
-
 // Table and compression algorithm documented here:
 // https://sites.google.com/site/ultimaonlineoldpackets/client/compression
 var huffmanTable = [...]uint16{
@@ -57,19 +49,12 @@ var huffmanTable = [...]uint16{
 }
 
 // HuffmanEncodePacket encodes the bytes of in as an Ultima Online packet and
-// appends it to out until in is closed or error is encountered (like EOF).
-func HuffmanEncodePacket(in io.ByteReader, out io.ByteWriter) error {
+// appends it to out. A new slice of out is returned with the new data.
+func HuffmanEncodePacket(in, out []byte) []byte {
 	var outBuf, outBufLength uint32
 
 	// Write all data code points
-	for {
-		inByte, err := in.ReadByte()
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			return err
-		}
+	for _, inByte := range in {
 		tableIdx := uint32(inByte) * 2
 		codeLength := huffmanTable[tableIdx]
 		codePoint := huffmanTable[tableIdx+1]
@@ -79,9 +64,7 @@ func HuffmanEncodePacket(in io.ByteReader, out io.ByteWriter) error {
 		for outBufLength >= 8 {
 			outBufLength -= 8
 			b := byte(outBuf >> outBufLength)
-			if err := out.WriteByte(b); err != nil {
-				return err
-			}
+			out = append(out, b)
 		}
 	}
 
@@ -95,19 +78,15 @@ func HuffmanEncodePacket(in io.ByteReader, out io.ByteWriter) error {
 	for outBufLength >= 8 {
 		outBufLength -= 8
 		b := byte(outBuf >> outBufLength)
-		if err := out.WriteByte(b); err != nil {
-			return err
-		}
+		out = append(out, b)
 	}
 
 	// Zero-pad
 	if outBufLength != 0 {
 		pad := byte(outBuf << (8 - outBufLength))
-		if err := out.WriteByte(pad); err != nil {
-			return err
-		}
+		out = append(out, pad)
 	}
-	return nil
+	return out
 }
 
 // Table and decompression algortihm documented here:
@@ -148,34 +127,25 @@ var huffmanDecodeTable = [][]int{
 }
 
 // HuffmanDecodePacket decodes the bytes of in as Huffman-encoded Ultima Online
-// packet and appends it to out. io.EOF is returned on fragmented packet.
-func HuffmanDecodePacket(in io.ByteReader, out io.ByteWriter) error {
+// packet and appends it to out. The number of bytes of in that were used and a
+// new slice of out is returned with the new data.
+func HuffmanDecodePacket(in, out []byte) (int, []byte) {
 	node := 0
 	bitNum := 8
-	var inByte byte
-	var err error
 
-	for {
-		if bitNum == 8 {
-			inByte, err = in.ReadByte()
-			if err != nil {
-				// Here an EOF would be unexpected
-				return err
-			}
-		}
-		leaf := (inByte >> (bitNum - 1)) & 0x01
+	for idx := 0; idx < len(in); {
+		leaf := (in[idx] >> (bitNum - 1)) & 0x01
 		leafValue := huffmanDecodeTable[node][leaf]
 
 		// Halt codeword
 		if leafValue == -256 {
-			return nil
+			idx++
+			return idx, out
 		}
 
 		// Data codeword
 		if leafValue < 1 {
-			if err := out.WriteByte(byte(-leafValue)); err != nil {
-				return err
-			}
+			out = append(out, byte(-leafValue))
 			leafValue = 0
 		}
 
@@ -186,6 +156,10 @@ func HuffmanDecodePacket(in io.ByteReader, out io.ByteWriter) error {
 		// Byte step
 		if bitNum < 1 {
 			bitNum = 8
+			idx++
 		}
 	}
+
+	// Runaway decompression and incomplete packets end up here
+	return 0, nil
 }

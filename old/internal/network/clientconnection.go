@@ -95,7 +95,7 @@ func (c *ClientConnection) GetPacket() uo.ClientPacket {
 
 // Disconnect disconnects the client connection.
 func (c *ClientConnection) Disconnect() {
-	if !c.closed {
+	if !c.closed && c.conn != nil {
 		c.conn.Close()
 		c.closed = true
 	}

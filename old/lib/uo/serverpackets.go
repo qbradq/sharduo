@@ -292,10 +292,6 @@ func (p *ServerPacketCharacterList) AddCharacter(name string) {
 
 // FinishCharacterList finishes the character list portion of the packet
 func (p *ServerPacketCharacterList) FinishCharacterList() {
-	n := (*p)[3]
-	for ; n < 5; n++ {
-		fill((*[]byte)(p), 0, 60)
-	}
 	binary.BigEndian.PutUint16((*p)[1:3], uint16(len(*p)))
 	putByte((*[]byte)(p), 0)
 }
@@ -330,4 +326,20 @@ func NewServerPacketMoveAck(p []byte, key byte, noto Noto) ServerPacketMoveAck {
 	putByte(&p, key)
 	putByte(&p, byte(noto))
 	return ServerPacketMoveAck(p)
+}
+
+// ServerPacketEnableClientFeatures is used just after game server login to
+// enable certian subscription features in the client.
+type ServerPacketEnableClientFeatures []byte
+
+// Bytes returns the underlying byte slice
+func (p ServerPacketEnableClientFeatures) Bytes() []byte {
+	return ([]byte)(p)
+}
+
+// NewServerPacketEnableClientFeatures creates a new packet
+func NewServerPacketEnableClientFeatures(p []byte, flags uint16) ServerPacketEnableClientFeatures {
+	putByte(&p, 0xb9)
+	putUInt16(&p, flags)
+	return ServerPacketEnableClientFeatures(p)
 }

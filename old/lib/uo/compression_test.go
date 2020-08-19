@@ -1,20 +1,10 @@
 package uo
 
 import (
-	"bytes"
-	"io"
 	"testing"
 )
 
 func TestHuffmanCompressPacket(t *testing.T) {
-	var input = []byte{
-		0xbf,
-		0x00,
-		0x06,
-		0x00,
-		0x08,
-		0xa8,
-	}
 	var expected = []byte{
 		0x80,
 		0xce,
@@ -24,12 +14,9 @@ func TestHuffmanCompressPacket(t *testing.T) {
 		0xa0,
 	}
 
-	in := bytes.NewBuffer(input)
-	outbuf := bytes.NewBuffer(nil)
-	if err := HuffmanEncodePacket(in, outbuf); err != nil {
-		t.Fatal(err)
-	}
-	out := outbuf.Bytes()
+	out := make([]byte, 0)
+	smp := NewServerPacketSetMap(make([]byte, 0), 0xa8)
+	out = HuffmanEncodePacket(smp, out)
 	if len(out) != len(expected) {
 		t.Fatal("Length mismatch")
 	}
@@ -43,7 +30,7 @@ func TestHuffmanCompressPacket(t *testing.T) {
 }
 
 func TestHuffmanDecompressPacket(t *testing.T) {
-	var input = []byte{
+	var compressed = []byte{
 		0x80,
 		0xce,
 		0xce,
@@ -51,6 +38,7 @@ func TestHuffmanDecompressPacket(t *testing.T) {
 		0xc5,
 		0xa0,
 	}
+
 	var expected = []byte{
 		0xbf,
 		0x00,
@@ -60,12 +48,8 @@ func TestHuffmanDecompressPacket(t *testing.T) {
 		0xa8,
 	}
 
-	in := bytes.NewBuffer(input)
-	outbuf := bytes.NewBuffer(nil)
-	if err := HuffmanDecodePacket(in, outbuf); err != nil {
-		t.Fatal(err)
-	}
-	out := outbuf.Bytes()
+	out := make([]byte, 0)
+	_, out = HuffmanDecodePacket(compressed, out)
 	if len(out) != len(expected) {
 		t.Fatal("Length mismatch")
 	}
@@ -75,20 +59,5 @@ func TestHuffmanDecompressPacket(t *testing.T) {
 		if g != e {
 			t.Fatalf("Bad output at %d got %v wanted %v", idx, g, e)
 		}
-	}
-}
-
-func TestHuffmanDecompressFragmentedPacket(t *testing.T) {
-	var input = []byte{
-		0x80,
-		0xce,
-		0xce,
-		0x07,
-	}
-
-	in := bytes.NewBuffer(input)
-	outbuf := bytes.NewBuffer(nil)
-	if err := HuffmanDecodePacket(in, outbuf); err != io.EOF {
-		t.Fatal("Failed to detect premature end of bitstream")
 	}
 }

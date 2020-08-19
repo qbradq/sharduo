@@ -18,6 +18,7 @@ func Main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	log.Println("Login server listening at 0.0.0.0:7775")
 	for {
 		c, err := l.AcceptTCP()
 		if err != nil {
@@ -31,6 +32,7 @@ func handleConnection(c *net.TCPConn) {
 	var ok bool
 
 	cc := network.NewClientConnection(c)
+	defer cc.Disconnect()
 	// Don't care about the connection header
 	cc.GetHeader()
 
@@ -39,7 +41,6 @@ func handleConnection(c *net.TCPConn) {
 	alp, ok := p.(uo.ClientPacketAccountLogin)
 	if !ok {
 		cc.Error(errors.New("Expected account login packet"))
-		cc.Disconnect()
 		return
 	}
 	log.Println("User login", alp.Username(), alp.Password())
@@ -65,7 +66,6 @@ func handleConnection(c *net.TCPConn) {
 	ssp, ok := p.(uo.ClientPacketSelectServer)
 	if !ok {
 		cc.Error(errors.New("Expected select server packet"))
-		cc.Disconnect()
 		return
 	}
 	log.Println("Selected shard", ssp.ShardSelected())
@@ -75,6 +75,4 @@ func handleConnection(c *net.TCPConn) {
 		IP: net.ParseIP("127.0.0.1"),
 	}, 7777)
 	cc.SendPacket(cgsp)
-
-	cc.Disconnect()
 }
