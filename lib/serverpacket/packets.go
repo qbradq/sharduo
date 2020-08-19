@@ -57,3 +57,26 @@ func (p *ServerList) Write(w io.Writer) {
 		binary.Write(w, binary.BigEndian, byte(entry.IP.To4()[0]))
 	}
 }
+
+// ConnectToGameServer is sent to instruct the client how to connect to a game
+// server.
+type ConnectToGameServer struct {
+	// IP is the IP address of the server.
+	IP net.IP
+	// Port is the port the server listens on.
+	Port uint16
+	// Key is the connection key.
+	Key []byte
+}
+
+// Write implements the Packet interface.
+func (p *ConnectToGameServer) Write(w io.Writer) {
+	binary.Write(w, binary.BigEndian, byte(0x8c)) // ID
+	// IP Address (right-way around)
+	binary.Write(w, binary.BigEndian, byte(p.IP.To4()[0]))
+	binary.Write(w, binary.BigEndian, byte(p.IP.To4()[1]))
+	binary.Write(w, binary.BigEndian, byte(p.IP.To4()[2]))
+	binary.Write(w, binary.BigEndian, byte(p.IP.To4()[3]))
+	binary.Write(w, binary.BigEndian, uint16(p.Port)) // Port
+	w.Write(p.Key)
+}

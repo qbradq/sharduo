@@ -10,13 +10,24 @@ type Packet interface {
 	GetID() byte
 }
 
-// New creates a new based on data.
-func New(ID byte, length int, data []byte) Packet {
-	ctor := ctorTable[ID]
+// New creates a new client packet based on data.
+func New(data []byte) Packet {
+	var pdat []byte
+
+	length := InfoTable[data[0]].Length
+	if length == -1 {
+		length = int(binary.BigEndian.Uint16(data[1:3]))
+		pdat = data[3:length]
+	} else if length == 0 {
+		return nil
+	} else {
+		pdat = data[1:length]
+	}
+	ctor := ctorTable[data[0]]
 	if ctor == nil {
 		return nil
 	}
-	return ctor(data)
+	return ctor(pdat)
 }
 
 // Base is the base struct for all client packets.

@@ -1,7 +1,6 @@
 package clientpacket
 
 import (
-	"encoding/binary"
 	"testing"
 )
 
@@ -15,16 +14,7 @@ func TestPackets(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		indata := test.data[1:]
-		length := InfoTable[test.id].Length
-		if length == 0 {
-			t.Fatalf("Unsupported packet %X", test.id)
-		}
-		if length == -1 {
-			length = int(binary.LittleEndian.Uint16(test.data[1:3]))
-			indata = test.data[3:]
-		}
-		p := New(test.data[0], length, indata)
+		p := New(test.data)
 		if p == nil {
 			t.Fatalf("Unsupported packet %X", test.id)
 		}

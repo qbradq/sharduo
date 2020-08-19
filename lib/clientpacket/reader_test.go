@@ -50,28 +50,28 @@ func TestReader(t *testing.T) {
 	if err := uat.ReadConnectionHeader(); err != nil {
 		t.Fatal(err)
 	}
-	p, err := uat.Read()
+	p, err := uat.ReadPacket()
 	if err != nil {
 		t.Fatal(err)
 	}
 	if _, ok := p.(*AccountLogin); !ok {
 		t.Fatal("Failed to get account login packet")
 	}
-	p, err = uat.Read()
+	p, err = uat.ReadPacket()
 	if err != nil {
 		t.Fatal(err)
 	}
 	if _, ok := p.(*SelectServer); !ok {
 		t.Fatal("Failed to get select server packet")
 	}
-	p, err = uat.Read()
+	p, err = uat.ReadPacket()
 	if err != nil {
 		t.Fatal(err)
 	}
 	if p != nil {
 		t.Fatal("Failed to return unsupported packet as nil")
 	}
-	np, err := uat.Read()
+	np, err := uat.ReadPacket()
 	if np != nil || err != io.EOF {
 		t.Fatal("Failed to detect end of client packet stream", np, err)
 	}
