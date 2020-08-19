@@ -1,6 +1,12 @@
 package clientpacket
 
-/*
+import (
+	"bytes"
+	"encoding/hex"
+	"io"
+	"testing"
+)
+
 var testDataStr string
 var testData []byte
 
@@ -44,26 +50,26 @@ func TestReader(t *testing.T) {
 	if err := uat.ReadConnectionHeader(); err != nil {
 		t.Fatal(err)
 	}
-	alp, err := uat.Read()
+	p, err := uat.Read()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(alp) != 62 || alp[0] != 0x80 {
+	if _, ok := p.(*AccountLogin); !ok {
 		t.Fatal("Failed to get account login packet")
 	}
-	ssp, err := uat.Read()
+	p, err = uat.Read()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(ssp) != 3 || ssp[0] != 0xa0 {
+	if _, ok := p.(*SelectServer); !ok {
 		t.Fatal("Failed to get select server packet")
 	}
-	gmp, err := uat.Read()
+	p, err = uat.Read()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(gmp) != 2 || ssp[0] != 0x04 {
-		t.Fatal("Failed to get god mode packet")
+	if p != nil {
+		t.Fatal("Failed to return unsupported packet as nil")
 	}
 	np, err := uat.Read()
 	if np != nil || err != io.EOF {
@@ -94,4 +100,3 @@ func TestReaderUnknownPacket(t *testing.T) {
 		t.Fatal("Failed to detect unknown packet")
 	}
 }
-*/
