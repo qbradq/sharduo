@@ -1,12 +1,6 @@
 package clientpacket
 
-import (
-	"bytes"
-	"encoding/hex"
-	"io"
-	"testing"
-)
-
+/*
 var testDataStr string
 var testData []byte
 
@@ -100,3 +94,4 @@ func TestReaderUnknownPacket(t *testing.T) {
 		t.Fatal("Failed to detect unknown packet")
 	}
 }
+*/

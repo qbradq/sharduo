@@ -37,7 +37,9 @@ func (r *Reader) ReadConnectionHeader() error {
 
 // Read reads the bytes of the next client packet and returns a slice of those
 // bytes or an error.
-func (r *Reader) Read() ([]byte, error) {
+func (r *Reader) Read() (Packet, error) {
+	var packetData []byte
+
 	_, err := io.ReadFull(r.r, r.inbuf[0:1])
 	if err != nil {
 		// io.EOF here means no more data waiting
@@ -66,6 +68,7 @@ func (r *Reader) Read() ([]byte, error) {
 			}
 			return nil, err
 		}
+		packetData = r.inbuf[3:length]
 	} else { // Fixed length
 		_, err = io.ReadFull(r.r, r.inbuf[1:length])
 		if err != nil {
@@ -74,6 +77,7 @@ func (r *Reader) Read() ([]byte, error) {
 			}
 			return nil, err
 		}
+		packetData = r.inbuf[1:length]
 	}
-	return r.inbuf[:length], nil
+	return New(r.inbuf[0], length, packetData), nil
 }
