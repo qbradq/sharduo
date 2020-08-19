@@ -1,0 +1,40 @@
+package serverpacket
+
+import (
+	"bytes"
+	"log"
+	"net"
+	"testing"
+)
+
+func TestServerPackets(t *testing.T) {
+	tests := []struct {
+		input    Packet
+		expected []byte
+	}{
+		{
+			&ServerList{
+				Entries: []ServerListEntry{
+					{
+						Name: "My Shard",
+						IP:   net.ParseIP("127.0.0.1"),
+					},
+				},
+			},
+			[]byte{0xa8, 0x0, 0x2e, 0xcc, 0x0, 0x1, 0x0, 0x0, 0x4d, 0x79, 0x20, 0x53, 0x68, 0x61, 0x72, 0x64, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x00, 0x1, 0x0, 0x0, 0x7f},
+		},
+	}
+
+	buf := bytes.NewBuffer(nil)
+	for itest, test := range tests {
+		buf.Reset()
+		test.input.Write(buf)
+		for idx, g := range buf.Bytes() {
+			e := test.expected[idx]
+			if e != g {
+				log.Println(buf.Bytes())
+				t.Fatalf("Test %d:%v at %d\nExpected:\n%X\nGot:\n%X", itest, test, idx, test.expected, buf.Bytes())
+			}
+		}
+	}
+}
