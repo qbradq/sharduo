@@ -68,8 +68,8 @@ func TestReader(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if p != nil {
-		t.Fatal("Failed to return unsupported packet as nil")
+	if _, ok := p.(*UnsupportedPacket); !ok {
+		t.Fatal("Failed to return unsupported packet as object")
 	}
 	np, err := uat.ReadPacket()
 	if np != nil || err != io.EOF {

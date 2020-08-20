@@ -25,7 +25,7 @@ func New(data []byte) Packet {
 	}
 	ctor := ctorTable[data[0]]
 	if ctor == nil {
-		return nil
+		return newUnsupportedPacket(data)
 	}
 	return ctor(pdat)
 }
@@ -39,6 +39,24 @@ type Base struct {
 // GetID implements the Packet interface.
 func (p *Base) GetID() byte {
 	return p.ID
+}
+
+// UnsupportedPacket is sent when the packet being decoded does not have a
+// constructor function yet.
+type UnsupportedPacket struct {
+	Base
+	// Bytes is a copy of the bytes of the unsupported packet for debugging and
+	// may be nil.
+	Bytes []byte
+}
+
+func newUnsupportedPacket(in []byte) Packet {
+	return &UnsupportedPacket{
+		Base: Base{
+			ID: in[0],
+		},
+		Bytes: append([]byte(nil), in...),
+	}
 }
 
 // AccountLogin is the first packet sent to the login server and attempts to
@@ -75,5 +93,27 @@ func newSelectServer(in []byte) Packet {
 			ID: 0xA0,
 		},
 		Index: int(binary.LittleEndian.Uint16(in[0:2])),
+	}
+}
+
+// GameServerLogin is used to authenticate to the game server in clear text.
+type GameServerLogin struct {
+	Base
+	// Account username
+	Username string
+	// Account password in plain-text
+	Password string
+	// Key given by the login server
+	Key []byte
+}
+
+func newGameServerLogin(in []byte) Packet {
+	return &GameServerLogin{
+		Base: Base{
+			ID: 0x91,
+		},
+		Key:      in[:4],
+		Username: string(in[4:34]),
+		Password: string(in[34:64]),
 	}
 }

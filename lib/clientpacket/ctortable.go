@@ -147,7 +147,7 @@ var ctorTable = []func([]byte) Packet{
 	/*8E*/ nil,
 	/*8F*/ nil,
 	/*90*/ nil,
-	/*91*/ nil,
+	/*91*/ newGameServerLogin,
 	/*92*/ nil,
 	/*93*/ nil,
 	/*94*/ nil,
