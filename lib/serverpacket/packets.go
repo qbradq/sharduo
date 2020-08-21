@@ -17,6 +17,24 @@ func pad(w io.Writer, l int) {
 	w.Write(buf)
 }
 
+func putbyte(w io.Writer, v byte) {
+	var b [1]byte
+	b[0] = v
+	w.Write(b[:])
+}
+
+func putuint16(w io.Writer, v uint16) {
+	var b [2]byte
+	binary.BigEndian.PutUint16(b[:], v)
+	w.Write(b[:])
+}
+
+func putuint32(w io.Writer, v uint32) {
+	var b [4]byte
+	binary.BigEndian.PutUint32(b[:], v)
+	w.Write(b[:])
+}
+
 // Packet is the interface all server packets implement.
 type Packet interface {
 	// Write writes the packet data to w.
@@ -41,20 +59,20 @@ type ServerList struct {
 func (p *ServerList) Write(w io.Writer) {
 	length := 6 + 40*len(p.Entries)
 	// Header
-	binary.Write(w, binary.BigEndian, byte(0xa8))             // ID
-	binary.Write(w, binary.BigEndian, uint16(length))         // Length
-	binary.Write(w, binary.BigEndian, byte(0xcc))             // Client flags
-	binary.Write(w, binary.BigEndian, uint16(len(p.Entries))) // Server count
+	putbyte(w, 0xa8)                     // ID
+	putuint16(w, uint16(length))         // Length
+	putbyte(w, 0xcc)                     // Client flags
+	putuint16(w, uint16(len(p.Entries))) // Server count
 	// Server list
 	for idx, entry := range p.Entries {
-		binary.Write(w, binary.LittleEndian, uint16(idx)) // Server index
-		padstr(w, entry.Name, 32)                         // Server name
-		pad(w, 2)                                         // Padding and timezone offset
+		putuint16(w, uint16(idx)) // Server index
+		padstr(w, entry.Name, 32) // Server name
+		pad(w, 2)                 // Padding and timezone offset
 		// The IP is backward
-		binary.Write(w, binary.BigEndian, byte(entry.IP.To4()[3]))
-		binary.Write(w, binary.BigEndian, byte(entry.IP.To4()[2]))
-		binary.Write(w, binary.BigEndian, byte(entry.IP.To4()[1]))
-		binary.Write(w, binary.BigEndian, byte(entry.IP.To4()[0]))
+		putbyte(w, entry.IP.To4()[3])
+		putbyte(w, entry.IP.To4()[2])
+		putbyte(w, entry.IP.To4()[1])
+		putbyte(w, entry.IP.To4()[0])
 	}
 }
 
@@ -71,13 +89,13 @@ type ConnectToGameServer struct {
 
 // Write implements the Packet interface.
 func (p *ConnectToGameServer) Write(w io.Writer) {
-	binary.Write(w, binary.BigEndian, byte(0x8c)) // ID
+	putbyte(w, 0x8c) // ID
 	// IP Address (right-way around)
-	binary.Write(w, binary.BigEndian, byte(p.IP.To4()[0]))
-	binary.Write(w, binary.BigEndian, byte(p.IP.To4()[1]))
-	binary.Write(w, binary.BigEndian, byte(p.IP.To4()[2]))
-	binary.Write(w, binary.BigEndian, byte(p.IP.To4()[3]))
-	binary.Write(w, binary.BigEndian, uint16(p.Port)) // Port
+	putbyte(w, p.IP.To4()[0])
+	putbyte(w, p.IP.To4()[1])
+	putbyte(w, p.IP.To4()[2])
+	putbyte(w, p.IP.To4()[3])
+	putuint16(w, p.Port) // Port
 	w.Write(p.Key)
 }
 
@@ -91,20 +109,20 @@ type CharacterList struct {
 // Write implements the Packet interface.
 func (p *CharacterList) Write(w io.Writer) {
 	length := 4 + len(p.Names)*60 + 1 + 63*len(StartingLocations) + 4
-	binary.Write(w, binary.BigEndian, byte(0xa9))         // ID
-	binary.Write(w, binary.BigEndian, uint16(length))     // Length
-	binary.Write(w, binary.BigEndian, byte(len(p.Names))) // Number of character slots
+	putbyte(w, 0xa9)               // ID
+	putuint16(w, uint16(length))   // Length
+	putbyte(w, byte(len(p.Names))) // Number of character slots
 	for _, name := range p.Names {
 		padstr(w, name, 30)
 		pad(w, 30)
 	}
 	// Starting locations
-	binary.Write(w, binary.BigEndian, byte(len(StartingLocations))) // Count
+	putbyte(w, byte(len(StartingLocations))) // Count
 	for i, loc := range StartingLocations {
-		binary.Write(w, binary.BigEndian, byte(i)) // Index
+		putbyte(w, byte(i)) // Index
 		padstr(w, loc.City, 31)
 		padstr(w, loc.Area, 31)
 	}
 	// Flags
-	binary.Write(w, binary.BigEndian, uint32(0x000001e8))
+	putuint32(w, 0x000001e8)
 }

@@ -2,7 +2,6 @@ package uo
 
 import (
 	"bytes"
-	"io"
 	"testing"
 )
 
@@ -88,7 +87,7 @@ func TestHuffmanDecompressFragmentedPacket(t *testing.T) {
 
 	in := bytes.NewBuffer(input)
 	outbuf := bytes.NewBuffer(nil)
-	if err := HuffmanDecodePacket(in, outbuf); err != io.EOF {
+	if err := HuffmanDecodePacket(in, outbuf); err != ErrIncompletePacket {
 		t.Fatal("Failed to detect premature end of bitstream")
 	}
 }
