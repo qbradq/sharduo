@@ -5,8 +5,8 @@ import (
 	"io"
 )
 
-// ErrorIncompletePacket is used to flag incomplete decompression of a packet.
-var ErrorIncompletePacket = errors.New("Incomplete packet")
+// ErrIncompletePacket is used to flag incomplete decompression of a packet.
+var ErrIncompletePacket = errors.New("Incomplete packet")
 
 // Table and compression algorithm documented here:
 // https://sites.google.com/site/ultimaonlineoldpackets/client/compression
@@ -148,7 +148,8 @@ var huffmanDecodeTable = [][]int{
 }
 
 // HuffmanDecodePacket decodes the bytes of in as Huffman-encoded Ultima Online
-// packet and appends it to out. io.EOF is returned on fragmented packet.
+// packet and appends it to out. ErrIncompletePacket is returned on a
+// fragmented packet.
 func HuffmanDecodePacket(in io.ByteReader, out io.ByteWriter) error {
 	node := 0
 	bitNum := 8
@@ -160,7 +161,7 @@ func HuffmanDecodePacket(in io.ByteReader, out io.ByteWriter) error {
 			inByte, err = in.ReadByte()
 			if err != nil {
 				// Here an EOF would be unexpected
-				return err
+				return ErrIncompletePacket
 			}
 		}
 		leaf := (inByte >> (bitNum - 1)) & 0x01

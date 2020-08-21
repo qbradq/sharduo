@@ -52,9 +52,7 @@ type UnsupportedPacket struct {
 
 func newUnsupportedPacket(in []byte) Packet {
 	return &UnsupportedPacket{
-		Base: Base{
-			ID: in[0],
-		},
+		Base:  Base{ID: in[0]},
 		Bytes: append([]byte(nil), in...),
 	}
 }
@@ -71,9 +69,7 @@ type AccountLogin struct {
 
 func newAccountLogin(in []byte) Packet {
 	return &AccountLogin{
-		Base: Base{
-			ID: 0x80,
-		},
+		Base:     Base{ID: 0x80},
 		Username: string(in[0:30]),
 		Password: string(in[30:60]),
 	}
@@ -89,10 +85,8 @@ type SelectServer struct {
 
 func newSelectServer(in []byte) Packet {
 	return &SelectServer{
-		Base: Base{
-			ID: 0xA0,
-		},
-		Index: int(binary.LittleEndian.Uint16(in[0:2])),
+		Base:  Base{ID: 0xA0},
+		Index: int(binary.BigEndian.Uint16(in[0:2])),
 	}
 }
 
@@ -109,11 +103,23 @@ type GameServerLogin struct {
 
 func newGameServerLogin(in []byte) Packet {
 	return &GameServerLogin{
-		Base: Base{
-			ID: 0x91,
-		},
+		Base:     Base{ID: 0x91},
 		Key:      in[:4],
 		Username: string(in[4:34]),
 		Password: string(in[34:64]),
+	}
+}
+
+// CharacterLogin is used to request a character login.
+type CharacterLogin struct {
+	Base
+	// Character slot chosen
+	Slot int
+}
+
+func newCharacterLogin(in []byte) Packet {
+	return &CharacterLogin{
+		Base: Base{ID: 0x5D},
+		Slot: int(binary.BigEndian.Uint32(in[64:68])),
 	}
 }

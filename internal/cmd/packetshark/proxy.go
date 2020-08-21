@@ -59,9 +59,8 @@ func (p *proxy) clientProxy() {
 
 func (p *proxy) serverProxy() {
 	buf := make([]byte, 64*1024, 64*1024)
-	leftbuf := make([]byte, 64*1024, 64*1024)
-	readbuf := bytes.NewBuffer(nil)
-	dcbuf := bytes.NewBuffer(nil)
+	compressed := bytes.NewBuffer(nil)
+	decompressed := bytes.NewBuffer(nil)
 	for {
 		// Get next TCP packet
 		n, err := p.server.Read(buf[:])
@@ -84,34 +83,59 @@ func (p *proxy) serverProxy() {
 		}
 		// Handle compressed server stream
 		if p.compressed {
-			copy(leftbuf, readbuf.Bytes())
-			left := leftbuf[:readbuf.Len()]
-			if _, err := readbuf.Write(buf[:n]); err != nil {
-				log.Println("Server proxy closed on write to memory buffer because", err)
-				return
-			}
-			for readbuf.Len() > 0 {
-				dcbuf.Reset()
-				if err := uo.HuffmanDecodePacket(readbuf, dcbuf); err != nil {
+			compressed.Write(buf[:n])
+			for {
+				decompressed.Reset()
+				backup := append([]byte(nil), compressed.Bytes()...)
+				if err := uo.HuffmanDecodePacket(compressed, decompressed); err != nil {
 					// Fragmented packet
-					if err == io.EOF {
-						log.Println("Start of fragmented packet")
-						if _, err := readbuf.Write(left); err != nil {
-							log.Println("Server proxy closed on write to memory buffer because", err)
-							return
-						}
+					if err == uo.ErrIncompletePacket {
+						log.Println("Fragmented packet")
+						compressed.Reset()
+						compressed.Write(backup)
 						break
 					}
+					// Other error
 					log.Println("Server proxy closed due to error during decompression", err)
 					return
 				}
-				if readbuf.Len() == 0 {
-					log.Printf("<< %#v\n", dcbuf.Bytes())
+				// Whole packet
+				log.Printf("<< %#v\n", decompressed.Bytes())
+				// Read until no more compressed data
+				if compressed.Len() == 0 {
+					compressed.Reset()
+					break
 				}
 			}
-			readbuf.Reset()
+			/*
+				copy(leftbuf, readbuf.Bytes())
+				left := leftbuf[:readbuf.Len()]
+				if _, err := readbuf.Write(buf[:n]); err != nil {
+					log.Println("Server proxy closed on write to memory buffer because", err)
+					return
+				}
+				for readbuf.Len() > 0 {
+					dcbuf.Reset()
+					if err := uo.HuffmanDecodePacket(readbuf, dcbuf); err != nil {
+						// Fragmented packet
+						if err == io.EOF {
+							log.Println("Start of fragmented packet")
+							readbuf.Reset()
+							if _, err := readbuf.Write(left); err != nil {
+								log.Println("Server proxy closed on write to memory buffer because", err)
+								return
+							}
+							break
+						}
+						log.Println("Server proxy closed due to error during decompression", err)
+						return
+					}
+					log.Printf("<< %#v\n", dcbuf.Bytes())
+					readbuf.Reset()
+				}
+			*/
 		} else {
-			// Uncompressed
+			// Uncompressed login server traffic
 			log.Printf("<< %#v\n", buf[:n])
 		}
 	}

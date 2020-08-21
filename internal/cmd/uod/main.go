@@ -61,7 +61,7 @@ func handleConnection(c *net.TCPConn) {
 	// Character list
 	clp := &serverpacket.CharacterList{
 		Names: []string{
-			"qbradq", "", "", "", "", "",
+			gslp.Username, "", "", "", "", "",
 		},
 	}
 	if err := w.Write(clp, c); err != nil {
@@ -70,9 +70,15 @@ func handleConnection(c *net.TCPConn) {
 	}
 
 	// Character login
-	// lp, err = r.ReadPacket()
-	// if err != nil {
-	// 	log.Println("Client disconnected waiting for character login", err)
-	// 	return
-	// }
+	cp, err = r.ReadPacket()
+	if err != nil {
+		log.Println("Client disconnected waiting for character login", err)
+		return
+	}
+	clrp, ok := cp.(*clientpacket.CharacterLogin)
+	if !ok {
+		log.Println("Client sent wrong packet waiting for character login")
+		return
+	}
+	log.Printf("Character login request slot 0x%08X", clrp.Slot)
 }
