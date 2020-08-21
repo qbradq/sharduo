@@ -9,19 +9,21 @@ import (
 )
 
 func padstr(w io.Writer, s string, l int) {
-	buf := make([]byte, l, l)
+	var a [1024]byte
+	buf := a[:l]
 	copy(buf, []byte(s))
 	w.Write(buf)
 }
 
 func pad(w io.Writer, l int) {
-	buf := make([]byte, l, l)
+	var a [1024]byte
+	buf := a[:l]
 	w.Write(buf)
 }
 
-func padff(w io.Writer, l int) {
+func fill(w io.Writer, v byte, l int) {
 	var b [1]byte
-	b[0] = 0xFF
+	b[0] = v
 	for i := 0; i < l; i++ {
 		w.Write(b[:])
 	}
@@ -171,7 +173,7 @@ func (p *EnterWorld) Write(w io.Writer) {
 	putbyte(w, byte(p.Z))
 	putbyte(w, byte(p.Facing))
 	putbyte(w, 0)
-	padff(w, 4)
+	fill(w, 0xff, 4)
 	pad(w, 4)
 	putuint16(w, uint16(p.Width))
 	putuint16(w, uint16(p.Height))
