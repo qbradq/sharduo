@@ -58,19 +58,19 @@ var huffmanTable = [...]uint16{
 
 // HuffmanEncodePacket encodes the bytes of in as an Ultima Online packet and
 // appends it to out until in is closed or error is encountered (like EOF).
-func HuffmanEncodePacket(in io.ByteReader, out io.ByteWriter) error {
+func HuffmanEncodePacket(in io.Reader, out io.Writer) error {
 	var outBuf, outBufLength uint32
+	var b [1]byte
 
 	// Write all data code points
 	for {
-		inByte, err := in.ReadByte()
-		if err != nil {
+		if _, err := in.Read(b[:]); err != nil {
 			if err == io.EOF {
 				break
 			}
 			return err
 		}
-		tableIdx := uint32(inByte) * 2
+		tableIdx := uint32(b[0]) * 2
 		codeLength := huffmanTable[tableIdx]
 		codePoint := huffmanTable[tableIdx+1]
 		outBuf <<= codeLength
@@ -78,8 +78,8 @@ func HuffmanEncodePacket(in io.ByteReader, out io.ByteWriter) error {
 		outBufLength += uint32(codeLength)
 		for outBufLength >= 8 {
 			outBufLength -= 8
-			b := byte(outBuf >> outBufLength)
-			if err := out.WriteByte(b); err != nil {
+			b[0] = byte(outBuf >> outBufLength)
+			if _, err := out.Write(b[:]); err != nil {
 				return err
 			}
 		}
@@ -94,16 +94,16 @@ func HuffmanEncodePacket(in io.ByteReader, out io.ByteWriter) error {
 	outBufLength += uint32(codeLength)
 	for outBufLength >= 8 {
 		outBufLength -= 8
-		b := byte(outBuf >> outBufLength)
-		if err := out.WriteByte(b); err != nil {
+		b[0] = byte(outBuf >> outBufLength)
+		if _, err := out.Write(b[:]); err != nil {
 			return err
 		}
 	}
 
 	// Zero-pad
 	if outBufLength != 0 {
-		pad := byte(outBuf << (8 - outBufLength))
-		if err := out.WriteByte(pad); err != nil {
+		b[0] = byte(outBuf << (8 - outBufLength))
+		if _, err := out.Write(b[:]); err != nil {
 			return err
 		}
 	}

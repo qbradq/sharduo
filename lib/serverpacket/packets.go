@@ -80,3 +80,31 @@ func (p *ConnectToGameServer) Write(w io.Writer) {
 	binary.Write(w, binary.BigEndian, uint16(p.Port)) // Port
 	w.Write(p.Key)
 }
+
+// CharacterList is sent on game server login and lists all characters on the
+// account as well as the new character starting locations.
+type CharacterList struct {
+	// Names of all of the characters, empty string for open slots.
+	Names []string
+}
+
+// Write implements the Packet interface.
+func (p *CharacterList) Write(w io.Writer) {
+	length := 4 + len(p.Names)*60 + 1 + 63*len(StartingLocations) + 4
+	binary.Write(w, binary.BigEndian, byte(0xa9))         // ID
+	binary.Write(w, binary.BigEndian, uint16(length))     // Length
+	binary.Write(w, binary.BigEndian, byte(len(p.Names))) // Number of character slots
+	for _, name := range p.Names {
+		padstr(w, name, 30)
+		pad(w, 30)
+	}
+	// Starting locations
+	binary.Write(w, binary.BigEndian, byte(len(StartingLocations))) // Count
+	for i, loc := range StartingLocations {
+		binary.Write(w, binary.BigEndian, byte(i)) // Index
+		padstr(w, loc.City, 31)
+		padstr(w, loc.Area, 31)
+	}
+	// Flags
+	binary.Write(w, binary.BigEndian, uint32(0x000001e8))
+}

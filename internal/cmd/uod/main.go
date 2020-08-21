@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/qbradq/sharduo/lib/clientpacket"
+	"github.com/qbradq/sharduo/lib/serverpacket"
 )
 
 // Main is the entry point for uod.
@@ -36,6 +37,7 @@ func handleConnection(c *net.TCPConn) {
 	c.SetWriteBuffer(128 * 1024)
 	c.SetDeadline(time.Now().Add(time.Minute * 15))
 	r := clientpacket.NewReader(c)
+	w := serverpacket.NewCompressedWriter()
 
 	// Connection header
 	if err := r.ReadConnectionHeader(); err != nil {
@@ -55,55 +57,22 @@ func handleConnection(c *net.TCPConn) {
 		return
 	}
 	log.Println("User login", gslp.Username, gslp.Password)
-	/*
-		var ok bool
 
-		cc := network.NewClientConnection(c)
-		defer cc.Disconnect()
+	// Character list
+	clp := &serverpacket.CharacterList{
+		Names: []string{
+			"qbradq", "", "", "", "", "",
+		},
+	}
+	if err := w.Write(clp, c); err != nil {
+		log.Println("Client disconnect writing character list due to", err)
+		return
+	}
 
-		// Ignore the header
-		cc.GetHeader()
-
-		// Account login packet
-		p := cc.GetPacket()
-		gslp, ok := p.(uo.ClientPacketGameServerLogin)
-		if !ok {
-			cc.Error(errors.New("Expected game server login packet"))
-			return
-		}
-		log.Println("User login", gslp.Username(), gslp.Password())
-
-		// Server packet buffer
-		buf := network.GetBuffer()
-		defer network.PutBuffer(buf)
-
-		// Respond with features packet
-		ecfp := uo.NewServerPacketEnableClientFeatures(buf.B, 0x03)
-		cc.SendPacket(ecfp)
-		if cc.Closed() {
-			return
-		}
-		buf.Reset()
-
-		// Build character list packet
-		clp := uo.NewServerPacketCharacterList(buf.B)
-		clp.AddCharacter(gslp.Username())
-		clp.FinishCharacterList()
-		clp.AddStartingLocation("Haven", "The Middle of F'ing Town")
-		clp.Finish(uo.FeatureFlagSiege)
-		cc.SendPacket(clp)
-		if cc.Closed() {
-			return
-		}
-		buf.Reset()
-
-		// Wait for character login packet
-		p = cc.GetPacket()
-		lp, ok := p.(uo.ClientPacketCharacterLogin)
-		if !ok {
-			cc.Error(errors.New("Expected character login packet"))
-			return
-		}
-		log.Println("Character login", lp.CharacterSlot())
-	*/
+	// Character login
+	// lp, err = r.ReadPacket()
+	// if err != nil {
+	// 	log.Println("Client disconnected waiting for character login", err)
+	// 	return
+	// }
 }
