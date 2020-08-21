@@ -13,16 +13,20 @@ type Dir byte
 
 // Dir value meanings
 const (
-	DirNorth       Dir  = 0
-	DirNortheast   Dir  = 1
-	DirEast        Dir  = 2
-	DirSouteast    Dir  = 3
-	DirSouth       Dir  = 4
-	DirSouthwest   Dir  = 5
-	DirWest        Dir  = 6
-	DirNorthwest   Dir  = 7
-	dirRunningFalg byte = 0x80
+	DirNorth       Dir = 0
+	DirNorthEast   Dir = 1
+	DirEast        Dir = 2
+	DirSouthEast   Dir = 3
+	DirSouth       Dir = 4
+	DirSouthWest   Dir = 5
+	DirWest        Dir = 6
+	DirNorthWest   Dir = 7
+	DirRunningFlag Dir = 0x80
 )
+
+// A Body is a 16-bit value that describes the set of animations to use for a
+// mobile. Body values used by UO range 1-999.
+type Body uint16
 
 // A Hue is a 16-bit value that describes the rendering mode of an object.
 // Hues have the following characteristics:

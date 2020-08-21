@@ -1,12 +1,16 @@
 package uod
 
 import (
+	"errors"
+	"io"
 	"log"
 	"net"
+	"os"
 	"time"
 
 	"github.com/qbradq/sharduo/lib/clientpacket"
 	"github.com/qbradq/sharduo/lib/serverpacket"
+	"github.com/qbradq/sharduo/lib/uo"
 )
 
 // NetState manages the network state of a single connection.
@@ -50,7 +54,7 @@ func (n *NetState) Service() {
 	n.conn.SetNoDelay(true)
 	n.conn.SetReadBuffer(64 * 1024)
 	n.conn.SetWriteBuffer(128 * 1024)
-	n.conn.SetDeadline(time.Now().Add(time.Minute * 15))
+	n.conn.SetDeadline(time.Now().Add(time.Minute * 5))
 	r := clientpacket.NewReader(n.conn)
 
 	// Connection header
@@ -91,6 +95,21 @@ func (n *NetState) Service() {
 		return
 	}
 	log.Printf("Character login request slot 0x%08X", clrp.Slot)
+
+	// Debug
+	n.Send(&serverpacket.EnterWorld{
+		Player: 0x00000047,
+		Body:   400,
+		X:      1607,
+		Y:      1595,
+		Z:      13,
+		Facing: uo.DirSouth | uo.DirRunningFlag,
+		Width:  7168,
+		Height: 4096,
+	})
+	n.Send(&serverpacket.LoginComplete{})
+
+	n.readLoop(r)
 }
 
 // SendService is the goroutine that services the send queue.
@@ -102,5 +121,24 @@ func (n *NetState) SendService() {
 			n.conn.Close()
 			return
 		}
+	}
+}
+
+func (n *NetState) readLoop(r *clientpacket.Reader) {
+	for {
+		cp, err := r.ReadPacket()
+		if err != nil {
+			if errors.Is(err, os.ErrDeadlineExceeded) {
+				log.Println("Client disconnected due to read timeout", err)
+				return
+			}
+			if err == io.EOF {
+				continue
+			}
+			log.Println("Client disconnected during read due to", err)
+		}
+		// 15 minute timeout
+		n.conn.SetDeadline(time.Now().Add(time.Minute * 15))
+		log.Printf("Got client packet 0x%02X", cp.GetID())
 	}
 }

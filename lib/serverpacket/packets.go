@@ -4,6 +4,8 @@ import (
 	"encoding/binary"
 	"io"
 	"net"
+
+	"github.com/qbradq/sharduo/lib/uo"
 )
 
 func padstr(w io.Writer, s string, l int) {
@@ -15,6 +17,14 @@ func padstr(w io.Writer, s string, l int) {
 func pad(w io.Writer, l int) {
 	buf := make([]byte, l, l)
 	w.Write(buf)
+}
+
+func padff(w io.Writer, l int) {
+	var b [1]byte
+	b[0] = 0xFF
+	for i := 0; i < l; i++ {
+		w.Write(b[:])
+	}
 }
 
 func putbyte(w io.Writer, v byte) {
@@ -125,4 +135,45 @@ func (p *CharacterList) Write(w io.Writer) {
 	}
 	// Flags
 	putuint32(w, 0x000001e8)
+}
+
+// LoginComplete is sent after character login is sucessful.
+type LoginComplete struct{}
+
+// Write implements the Packet interface.
+func (p *LoginComplete) Write(w io.Writer) {
+	putbyte(w, 0x55) // ID
+}
+
+// EnterWorld is sent just after character login to bring them into the world.
+type EnterWorld struct {
+	// Player serial
+	Player uo.Serial
+	// Body graphic
+	Body uo.Body
+	// Position
+	X, Y, Z int
+	// Direction the player is facing and if running.
+	Facing uo.Dir
+	// Server dimensions
+	Width, Height int
+}
+
+// Write implements the Packet interface.
+func (p *EnterWorld) Write(w io.Writer) {
+	putbyte(w, 0x1b) // ID
+	putuint32(w, uint32(p.Player))
+	pad(w, 4)
+	putuint16(w, uint16(p.Body))
+	putuint16(w, uint16(p.X))
+	putuint16(w, uint16(p.Y))
+	putbyte(w, 0)
+	putbyte(w, byte(p.Z))
+	putbyte(w, byte(p.Facing))
+	putbyte(w, 0)
+	padff(w, 4)
+	pad(w, 4)
+	putuint16(w, uint16(p.Width))
+	putuint16(w, uint16(p.Height))
+	pad(w, 6)
 }
