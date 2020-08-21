@@ -11,19 +11,40 @@ import (
 
 // NetState manages the network state of a single connection.
 type NetState struct {
-	conn *net.TCPConn
+	conn      *net.TCPConn
+	sendQueue chan serverpacket.Packet
 }
 
 // NewNetState constructs a new NetState object.
 func NewNetState(conn *net.TCPConn) *NetState {
 	return &NetState{
-		conn: conn,
+		conn:      conn,
+		sendQueue: make(chan serverpacket.Packet, 128),
+	}
+}
+
+// Send attempts to add a packet to the client's send queue and returns false if
+// the queue is full.
+func (n *NetState) Send(p serverpacket.Packet) bool {
+	select {
+	case n.sendQueue <- p:
+		return true
+	default:
+		return false
 	}
 }
 
 // Service is the goroutine that services the netstate.
 func (n *NetState) Service() {
+	// When this goroutine ends so will the TCP connection.
 	defer n.conn.Close()
+	// When this goroutine ends so will SendService.
+	defer close(n.sendQueue)
+
+	// Start SendService
+	go n.SendService()
+
+	// Configure TCP QoS
 	n.conn.SetKeepAlive(false)
 	n.conn.SetLinger(0)
 	n.conn.SetNoDelay(true)
@@ -31,7 +52,6 @@ func (n *NetState) Service() {
 	n.conn.SetWriteBuffer(128 * 1024)
 	n.conn.SetDeadline(time.Now().Add(time.Minute * 15))
 	r := clientpacket.NewReader(n.conn)
-	w := serverpacket.NewCompressedWriter()
 
 	// Connection header
 	if err := r.ReadConnectionHeader(); err != nil {
@@ -53,15 +73,11 @@ func (n *NetState) Service() {
 	log.Println("User login", gslp.Username, gslp.Password)
 
 	// Character list
-	clp := &serverpacket.CharacterList{
+	n.Send(&serverpacket.CharacterList{
 		Names: []string{
 			gslp.Username, "", "", "", "", "",
 		},
-	}
-	if err := w.Write(clp, n.conn); err != nil {
-		log.Println("Client disconnect writing character list due to", err)
-		return
-	}
+	})
 
 	// Character login
 	cp, err = r.ReadPacket()
@@ -75,4 +91,16 @@ func (n *NetState) Service() {
 		return
 	}
 	log.Printf("Character login request slot 0x%08X", clrp.Slot)
+}
+
+// SendService is the goroutine that services the send queue.
+func (n *NetState) SendService() {
+	w := serverpacket.NewCompressedWriter()
+	for p := range n.sendQueue {
+		if err := w.Write(p, n.conn); err != nil {
+			log.Println("Client disconnected due to send error", err)
+			n.conn.Close()
+			return
+		}
+	}
 }
