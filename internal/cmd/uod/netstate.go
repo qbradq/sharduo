@@ -1,8 +1,8 @@
 package uod
 
 import (
+	"encoding/hex"
 	"errors"
-	"io"
 	"log"
 	"net"
 	"os"
@@ -38,12 +38,16 @@ func (n *NetState) Send(p serverpacket.Packet) bool {
 	}
 }
 
+// Disconnect disconnects the NetState.
+func (n *NetState) Disconnect() {
+	n.conn.Close()
+	close(n.sendQueue)
+}
+
 // Service is the goroutine that services the netstate.
 func (n *NetState) Service() {
 	// When this goroutine ends so will the TCP connection.
-	defer n.conn.Close()
-	// When this goroutine ends so will SendService.
-	defer close(n.sendQueue)
+	defer n.Disconnect()
 
 	// Start SendService
 	go n.SendService()
@@ -96,6 +100,9 @@ func (n *NetState) Service() {
 	}
 	log.Printf("Character login request slot 0x%08X", clrp.Slot)
 
+	// Request version string
+	n.Send(&serverpacket.Version{})
+
 	// Debug
 	n.Send(&serverpacket.EnterWorld{
 		Player: 0x00000047,
@@ -126,19 +133,26 @@ func (n *NetState) SendService() {
 
 func (n *NetState) readLoop(r *clientpacket.Reader) {
 	for {
-		cp, err := r.ReadPacket()
+		data, err := r.Read()
 		if err != nil {
 			if errors.Is(err, os.ErrDeadlineExceeded) {
 				log.Println("Client disconnected due to read timeout", err)
 				return
 			}
-			if err == io.EOF {
-				continue
-			}
+			// Just wait for more data
 			log.Println("Client disconnected during read due to", err)
+			return
 		}
-		// 15 minute timeout
-		n.conn.SetDeadline(time.Now().Add(time.Minute * 15))
-		log.Printf("Got client packet 0x%02X", cp.GetID())
+		// 5 minute timeout, should never be hit due to client ping packets
+		n.conn.SetDeadline(time.Now().Add(time.Minute * 5))
+
+		cp := clientpacket.New(data)
+		handler := PacketHandlerTable[cp.GetID()]
+		if handler == nil {
+			log.Printf("Unhandled client packet 0x%02X:\n%s", cp.GetID(),
+				hex.Dump(data))
+		} else {
+			handler(n, cp)
+		}
 	}
 }

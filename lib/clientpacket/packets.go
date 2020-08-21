@@ -2,6 +2,9 @@ package clientpacket
 
 import (
 	"encoding/binary"
+	"log"
+	"strconv"
+	"strings"
 )
 
 // Packet is the interface all client packets implement.
@@ -122,4 +125,56 @@ func newCharacterLogin(in []byte) Packet {
 		Base: Base{ID: 0x5D},
 		Slot: int(binary.BigEndian.Uint32(in[64:68])),
 	}
+}
+
+// Version is used to communicate to the server the client's version string.
+type Version struct {
+	Base
+	// Major version number
+	Major int
+	// Minor version number
+	Minor int
+	// Revision number
+	Revision int
+	// Patch number
+	Patch int
+}
+
+func newVersion(in []byte) Packet {
+	var n int64
+	var err error
+
+	p := &Version{
+		Base: Base{ID: 0xBD},
+	}
+
+	if len(in) <= 1 {
+		log.Println("Empty version string")
+		return p
+	}
+
+	s := string(in[:len(in)-1])
+	parts := strings.Split(s, ".")
+	if len(parts) != 4 {
+		log.Printf("Failed to parse version string %s due to bad format", s)
+		return p
+	}
+	if n, err = strconv.ParseInt(parts[0], 10, 32); err != nil {
+		log.Printf("Failed to parse version string %s due to %s", s, err)
+	}
+	p.Major = int(n)
+	if n, err = strconv.ParseInt(parts[1], 10, 32); err != nil {
+		log.Printf("Failed to parse version string %s due to %s", s, err)
+	}
+	p.Minor = int(n)
+	if n, err = strconv.ParseInt(parts[2], 10, 32); err != nil {
+		log.Printf("Failed to parse version string %s due to %s", s, err)
+	}
+	p.Revision = int(n)
+	if n, err = strconv.ParseInt(parts[3], 10, 32); err != nil {
+		log.Printf("Failed to parse version string %s due to %s", s, err)
+	}
+	p.Patch = int(n)
+
+	return p
 }

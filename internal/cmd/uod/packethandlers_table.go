@@ -1,7 +1,14 @@
-package clientpacket
+package uod
 
-// ctorTable is the table of all packet constructors.
-var ctorTable = []func([]byte) Packet{
+import "github.com/qbradq/sharduo/lib/clientpacket"
+
+// PacketHandler is the signature of a function that responds to a client
+// packet dispatched from PacketHandlerTable.
+type PacketHandler func(n *NetState, p clientpacket.Packet)
+
+// PacketHandlerTable is a table of packet ID's to packet handler functions. Nil
+// means the packet is not handled by the server.
+var PacketHandlerTable = []PacketHandler{
 	/*00*/ nil,
 	/*01*/ nil,
 	/*02*/ nil,
@@ -95,7 +102,7 @@ var ctorTable = []func([]byte) Packet{
 	/*5A*/ nil,
 	/*5B*/ nil,
 	/*5C*/ nil,
-	/*5D*/ newCharacterLogin,
+	/*5D*/ nil,
 	/*5E*/ nil,
 	/*5F*/ nil,
 	/*60*/ nil,
@@ -130,7 +137,7 @@ var ctorTable = []func([]byte) Packet{
 	/*7D*/ nil,
 	/*7E*/ nil,
 	/*7F*/ nil,
-	/*80*/ newAccountLogin,
+	/*80*/ nil,
 	/*81*/ nil,
 	/*82*/ nil,
 	/*83*/ nil,
@@ -147,7 +154,7 @@ var ctorTable = []func([]byte) Packet{
 	/*8E*/ nil,
 	/*8F*/ nil,
 	/*90*/ nil,
-	/*91*/ newGameServerLogin,
+	/*91*/ nil,
 	/*92*/ nil,
 	/*93*/ nil,
 	/*94*/ nil,
@@ -162,7 +169,7 @@ var ctorTable = []func([]byte) Packet{
 	/*9D*/ nil,
 	/*9E*/ nil,
 	/*9F*/ nil,
-	/*A0*/ newSelectServer,
+	/*A0*/ nil,
 	/*A1*/ nil,
 	/*A2*/ nil,
 	/*A3*/ nil,
@@ -191,7 +198,7 @@ var ctorTable = []func([]byte) Packet{
 	/*BA*/ nil,
 	/*BB*/ nil,
 	/*BC*/ nil,
-	/*BD*/ newVersion,
+	/*BD*/ xBD,
 	/*BE*/ nil,
 	/*BF*/ nil,
 	/*C0*/ nil,

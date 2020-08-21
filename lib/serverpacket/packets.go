@@ -179,3 +179,12 @@ func (p *EnterWorld) Write(w io.Writer) {
 	putuint16(w, uint16(p.Height))
 	pad(w, 6)
 }
+
+// Version is sent to the client to request the client version of the packet.
+type Version struct{}
+
+// Write implements the Packet interface.
+func (p *Version) Write(w io.Writer) {
+	putbyte(w, 0xbd) // ID
+	putuint16(w, 3)  // Packet length
+}
