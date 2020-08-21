@@ -3,28 +3,47 @@ package uod
 import (
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"log"
 	"net"
 	"os"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/qbradq/sharduo/lib/clientpacket"
 	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/uo"
 )
 
+var ErrWrongPacket = errors.New("wrong packet")
+
 // NetState manages the network state of a single connection.
 type NetState struct {
 	conn      *net.TCPConn
 	sendQueue chan serverpacket.Packet
+	id        string
 }
 
 // NewNetState constructs a new NetState object.
 func NewNetState(conn *net.TCPConn) *NetState {
+	uuid, _ := uuid.NewRandom()
 	return &NetState{
 		conn:      conn,
 		sendQueue: make(chan serverpacket.Packet, 128),
+		id:        uuid.String(),
 	}
+}
+
+// Log logs a message from this netstate as in fmt.Sprintf.
+func (n *NetState) Log(fmtstr string, args ...interface{}) {
+	s := fmt.Sprintf(fmtstr, args...)
+	log.Printf("%s:log:%s", n.id, s)
+}
+
+// Error logs an message from this netstate and disconnect it.
+func (n *NetState) Error(where string, err error) {
+	log.Printf("%s:error:at %s:%s", n.id, where, err.Error())
+	n.Disconnect()
 }
 
 // Send attempts to add a packet to the client's send queue and returns false if
@@ -40,8 +59,15 @@ func (n *NetState) Send(p serverpacket.Packet) bool {
 
 // Disconnect disconnects the NetState.
 func (n *NetState) Disconnect() {
-	n.conn.Close()
-	close(n.sendQueue)
+	if n != nil {
+		if n.conn != nil {
+			n.conn.Close()
+		}
+		if n.sendQueue != nil {
+			close(n.sendQueue)
+			n.sendQueue = nil
+		}
+	}
 }
 
 // Service is the goroutine that services the netstate.
@@ -63,19 +89,19 @@ func (n *NetState) Service() {
 
 	// Connection header
 	if err := r.ReadConnectionHeader(); err != nil {
-		log.Println("Client disconnected during header due to", err)
+		n.Error("read header", err)
 		return
 	}
 
 	// Game server login packet
 	cp, err := r.ReadPacket()
 	if err != nil {
-		log.Println("Client disconnected waiting for game server login", err)
+		n.Error("waiting for game server login", err)
 		return
 	}
 	gslp, ok := cp.(*clientpacket.GameServerLogin)
 	if !ok {
-		log.Println("Client sent wrong packet waiting for game server login")
+		n.Error("waiting for game server login", ErrWrongPacket)
 		return
 	}
 	log.Println("User login", gslp.Username, gslp.Password)
@@ -90,12 +116,12 @@ func (n *NetState) Service() {
 	// Character login
 	cp, err = r.ReadPacket()
 	if err != nil {
-		log.Println("Client disconnected waiting for character login", err)
+		n.Error("waiting for character login", err)
 		return
 	}
 	clrp, ok := cp.(*clientpacket.CharacterLogin)
 	if !ok {
-		log.Println("Client sent wrong packet waiting for character login")
+		n.Error("waiting for character login", ErrWrongPacket)
 		return
 	}
 	log.Printf("Character login request slot 0x%08X", clrp.Slot)
@@ -124,8 +150,7 @@ func (n *NetState) SendService() {
 	w := serverpacket.NewCompressedWriter()
 	for p := range n.sendQueue {
 		if err := w.Write(p, n.conn); err != nil {
-			log.Println("Client disconnected due to send error", err)
-			n.conn.Close()
+			n.Error("sending packet", err)
 			return
 		}
 	}
@@ -136,11 +161,10 @@ func (n *NetState) readLoop(r *clientpacket.Reader) {
 		data, err := r.Read()
 		if err != nil {
 			if errors.Is(err, os.ErrDeadlineExceeded) {
-				log.Println("Client disconnected due to read timeout", err)
+				n.Error("reading packet timeout", err)
 				return
 			}
-			// Just wait for more data
-			log.Println("Client disconnected during read due to", err)
+			n.Error("reading packet", err)
 			return
 		}
 		// 5 minute timeout, should never be hit due to client ping packets
@@ -149,7 +173,7 @@ func (n *NetState) readLoop(r *clientpacket.Reader) {
 		cp := clientpacket.New(data)
 		handler := PacketHandlerTable[cp.GetID()]
 		if handler == nil {
-			log.Printf("Unhandled client packet 0x%02X:\n%s", cp.GetID(),
+			n.Log("Unhandled client packet 0x%02X:\n%s", cp.GetID(),
 				hex.Dump(data))
 		} else {
 			handler(n, cp)
