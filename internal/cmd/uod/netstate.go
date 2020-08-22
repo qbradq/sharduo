@@ -157,7 +157,7 @@ func (n *NetState) Service() {
 		Height: 4096,
 	})
 	n.Send(&serverpacket.LoginComplete{})
-	n.SystemMessage("Welcome to Trammie Time!")
+	Broadcast("Welcome %s to Trammie Time!", gslp.Username)
 
 	n.readLoop(r)
 }

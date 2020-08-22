@@ -30,6 +30,15 @@ func New(data []byte) Packet {
 	return ctor(pdat)
 }
 
+func nullstr(buf []byte) string {
+	for i, b := range buf {
+		if b == 0 {
+			return string(buf[:i])
+		}
+	}
+	return string(buf)
+}
+
 // Base is the base struct for all client packets.
 type Base struct {
 	// ID is the packet ID byte.
@@ -45,15 +54,11 @@ func (p *Base) GetID() byte {
 // constructor function yet.
 type UnsupportedPacket struct {
 	Base
-	// Bytes is a copy of the bytes of the unsupported packet for debugging and
-	// may be nil.
-	Bytes []byte
 }
 
 func newUnsupportedPacket(in []byte) Packet {
 	return &UnsupportedPacket{
-		Base:  Base{ID: in[0]},
-		Bytes: append([]byte(nil), in...),
+		Base: Base{ID: in[0]},
 	}
 }
 
@@ -70,8 +75,8 @@ type AccountLogin struct {
 func newAccountLogin(in []byte) Packet {
 	return &AccountLogin{
 		Base:     Base{ID: 0x80},
-		Username: string(in[0:30]),
-		Password: string(in[30:60]),
+		Username: nullstr(in[0:30]),
+		Password: nullstr(in[30:60]),
 	}
 }
 
@@ -105,8 +110,8 @@ func newGameServerLogin(in []byte) Packet {
 	return &GameServerLogin{
 		Base:     Base{ID: 0x91},
 		Key:      in[:4],
-		Username: string(in[4:34]),
-		Password: string(in[34:64]),
+		Username: nullstr(in[4:34]),
+		Password: nullstr(in[34:64]),
 	}
 }
 
@@ -134,7 +139,7 @@ type Version struct {
 func newVersion(in []byte) Packet {
 	return &Version{
 		Base:   Base{ID: 0xBD},
-		String: string(in[:len(in)-1]),
+		String: nullstr(in),
 	}
 }
 
