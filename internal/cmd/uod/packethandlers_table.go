@@ -124,7 +124,7 @@ var PacketHandlerTable = []PacketHandler{
 	/*70*/ nil,
 	/*71*/ nil,
 	/*72*/ nil,
-	/*73*/ nil,
+	/*73*/ x73,
 	/*74*/ nil,
 	/*75*/ nil,
 	/*76*/ nil,

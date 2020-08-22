@@ -226,3 +226,15 @@ func (p *Speech) Write(w io.Writer) {
 	padstr(w, p.Name, 30)
 	putstr(w, p.Text)
 }
+
+// Ping is sent to the client in response to a client ping packet.
+type Ping struct {
+	// Key byte of the client ping request
+	Key byte
+}
+
+// Write implements the Packet interface.
+func (p *Ping) Write(w io.Writer) {
+	putbyte(w, 0x73)  // ID
+	putbyte(w, p.Key) // ID
+}

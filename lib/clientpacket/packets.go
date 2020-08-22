@@ -137,3 +137,17 @@ func newVersion(in []byte) Packet {
 		String: string(in[:len(in)-1]),
 	}
 }
+
+// Ping is used for TCP keepalive and possibly latency determination.
+type Ping struct {
+	Base
+	// Don't know what this is used for
+	Key byte
+}
+
+func newPing(in []byte) Packet {
+	return &Ping{
+		Base: Base{ID: 0x73},
+		Key:  in[0],
+	}
+}

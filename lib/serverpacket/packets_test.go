@@ -89,6 +89,12 @@ func TestServerPackets(t *testing.T) {
 				0x48, 0x69, 0x00, // Message "Hi"
 			},
 		},
+		{
+			&Ping{
+				Key: 0xa5,
+			},
+			[]byte{0x73, 0xa5},
+		},
 	}
 
 	buf := bytes.NewBuffer(nil)

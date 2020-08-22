@@ -48,6 +48,20 @@ func (n *NetState) Error(where string, err error) {
 	n.Disconnect()
 }
 
+// SystemMessage sends a system message to the connected client. This is a
+// wrapper around n.Send sending a serverpacket.Speech packet.
+func (n *NetState) SystemMessage(fmtstr string, args ...interface{}) {
+	n.Send(&serverpacket.Speech{
+		Speaker: uo.SerialSystem,
+		Body:    uo.BodySystem,
+		Font:    uo.FontNormal,
+		Hue:     98,
+		Name:    "",
+		Text:    fmt.Sprintf(fmtstr, args...),
+		Type:    uo.SpeechTypeSystem,
+	})
+}
+
 // Send attempts to add a packet to the client's send queue and returns false if
 // the queue is full.
 func (n *NetState) Send(p serverpacket.Packet) bool {
@@ -143,15 +157,7 @@ func (n *NetState) Service() {
 		Height: 4096,
 	})
 	n.Send(&serverpacket.LoginComplete{})
-	n.Send(&serverpacket.Speech{
-		Speaker: uo.SerialSystem,
-		Body:    uo.BodySystem,
-		Font:    uo.FontNormal,
-		Hue:     500,
-		Name:    "",
-		Text:    "Welcome to Trammie Time!",
-		Type:    uo.SpeechTypeSystem,
-	})
+	n.SystemMessage("Welcome to Trammie Time!")
 
 	n.readLoop(r)
 }
