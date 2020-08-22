@@ -182,7 +182,7 @@ var PacketHandlerTable = []PacketHandler{
 	/*AA*/ nil,
 	/*AB*/ nil,
 	/*AC*/ nil,
-	/*AD*/ nil,
+	/*AD*/ xAD,
 	/*AE*/ nil,
 	/*AF*/ nil,
 	/*B0*/ nil,

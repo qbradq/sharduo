@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/lib/clientpacket"
 	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/uo"
@@ -24,6 +25,7 @@ type NetState struct {
 	conn      *net.TCPConn
 	sendQueue chan serverpacket.Packet
 	id        string
+	m         *game.Mobile
 }
 
 // NewNetState constructs a new NetState object.
@@ -55,7 +57,7 @@ func (n *NetState) SystemMessage(fmtstr string, args ...interface{}) {
 		Speaker: uo.SerialSystem,
 		Body:    uo.BodySystem,
 		Font:    uo.FontNormal,
-		Hue:     98,
+		Hue:     1153,
 		Name:    "",
 		Text:    fmt.Sprintf(fmtstr, args...),
 		Type:    uo.SpeechTypeSystem,
@@ -120,6 +122,7 @@ func (n *NetState) Service() {
 		n.Error("waiting for game server login", ErrWrongPacket)
 		return
 	}
+	// TODO Account authentication
 	log.Println("User login", gslp.Username, gslp.Password)
 
 	// Character list
@@ -141,6 +144,10 @@ func (n *NetState) Service() {
 		return
 	}
 	log.Printf("Character login request slot 0x%08X", clrp.Slot)
+
+	// TODO Character load
+	n.m = game.NewMobile()
+	n.m.Name = gslp.Username
 
 	// Request version string
 	n.Send(&serverpacket.Version{})
@@ -188,12 +195,24 @@ func (n *NetState) readLoop(r *clientpacket.Reader) {
 		n.conn.SetDeadline(time.Now().Add(time.Minute * 5))
 
 		cp := clientpacket.New(data)
-		handler := PacketHandlerTable[cp.GetID()]
-		if handler == nil {
-			n.Log("Unhandled client packet 0x%02X:\n%s", cp.GetID(),
+		switch p := cp.(type) {
+		case nil:
+			n.Error("decoding packet",
+				fmt.Errorf("Unknown packet 0x%02X", data[0]))
+		case *clientpacket.MalformedPacket:
+			n.Error("decoding packet",
+				fmt.Errorf("Malformed packet 0x%02X", p.GetID()))
+		case *clientpacket.UnsupportedPacket:
+			n.Log("Unsupported client packet 0x%02X:\n%s", cp.GetID(),
 				hex.Dump(data))
-		} else {
-			handler(n, cp)
+		default:
+			handler := PacketHandlerTable[cp.GetID()]
+			if handler == nil {
+				n.Log("Unhandled client packet 0x%02X:\n%s", cp.GetID(),
+					hex.Dump(data))
+			} else {
+				handler(n, cp)
+			}
 		}
 	}
 }

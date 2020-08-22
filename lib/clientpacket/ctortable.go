@@ -175,7 +175,7 @@ var ctorTable = []func([]byte) Packet{
 	/*AA*/ nil,
 	/*AB*/ nil,
 	/*AC*/ nil,
-	/*AD*/ nil,
+	/*AD*/ newSpeech,
 	/*AE*/ nil,
 	/*AF*/ nil,
 	/*B0*/ nil,

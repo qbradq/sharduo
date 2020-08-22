@@ -42,20 +42,28 @@ func handleConnection(c *net.TCPConn) {
 
 // Broadcast sends a system-wide broadcast message to all connected clients.
 func Broadcast(format string, args ...interface{}) {
-	s := fmt.Sprintf(format, args...)
+	s := "System Broadcast: " + fmt.Sprintf(format, args...)
 	netStates.Range(func(key, value interface{}) bool {
-		if n, ok := key.(*NetState); ok {
-			n.Send(&serverpacket.Speech{
-				Speaker: uo.SerialSystem,
-				Body:    uo.BodySystem,
-				Font:    uo.FontNormal,
-				Hue:     1159,
-				Name:    "",
-				Text:    s,
-				Type:    uo.SpeechTypeBroadcast,
-			})
+		n := key.(*NetState)
+		n.SystemMessage(s)
+		return true
+	})
+}
 
-		}
+// GlobalChat sends a global chat message to all connected clients.
+func GlobalChat(who, text string) {
+	s := fmt.Sprintf("%s: %s", who, text)
+	netStates.Range(func(key, value interface{}) bool {
+		n := key.(*NetState)
+		n.Send(&serverpacket.Speech{
+			Speaker: uo.SerialSystem,
+			Body:    uo.BodySystem,
+			Font:    uo.FontNormal,
+			Hue:     1166,
+			Name:    "",
+			Text:    s,
+			Type:    uo.SpeechTypeSystem,
+		})
 		return true
 	})
 }

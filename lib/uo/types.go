@@ -154,17 +154,18 @@ type SpeechType byte
 
 // All meaningfull SpeechType values
 const (
-	SpeechTypeNormal    SpeechType = 0  // Overhead speech
-	SpeechTypeBroadcast SpeechType = 1  // System broadcast
-	SpeechTypeEmote     SpeechType = 2  // Overhead emote
-	SpeechTypeSystem    SpeechType = 6  // System message in corner
-	SpeechTypeMessage   SpeechType = 7  // Message in corner with name
-	SpeechTypeWhisper   SpeechType = 8  // Overhead whisper
-	SpeechTypeYell      SpeechType = 9  // Overhead yell
-	SpeechTypeSpell     SpeechType = 10 // Overhead spell words
-	SpeechTypeGuild     SpeechType = 13 // Guild chat in corner
-	SpeechTypeAlliance  SpeechType = 14 // Guild alliance chat in corner
-	SpeechTypePrompt    SpeechType = 15 // Prompt for user input
+	SpeechTypeNormal       SpeechType = 0    // Overhead speech
+	SpeechTypeBroadcast    SpeechType = 1    // System broadcast
+	SpeechTypeEmote        SpeechType = 2    // Overhead emote
+	SpeechTypeSystem       SpeechType = 6    // System message in corner
+	SpeechTypeMessage      SpeechType = 7    // Message in corner with name
+	SpeechTypeWhisper      SpeechType = 8    // Overhead whisper
+	SpeechTypeYell         SpeechType = 9    // Overhead yell
+	SpeechTypeSpell        SpeechType = 10   // Overhead spell words
+	SpeechTypeGuild        SpeechType = 13   // Guild chat in corner
+	SpeechTypeAlliance     SpeechType = 14   // Guild alliance chat in corner
+	SpeechTypePrompt       SpeechType = 15   // Prompt for user input
+	SpeechTypeClientParsed SpeechType = 0xc0 // Contains client-side parsed keywords
 )
 
 // Font represents one of the built-in fonts in the client.

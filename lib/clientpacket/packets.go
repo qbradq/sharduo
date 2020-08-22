@@ -2,6 +2,9 @@ package clientpacket
 
 import (
 	"encoding/binary"
+	"unicode/utf16"
+
+	"github.com/qbradq/sharduo/lib/uo"
 )
 
 // Packet is the interface all client packets implement.
@@ -16,7 +19,7 @@ func New(data []byte) Packet {
 
 	length := InfoTable[data[0]].Length
 	if length == -1 {
-		length = int(binary.BigEndian.Uint16(data[1:3]))
+		length = int(getuint16(data[1:3]))
 		pdat = data[3:length]
 	} else if length == 0 {
 		return nil
@@ -37,6 +40,32 @@ func nullstr(buf []byte) string {
 		}
 	}
 	return string(buf)
+}
+
+func utf16str(b []byte) string {
+	var utf [256]uint16
+	ib := 0
+	iu := 0
+	for {
+		if ib+1 >= len(b) || iu >= len(utf) {
+			break
+		}
+		if b[ib+1] == 0 && b[ib] == 0 {
+			break
+		}
+		utf[iu] = binary.BigEndian.Uint16(b[ib:])
+		ib += 2
+		iu++
+	}
+	return string(utf16.Decode(utf[:iu]))
+}
+
+func getuint16(buf []byte) uint16 {
+	return binary.BigEndian.Uint16(buf)
+}
+
+func getuint32(buf []byte) uint32 {
+	return binary.BigEndian.Uint32(buf)
 }
 
 // Base is the base struct for all client packets.
@@ -60,6 +89,11 @@ func newUnsupportedPacket(in []byte) Packet {
 	return &UnsupportedPacket{
 		Base: Base{ID: in[0]},
 	}
+}
+
+// MalformedPacket is sent when a packet is not processable.
+type MalformedPacket struct {
+	Base
 }
 
 // AccountLogin is the first packet sent to the login server and attempts to
@@ -91,7 +125,7 @@ type SelectServer struct {
 func newSelectServer(in []byte) Packet {
 	return &SelectServer{
 		Base:  Base{ID: 0xA0},
-		Index: int(binary.BigEndian.Uint16(in[0:2])),
+		Index: int(getuint16(in[0:2])),
 	}
 }
 
@@ -125,7 +159,7 @@ type CharacterLogin struct {
 func newCharacterLogin(in []byte) Packet {
 	return &CharacterLogin{
 		Base: Base{ID: 0x5D},
-		Slot: int(binary.BigEndian.Uint32(in[64:68])),
+		Slot: int(getuint32(in[64:68])),
 	}
 }
 
@@ -137,6 +171,7 @@ type Version struct {
 }
 
 func newVersion(in []byte) Packet {
+	// Length check no required, in can be nil
 	return &Version{
 		Base:   Base{ID: 0xBD},
 		String: nullstr(in),
@@ -155,4 +190,53 @@ func newPing(in []byte) Packet {
 		Base: Base{ID: 0x73},
 		Key:  in[0],
 	}
+}
+
+// Speech is sent by the client to request speech.
+type Speech struct {
+	Base
+	// Type of speech
+	Type uo.SpeechType
+	// Hue of the text
+	Hue uo.Hue
+	// Font of the text
+	Font uo.Font
+	// Text of the message
+	Text string
+}
+
+func newSpeech(in []byte) Packet {
+	if len(in) < 11 {
+		return &MalformedPacket{
+			Base: Base{ID: 0xAD},
+		}
+	}
+	s := &Speech{
+		Base: Base{ID: 0xAD},
+		Type: uo.SpeechType(in[0]),
+		Hue:  uo.Hue(getuint16(in[1:3])),
+		Font: uo.Font(getuint16(in[3:5])),
+	}
+	if s.Type >= uo.SpeechTypeClientParsed {
+		if len(in) < 13 {
+			return &MalformedPacket{
+				Base: Base{ID: 0xAD},
+			}
+		}
+		s.Type = s.Type - uo.SpeechTypeClientParsed
+		numwords := int(in[9]) << 4
+		numwords += int(in[10] >> 4)
+		// mulidx := int(in[11]&0xf0) << 4
+		// mulidx += int(in[12])
+		skip := ((numwords / 2) * 3) + (numwords % 2) - 1
+		if len(in) < 13+skip {
+			return &MalformedPacket{
+				Base: Base{ID: 0xAD},
+			}
+		}
+		s.Text = nullstr(in[12+skip:])
+		return s
+	}
+	s.Text = utf16str(in[9:])
+	return s
 }
