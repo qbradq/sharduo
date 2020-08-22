@@ -15,6 +15,8 @@ import (
 	"github.com/qbradq/sharduo/lib/uo"
 )
 
+// ErrWrongPacket is the error logged when the client sends an unexpected
+// packet during character login.
 var ErrWrongPacket = errors.New("wrong packet")
 
 // NetState manages the network state of a single connection.
@@ -141,6 +143,15 @@ func (n *NetState) Service() {
 		Height: 4096,
 	})
 	n.Send(&serverpacket.LoginComplete{})
+	n.Send(&serverpacket.Speech{
+		Speaker: uo.SerialSystem,
+		Body:    uo.BodySystem,
+		Font:    uo.FontNormal,
+		Hue:     500,
+		Name:    "",
+		Text:    "Welcome to Trammie Time!",
+		Type:    uo.SpeechTypeSystem,
+	})
 
 	n.readLoop(r)
 }

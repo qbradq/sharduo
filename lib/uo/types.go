@@ -5,8 +5,12 @@ import "math/rand"
 // A Serial is a 31-bit value with the following characteristics:
 // The zero value is also the "invalid value" value
 // No Serial will have a value greater than 2^31-1
-// A Serial can always be cast to a uint32 without data loss
-type Serial int32
+type Serial uint32
+
+// Pre-defined values of Serial
+const (
+	SerialSystem Serial = 0xffffffff
+)
 
 // A Dir is a 3-bit value indicating the direction a mobile is facing
 type Dir byte
@@ -27,6 +31,11 @@ const (
 // A Body is a 16-bit value that describes the set of animations to use for a
 // mobile. Body values used by UO range 1-999.
 type Body uint16
+
+// Pre-defined values for Body
+const (
+	BodySystem Body = 0xffff
+)
 
 // A Hue is a 16-bit value that describes the rendering mode of an object.
 // Hues have the following characteristics:
@@ -138,4 +147,39 @@ const (
 	LoginDeniedReasonBadPass        LoginDeniedReason = 0 // Password invalid for user
 	LoginDeniedReasonAccountInUse   LoginDeniedReason = 1 // The account already has an active season
 	LoginDeniedReasonAccountBlocked LoginDeniedReason = 2 // The account has been blocked for some reason
+)
+
+// SpeechType represents the type of speech being requested or sent.
+type SpeechType byte
+
+// All meaningfull SpeechType values
+const (
+	SpeechTypeNormal    SpeechType = 0  // Overhead speech
+	SpeechTypeBroadcast SpeechType = 1  // System broadcast
+	SpeechTypeEmote     SpeechType = 2  // Overhead emote
+	SpeechTypeSystem    SpeechType = 6  // System message in corner
+	SpeechTypeMessage   SpeechType = 7  // Message in corner with name
+	SpeechTypeWhisper   SpeechType = 8  // Overhead whisper
+	SpeechTypeYell      SpeechType = 9  // Overhead yell
+	SpeechTypeSpell     SpeechType = 10 // Overhead spell words
+	SpeechTypeGuild     SpeechType = 13 // Guild chat in corner
+	SpeechTypeAlliance  SpeechType = 14 // Guild alliance chat in corner
+	SpeechTypePrompt    SpeechType = 15 // Prompt for user input
+)
+
+// Font represents one of the built-in fonts in the client.
+type Font uint16
+
+// All meaningfull Font values
+const (
+	FontBold         Font = 0
+	FontShadow       Font = 1
+	FontBoldShadow   Font = 2
+	FontNormal       Font = 3
+	FontGothic       Font = 4
+	FontScript       Font = 5
+	FontSmallScript  Font = 6
+	FontScriptShadow Font = 7
+	FontRune         Font = 8
+	FontSmallNormal  Font = 9
 )

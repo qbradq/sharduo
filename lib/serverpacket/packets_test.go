@@ -2,6 +2,7 @@ package serverpacket
 
 import (
 	"bytes"
+	"encoding/hex"
 	"net"
 	"testing"
 
@@ -61,6 +62,33 @@ func TestServerPackets(t *testing.T) {
 			&Version{},
 			[]byte{0xbd, 0x0, 0x3},
 		},
+		{
+			&Speech{
+				Speaker: uo.SerialSystem,
+				Body:    uo.BodySystem,
+				Font:    uo.FontNormal,
+				Hue:     500,
+				Name:    "qbradq",
+				Text:    "Hi",
+				Type:    uo.SpeechTypeMessage,
+			},
+			[]byte{
+				0x1c,      // ID
+				0x0, 0x2f, // Length (47, 44+len(s)+1)
+				0xff, 0xff, 0xff, 0xff, // Speaker (system)
+				0xff, 0xff, // Speaker body (system)
+				0x07,       // Type (lower-corner with name)
+				0x01, 0xf4, // Hue (500)
+				0x00, 0x03, // Font (3)
+				// Name (qbradq) (30 bytes)
+				0x71, 0x62, 0x72, 0x61, 0x64, 0x71,
+				0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+				0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+				0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+				0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+				0x48, 0x69, 0x00, // Message "Hi"
+			},
+		},
 	}
 
 	buf := bytes.NewBuffer(nil)
@@ -73,7 +101,8 @@ func TestServerPackets(t *testing.T) {
 		for idx, g := range buf.Bytes() {
 			e := test.expected[idx]
 			if e != g {
-				t.Fatalf("Test %d at %d\nExpected:\n%X\nGot:\n%X", itest, idx, test.expected, buf.Bytes())
+				t.Fatalf("Test %d at %d\nExpected:\n%s\nGot:\n%s", itest, idx,
+					hex.Dump(test.expected), hex.Dump(buf.Bytes()))
 			}
 		}
 	}

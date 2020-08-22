@@ -15,6 +15,12 @@ func padstr(w io.Writer, s string, l int) {
 	w.Write(buf)
 }
 
+func putstr(w io.Writer, s string) {
+	var b [1]byte
+	w.Write([]byte(s))
+	w.Write(b[:])
+}
+
 func pad(w io.Writer, l int) {
 	var a [1024]byte
 	buf := a[:l]
@@ -187,4 +193,36 @@ type Version struct{}
 func (p *Version) Write(w io.Writer) {
 	putbyte(w, 0xbd) // ID
 	putuint16(w, 3)  // Packet length
+}
+
+// Speech is sent to the client for all kinds of speech including system
+// messages and prompts.
+type Speech struct {
+	// Serial of the speaker
+	Speaker uo.Serial
+	// Body of the speaker
+	Body uo.Body
+	// Type of speech
+	Type uo.SpeechType
+	// Hue of the text
+	Hue uo.Hue
+	// Font of the text
+	Font uo.Font
+	// Name of the speaker (truncated to 30 bytes) (empty for system)
+	Name string
+	// Text of the message spoken
+	Text string
+}
+
+// Write implements the Packet interface.
+func (p *Speech) Write(w io.Writer) {
+	putbyte(w, 0x1c) // ID
+	putuint16(w, uint16(44+len(p.Text)+1))
+	putuint32(w, uint32(p.Speaker))
+	putuint16(w, uint16(p.Body))
+	putbyte(w, byte(p.Type))
+	putuint16(w, uint16(p.Hue))
+	putuint16(w, uint16(p.Font))
+	padstr(w, p.Name, 30)
+	putstr(w, p.Text)
 }
