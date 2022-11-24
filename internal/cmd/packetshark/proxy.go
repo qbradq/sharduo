@@ -23,18 +23,6 @@ func (p *proxy) start() {
 func (p *proxy) clientProxy() {
 	pr := clientpacket.NewReader(p.client)
 
-	// Connection header
-	err := pr.ReadConnectionHeader()
-	if err != nil {
-		log.Println("Client proxy closed because", err)
-		return
-	}
-	_, err = p.server.Write(pr.Header)
-	if err != nil {
-		log.Println("Client proxy closed because", err)
-		return
-	}
-
 	// Packets
 	for {
 		cp, err := pr.Read()
@@ -70,8 +58,8 @@ func (p *proxy) serverProxy() {
 		}
 		// Hack the 8C packet
 		if p.hack8c && buf[0] == 0x8c {
-			buf[5] = 2592 >> 8
-			buf[6] = 2592 & 0xff
+			buf[5] = 7774 >> 8
+			buf[6] = 7774 & 0xff
 			p.hack8c = false
 			log.Printf("0x8C %#v", buf[:n])
 		}
@@ -155,7 +143,7 @@ func (p *proxy) serverProxyOld() {
 			ob = []byte{
 				0x8c,         // Packet ID
 				127, 0, 0, 1, // IP Address
-				(2592 >> 8), (2592 & 0xff), // Port
+				(7774 >> 8), (7774 & 0xff), // Port
 				rb[7], rb[8], rb[9], rb[10], // Key
 			}
 			p.hack8c = false

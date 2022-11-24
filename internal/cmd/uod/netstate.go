@@ -1,6 +1,7 @@
 package uod
 
 import (
+	"bufio"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -104,6 +105,7 @@ func (n *NetState) Service() {
 	n.conn.SetWriteBuffer(128 * 1024)
 	n.conn.SetDeadline(time.Now().Add(time.Minute * 5))
 	r := clientpacket.NewReader(n.conn)
+	n.Log("connection from %s", n.conn.RemoteAddr().String())
 
 	// Connection header
 	if err := r.ReadConnectionHeader(); err != nil {
@@ -172,8 +174,13 @@ func (n *NetState) Service() {
 // SendService is the goroutine that services the send queue.
 func (n *NetState) SendService() {
 	w := serverpacket.NewCompressedWriter()
+	pw := bufio.NewWriterSize(n.conn, 128*1024)
 	for p := range n.sendQueue {
-		if err := w.Write(p, n.conn); err != nil {
+		if err := w.Write(p, pw); err != nil {
+			n.Error("writing packet", err)
+			return
+		}
+		if err := pw.Flush(); err != nil {
 			n.Error("sending packet", err)
 			return
 		}

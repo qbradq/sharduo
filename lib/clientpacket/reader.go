@@ -27,9 +27,10 @@ func NewReader(r io.Reader) *Reader {
 	}
 }
 
-// ReadConnectionHeader reads the 4-byte connection header used by Ultima Online
+// ReadConnectionHeader reads the 8-byte connection header used by Ultima Online
 // tcp streams
 func (r *Reader) ReadConnectionHeader() error {
+	// Connection header
 	r.Header = make([]byte, 4, 4)
 	_, err := io.ReadFull(r.r, r.Header)
 	return err

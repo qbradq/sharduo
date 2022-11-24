@@ -11,11 +11,12 @@ import (
 func Main() {
 	ln, err := net.ListenTCP("tcp", &net.TCPAddr{
 		IP:   net.ParseIP("127.0.0.1"),
-		Port: 2592,
+		Port: 7774,
 	})
 	if err != nil {
 		log.Fatal(err)
 	}
+	log.Println("Packet shark listening at 127.0.0.0:7774")
 	for {
 		c, err := ln.AcceptTCP()
 		if err != nil {
@@ -28,7 +29,7 @@ func Main() {
 		}
 		s, err := net.DialTCP("tcp", nil, &net.TCPAddr{
 			IP:   ip[0],
-			Port: 2593,
+			Port: 7775,
 		})
 		if err != nil {
 			log.Fatal(err)

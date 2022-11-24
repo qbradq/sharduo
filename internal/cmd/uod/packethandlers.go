@@ -23,7 +23,7 @@ func xAD(n *NetState, cp clientpacket.Packet) {
 
 func xBD(n *NetState, cp clientpacket.Packet) {
 	p := cp.(*clientpacket.Version)
-	if p.String != "5.0.9.1" {
+	if p.String != "7.0.15.1" {
 		n.Error("version check", errors.New("Bad client version"))
 	}
 }

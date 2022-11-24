@@ -241,7 +241,7 @@ var ctorTable = []func([]byte) Packet{
 	/*EC*/ nil,
 	/*ED*/ nil,
 	/*EE*/ nil,
-	/*EF*/ nil,
+	/*EF*/ newLoginSeed,
 	/*F0*/ nil,
 	/*F1*/ nil,
 	/*F2*/ nil,

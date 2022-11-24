@@ -96,7 +96,33 @@ type MalformedPacket struct {
 	Base
 }
 
-// AccountLogin is the first packet sent to the login server and attempts to
+// LoginSeed is the first packet sent to the login server
+type LoginSeed struct {
+	Base
+	// Connection seed
+	Seed uint32
+	// Version major part
+	VersionMajor int
+	// Version minor part
+	VersionMinor int
+	// Version patch part
+	VersionPatch int
+	// Version extra part
+	VersionExtra int
+}
+
+func newLoginSeed(in []byte) Packet {
+	return &LoginSeed{
+		Base:         Base{ID: 0xEF},
+		Seed:         getuint32(in[0:4]),
+		VersionMajor: int(getuint32(in[4:8])),
+		VersionMinor: int(getuint32(in[8:12])),
+		VersionPatch: int(getuint32(in[12:16])),
+		VersionExtra: int(getuint32(in[16:20])),
+	}
+}
+
+// AccountLogin is the second packet sent to the login server and attempts to
 // authenticate with a clear-text username and password o_O
 type AccountLogin struct {
 	Base
