@@ -8,6 +8,8 @@ import (
 )
 
 func init() {
+	packetFactory.add(0x06, newDoubleClick)
+	packetFactory.add(0x09, newSingleClick)
 	packetFactory.add(0x5D, newCharacterLogin)
 	packetFactory.add(0x73, newPing)
 	packetFactory.add(0x80, newAccountLogin)
@@ -124,10 +126,15 @@ func newUnknownPacket(ptype string, id int) Packet {
 	}
 }
 
-// String returns the string representation of this packet
-
-// MalformedPacket is sent when a packet is not processable.
+// MalformedPacket is sent when there is a non-specific decoding error.
 type MalformedPacket struct {
+	Base
+}
+
+// IgnoredPacket is a packet that we could fetch all the data for, but we do
+// not have a struct nor a constructor, but it's OK for the server to ignore
+// this.
+type IgnoredPacket struct {
 	Base
 }
 
@@ -300,4 +307,38 @@ func newSpeech(in []byte) Packet {
 	}
 	s.Text = utf16str(in[9:])
 	return s
+}
+
+// SingleClick is sent by the client when the player single-clicks an object
+type SingleClick struct {
+	Base
+	// Object ID clicked on
+	ID uo.Serial
+}
+
+func newSingleClick(in []byte) Packet {
+	return &SingleClick{
+		Base: Base{ID: 0x09},
+		ID:   uo.NewSerialFromData(in),
+	}
+}
+
+// DoubleClick is sent by the client when the player double-clicks an object
+type DoubleClick struct {
+	Base
+	// Object ID clicked on
+	ID uo.Serial
+	// IsSelf is true if the requested object is the player's mobile
+	IsSelf bool
+}
+
+func newDoubleClick(in []byte) Packet {
+	s := uo.NewSerialFromData(in)
+	isSelf := s.IsSelf()
+	s = s.StripSelfFlag()
+	return &DoubleClick{
+		Base:   Base{ID: 0x06},
+		ID:     s,
+		IsSelf: isSelf,
+	}
 }

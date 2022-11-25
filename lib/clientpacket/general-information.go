@@ -1,17 +1,12 @@
 package clientpacket
 
 func init() {
-
+	giFactory.ignore(0x0005) // Client screen dimensions
+	giFactory.ignore(0x000b) // Client language
+	giFactory.ignore(0x000f) // Client flags
 }
 
 var giFactory = newFactory("general-information")
-
-// GeneralInformation is sent by the client for many reasons
-type GeneralInformation struct {
-	Base
-	// Subcommand number
-	Subcommand int
-}
 
 func newGeneralInformation(in []byte) Packet {
 	scid := int(getuint16(in[0:2]))

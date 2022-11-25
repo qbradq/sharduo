@@ -2,16 +2,6 @@ package uo
 
 import "math/rand"
 
-// A Serial is a 31-bit value with the following characteristics:
-// The zero value is also the "invalid value" value
-// No Serial will have a value greater than 2^31-1
-type Serial uint32
-
-// Pre-defined values of Serial
-const (
-	SerialSystem Serial = 0xffffffff
-)
-
 // A Dir is a 3-bit value indicating the direction a mobile is facing
 type Dir byte
 

@@ -24,6 +24,14 @@ func (f *Factory) add(id int, ctor func([]byte) Packet) {
 	f.ctors[id] = ctor
 }
 
+func (f *Factory) ignore(id int) {
+	f.add(id, func(in []byte) Packet {
+		return &IgnoredPacket{
+			Base: Base{ID: id},
+		}
+	})
+}
+
 func (f *Factory) new(id int, in []byte) Packet {
 	var ret Packet
 	ctor := f.ctors[id]
