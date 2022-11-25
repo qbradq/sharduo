@@ -161,7 +161,7 @@ func (n *NetState) Service() {
 		X:      1607,
 		Y:      1595,
 		Z:      13,
-		Facing: uo.DirSouth | uo.DirRunningFlag,
+		Facing: uo.DirectionSouth | uo.DirectionRunningFlag,
 		Width:  7168,
 		Height: 4096,
 	})

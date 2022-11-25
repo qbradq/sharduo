@@ -8,6 +8,7 @@ import (
 )
 
 func init() {
+	packetFactory.add(0x02, newWalkRequest)
 	packetFactory.add(0x06, newDoubleClick)
 	packetFactory.add(0x09, newSingleClick)
 	packetFactory.add(0x34, newPlayerStatusRequest)
@@ -382,5 +383,32 @@ func newClientViewRange(in []byte) Packet {
 	return &ClientViewRange{
 		Base:  Base{ID: 0xc8},
 		Range: r,
+	}
+}
+
+// WalkRequest is sent by the client to request walking or running in a
+// direction.
+type WalkRequest struct {
+	Base
+	// Direction to walk
+	Direction uo.Direction
+	// If true this is a run request
+	IsRunning bool
+	// Walk sequence number
+	Sequence int
+	// Fast-walk prevention key
+	FastWalkKey uint32
+}
+
+func newWalkRequest(in []byte) Packet {
+	d := uo.Direction(in[0])
+	r := d.IsRunning()
+	d = d.StripRunningFlag()
+	return &WalkRequest{
+		Base:        Base{ID: 0x02},
+		Direction:   d,
+		IsRunning:   r,
+		Sequence:    int(in[1]),
+		FastWalkKey: getuint32(in[2:]),
 	}
 }

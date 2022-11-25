@@ -5,9 +5,11 @@ import (
 
 	"github.com/qbradq/sharduo/lib/clientpacket"
 	"github.com/qbradq/sharduo/lib/serverpacket"
+	"github.com/qbradq/sharduo/lib/uo"
 )
 
 func init() {
+	clientPacketFactory.add(0x02, handleWalkRequest)
 	clientPacketFactory.add(0x06, ignorePacket)
 	clientPacketFactory.add(0x09, ignorePacket)
 	clientPacketFactory.add(0x34, ignorePacket)
@@ -48,5 +50,13 @@ func handleClientViewRange(n *NetState, cp clientpacket.Packet) {
 	p := cp.(*clientpacket.ClientViewRange)
 	n.Send(&serverpacket.ClientViewRange{
 		Range: byte(p.Range),
+	})
+}
+
+func handleWalkRequest(n *NetState, cp clientpacket.Packet) {
+	p := cp.(*clientpacket.WalkRequest)
+	n.Send(&serverpacket.MoveAcknowledge{
+		Sequence:  p.Sequence,
+		Notoriety: uo.NotorietyInnocent,
 	})
 }

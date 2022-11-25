@@ -52,7 +52,7 @@ func TestServerPackets(t *testing.T) {
 				X:      1602,
 				Y:      1591,
 				Z:      0,
-				Facing: uo.DirSouth | uo.DirRunningFlag,
+				Facing: uo.DirectionSouth | uo.DirectionRunningFlag,
 				Width:  7168,
 				Height: 4096,
 			},

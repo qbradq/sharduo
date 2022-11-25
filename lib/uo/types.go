@@ -3,20 +3,31 @@ package uo
 import "math/rand"
 
 // A Dir is a 3-bit value indicating the direction a mobile is facing
-type Dir byte
+type Direction byte
 
-// Dir value meanings
+// Direction value meanings
 const (
-	DirNorth       Dir = 0
-	DirNorthEast   Dir = 1
-	DirEast        Dir = 2
-	DirSouthEast   Dir = 3
-	DirSouth       Dir = 4
-	DirSouthWest   Dir = 5
-	DirWest        Dir = 6
-	DirNorthWest   Dir = 7
-	DirRunningFlag Dir = 0x80
+	DirectionNorth       Direction = 0
+	DirectionNorthEast   Direction = 1
+	DirectionEast        Direction = 2
+	DirectionSouthEast   Direction = 3
+	DirectionSouth       Direction = 4
+	DirectionSouthWest   Direction = 5
+	DirectionWest        Direction = 6
+	DirectionNorthWest   Direction = 7
+	DirectionRunningFlag Direction = 0x80
+	DirectionRunningMask Direction = 0x7f
 )
+
+// IsRunning returns true if the running flag is set
+func (d Direction) IsRunning() bool {
+	return d&DirectionRunningFlag == DirectionRunningFlag
+}
+
+// Strips the running flag off of a Direction if present
+func (d Direction) StripRunningFlag() Direction {
+	return d & DirectionRunningMask
+}
 
 // A Body is a 16-bit value that describes the set of animations to use for a
 // mobile. Body values used by UO range 1-999.
@@ -99,17 +110,18 @@ const (
 
 // A Noto is a 3-bit value describing the notoriety status of a mobile
 // The zero-value is invalid
-type Noto byte
+type Notoriety byte
 
 // Notoriety constants
 const (
-	NotoInvalid      Noto = 0
-	NotoInnocent     Noto = 1
-	NotoFriend       Noto = 2
-	NotoCriminal     Noto = 3
-	NotoEnemy        Noto = 4
-	NotoMurderer     Noto = 5
-	NotoInvulnerable Noto = 6
+	NotorietyInvalid      Notoriety = 0
+	NotorietyInnocent     Notoriety = 1
+	NotorietyFriend       Notoriety = 2
+	NotorietyAttackable   Notoriety = 3
+	NotorietyCriminal     Notoriety = 4
+	NotorietyEnemy        Notoriety = 5
+	NotorietyMurderer     Notoriety = 6
+	NotorietyInvulnerable Notoriety = 7
 )
 
 // FeatureFlag represents the client features flags sent in packet 0xA9

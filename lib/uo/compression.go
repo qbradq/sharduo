@@ -6,7 +6,7 @@ import (
 )
 
 // ErrIncompletePacket is used to flag incomplete decompression of a packet.
-var ErrIncompletePacket = errors.New("Incomplete packet")
+var ErrIncompletePacket = errors.New("incomplete packet")
 
 // Table and compression algorithm documented here:
 // https://sites.google.com/site/ultimaonlineoldpackets/client/compression

@@ -162,7 +162,7 @@ type EnterWorld struct {
 	// Position
 	X, Y, Z int
 	// Direction the player is facing and if running.
-	Facing uo.Dir
+	Facing uo.Direction
 	// Server dimensions
 	Width, Height int
 }
@@ -247,6 +247,21 @@ type ClientViewRange struct {
 
 // Write implements the Packet interface.
 func (p *ClientViewRange) Write(w io.Writer) {
-	putbyte(w, 0xC8) // ID
-	putbyte(w, p.Range)
+	putbyte(w, 0xC8)    // ID
+	putbyte(w, p.Range) // View range
+}
+
+// MoveAcknowledge acknowledges a ClientWalkRequest packet.
+type MoveAcknowledge struct {
+	// Sequence number of the move from the client
+	Sequence int
+	// Notoriety of the player
+	Notoriety uo.Notoriety
+}
+
+// Write implements the Packet interface.
+func (p *MoveAcknowledge) Write(w io.Writer) {
+	putbyte(w, 0x22)              // ID
+	putbyte(w, byte(p.Sequence))  // Move sequence number
+	putbyte(w, byte(p.Notoriety)) // Player's notoriety
 }
