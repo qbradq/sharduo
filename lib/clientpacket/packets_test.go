@@ -43,10 +43,7 @@ func TestPackets(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		p, err := New(test.data)
-		if err != nil {
-			t.Fatal(err)
-		}
+		p := New(test.data)
 		if _, ok := p.(*UnsupportedPacket); ok {
 			t.Fatalf("Unsupported packet %X", test.id)
 		}

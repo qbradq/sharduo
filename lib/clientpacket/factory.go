@@ -25,9 +25,13 @@ func (f *Factory) add(id int, ctor func([]byte) Packet) {
 }
 
 func (f *Factory) new(id int, in []byte) Packet {
+	var ret Packet
 	ctor := f.ctors[id]
 	if ctor != nil {
-		return ctor(in)
+		ret = ctor(in)
+	} else {
+		ret = newUnsupportedPacket(f.name, in)
+		ret.setId(id)
 	}
-	return newUnsupportedPacket(in)
+	return ret
 }

@@ -85,5 +85,5 @@ func (r *Reader) ReadPacket() (Packet, error) {
 	if err != nil {
 		return nil, err
 	}
-	return New(data)
+	return New(data), nil
 }

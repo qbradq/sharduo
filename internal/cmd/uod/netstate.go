@@ -201,11 +201,7 @@ func (n *NetState) readLoop(r *clientpacket.Reader) {
 		// 5 minute timeout, should never be hit due to client ping packets
 		n.conn.SetDeadline(time.Now().Add(time.Minute * 5))
 
-		cp, err := clientpacket.New(data)
-		if err != nil {
-			n.Error("decoding packet", err)
-			return
-		}
+		cp := clientpacket.New(data)
 		switch p := cp.(type) {
 		case nil:
 			n.Error("decoding packet",
@@ -213,8 +209,11 @@ func (n *NetState) readLoop(r *clientpacket.Reader) {
 		case *clientpacket.MalformedPacket:
 			n.Error("decoding packet",
 				fmt.Errorf("malformed packet 0x%02X", p.GetID()))
+		case *clientpacket.UnknownPacket:
+			n.Log("unknown %s packet 0x%02X", p.PType, cp.GetID())
+			return
 		case *clientpacket.UnsupportedPacket:
-			n.Log("unsupported client packet 0x%02X:\n%s", cp.GetID(),
+			n.Log("unsupported %s packet 0x%02X:\n%s", p.PType, cp.GetID(),
 				hex.Dump(data))
 		default:
 			handler := PacketHandlerTable[cp.GetID()]

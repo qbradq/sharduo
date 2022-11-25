@@ -2,7 +2,6 @@ package clientpacket
 
 import (
 	"encoding/binary"
-	"fmt"
 	"unicode/utf16"
 
 	"github.com/qbradq/sharduo/lib/uo"
@@ -24,12 +23,14 @@ func init() {
 type Packet interface {
 	// GetID returns the packet ID byte.
 	GetID() int
+	// SetID sets the packet ID.
+	setId(id int)
 }
 
-var packetFactory = newFactory("packets")
+var packetFactory = newFactory("client")
 
 // New creates a new client packet based on data.
-func New(data []byte) (Packet, error) {
+func New(data []byte) Packet {
 	var pdat []byte
 
 	length := InfoTable[data[0]].Length
@@ -37,11 +38,11 @@ func New(data []byte) (Packet, error) {
 		length = int(getuint16(data[1:3]))
 		pdat = data[3:length]
 	} else if length == 0 {
-		return nil, fmt.Errorf("unknown %s packet 0x%02X", "client", data[0])
+		return newUnknownPacket(packetFactory.name, int(data[0]))
 	} else {
 		pdat = data[1:length]
 	}
-	return packetFactory.new(int(data[0]), pdat), nil
+	return packetFactory.new(int(data[0]), pdat)
 }
 
 func nullstr(buf []byte) string {
@@ -90,15 +91,22 @@ func (p *Base) GetID() int {
 	return p.ID
 }
 
+// setId implements the Packet interface.
+func (p *Base) setId(id int) {
+	p.ID = id
+}
+
 // UnsupportedPacket is sent when the packet being decoded does not have a
 // constructor function yet.
 type UnsupportedPacket struct {
 	Base
+	PType string
 }
 
-func newUnsupportedPacket(in []byte) Packet {
+func newUnsupportedPacket(ptype string, in []byte) Packet {
 	return &UnsupportedPacket{
-		Base: Base{ID: int(in[0])},
+		Base:  Base{ID: int(in[0])},
+		PType: ptype,
 	}
 }
 
@@ -106,13 +114,13 @@ func newUnsupportedPacket(in []byte) Packet {
 // information. This puts the packet stream in an inconsistent state.
 type UnknownPacket struct {
 	Base
-	ptype string
+	PType string
 }
 
 func newUnknownPacket(ptype string, id int) Packet {
 	return &UnknownPacket{
 		Base:  Base{ID: id},
-		ptype: ptype,
+		PType: ptype,
 	}
 }
 
