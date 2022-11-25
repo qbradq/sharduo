@@ -2,19 +2,34 @@ package clientpacket
 
 import (
 	"encoding/binary"
+	"fmt"
 	"unicode/utf16"
 
 	"github.com/qbradq/sharduo/lib/uo"
 )
 
+func init() {
+	packetFactory.add(0x5D, newCharacterLogin)
+	packetFactory.add(0x73, newPing)
+	packetFactory.add(0x80, newAccountLogin)
+	packetFactory.add(0x91, newGameServerLogin)
+	packetFactory.add(0xA0, newSelectServer)
+	packetFactory.add(0xAD, newSpeech)
+	packetFactory.add(0xBD, newVersion)
+	packetFactory.add(0xBF, newGeneralInformation)
+	packetFactory.add(0xEF, newLoginSeed)
+}
+
 // Packet is the interface all client packets implement.
 type Packet interface {
 	// GetID returns the packet ID byte.
-	GetID() byte
+	GetID() int
 }
 
+var packetFactory = newFactory("packets")
+
 // New creates a new client packet based on data.
-func New(data []byte) Packet {
+func New(data []byte) (Packet, error) {
 	var pdat []byte
 
 	length := InfoTable[data[0]].Length
@@ -22,15 +37,11 @@ func New(data []byte) Packet {
 		length = int(getuint16(data[1:3]))
 		pdat = data[3:length]
 	} else if length == 0 {
-		return nil
+		return nil, fmt.Errorf("unknown %s packet 0x%02X", "client", data[0])
 	} else {
 		pdat = data[1:length]
 	}
-	ctor := ctorTable[data[0]]
-	if ctor == nil {
-		return newUnsupportedPacket(data)
-	}
-	return ctor(pdat)
+	return packetFactory.new(int(data[0]), pdat), nil
 }
 
 func nullstr(buf []byte) string {
@@ -71,11 +82,11 @@ func getuint32(buf []byte) uint32 {
 // Base is the base struct for all client packets.
 type Base struct {
 	// ID is the packet ID byte.
-	ID byte
+	ID int
 }
 
 // GetID implements the Packet interface.
-func (p *Base) GetID() byte {
+func (p *Base) GetID() int {
 	return p.ID
 }
 
@@ -87,9 +98,25 @@ type UnsupportedPacket struct {
 
 func newUnsupportedPacket(in []byte) Packet {
 	return &UnsupportedPacket{
-		Base: Base{ID: in[0]},
+		Base: Base{ID: int(in[0])},
 	}
 }
+
+// UnknownPacket is sent when the packet being decoded has no length
+// information. This puts the packet stream in an inconsistent state.
+type UnknownPacket struct {
+	Base
+	ptype string
+}
+
+func newUnknownPacket(ptype string, id int) Packet {
+	return &UnknownPacket{
+		Base:  Base{ID: id},
+		ptype: ptype,
+	}
+}
+
+// String returns the string representation of this packet
 
 // MalformedPacket is sent when a packet is not processable.
 type MalformedPacket struct {

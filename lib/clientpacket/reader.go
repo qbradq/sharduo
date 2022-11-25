@@ -7,7 +7,7 @@ import (
 )
 
 // ErrUnknownPacket is returned when an unknown packet is encountered.
-var ErrUnknownPacket = errors.New("Unknown packet")
+var ErrUnknownPacket = errors.New("unknown packet")
 
 const maxInputBuffer = 64 * 1024
 
@@ -23,7 +23,7 @@ type Reader struct {
 func NewReader(r io.Reader) *Reader {
 	return &Reader{
 		r:     r,
-		inbuf: make([]byte, maxInputBuffer, maxInputBuffer),
+		inbuf: make([]byte, maxInputBuffer),
 	}
 }
 
@@ -31,7 +31,7 @@ func NewReader(r io.Reader) *Reader {
 // tcp streams
 func (r *Reader) ReadConnectionHeader() error {
 	// Connection header
-	r.Header = make([]byte, 4, 4)
+	r.Header = make([]byte, 4)
 	_, err := io.ReadFull(r.r, r.Header)
 	return err
 }
@@ -85,5 +85,5 @@ func (r *Reader) ReadPacket() (Packet, error) {
 	if err != nil {
 		return nil, err
 	}
-	return New(data), nil
+	return New(data)
 }

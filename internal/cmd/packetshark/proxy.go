@@ -2,7 +2,6 @@ package packetshark
 
 import (
 	"bytes"
-	"io"
 	"log"
 	"net"
 
@@ -27,7 +26,7 @@ func (p *proxy) clientProxy() {
 	for {
 		cp, err := pr.Read()
 		if err != nil {
-			log.Println("Client proxy closed because", err)
+			log.Println("client proxy closed because", err)
 			return
 		}
 		if cp[0] == 0xa0 {
@@ -38,7 +37,7 @@ func (p *proxy) clientProxy() {
 		}
 		_, err = p.server.Write(cp)
 		if err != nil {
-			log.Println("Client proxy closed because", err)
+			log.Println("client proxy closed because", err)
 			return
 		}
 		log.Printf(">> %#v\n", cp)
@@ -46,14 +45,14 @@ func (p *proxy) clientProxy() {
 }
 
 func (p *proxy) serverProxy() {
-	buf := make([]byte, 64*1024, 64*1024)
+	buf := make([]byte, 64*1024)
 	compressed := bytes.NewBuffer(nil)
 	decompressed := bytes.NewBuffer(nil)
 	for {
 		// Get next TCP packet
 		n, err := p.server.Read(buf[:])
 		if err != nil {
-			log.Println("Server proxy closed on read because", err)
+			log.Println("server proxy closed on read because", err)
 			break
 		}
 		// Hack the 8C packet
@@ -66,7 +65,7 @@ func (p *proxy) serverProxy() {
 		// Write back to the client
 		_, err = p.client.Write(buf[:n])
 		if err != nil {
-			log.Println("Server proxy closed on write because", err)
+			log.Println("server proxy closed on write because", err)
 			return
 		}
 		// Handle compressed server stream
@@ -95,80 +94,9 @@ func (p *proxy) serverProxy() {
 					break
 				}
 			}
-			/*
-				copy(leftbuf, readbuf.Bytes())
-				left := leftbuf[:readbuf.Len()]
-				if _, err := readbuf.Write(buf[:n]); err != nil {
-					log.Println("Server proxy closed on write to memory buffer because", err)
-					return
-				}
-				for readbuf.Len() > 0 {
-					dcbuf.Reset()
-					if err := uo.HuffmanDecodePacket(readbuf, dcbuf); err != nil {
-						// Fragmented packet
-						if err == io.EOF {
-							log.Println("Start of fragmented packet")
-							readbuf.Reset()
-							if _, err := readbuf.Write(left); err != nil {
-								log.Println("Server proxy closed on write to memory buffer because", err)
-								return
-							}
-							break
-						}
-						log.Println("Server proxy closed due to error during decompression", err)
-						return
-					}
-					log.Printf("<< %#v\n", dcbuf.Bytes())
-					readbuf.Reset()
-				}
-			*/
 		} else {
 			// Uncompressed login server traffic
 			log.Printf("<< %#v\n", buf[:n])
-		}
-	}
-}
-
-func (p *proxy) serverProxyOld() {
-	rb := make([]byte, 1024*64, 1024*64)
-
-	for {
-		n, err := p.server.Read(rb[:])
-		if err != nil {
-			log.Println("Server proxy closed on read because", err)
-			break
-		}
-		ob := rb[:n]
-		if p.hack8c && rb[0] == 0x8c {
-			ob = []byte{
-				0x8c,         // Packet ID
-				127, 0, 0, 1, // IP Address
-				(7774 >> 8), (7774 & 0xff), // Port
-				rb[7], rb[8], rb[9], rb[10], // Key
-			}
-			p.hack8c = false
-		}
-		_, err = p.client.Write(ob)
-		if err != nil {
-			log.Println("Server proxy closed on write because", err)
-			return
-		}
-		if p.compressed {
-			out := bytes.NewBuffer(nil)
-			cb := bytes.NewReader(ob)
-			for {
-				err := uo.HuffmanDecodePacket(cb, out)
-				if err == io.EOF {
-					break
-				}
-				if err != nil {
-					log.Println("Server proxy closed because", err)
-					return
-				}
-				log.Printf("<< %#v\n", out.Bytes())
-			}
-		} else {
-			log.Printf("<< %#v\n", ob)
 		}
 	}
 }

@@ -145,7 +145,7 @@ func (n *NetState) Service() {
 		n.Error("waiting for character login", ErrWrongPacket)
 		return
 	}
-	log.Printf("Character login request slot 0x%08X", clrp.Slot)
+	log.Printf("character login request slot 0x%08X", clrp.Slot)
 
 	// TODO Character load
 	n.m = game.NewMobile()
@@ -201,21 +201,25 @@ func (n *NetState) readLoop(r *clientpacket.Reader) {
 		// 5 minute timeout, should never be hit due to client ping packets
 		n.conn.SetDeadline(time.Now().Add(time.Minute * 5))
 
-		cp := clientpacket.New(data)
+		cp, err := clientpacket.New(data)
+		if err != nil {
+			n.Error("decoding packet", err)
+			return
+		}
 		switch p := cp.(type) {
 		case nil:
 			n.Error("decoding packet",
-				fmt.Errorf("Unknown packet 0x%02X", data[0]))
+				fmt.Errorf("unknown packet 0x%02X", data[0]))
 		case *clientpacket.MalformedPacket:
 			n.Error("decoding packet",
-				fmt.Errorf("Malformed packet 0x%02X", p.GetID()))
+				fmt.Errorf("malformed packet 0x%02X", p.GetID()))
 		case *clientpacket.UnsupportedPacket:
-			n.Log("Unsupported client packet 0x%02X:\n%s", cp.GetID(),
+			n.Log("unsupported client packet 0x%02X:\n%s", cp.GetID(),
 				hex.Dump(data))
 		default:
 			handler := PacketHandlerTable[cp.GetID()]
 			if handler == nil {
-				n.Log("Unhandled client packet 0x%02X:\n%s", cp.GetID(),
+				n.Log("unhandled client packet 0x%02X:\n%s", cp.GetID(),
 					hex.Dump(data))
 			} else {
 				handler(n, cp)

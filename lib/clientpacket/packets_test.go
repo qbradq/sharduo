@@ -6,7 +6,7 @@ import (
 
 func TestPackets(t *testing.T) {
 	var tests = []struct {
-		id     byte
+		id     int
 		data   []byte
 		testfn func(t *testing.T, p Packet)
 	}{
@@ -43,7 +43,10 @@ func TestPackets(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		p := New(test.data)
+		p, err := New(test.data)
+		if err != nil {
+			t.Fatal(err)
+		}
 		if _, ok := p.(*UnsupportedPacket); ok {
 			t.Fatalf("Unsupported packet %X", test.id)
 		}
