@@ -236,5 +236,17 @@ type Ping struct {
 // Write implements the Packet interface.
 func (p *Ping) Write(w io.Writer) {
 	putbyte(w, 0x73)  // ID
-	putbyte(w, p.Key) // ID
+	putbyte(w, p.Key) // Key
+}
+
+// ClientViewRange sets the client's view range
+type ClientViewRange struct {
+	// The demanded range
+	Range byte
+}
+
+// Write implements the Packet interface.
+func (p *ClientViewRange) Write(w io.Writer) {
+	putbyte(w, 0xC8) // ID
+	putbyte(w, p.Range)
 }

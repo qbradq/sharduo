@@ -218,7 +218,7 @@ func (n *NetState) readLoop(r *clientpacket.Reader) {
 		case *clientpacket.IgnoredPacket:
 			// Do nothing
 		default:
-			handler := PacketHandlerTable[cp.GetID()]
+			handler := clientPacketFactory.get(cp.GetID())
 			if handler == nil {
 				n.Log("unhandled client packet 0x%04X:\n%s", cp.GetID(),
 					hex.Dump(data))

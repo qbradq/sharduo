@@ -132,7 +132,7 @@ const (
 // LoginDeniedReason represents the reason for refusing login
 type LoginDeniedReason byte
 
-// All meaningfull LoginDeniedReason values
+// All LoginDeniedReason values
 const (
 	LoginDeniedReasonBadPass        LoginDeniedReason = 0 // Password invalid for user
 	LoginDeniedReasonAccountInUse   LoginDeniedReason = 1 // The account already has an active season
@@ -142,7 +142,7 @@ const (
 // SpeechType represents the type of speech being requested or sent.
 type SpeechType byte
 
-// All meaningfull SpeechType values
+// All SpeechType values
 const (
 	SpeechTypeNormal       SpeechType = 0    // Overhead speech
 	SpeechTypeBroadcast    SpeechType = 1    // System broadcast
@@ -161,7 +161,7 @@ const (
 // Font represents one of the built-in fonts in the client.
 type Font uint16
 
-// All meaningfull Font values
+// All Font values
 const (
 	FontBold         Font = 0
 	FontShadow       Font = 1
@@ -173,4 +173,14 @@ const (
 	FontScriptShadow Font = 7
 	FontRune         Font = 8
 	FontSmallNormal  Font = 9
+)
+
+// Status request types
+type StatusRequestType byte
+
+// All StatusRequestType values
+const (
+	StatusRequesTypeGod    StatusRequestType = 0
+	StatusRequesTypeBasic  StatusRequestType = 4
+	StatusRequesTypeSkills StatusRequestType = 5
 )

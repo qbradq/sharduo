@@ -10,14 +10,17 @@ import (
 func init() {
 	packetFactory.add(0x06, newDoubleClick)
 	packetFactory.add(0x09, newSingleClick)
+	packetFactory.add(0x34, newPlayerStatusRequest)
 	packetFactory.add(0x5D, newCharacterLogin)
 	packetFactory.add(0x73, newPing)
 	packetFactory.add(0x80, newAccountLogin)
 	packetFactory.add(0x91, newGameServerLogin)
 	packetFactory.add(0xA0, newSelectServer)
 	packetFactory.add(0xAD, newSpeech)
+	packetFactory.ignore(0xB5)
 	packetFactory.add(0xBD, newVersion)
 	packetFactory.add(0xBF, newGeneralInformation)
+	packetFactory.add(0xC8, newClientViewRange)
 	packetFactory.add(0xEF, newLoginSeed)
 }
 
@@ -340,5 +343,44 @@ func newDoubleClick(in []byte) Packet {
 		Base:   Base{ID: 0x06},
 		ID:     s,
 		IsSelf: isSelf,
+	}
+}
+
+// PlayerStatusRequest is sent by the client to request status and skills
+// updates.
+type PlayerStatusRequest struct {
+	Base
+	// Type of the request
+	StatusRequestType uo.StatusRequestType
+	// ID of the player's mobile
+	PlayerMobileID uo.Serial
+}
+
+func newPlayerStatusRequest(in []byte) Packet {
+	return &PlayerStatusRequest{
+		Base:              Base{ID: 0x34},
+		StatusRequestType: uo.StatusRequestType(in[4]),
+		PlayerMobileID:    uo.NewSerialFromData(in[5:]),
+	}
+}
+
+// ClientViewRange is sent by the client to request a new view range.
+type ClientViewRange struct {
+	Base
+	// Requested view range, clamped to between 4 and 18 inclusive
+	Range int
+}
+
+func newClientViewRange(in []byte) Packet {
+	r := int(in[0])
+	if r < 4 {
+		r = 4
+	}
+	if r > 18 {
+		r = 18
+	}
+	return &ClientViewRange{
+		Base:  Base{ID: 0xc8},
+		Range: r,
 	}
 }
