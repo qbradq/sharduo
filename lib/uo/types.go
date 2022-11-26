@@ -29,16 +29,7 @@ func (d Direction) StripRunningFlag() Direction {
 	return d & DirectionRunningMask
 }
 
-// A Body is a 16-bit value that describes the set of animations to use for a
-// mobile. Body values used by UO range 1-999.
-type Body uint16
-
-// Pre-defined values for Body
-const (
-	BodySystem Body = 0xffff
-)
-
-// A Hue is a 16-bit value that describes the rendering mode of an object.
+// A Hue is a 17-bit value that describes the rendering mode of an object.
 // Hues have the following characteristics:
 // The zero value means "default rendering mode"
 // Values 1-3000 inclusive select a set of 16 colors from the file "hues.mul"

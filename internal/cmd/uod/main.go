@@ -10,6 +10,9 @@ import (
 	"github.com/qbradq/sharduo/lib/uo"
 )
 
+// Collection of all object serials
+var serialManager *uo.SerialManager = uo.NewSerialManager()
+
 // Map of all active netstates.
 var netStates sync.Map
 

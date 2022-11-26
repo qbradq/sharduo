@@ -148,25 +148,36 @@ func (n *NetState) Service() {
 	log.Printf("character login request slot 0x%08X", clrp.Slot)
 
 	// TODO Character load
-	n.m = game.NewMobile()
-	n.m.Name = gslp.Username
+	n.m = &game.Mobile{
+		BaseObject: game.BaseObject{
+			ID:   serialManager.New(uo.SerialManagerTypeMobile),
+			Item: uo.ItemNone,
+			Body: uo.GetBody("human-male"),
+			Name: gslp.Username,
+			Location: game.Location{
+				X: 1607,
+				Y: 1595,
+				Z: 13,
+			},
+		},
+	}
 
 	// Request version string
 	n.Send(&serverpacket.Version{})
 
 	// Debug
 	n.Send(&serverpacket.EnterWorld{
-		Player: 0x00000047,
-		Body:   400,
-		X:      1607,
-		Y:      1595,
-		Z:      13,
+		Player: n.m.ID,
+		Body:   n.m.Body,
+		X:      n.m.Location.X,
+		Y:      n.m.Location.Y,
+		Z:      n.m.Location.Z,
 		Facing: uo.DirectionSouth | uo.DirectionRunningFlag,
 		Width:  7168,
 		Height: 4096,
 	})
 	n.Send(&serverpacket.LoginComplete{})
-	Broadcast("Welcome %s to Trammie Time!", gslp.Username)
+	Broadcast("Welcome %s to Trammel Time!", n.m.Name)
 
 	n.readLoop(r)
 }
