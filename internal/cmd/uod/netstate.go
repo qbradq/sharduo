@@ -2,6 +2,7 @@ package uod
 
 import (
 	"bufio"
+	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -125,12 +126,14 @@ func (n *NetState) Service() {
 		return
 	}
 	// TODO Account authentication
-	log.Println("User login", gslp.Username, gslp.Password)
+	pwh := sha256.Sum256([]byte(gslp.Password))
+	account := accountManager.GetOrCreate(gslp.Username, string(pwh[:]))
+	log.Printf("%v\n", account)
 
 	// Character list
 	n.Send(&serverpacket.CharacterList{
 		Names: []string{
-			gslp.Username, "", "", "", "", "",
+			account.Username, "", "", "", "", "",
 		},
 	})
 
@@ -150,7 +153,7 @@ func (n *NetState) Service() {
 	// TODO Character load
 	n.m = &game.Mobile{
 		BaseObject: game.BaseObject{
-			ID:   serialManager.New(uo.SerialManagerTypeMobile),
+			ID:   uo.RandomMobileSerial(),
 			Item: uo.ItemNone,
 			Body: uo.GetBody("human-male"),
 			Name: gslp.Username,

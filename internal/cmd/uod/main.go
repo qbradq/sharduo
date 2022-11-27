@@ -3,7 +3,9 @@ package uod
 import (
 	"bufio"
 	"crypto/sha256"
+	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"os"
@@ -20,22 +22,14 @@ import (
 // Account manager
 var accountManager *game.AccountManager
 
-// Collection of all object serials
-var serialManager *uo.SerialManager
-
 // Map of all active netstates.
 var netStates sync.Map
 
 // Main is the entry point for uod.
 func Main() {
-	// Startup
 	dataPath := "data"
-	if err := os.MkdirAll(dataPath, 0777); err != nil {
-		log.Fatal(err)
-		return
-	}
-	accountManager = game.NewAccountManager(path.Join(dataPath, "accounts.json"))
-	serialManager = uo.NewSerialManager()
+
+	loadSaves(dataPath)
 
 	go LoginServerMain()
 
@@ -54,8 +48,13 @@ func Main() {
 	for {
 		c, err := l.AcceptTCP()
 		if err != nil {
-			log.Fatal(err)
-			return
+			writeSaves(dataPath)
+			if errors.Is(err, io.EOF) {
+				break
+			} else {
+				log.Fatal(err)
+				return
+			}
 		}
 		go handleConnection(c)
 	}
@@ -82,6 +81,22 @@ func LoginServerMain() {
 		}
 		go handleLoginConnection(c)
 	}
+}
+
+func loadSaves(dataPath string) {
+	if err := os.MkdirAll(dataPath, 0777); err != nil {
+		log.Fatal(err)
+		return
+	}
+	accountManager = game.NewAccountManager(path.Join(dataPath, "accounts.json"))
+}
+
+func writeSaves(dataPath string) {
+	if err := os.MkdirAll(dataPath, 0777); err != nil {
+		log.Fatal(err)
+		return
+	}
+	accountManager.Save(path.Join(dataPath, "accounts.json"))
 }
 
 func handleLoginConnection(c *net.TCPConn) {

@@ -1,13 +1,13 @@
 package uo
 
-// SerialManager types
-type SerialManagerType int
+// Serial types
+type SerialType int
 
 // Valid values for SerialManager
 const (
-	SerialManagerTypeMobile  SerialManagerType = 0
-	SerialManagerTypeItem    SerialManagerType = 1
-	SerialManagerTypeUnbound SerialManagerType = 2
+	SerialTypeMobile  SerialType = 0
+	SerialTypeItem    SerialType = 1
+	SerialTypeUnbound SerialType = 2
 )
 
 // SerialManager manages a pool of unique serials.
@@ -23,15 +23,15 @@ func NewSerialManager() *SerialManager {
 }
 
 // New creates a new, unique Serial appropriate for the given type
-func (m *SerialManager) New(t SerialManagerType) Serial {
+func (m *SerialManager) New(t SerialType) Serial {
 	var n Serial
 	for {
 		switch t {
-		case SerialManagerTypeMobile:
+		case SerialTypeMobile:
 			n = RandomMobileSerial()
-		case SerialManagerTypeItem:
+		case SerialTypeItem:
 			n = RandomItemSerial()
-		case SerialManagerTypeUnbound:
+		case SerialTypeUnbound:
 			n = RandomUnboundSerial()
 		default:
 			panic("unknown serial manager type")
