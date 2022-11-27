@@ -1,7 +1,5 @@
 package uo
 
-import "math/rand"
-
 // A Dir is a 3-bit value indicating the direction a mobile is facing
 type Direction byte
 
@@ -27,31 +25,6 @@ func (d Direction) IsRunning() bool {
 // Strips the running flag off of a Direction if present
 func (d Direction) StripRunningFlag() Direction {
 	return d & DirectionRunningMask
-}
-
-// A Hue is a 17-bit value that describes the rendering mode of an object.
-// Hues have the following characteristics:
-// The zero value means "default rendering mode"
-// Values 1-3000 inclusive select a set of 16 colors from the file "hues.mul"
-//   that replace the first 16 color indicies (the grayscales).
-// The special value -1 (0xffff) will do the shadow dragon alpha effect.
-type Hue uint16
-
-// Important hue values
-const (
-	HueDefault Hue = 0
-	HueMin     Hue = 1
-	HueBlack   Hue = 1
-	HueDieMin  Hue = 2
-	HueDieMax  Hue = 1001
-	HueSkinMin Hue = 1002
-	HueSkinMax Hue = 1058
-	HueMax     Hue = 3000
-)
-
-// RandomSkinHue returns a random skin hue
-func RandomSkinHue() Hue {
-	return Hue(rand.Intn(int(HueSkinMax-HueSkinMin))) + HueSkinMin
 }
 
 // A Layer is a 6-bit value that indicates at which rendering layer a given

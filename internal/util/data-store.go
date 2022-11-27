@@ -59,6 +59,9 @@ func OpenOrCreateDataStore(dbpath string, index bool) *DataStore {
 
 // Save saves the data store to disk.
 func (s *DataStore) Save(dbpath string) error {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
 	d, err := json.Marshal(s)
 	if err != nil {
 		return err
@@ -97,6 +100,17 @@ func (s *DataStore) Set(o Serializeable, name string) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	s.Objects[o.GetSerial()] = o
+	if s.BuildIndex {
+		s.Index[name] = o.GetSerial()
+	}
+	s.sm.Add(o.GetSerial())
+}
+
+// Add adds the object to the store, assigning it a unique ID.
+func (s *DataStore) Add(o Serializeable, name string, serialType uo.SerialType) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	o.SetSerial(s.UniqueSerial(serialType))
 	if s.BuildIndex {
 		s.Index[name] = o.GetSerial()
 	}

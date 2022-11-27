@@ -2,11 +2,7 @@ package uo
 
 import (
 	"encoding/binary"
-	"math/rand"
-	"time"
 )
-
-var serialRng = rand.New(rand.NewSource(time.Now().Unix()))
 
 // A Serial is a 31-bit value with the following characteristics:
 // The zero value is also the "invalid value" value
@@ -33,22 +29,6 @@ const (
 // four.
 func NewSerialFromData(in []byte) Serial {
 	return Serial(binary.BigEndian.Uint32(in))
-}
-
-// RandomMobileSerial returns a randomized non-unique Serial fit for a mobile
-func RandomMobileSerial() Serial {
-	return Serial(serialRng.Int31n(int32(SerialLastMobile-SerialFirstMobile))) + SerialFirstMobile
-}
-
-// RandomItemSerial returns a randomized non-unique Serial fit for an item
-func RandomItemSerial() Serial {
-	return Serial(serialRng.Int31n(int32(SerialLastItem-SerialFirstItem))) + SerialFirstItem
-}
-
-// RandomUnboundSerial returns a randomized non-unique Serial that is NOT FIT
-// for transmission to the client. These serials should be used internally only.
-func RandomUnboundSerial() Serial {
-	return Serial(serialRng.Int31())
 }
 
 // IsMobile returns true if the serial refers to a mobile

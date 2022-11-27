@@ -27,7 +27,7 @@ type NetState struct {
 	conn      *net.TCPConn
 	sendQueue chan serverpacket.Packet
 	id        string
-	m         *game.Mobile
+	m         *game.BaseMobile
 }
 
 // NewNetState constructs a new NetState object.
@@ -128,7 +128,6 @@ func (n *NetState) Service() {
 	// TODO Account authentication
 	pwh := sha256.Sum256([]byte(gslp.Password))
 	account := accountManager.GetOrCreate(gslp.Username, string(pwh[:]))
-	log.Printf("%v\n", account)
 
 	// Character list
 	n.Send(&serverpacket.CharacterList{
@@ -143,17 +142,15 @@ func (n *NetState) Service() {
 		n.Error("waiting for character login", err)
 		return
 	}
-	clrp, ok := cp.(*clientpacket.CharacterLogin)
+	_, ok = cp.(*clientpacket.CharacterLogin)
 	if !ok {
 		n.Error("waiting for character login", ErrWrongPacket)
 		return
 	}
-	log.Printf("character login request slot 0x%08X", clrp.Slot)
 
 	// TODO Character load
-	n.m = &game.Mobile{
+	n.m = &game.BaseMobile{
 		BaseObject: game.BaseObject{
-			ID:   uo.RandomMobileSerial(),
 			Item: uo.ItemNone,
 			Body: uo.GetBody("human-male"),
 			Name: gslp.Username,
@@ -164,6 +161,7 @@ func (n *NetState) Service() {
 			},
 		},
 	}
+	objectManager.Add(n.m, uo.SerialTypeMobile)
 
 	// Request version string
 	n.Send(&serverpacket.Version{})

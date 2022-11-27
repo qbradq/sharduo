@@ -1,6 +1,9 @@
 package game
 
-import "github.com/qbradq/sharduo/lib/uo"
+import (
+	"github.com/qbradq/sharduo/internal/util"
+	"github.com/qbradq/sharduo/lib/uo"
+)
 
 // Object is the interface every object in the game implements
 type Object interface {
@@ -14,6 +17,7 @@ type Object interface {
 // BaseObject is the base of all game objects and implements the Object
 // interface
 type BaseObject struct {
+	util.BaseSerializeable
 	// Unique ID number of the object
 	ID uo.Serial
 	// Item graphic of the object, if any

@@ -2,7 +2,6 @@ package uod
 
 import (
 	"bufio"
-	"crypto/sha256"
 	"errors"
 	"fmt"
 	"io"
@@ -21,6 +20,9 @@ import (
 
 // Account manager
 var accountManager *game.AccountManager
+
+// Object manager
+var objectManager *game.ObjectManager
 
 // Map of all active netstates.
 var netStates sync.Map
@@ -89,6 +91,7 @@ func loadSaves(dataPath string) {
 		return
 	}
 	accountManager = game.NewAccountManager(path.Join(dataPath, "accounts.json"))
+	objectManager = game.NewObjectManager(path.Join(dataPath, "objects.json"))
 }
 
 func writeSaves(dataPath string) {
@@ -145,8 +148,7 @@ func handleLoginConnection(c *net.TCPConn) {
 		log.Println("client sent wrong packet waiting for account login", cp)
 		return
 	}
-	pwh := sha256.Sum256([]byte(alp.Password))
-	account := accountManager.GetOrCreate(alp.Username, string(pwh[:]))
+	account := accountManager.GetOrCreate(alp.Username, game.HashPassword(alp.Password))
 	if account == nil {
 		log.Println("user login failed for", alp.Username)
 		ldp := &serverpacket.LoginDenied{
@@ -185,12 +187,11 @@ func handleLoginConnection(c *net.TCPConn) {
 		log.Println("client disconnected waiting for select server", err)
 		return
 	}
-	ssp, ok := cp.(*clientpacket.SelectServer)
+	_, ok = cp.(*clientpacket.SelectServer)
 	if !ok {
 		log.Println("client sent wrong packet waiting for select server", cp)
 		return
 	}
-	log.Println("selected server", ssp.Index)
 
 	// Connect to game server packet
 	sp = &serverpacket.ConnectToGameServer{

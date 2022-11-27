@@ -1,6 +1,6 @@
 package game
 
-// Mobile represents one mobile in the game.
-type Mobile struct {
+// BaseMobile provides the base implementation for Mobile
+type BaseMobile struct {
 	BaseObject
 }
