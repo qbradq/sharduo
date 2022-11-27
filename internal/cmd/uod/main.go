@@ -141,6 +141,9 @@ func handleLoginConnection(c *net.TCPConn) {
 		if err := pw.Flush(); err != nil {
 			log.Println("error flushing login denied packet", err)
 		}
+		// Giving the client a moment to process all the network traffic. This
+		// is required for ClassicUO compatibility.
+		time.Sleep(time.Second * 5)
 		return
 	}
 	log.Println("user login successful for", account.Username)
@@ -186,8 +189,8 @@ func handleLoginConnection(c *net.TCPConn) {
 		return
 	}
 
-	// Giving the client a moment to process the redirect packet. This is needed
-	// for ClassicUO compatibility.
+	// Giving the client a moment to process all the network traffic. This is
+	// required for ClassicUO compatibility.
 	time.Sleep(time.Second * 5)
 
 	// End of login session
