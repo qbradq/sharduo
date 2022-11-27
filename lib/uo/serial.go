@@ -45,6 +45,12 @@ func RandomItemSerial() Serial {
 	return Serial(serialRng.Int31n(int32(SerialLastItem-SerialFirstItem))) + SerialFirstItem
 }
 
+// RandomUnboundSerial returns a randomized non-unique Serial that is NOT FIT
+// for transmission to the client. These serials should be used internally only.
+func RandomUnboundSerial() Serial {
+	return Serial(serialRng.Int31())
+}
+
 // IsMobile returns true if the serial refers to a mobile
 func (s Serial) IsMobile() bool {
 	return s <= SerialLastMobile && s >= SerialFirstMobile

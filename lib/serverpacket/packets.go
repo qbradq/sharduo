@@ -145,12 +145,24 @@ func (p *CharacterList) Write(w io.Writer) {
 	putuint32(w, 0x000001e8)
 }
 
-// LoginComplete is sent after character login is sucessful.
+// LoginComplete is sent after character login is successful.
 type LoginComplete struct{}
 
 // Write implements the Packet interface.
 func (p *LoginComplete) Write(w io.Writer) {
 	putbyte(w, 0x55) // ID
+}
+
+// LoginDenied is sent when character login is denied for any reason.
+type LoginDenied struct {
+	// The reason for the login denial
+	Reason uo.LoginDeniedReason
+}
+
+// Write implements the Packet interface.
+func (p *LoginDenied) Write(w io.Writer) {
+	putbyte(w, 0x82) // ID
+	putbyte(w, byte(p.Reason))
 }
 
 // EnterWorld is sent just after character login to bring them into the world.

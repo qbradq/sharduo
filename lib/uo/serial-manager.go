@@ -1,14 +1,13 @@
 package uo
 
-import "fmt"
-
 // SerialManager types
 type SerialManagerType int
 
 // Valid values for SerialManager
 const (
-	SerialManagerTypeMobile SerialManagerType = 0
-	SerialManagerTypeItem   SerialManagerType = 1
+	SerialManagerTypeMobile  SerialManagerType = 0
+	SerialManagerTypeItem    SerialManagerType = 1
+	SerialManagerTypeUnbound SerialManagerType = 2
 )
 
 // SerialManager manages a pool of unique serials.
@@ -32,6 +31,8 @@ func (m *SerialManager) New(t SerialManagerType) Serial {
 			n = RandomMobileSerial()
 		case SerialManagerTypeItem:
 			n = RandomItemSerial()
+		case SerialManagerTypeUnbound:
+			n = RandomUnboundSerial()
 		default:
 			panic("unknown serial manager type")
 		}
@@ -43,11 +44,8 @@ func (m *SerialManager) New(t SerialManagerType) Serial {
 	return n
 }
 
-// Forcefully adds the serial to the set, panics on duplicate serial
+// Forcefully adds the serial to the set
 func (m *SerialManager) Add(s Serial) {
-	if _, duplicate := m.used[s]; duplicate {
-		panic(fmt.Sprintf("duplicate serial 0x%08X", s))
-	}
 	m.used[s] = struct{}{}
 }
 
