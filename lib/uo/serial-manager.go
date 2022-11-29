@@ -44,7 +44,6 @@ func (m *SerialManager) New(t SerialType) Serial {
 			panic("unknown serial manager type")
 		}
 		if _, duplicate := m.used[n]; !duplicate {
-			m.used[n] = struct{}{}
 			break
 		}
 	}

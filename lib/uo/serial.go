@@ -31,6 +31,13 @@ func NewSerialFromData(in []byte) Serial {
 	return Serial(binary.BigEndian.Uint32(in))
 }
 
+// Data creates a new byte slice of the serial for transmission on the wire.
+func (s Serial) Data() []byte {
+	buf := make([]byte, 4)
+	binary.BigEndian.PutUint32(buf, uint32(s))
+	return buf
+}
+
 // IsMobile returns true if the serial refers to a mobile
 func (s Serial) IsMobile() bool {
 	return s <= SerialLastMobile && s >= SerialFirstMobile

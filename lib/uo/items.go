@@ -7,6 +7,8 @@ type Item uint16
 const (
 	ItemDefault Item = 0x0000
 	ItemNone    Item = 0x0000
+	ItemHueFlag Item = 0x8000
+	ItemHueMask Item = 0x7fff
 )
 
 var items = map[string]Item{}
@@ -17,4 +19,19 @@ func GetItem(name string) Item {
 		return item
 	}
 	return ItemDefault
+}
+
+// HasHueFlag returns true if the hue flag is present
+func (i Item) HasHueFlag() bool {
+	return i&ItemHueFlag != 0
+}
+
+// SetHueFlag sets the hue flag and returns the new Body value
+func (i Item) SetHueFlag() Item {
+	return i | ItemHueFlag
+}
+
+// RemoveHueFlag removes the hue flag and returns the new Body value
+func (i Item) RemoveHueFlag() Item {
+	return i & ItemHueMask
 }

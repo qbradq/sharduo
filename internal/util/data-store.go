@@ -95,17 +95,6 @@ func (s *DataStore) GetByIndex(name string) Serializeable {
 	return s.Objects[ds]
 }
 
-// Set adds the object to the data store.
-func (s *DataStore) Set(o Serializeable, name string) {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-	s.Objects[o.GetSerial()] = o
-	if s.BuildIndex {
-		s.Index[name] = o.GetSerial()
-	}
-	s.sm.Add(o.GetSerial())
-}
-
 // Add adds the object to the store, assigning it a unique ID.
 func (s *DataStore) Add(o Serializeable, name string, serialType uo.SerialType) {
 	s.lock.Lock()
@@ -114,6 +103,7 @@ func (s *DataStore) Add(o Serializeable, name string, serialType uo.SerialType) 
 	if s.BuildIndex {
 		s.Index[name] = o.GetSerial()
 	}
+	s.Objects[o.GetSerial()] = o
 	s.sm.Add(o.GetSerial())
 }
 

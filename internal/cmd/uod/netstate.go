@@ -2,7 +2,6 @@ package uod
 
 import (
 	"bufio"
-	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -13,6 +12,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/qbradq/sharduo/internal/game"
+	"github.com/qbradq/sharduo/internal/util"
 	"github.com/qbradq/sharduo/lib/clientpacket"
 	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/uo"
@@ -27,7 +27,7 @@ type NetState struct {
 	conn      *net.TCPConn
 	sendQueue chan serverpacket.Packet
 	id        string
-	m         *game.BaseMobile
+	m         game.Mobile
 }
 
 // NewNetState constructs a new NetState object.
@@ -48,7 +48,11 @@ func (n *NetState) Log(fmtstr string, args ...interface{}) {
 
 // Error logs an message from this netstate and disconnect it.
 func (n *NetState) Error(where string, err error) {
-	log.Printf("%s:error:at %s:%s", n.id, where, err.Error())
+	if err != nil {
+		log.Printf("%s:error:at %s:%s", n.id, where, err.Error())
+	} else {
+		log.Printf("%s:error:at %s", n.id, where)
+	}
 	n.Disconnect()
 }
 
@@ -125,9 +129,13 @@ func (n *NetState) Service() {
 		n.Error("waiting for game server login", ErrWrongPacket)
 		return
 	}
+	account := accountManager.Get(uo.NewSerialFromData(gslp.Key))
+	if account == nil {
+		n.Error(fmt.Sprintf("bad login seed 0x%08X", gslp.Key), nil)
+		return
+	}
 	// TODO Account authentication
-	pwh := sha256.Sum256([]byte(gslp.Password))
-	account := accountManager.GetOrCreate(gslp.Username, string(pwh[:]))
+	account = accountManager.GetOrCreate(gslp.Username, game.HashPassword(gslp.Password))
 
 	// Character list
 	n.Send(&serverpacket.CharacterList{
@@ -149,36 +157,49 @@ func (n *NetState) Service() {
 	}
 
 	// TODO Character load
-	n.m = &game.BaseMobile{
+	isFemale := util.RandomBool()
+	n.m = objectManager.NewMobile(&game.BaseMobile{
 		BaseObject: game.BaseObject{
-			Item: uo.ItemNone,
-			Body: uo.GetBody("human-male"),
 			Name: gslp.Username,
+			Hue:  uo.RandomSkinHue(),
 			Location: game.Location{
 				X: 1607,
 				Y: 1595,
 				Z: 13,
 			},
 		},
-	}
-	objectManager.Add(n.m, uo.SerialTypeMobile)
+		IsFemale:  isFemale,
+		Body:      uo.GetHumanBody(isFemale),
+		Notoriety: uo.NotorietyInnocent,
+	})
+	n.m.Equip(objectManager.NewItem(&game.BaseItem{
+		BaseObject: game.BaseObject{
+			Name:     "shirt",
+			ArticleA: true,
+			Hue:      uo.RandomDyeHue(),
+		},
+		Graphic:  0x1517,
+		Wearable: true,
+		Layer:    uo.LayerShirt,
+	}))
 
 	// Request version string
 	n.Send(&serverpacket.Version{})
 
 	// Debug
 	n.Send(&serverpacket.EnterWorld{
-		Player: n.m.ID,
-		Body:   n.m.Body,
-		X:      n.m.Location.X,
-		Y:      n.m.Location.Y,
-		Z:      n.m.Location.Z,
+		Player: n.m.GetSerial(),
+		Body:   n.m.GetBody(),
+		X:      n.m.GetLocation().X,
+		Y:      n.m.GetLocation().Y,
+		Z:      n.m.GetLocation().Z,
 		Facing: uo.DirectionSouth | uo.DirectionRunningFlag,
 		Width:  7168,
 		Height: 4096,
 	})
 	n.Send(&serverpacket.LoginComplete{})
-	Broadcast("Welcome %s to Trammel Time!", n.m.Name)
+	Broadcast("Welcome %s to Trammel Time!", n.m.GetDisplayName())
+	n.Send(n.m.EquippedMobilePacket())
 
 	n.readLoop(r)
 }

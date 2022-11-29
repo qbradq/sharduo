@@ -23,3 +23,19 @@ func NewObjectManager(dbpath string) *ObjectManager {
 func (m *ObjectManager) Add(o util.Serializeable, serialType uo.SerialType) {
 	m.ds.Add(o, "", serialType)
 }
+
+// NewItem adds the newly-created item to the object manager and returns the
+// item. This method has the side-effect of setting the ID of the item.
+func (m *ObjectManager) NewItem(item Item) Item {
+	s := item.(util.Serializeable)
+	m.ds.Add(s, "", uo.SerialTypeItem)
+	return item
+}
+
+// NewMobile adds the newly-created mobile to the object manager and returns the
+// mobile. This method has the side-effect of setting the ID of the mobile.
+func (m *ObjectManager) NewMobile(mob Mobile) Mobile {
+	s := mob.(util.Serializeable)
+	m.ds.Add(s, "", uo.SerialTypeMobile)
+	return mob
+}

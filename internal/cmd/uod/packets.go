@@ -35,7 +35,7 @@ func handleClientPing(n *NetState, cp clientpacket.Packet) {
 func handleClientSpeech(n *NetState, cp clientpacket.Packet) {
 	p := cp.(*clientpacket.Speech)
 	if n.m != nil {
-		GlobalChat(n.m.Name, p.Text)
+		GlobalChat(n.m.GetDisplayName(), p.Text)
 	}
 }
 

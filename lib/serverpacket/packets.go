@@ -277,3 +277,62 @@ func (p *MoveAcknowledge) Write(w io.Writer) {
 	putbyte(w, byte(p.Sequence))  // Move sequence number
 	putbyte(w, byte(p.Notoriety)) // Player's notoriety
 }
+
+// EquippedMobile is sent to add or update a mobile with equipment graphics.
+type EquippedMobile struct {
+	// ID of the mobile
+	ID uo.Serial
+	// Body of the mobile
+	Body uo.Body
+	// X position of the mobile
+	X int
+	// Y position of the mobile
+	Y int
+	// Z position of the mobile
+	Z int
+	// Direction the mobile is facing
+	Facing uo.Direction
+	// Hue of the mobile
+	Hue uo.Hue
+	// Flags
+	Flags uo.MobileFlags
+	// Notoriety type
+	Notoriety uo.Notoriety
+	// List of equipped items
+	Equipment []*EquippedMobileItem
+}
+
+// EquippedMobileItem is used to send information about the equipment a mobile
+// is wearing.
+type EquippedMobileItem struct {
+	// ID of the item
+	ID uo.Serial
+	// Graphic of the item
+	Graphic uo.Item
+	// Layer of the item
+	Layer uo.Layer
+	// Hue of the item
+	Hue uo.Hue
+}
+
+// Write implements the Packet interface.
+func (p *EquippedMobile) Write(w io.Writer) {
+	putbyte(w, 0x78) // Packet ID
+	putuint16(w, uint16(19+len(p.Equipment)*9+4))
+	putuint32(w, uint32(p.ID))
+	putuint16(w, uint16(p.Body))
+	putuint16(w, uint16(p.X))
+	putuint16(w, uint16(p.Y))
+	putbyte(w, byte(int8(p.Z)))
+	putbyte(w, byte(p.Facing))
+	putuint16(w, uint16(p.Hue))
+	putbyte(w, byte(p.Flags))
+	putbyte(w, byte(p.Notoriety))
+	for _, item := range p.Equipment {
+		putuint32(w, uint32(item.ID))
+		putuint16(w, uint16(item.Graphic.SetHueFlag()))
+		putbyte(w, uint8(item.Layer))
+		putuint16(w, uint16(item.Hue))
+	}
+	putuint32(w, 0x00000000) // End of list marker
+}

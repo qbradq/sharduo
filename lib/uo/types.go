@@ -62,6 +62,8 @@ const (
 	LayerNPCBuyNoRestockContainer Layer = 27
 	LayerNPCSellContainer         Layer = 28
 	LayerBankBox                  Layer = 29
+	LayerFirstValid               Layer = LayerWeapon
+	LayerLastValid                Layer = LayerBankBox
 )
 
 // A StatusFlag describes the status of a mobile
@@ -151,7 +153,7 @@ const (
 	FontSmallNormal  Font = 9
 )
 
-// Status request types
+// StatusRequestType represents the types of status requests
 type StatusRequestType byte
 
 // All StatusRequestType values
@@ -159,4 +161,21 @@ const (
 	StatusRequesTypeGod    StatusRequestType = 0
 	StatusRequesTypeBasic  StatusRequestType = 4
 	StatusRequesTypeSkills StatusRequestType = 5
+)
+
+// Mobile flags
+type MobileFlags uint8
+
+// All MobileFlags flag values
+const (
+	MobileFlagNone          MobileFlags = 0x00
+	MobileFlagFrozen        MobileFlags = 0x01
+	MobileFlagFemale        MobileFlags = 0x02
+	MobileFlagPoisoned      MobileFlags = 0x04
+	MobileFlagFlying        MobileFlags = 0x04
+	MobileFlagYellowBar     MobileFlags = 0x08
+	MobileFlagIgnoreMobiles MobileFlags = 0x10
+	MobileFlagMovable       MobileFlags = 0x20
+	MobileFlagWarMode       MobileFlags = 0x40
+	MobileFlagHidden        MobileFlags = 0x80
 )

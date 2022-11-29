@@ -20,3 +20,17 @@ func NewMap() *Map {
 		Chunks: make([]*Chunk, MapChunksWidth*MapChunksHeight),
 	}
 }
+
+// GetChunk returns a pointer to the chunk for the given location.
+func (m *Map) GetChunk(l Location) *Chunk {
+	l = l.WrapAndBound()
+	cx := l.X / ChunkWidth
+	cy := l.Y / ChunkHeight
+	return m.Chunks[cy*MapChunksWidth+cx]
+}
+
+// AddNewObject adds a new object to the map.
+func (m *Map) AddNewObject(o Object) {
+	c := m.GetChunk(o.GetLocation())
+	c.MoveInto(o)
+}
