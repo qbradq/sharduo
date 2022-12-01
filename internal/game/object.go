@@ -1,10 +1,16 @@
 package game
 
 import (
+	"encoding/gob"
+
 	"github.com/qbradq/sharduo/internal/util"
 	"github.com/qbradq/sharduo/lib/uo"
 	orderedmap "github.com/wk8/go-ordered-map"
 )
+
+func init() {
+	gob.Register(BaseObject{})
+}
 
 // Object is the interface every object in the game implements
 type Object interface {
@@ -37,6 +43,37 @@ type BaseObject struct {
 	Facing uo.Direction
 	// Contents is the collection of all the items contained within this object
 	Contents *orderedmap.OrderedMap
+}
+
+// GetTypeName implements the util.Serializeable interface.
+func (o *BaseObject) GetTypeName() string {
+	return "BaseObject"
+}
+
+// Serialize implements the util.Serializeable interface.
+func (o *BaseObject) Serialize(f *util.TagFileWriter) {
+	o.BaseSerializeable.Serialize(f)
+	f.WriteString("Name", o.Name)
+	f.WriteBool("ArticleA", o.ArticleA)
+	f.WriteBool("ArticleAn", o.ArticleA)
+	f.WriteNumber("Hue", int(o.Hue))
+	f.WriteNumber("X", o.Location.X)
+	f.WriteNumber("Y", o.Location.Y)
+	f.WriteNumber("Z", o.Location.Z)
+	f.WriteNumber("Facing", int(o.Facing))
+}
+
+// Deserialize implements the util.Serializeable interface.
+func (o *BaseObject) Deserialize(f *util.TagFileObject) {
+	o.BaseSerializeable.Deserialize(f)
+	o.Name = f.GetString("Name", "unknown entity")
+	o.ArticleA = f.GetBool("ArticleA", false)
+	o.ArticleAn = f.GetBool("ArticleAn", false)
+	o.Hue = uo.Hue(f.GetNumber("Hue", int(uo.HueIce1)))
+	o.Location.X = f.GetNumber("X", 1607)
+	o.Location.Y = f.GetNumber("Y", 1595)
+	o.Location.Z = f.GetNumber("Z", 13)
+	o.Facing = uo.Direction(f.GetNumber("Facing", int(uo.DirectionSouth)))
 }
 
 // GetLocation implements the Object interface

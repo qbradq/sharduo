@@ -8,8 +8,9 @@ import (
 	"log"
 	"net"
 	"os"
-	"path"
+	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/qbradq/sharduo/internal/game"
@@ -24,14 +25,34 @@ var accountManager *game.AccountManager
 // Object manager
 var objectManager *game.ObjectManager
 
+// Save manager
+var saveManager *SaveManager
+
 // Map of all active netstates.
 var netStates sync.Map
 
+// trap is used to trap all of the system signals.
+func trap(l *net.TCPListener) {
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGABRT, syscall.SIGKILL)
+	go func() {
+		<-sigs
+		if err := saveManager.Save(); err != nil {
+			log.Fatal("error while trying to save data stores from signal handler", err)
+		}
+		l.Close()
+	}()
+}
+
 // Main is the entry point for uod.
 func Main() {
-	dataPath := "data"
-
-	loadSaves(dataPath)
+	savePath := "saves"
+	saveManager = NewSaveManager(savePath)
+	if err := saveManager.Load(); err != nil {
+		log.Println("error while trying to save data stores from main goroutine", err)
+		os.Exit(1)
+	}
+	saveManager.Save()
 
 	go LoginServerMain()
 
@@ -47,10 +68,14 @@ func Main() {
 		return
 	}
 	log.Printf("game server listening at %s:%d\n", ipstr, port)
+	trap(l)
 	for {
 		c, err := l.AcceptTCP()
 		if err != nil {
-			writeSaves(dataPath)
+			if err := saveManager.Save(); err != nil {
+				log.Println("error while trying to save data stores from main goroutine", err)
+				os.Exit(1)
+			}
 			if errors.Is(err, io.EOF) {
 				break
 			} else {
@@ -83,23 +108,6 @@ func LoginServerMain() {
 		}
 		go handleLoginConnection(c)
 	}
-}
-
-func loadSaves(dataPath string) {
-	if err := os.MkdirAll(dataPath, 0777); err != nil {
-		log.Fatal(err)
-		return
-	}
-	accountManager = game.NewAccountManager(path.Join(dataPath, "accounts.json"))
-	objectManager = game.NewObjectManager(path.Join(dataPath, "objects.json"))
-}
-
-func writeSaves(dataPath string) {
-	if err := os.MkdirAll(dataPath, 0777); err != nil {
-		log.Fatal(err)
-		return
-	}
-	accountManager.Save(path.Join(dataPath, "accounts.json"))
 }
 
 func handleLoginConnection(c *net.TCPConn) {

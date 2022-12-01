@@ -1,9 +1,16 @@
 package game
 
 import (
+	"encoding/gob"
+
+	"github.com/qbradq/sharduo/internal/util"
 	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/uo"
 )
+
+func init() {
+	gob.Register(BaseMobile{})
+}
 
 // Mobile is the interface all mobiles implement
 type Mobile interface {
@@ -29,6 +36,21 @@ type BaseMobile struct {
 	Equipment map[uo.Layer]Item
 	// Notoriety of the mobile
 	Notoriety uo.Notoriety
+}
+
+// GetTypeName implements the util.Serializeable interface.
+func (m *BaseMobile) GetTypeName() string {
+	return "BaseMobile"
+}
+
+// Serialize implements the util.Serializeable interface.
+func (m *BaseMobile) Serialize(f *util.TagFileWriter) {
+	m.BaseObject.Serialize(f)
+}
+
+// Deserialize implements the util.Serializeable interface.
+func (m *BaseMobile) Deserialize(f *util.TagFileObject) {
+	m.BaseObject.Deserialize(f)
 }
 
 // GetBody implements the Mobile interface.

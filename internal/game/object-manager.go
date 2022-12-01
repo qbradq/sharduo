@@ -1,6 +1,8 @@
 package game
 
 import (
+	"io"
+
 	"github.com/qbradq/sharduo/internal/util"
 	"github.com/qbradq/sharduo/lib/uo"
 )
@@ -12,9 +14,9 @@ type ObjectManager struct {
 }
 
 // NewObjectManager creates and returns a new ObjetManager object.
-func NewObjectManager(dbpath string) *ObjectManager {
+func NewObjectManager() *ObjectManager {
 	return &ObjectManager{
-		ds: util.OpenOrCreateDataStore(dbpath, false),
+		ds: util.OpenOrCreateDataStore(false),
 	}
 }
 
@@ -38,4 +40,9 @@ func (m *ObjectManager) NewMobile(mob Mobile) Mobile {
 	s := mob.(util.Serializeable)
 	m.ds.Add(s, "", uo.SerialTypeMobile)
 	return mob
+}
+
+// Save writes the object data store in TagFile format.
+func (m *ObjectManager) Save(w io.Writer) []error {
+	return m.ds.Save("objects", w)
 }

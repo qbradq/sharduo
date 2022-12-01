@@ -1,9 +1,7 @@
 package util
 
 import (
-	"encoding/json"
-	"log"
-	"os"
+	"io"
 	"sync"
 
 	"github.com/qbradq/sharduo/lib/uo"
@@ -35,21 +33,10 @@ func NewDataStore(index bool) *DataStore {
 
 // OpenOrCreateDataStore opens the named DataStore or creates a new, initialized
 // one.
-func OpenOrCreateDataStore(dbpath string, index bool) *DataStore {
+func OpenOrCreateDataStore(index bool) *DataStore {
 	ds := NewDataStore(index)
-	d, err := os.ReadFile(dbpath)
-	if os.IsNotExist(err) {
-		return ds
-	} else if err != nil {
-		log.Fatal(err)
-		return nil
-	}
-	if err := json.Unmarshal(d, ds); err != nil {
-		log.Fatal(err)
-		return nil
-	}
 
-	// Rebuild the serial manager
+	// Rebuild serial manager
 	for serial := range ds.Objects {
 		ds.sm.Add(serial)
 	}
@@ -57,16 +44,23 @@ func OpenOrCreateDataStore(dbpath string, index bool) *DataStore {
 	return ds
 }
 
-// Save saves the data store to disk.
-func (s *DataStore) Save(dbpath string) error {
+// Save writes all objects to the given io.Writer. It is a wrapper for Write().
+func (s *DataStore) Save(dataStoreName string, w io.Writer) []error {
+	tfw := NewTagFileWriter(w)
+	tfw.WriteCommentLine(dataStoreName + " data store")
+	s.Write(tfw)
+	tfw.WriteCommentLine("END OF FILE")
+	return tfw.Errors()
+}
+
+// Write writes all objects in the the data store to the given tag file.
+func (s *DataStore) Write(f *TagFileWriter) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
-	d, err := json.Marshal(s)
-	if err != nil {
-		return err
+	for _, s := range s.Objects {
+		f.WriteObject(s)
 	}
-	return os.WriteFile(dbpath, d, 0777)
 }
 
 // Get returns the named object or nil.

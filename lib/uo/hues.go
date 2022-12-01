@@ -21,6 +21,11 @@ const (
 	HueSkinMax Hue = 1058
 	HueMax     Hue = 3000
 	HueAlpha   Hue = 0xffff
+	HueIce1    Hue = 1152
+	HueIce2    Hue = 1153
+	HueIce3    Hue = 1154
+	HueIce4    Hue = 1151
+	HueIce5    Hue = 1150
 )
 
 // RandomSkinHue returns a random skin hue

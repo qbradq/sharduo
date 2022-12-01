@@ -1,6 +1,7 @@
 package game
 
 import (
+	"io"
 	"sync"
 
 	"github.com/qbradq/sharduo/internal/util"
@@ -16,11 +17,11 @@ type AccountManager struct {
 }
 
 // NewAccountManager creates and returns a new AccountManager object
-func NewAccountManager(dbpath string) *AccountManager {
+func NewAccountManager() *AccountManager {
 	adminUsername := "admin"
 	adminPassword := "password"
 	m := &AccountManager{
-		ds: util.OpenOrCreateDataStore(dbpath, true),
+		ds: util.OpenOrCreateDataStore(true),
 	}
 	m.GetOrCreate(adminUsername, HashPassword(adminPassword))
 	return m
@@ -57,7 +58,7 @@ func (m *AccountManager) GetOrCreate(username, passwordHash string) *Account {
 	return a
 }
 
-// Save writes the account manager to a JSON file.
-func (m *AccountManager) Save(dbpath string) error {
-	return m.ds.Save(dbpath)
+// Save writes the account manager in tag file format.
+func (m *AccountManager) Save(w io.Writer) []error {
+	return m.ds.Save("accounts", w)
 }
