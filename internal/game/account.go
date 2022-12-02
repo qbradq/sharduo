@@ -3,7 +3,9 @@ package game
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"log"
 
+	"github.com/google/uuid"
 	"github.com/qbradq/sharduo/internal/util"
 )
 
@@ -34,13 +36,19 @@ func (a *Account) GetTypeName() string {
 // Serialize implements the util.Serializeable interface.
 func (a *Account) Serialize(f *util.TagFileWriter) {
 	a.BaseSerializeable.Serialize(f)
-	f.WriteString("username", a.Username)
-	f.WriteString("passwordHash", a.PasswordHash)
+	f.WriteString("Username", a.Username)
+	f.WriteString("PasswordHash", a.PasswordHash)
 }
 
 // Deserialize implements the util.Serializeable interface.
 func (a *Account) Deserialize(f *util.TagFileObject) {
 	a.BaseSerializeable.Deserialize(f)
+	accountRecoveryString := "__bad_account__" + uuid.New().String()
+	a.Username = f.GetString("Username", accountRecoveryString)
+	if a.Username == accountRecoveryString {
+		log.Println("account recovery required:", accountRecoveryString)
+	}
+	a.PasswordHash = f.GetString("PasswordHash", "")
 }
 
 // NewAccount creates a new account object

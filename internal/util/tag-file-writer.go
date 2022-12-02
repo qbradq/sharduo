@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io"
 	"strings"
+
+	"github.com/qbradq/sharduo/lib/uo"
 )
 
 // TagFileWriter reads and writes tag files
@@ -77,6 +79,24 @@ func (f *TagFileWriter) WriteBool(name string, value bool) {
 	if value {
 		if _, err := f.w.Write([]byte(fmt.Sprintf("%s\n", name))); err != nil {
 			f.handleError(err)
+		}
+	}
+}
+
+// WriteSerialSlice writes a slice of serial values to the io.Writer.
+func (f *TagFileWriter) WriteSerialSlice(name string, ss []uo.Serial) {
+	b := strings.Builder{}
+	if _, err := b.WriteString(name); err != nil {
+		panic(err)
+	}
+	if _, err := b.WriteRune('='); err != nil {
+		panic(err)
+	}
+	for idx, s := range ss {
+		if idx == 0 {
+			b.WriteString(s.String())
+		} else {
+			b.WriteString(", " + s.String())
 		}
 	}
 }

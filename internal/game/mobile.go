@@ -1,15 +1,13 @@
 package game
 
 import (
-	"encoding/gob"
-
 	"github.com/qbradq/sharduo/internal/util"
 	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/uo"
 )
 
 func init() {
-	gob.Register(BaseMobile{})
+	util.RegisterCtor(func() util.Serializeable { return &BaseMobile{} })
 }
 
 // Mobile is the interface all mobiles implement
@@ -32,10 +30,10 @@ type BaseMobile struct {
 	IsFemale bool
 	// Animation body of the object
 	Body uo.Body
-	// Collection of currently equipped items
-	Equipment map[uo.Layer]Item
 	// Notoriety of the mobile
 	Notoriety uo.Notoriety
+	// equipment is the collection of equipment this mobile is wearing, if any
+	equipment EquipmentCollection
 }
 
 // GetTypeName implements the util.Serializeable interface.
@@ -46,6 +44,10 @@ func (m *BaseMobile) GetTypeName() string {
 // Serialize implements the util.Serializeable interface.
 func (m *BaseMobile) Serialize(f *util.TagFileWriter) {
 	m.BaseObject.Serialize(f)
+	f.WriteBool("IsFemale", m.IsFemale)
+	f.WriteNumber("Body", int(m.Body))
+	f.WriteNumber("Notoriety", int(m.Notoriety))
+	m.equipment.Write("Equipment", f)
 }
 
 // Deserialize implements the util.Serializeable interface.
@@ -58,14 +60,7 @@ func (m *BaseMobile) GetBody() uo.Body { return m.Body }
 
 // Equip implements the Mobile interface.
 func (m *BaseMobile) Equip(item Item) bool {
-	if m.Equipment == nil {
-		m.Equipment = make(map[uo.Layer]Item)
-	}
-	if _, duplicate := m.Equipment[item.GetLayer()]; duplicate {
-		return false
-	}
-	m.Equipment[item.GetLayer()] = item
-	return true
+	return m.equipment.Equip(item)
 }
 
 // EquippedMobilePacket implements the Mobile interface.
@@ -85,13 +80,14 @@ func (m *BaseMobile) EquippedMobilePacket() *serverpacket.EquippedMobile {
 		Flags:     flags,
 		Notoriety: m.Notoriety,
 	}
-	for _, item := range m.Equipment {
+	m.equipment.Map(func(item Item) error {
 		p.Equipment = append(p.Equipment, &serverpacket.EquippedMobileItem{
 			ID:      item.GetSerial(),
 			Graphic: item.GetGraphic(),
 			Layer:   item.GetLayer(),
 			Hue:     item.GetHue(),
 		})
-	}
+		return nil
+	})
 	return p
 }

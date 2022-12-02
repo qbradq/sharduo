@@ -27,6 +27,11 @@ func (f *TagFileReader) handleError(err error) {
 	f.errs = append(f.errs, err)
 }
 
+// Errors returns the slice of all accumulated errors.
+func (f *TagFileReader) Errors() []error {
+	return f.errs
+}
+
 // CreateObject creates and deserializes a new object from a TagFileObject.
 func (f *TagFileReader) CreateObject() Serializeable {
 	s := NewFromCtor(f.nextObject.t)
@@ -78,10 +83,10 @@ func (f *TagFileReader) ReadObject() (Serializeable, error) {
 				f.handleError(fmt.Errorf("error loading tag file at line %d:initial object type not found", f.ln))
 				return nil, nil
 			}
-		}
-
-		// Next object in file, process the current and return it
-		if isTypeLine(line) {
+			f.nextObject = NewTagFileObject(f)
+			f.nextObject.t = extractObjectType(line)
+		} else if isTypeLine(line) {
+			f.nextObject.t = extractObjectType(line)
 			s := f.CreateObject()
 			f.nextObject = NewTagFileObject(f)
 			if err := f.nextObject.HandleTypeLine(line); err != nil {

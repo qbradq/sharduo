@@ -1,14 +1,12 @@
 package game
 
 import (
-	"encoding/gob"
-
 	"github.com/qbradq/sharduo/internal/util"
 	"github.com/qbradq/sharduo/lib/uo"
 )
 
 func init() {
-	gob.Register(BaseItem{})
+	util.RegisterCtor(func() util.Serializeable { return &BaseItem{} })
 }
 
 // Item is the interface that all non-static items implement.
@@ -39,11 +37,17 @@ func (i *BaseItem) GetTypeName() string {
 // Serialize implements the util.Serializeable interface.
 func (i *BaseItem) Serialize(f *util.TagFileWriter) {
 	i.BaseObject.Serialize(f)
+	f.WriteHex("Graphic", int(i.Graphic))
+	f.WriteBool("Wearable", i.Wearable)
+	f.WriteNumber("Layer", int(i.Layer))
 }
 
 // Deserialize implements the util.Serializeable interface.
 func (i *BaseItem) Deserialize(f *util.TagFileObject) {
 	i.BaseObject.Deserialize(f)
+	i.Graphic = uo.Item(f.GetNumber("Graphic", 0))
+	i.Wearable = f.GetBool("Wearable", false)
+	i.Layer = uo.Layer(f.GetNumber("Layer", int(uo.LayerInvalid)))
 }
 
 // GetLayer implements the Item interface.

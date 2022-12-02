@@ -46,3 +46,8 @@ func (m *ObjectManager) NewMobile(mob Mobile) Mobile {
 func (m *ObjectManager) Save(w io.Writer) []error {
 	return m.ds.Save("objects", w)
 }
+
+// Load loads the object data store.
+func (m *ObjectManager) Load(r io.Reader) []error {
+	return m.ds.Load(r)
+}

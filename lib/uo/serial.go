@@ -2,6 +2,7 @@ package uo
 
 import (
 	"encoding/binary"
+	"strconv"
 )
 
 // A Serial is a 31-bit value with the following characteristics:
@@ -36,6 +37,20 @@ func (s Serial) Data() []byte {
 	buf := make([]byte, 4)
 	binary.BigEndian.PutUint32(buf, uint32(s))
 	return buf
+}
+
+// NewSerialFromString returns a new Serial parsed as a hex number.
+func NewSerialFromString(in string) Serial {
+	s, err := strconv.ParseUint(in, 0, 31)
+	if err != nil {
+		panic(err)
+	}
+	return Serial(s)
+}
+
+// String returns the string representation of the serial.
+func (s Serial) String() string {
+	return string(strconv.AppendInt(nil, int64(s), 16))
 }
 
 // IsMobile returns true if the serial refers to a mobile

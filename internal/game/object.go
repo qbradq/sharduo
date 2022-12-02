@@ -1,15 +1,13 @@
 package game
 
 import (
-	"encoding/gob"
-
 	"github.com/qbradq/sharduo/internal/util"
 	"github.com/qbradq/sharduo/lib/uo"
 	orderedmap "github.com/wk8/go-ordered-map"
 )
 
 func init() {
-	gob.Register(BaseObject{})
+	util.RegisterCtor(func() util.Serializeable { return &BaseObject{} })
 }
 
 // Object is the interface every object in the game implements

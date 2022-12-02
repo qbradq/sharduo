@@ -1,6 +1,7 @@
 package util
 
 import (
+	"errors"
 	"io"
 	"sync"
 
@@ -53,6 +54,30 @@ func (s *DataStore) Save(dataStoreName string, w io.Writer) []error {
 	return tfw.Errors()
 }
 
+// Load merges the contents of the data store with that from the tag file. It
+// is a wrapper for Read().
+func (s *DataStore) Load(r io.Reader) []error {
+	tfr := NewTagFileReader(r)
+	s.Read(tfr)
+	return tfr.Errors()
+}
+
+// Read reads the data store from the tag file.
+func (s *DataStore) Read(f *TagFileReader) []error {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
+	for {
+		o, err := f.ReadObject()
+		if errors.Is(err, io.EOF) {
+			return f.Errors()
+		} else if o != nil {
+			id := o.GetSerial()
+			s.Objects[id] = o
+		}
+	}
+}
+
 // Write writes all objects in the the data store to the given tag file.
 func (s *DataStore) Write(f *TagFileWriter) {
 	s.lock.RLock()
@@ -95,13 +120,41 @@ func (s *DataStore) Add(o Serializeable, name string, serialType uo.SerialType) 
 	defer s.lock.Unlock()
 	o.SetSerial(s.UniqueSerial(serialType))
 	if s.BuildIndex {
-		s.Index[name] = o.GetSerial()
+		s.AddIndex(name, o)
 	}
 	s.Objects[o.GetSerial()] = o
 	s.sm.Add(o.GetSerial())
 }
 
+// AddIndex adds a string index to the datastore.
+func (s *DataStore) AddIndex(name string, o Serializeable) {
+	s.Index[name] = o.GetSerial()
+}
+
 // UniqueSerial returns a uo.Serial that is unique to this dataset.
 func (s *DataStore) UniqueSerial(serialType uo.SerialType) uo.Serial {
 	return s.sm.New(serialType)
+}
+
+// Map executes a function on every object in the datastore.
+func (s *DataStore) Map(fn func(o Serializeable) error) []error {
+	var errs []error
+
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	for _, o := range s.Objects {
+		if err := fn(o); err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	return errs
+}
+
+// Length returns the number of objects in the data store.
+func (s *DataStore) Length() int {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	return len(s.Objects)
 }

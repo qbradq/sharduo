@@ -36,11 +36,15 @@ func trap(l *net.TCPListener) {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGABRT, syscall.SIGKILL)
 	go func() {
-		<-sigs
-		if err := saveManager.Save(); err != nil {
+		sig := <-sigs
+		if sig == syscall.SIGINT || sig == syscall.SIGQUIT {
+			// Close the main listener and let the graceful shutdown save the
+			// data stores.
+			l.Close()
+		} else if err := saveManager.Save(); err != nil {
+			// Last-ditch save attempt failed
 			log.Fatal("error while trying to save data stores from signal handler", err)
 		}
-		l.Close()
 	}()
 }
 
@@ -49,10 +53,9 @@ func Main() {
 	savePath := "saves"
 	saveManager = NewSaveManager(savePath)
 	if err := saveManager.Load(); err != nil {
-		log.Println("error while trying to save data stores from main goroutine", err)
+		log.Println("error while trying to load data stores from main goroutine", err)
 		os.Exit(1)
 	}
-	saveManager.Save()
 
 	go LoginServerMain()
 

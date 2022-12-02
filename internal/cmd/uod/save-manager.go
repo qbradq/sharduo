@@ -27,24 +27,6 @@ func NewSaveManager(savePath string) *SaveManager {
 	}
 }
 
-// Load initializes all global data managers from the latest save files.
-func (m *SaveManager) Load() error {
-	if !m.lock.TryLock() {
-		return nil
-	}
-	defer m.lock.Unlock()
-
-	if err := os.MkdirAll(m.savePath, 0777); err != nil {
-		log.Println("error creating save directory", err)
-		return err
-	}
-
-	accountManager = game.NewAccountManager()
-	objectManager = game.NewObjectManager()
-
-	return nil
-}
-
 // reportErrors logs all errors in the slice, then returns a single error with
 // a summary report.
 func (m *SaveManager) reportErrors(errs []error) error {
@@ -52,6 +34,67 @@ func (m *SaveManager) reportErrors(errs []error) error {
 		log.Println(err)
 	}
 	return fmt.Errorf("%d errors reported", len(errs))
+}
+
+// Load reads in an entire save file.
+func (m *SaveManager) Load() error {
+	if !m.lock.TryLock() {
+		return nil
+	}
+	defer m.lock.Unlock()
+
+	// Look for the newest save and load it.
+	entries, err := os.ReadDir(m.savePath)
+	if err != nil {
+		return err
+	}
+	accountManager = game.NewAccountManager()
+	objectManager = game.NewObjectManager()
+	if len(entries) == 0 {
+		return nil
+	}
+	latestIdx := -1
+	var latestModTime time.Time
+	for i, e := range entries {
+		info, err := e.Info()
+		if err != nil {
+			return err
+		}
+		if info.ModTime().After(latestModTime) {
+			latestModTime = info.ModTime()
+			latestIdx = i
+		}
+	}
+	e := entries[latestIdx]
+	filePath := path.Join(m.savePath, e.Name())
+	zf, err := zip.OpenReader(filePath)
+	if err != nil {
+		return nil
+	}
+	defer zf.Close()
+	log.Println("loading data stores from", filePath)
+
+	r, err := zf.Open("accounts.ini")
+	if err != nil {
+		return err
+	}
+	if errs := accountManager.Load(r); errs != nil {
+		r.Close()
+		return m.reportErrors(errs)
+	}
+	r.Close()
+
+	r, err = zf.Open("objects.ini")
+	if err != nil {
+		return err
+	}
+	if errs := objectManager.Load(r); errs != nil {
+		r.Close()
+		return m.reportErrors(errs)
+	}
+	r.Close()
+
+	return nil
 }
 
 // Save generates and writes all of the save files unless another save is in
@@ -62,16 +105,23 @@ func (m *SaveManager) Save() error {
 	}
 	defer m.lock.Unlock()
 
+	// Load in progress
+	if accountManager == nil || objectManager == nil {
+		return nil
+	}
+
 	if err := os.MkdirAll(m.savePath, 0777); err != nil {
 		log.Println("error creating save directory", err)
 		return err
 	}
 
-	z, err := os.Create(path.Join(m.savePath, m.getFileName()+".zip"))
+	filePath := path.Join(m.savePath, m.getFileName()+".zip")
+	z, err := os.Create(filePath)
 	if err != nil {
 		return err
 	}
 	defer z.Close()
+	log.Println("saving data stores to", filePath)
 
 	w := zip.NewWriter(z)
 	defer w.Close()
