@@ -10,32 +10,49 @@ type Location struct {
 	Z int
 }
 
+// WrapToOverworld returns the location wrapped to the overworld portion of the
+// map.
+func (l Location) WrapToOverworld() Location {
+	for l.X < 0 {
+		l.X += MapOverworldWidth
+	}
+	for l.X >= MapOverworldWidth {
+		l.X -= MapOverworldWidth
+	}
+	for l.Y < 0 {
+		l.Y += MapHeight
+	}
+	for l.Y >= MapHeight {
+		l.Y -= MapHeight
+	}
+	return l
+}
+
+// WrapToDungeonServer returns the location wrapped to the dungeon server
+// section of the map.
+func (l Location) WrapToDungeonServer() Location {
+	for l.X < MapOverworldWidth {
+		l.X += MapWidth - MapOverworldWidth
+	}
+	for l.X > MapWidth {
+		l.X -= MapWidth - MapOverworldWidth
+	}
+	for l.Y < 0 {
+		l.Y += MapHeight
+	}
+	for l.Y >= MapHeight {
+		l.Y -= MapHeight
+	}
+	return l
+}
+
 // WrapAndBound wraps and bounds the spacial portion of the location to the
-// map dimensions.
-func (l Location) WrapAndBound() Location {
-	ret := l
-	for {
-		if ret.X < 0 {
-			ret.X += MapWidth
-		} else if l.X >= MapWidth {
-			ret.X -= MapWidth
-		} else {
-			break
-		}
+// map dimensions relative to a reference point. UpdateAndBound will handle map
+// wrapping as appropriate based on the reference location.
+func (l Location) WrapAndBound(ref Location) Location {
+	if ref.X < MapOverworldWidth {
+		return l.WrapToOverworld()
+	} else {
+		return l.WrapToDungeonServer()
 	}
-	for {
-		if ret.Y < 0 {
-			ret.Y += MapHeight
-		} else if l.Y >= MapHeight {
-			ret.Y -= MapHeight
-		} else {
-			break
-		}
-	}
-	if ret.Z < -127 {
-		ret.Z = -127
-	} else if ret.Z >= 128 {
-		ret.Z = 127
-	}
-	return ret
 }

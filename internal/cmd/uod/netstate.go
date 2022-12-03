@@ -182,6 +182,15 @@ func (n *NetState) Service() {
 		Wearable: true,
 		Layer:    uo.LayerShirt,
 	}))
+	n.m.Equip(objectManager.NewItem(&game.BaseItem{
+		BaseObject: game.BaseObject{
+			Name: "pants",
+			Hue:  uo.RandomDyeHue(),
+		},
+		Graphic:  0x152E,
+		Wearable: true,
+		Layer:    uo.LayerPants,
+	}))
 
 	// Request version string
 	n.Send(&serverpacket.Version{})

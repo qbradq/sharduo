@@ -12,7 +12,7 @@ func init() {
 	clientPacketFactory.add(0x02, handleWalkRequest)
 	clientPacketFactory.add(0x06, ignorePacket)
 	clientPacketFactory.add(0x09, ignorePacket)
-	clientPacketFactory.add(0x34, ignorePacket)
+	clientPacketFactory.add(0x34, handlePlayerStatusRequest)
 	clientPacketFactory.add(0x73, handleClientPing)
 	clientPacketFactory.add(0xad, handleClientSpeech)
 	clientPacketFactory.add(0xbd, handleClientVersion)
@@ -34,6 +34,12 @@ func handleClientPing(n *NetState, cp clientpacket.Packet) {
 
 func handleClientSpeech(n *NetState, cp clientpacket.Packet) {
 	p := cp.(*clientpacket.Speech)
+	if len(p.Text) == 0 {
+		return
+	}
+	if p.Text[0] == '[' {
+
+	}
 	if n.m != nil {
 		GlobalChat(n.m.GetDisplayName(), p.Text)
 	}
@@ -59,4 +65,8 @@ func handleWalkRequest(n *NetState, cp clientpacket.Packet) {
 		Sequence:  p.Sequence,
 		Notoriety: uo.NotorietyInnocent,
 	})
+}
+
+func handlePlayerStatusRequest(n *NetState, cp clientpacket.Packet) {
+
 }

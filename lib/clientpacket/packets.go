@@ -18,7 +18,7 @@ func init() {
 	packetFactory.add(0x91, newGameServerLogin)
 	packetFactory.add(0xA0, newSelectServer)
 	packetFactory.add(0xAD, newSpeech)
-	packetFactory.ignore(0xB5)
+	packetFactory.ignore(0xB5) // Open chat window request
 	packetFactory.add(0xBD, newVersion)
 	packetFactory.add(0xBF, newGeneralInformation)
 	packetFactory.add(0xC8, newClientViewRange)
