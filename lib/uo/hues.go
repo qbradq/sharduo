@@ -1,7 +1,5 @@
 package uo
 
-import "math/rand"
-
 // A Hue is a 17-bit value that describes the rendering mode of an object.
 // Hues have the following characteristics:
 // The zero value means "default rendering mode"
@@ -29,11 +27,11 @@ const (
 )
 
 // RandomSkinHue returns a random skin hue
-func RandomSkinHue() Hue {
-	return Hue(rand.Intn(int(HueSkinMax-HueSkinMin))) + HueSkinMin
+func RandomSkinHue(r RandomSource) Hue {
+	return Hue(r.Random(int(HueSkinMin), int(HueSkinMax)))
 }
 
 // RandomDyeHue returns a random normal dye hue
-func RandomDyeHue() Hue {
-	return Hue(rand.Intn(int(HueDyeMax-HueDyeMin))) + HueDyeMin
+func RandomDyeHue(r RandomSource) Hue {
+	return Hue(r.Random(int(HueDyeMin), int(HueDyeMax)))
 }

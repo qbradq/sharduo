@@ -3,8 +3,8 @@ package game
 import (
 	"io"
 
-	"github.com/qbradq/sharduo/internal/util"
 	"github.com/qbradq/sharduo/lib/uo"
+	"github.com/qbradq/sharduo/lib/util"
 )
 
 // ObjectManager manages all of the game objects on the server.
@@ -14,9 +14,9 @@ type ObjectManager struct {
 }
 
 // NewObjectManager creates and returns a new ObjetManager object.
-func NewObjectManager() *ObjectManager {
+func NewObjectManager(rng uo.RandomSource) *ObjectManager {
 	return &ObjectManager{
-		ds: util.OpenOrCreateDataStore(false),
+		ds: util.OpenOrCreateDataStore(rng, false),
 	}
 }
 

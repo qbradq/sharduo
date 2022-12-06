@@ -12,7 +12,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/qbradq/sharduo/internal/game"
-	"github.com/qbradq/sharduo/internal/util"
 	"github.com/qbradq/sharduo/lib/clientpacket"
 	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/uo"
@@ -157,11 +156,11 @@ func (n *NetState) Service() {
 	}
 
 	// TODO Character load
-	isFemale := util.RandomBool()
-	n.m = objectManager.NewMobile(&game.BaseMobile{
+	isFemale := world.Random().RandomBool()
+	n.m = world.NewMobile(&game.BaseMobile{
 		BaseObject: game.BaseObject{
 			Name: gslp.Username,
-			Hue:  uo.RandomSkinHue(),
+			Hue:  uo.RandomSkinHue(world.Random()),
 			Location: game.Location{
 				X: 1607,
 				Y: 1595,
@@ -172,20 +171,20 @@ func (n *NetState) Service() {
 		Body:      uo.GetHumanBody(isFemale),
 		Notoriety: uo.NotorietyInnocent,
 	})
-	n.m.Equip(objectManager.NewItem(&game.BaseItem{
+	n.m.Equip(world.NewItem(&game.BaseItem{
 		BaseObject: game.BaseObject{
 			Name:     "shirt",
 			ArticleA: true,
-			Hue:      uo.RandomDyeHue(),
+			Hue:      uo.RandomDyeHue(world.Random()),
 		},
 		Graphic:  0x1517,
 		Wearable: true,
 		Layer:    uo.LayerShirt,
 	}))
-	n.m.Equip(objectManager.NewItem(&game.BaseItem{
+	n.m.Equip(world.NewItem(&game.BaseItem{
 		BaseObject: game.BaseObject{
 			Name: "pants",
-			Hue:  uo.RandomDyeHue(),
+			Hue:  uo.RandomDyeHue(world.Random()),
 		},
 		Graphic:  0x152E,
 		Wearable: true,
@@ -261,6 +260,18 @@ func (n *NetState) readLoop(r *clientpacket.Reader) {
 			// Do nothing
 		default:
 			handler := clientPacketFactory.get(cp.GetID())
+			if handler != nil {
+				// This packet is handled inside the net state goroutine, go
+				// ahead and handle it.
+				handler(n, cp)
+			} else {
+				// This packet is handled by the world goroutine, so forward it
+				// on.
+				world.SendCommand(&WorldCommand{
+					NetState: n,
+					Packet:   cp,
+				})
+			}
 			if handler == nil {
 				n.Log("unhandled client packet 0x%04X:\n%s", cp.GetID(),
 					hex.Dump(data))

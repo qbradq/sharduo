@@ -6,7 +6,7 @@ import (
 	"log"
 
 	"github.com/google/uuid"
-	"github.com/qbradq/sharduo/internal/util"
+	"github.com/qbradq/sharduo/lib/util"
 )
 
 func init() {

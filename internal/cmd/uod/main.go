@@ -5,13 +5,11 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"math/rand"
 	"net"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
-	"time"
 
 	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/lib/serverpacket"
@@ -21,17 +19,13 @@ import (
 // Account manager
 var accountManager *game.AccountManager
 
-// Object manager
-var objectManager *game.ObjectManager
-
 // Save manager
 var saveManager *SaveManager
 
 // Map of all active net states
 var netStates sync.Map
 
-// The game map
-var currentMap *game.Map
+var world *World
 
 // trap is used to trap all of the system signals.
 func trap(l *net.TCPListener) {
@@ -52,15 +46,13 @@ func trap(l *net.TCPListener) {
 
 // Main is the entry point for uod.
 func Main() {
-	// Seed the RNG
-	rand.Seed(time.Now().UnixMilli())
-
-	// Try to load the map
-	currentMap = game.NewMap()
+	// Initialize our data structures
+	world = NewWorld()
+	accountManager = game.NewAccountManager(world.Random())
 
 	// Try to load the most recent save
 	savePath := "saves"
-	saveManager = NewSaveManager(savePath)
+	saveManager = NewSaveManager(world, accountManager, savePath)
 	if err := saveManager.Load(); err != nil {
 		log.Println("error while trying to load data stores from main goroutine", err)
 		os.Exit(1)

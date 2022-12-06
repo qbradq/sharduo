@@ -1,9 +1,8 @@
 package game
 
 import (
-	"github.com/qbradq/sharduo/internal/util"
 	"github.com/qbradq/sharduo/lib/uo"
-	orderedmap "github.com/wk8/go-ordered-map"
+	"github.com/qbradq/sharduo/lib/util"
 )
 
 func init() {
@@ -40,7 +39,7 @@ type BaseObject struct {
 	// Facing is the direction the object is facing
 	Facing uo.Direction
 	// Contents is the collection of all the items contained within this object
-	Contents *orderedmap.OrderedMap
+	Inventory Inventory
 }
 
 // GetTypeName implements the util.Serializeable interface.
@@ -89,15 +88,4 @@ func (o *BaseObject) GetDisplayName() string {
 		return "an " + o.Name
 	}
 	return o.Name
-}
-
-// AddObject adds an object to the contents of this one
-func (o *BaseObject) AddObject(newObj Object) {
-	if o.Contents == nil {
-		o.Contents = orderedmap.New()
-	}
-	if _, duplicate := o.Contents.Get(newObj.GetSerial()); duplicate {
-		return
-	}
-	o.Contents.Set(newObj.GetSerial(), newObj)
 }

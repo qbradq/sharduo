@@ -23,19 +23,19 @@ type DataStore struct {
 }
 
 // NewDataStore initializes and returns a new DataStore object.
-func NewDataStore(index bool) *DataStore {
+func NewDataStore(rng uo.RandomSource, index bool) *DataStore {
 	return &DataStore{
 		Objects:    make(map[uo.Serial]Serializeable),
 		BuildIndex: index,
 		Index:      make(map[string]uo.Serial),
-		sm:         *uo.NewSerialManager(),
+		sm:         *uo.NewSerialManager(rng),
 	}
 }
 
 // OpenOrCreateDataStore opens the named DataStore or creates a new, initialized
 // one.
-func OpenOrCreateDataStore(index bool) *DataStore {
-	ds := NewDataStore(index)
+func OpenOrCreateDataStore(rng uo.RandomSource, index bool) *DataStore {
+	ds := NewDataStore(rng, index)
 
 	// Rebuild serial manager
 	for serial := range ds.Objects {

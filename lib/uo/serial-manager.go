@@ -1,10 +1,5 @@
 package uo
 
-import (
-	"math/rand"
-	"time"
-)
-
 // Serial types
 type SerialType int
 
@@ -18,14 +13,14 @@ const (
 // SerialManager manages a pool of unique serials.
 type SerialManager struct {
 	used map[Serial]struct{}
-	rng  *rand.Rand
+	rng  RandomSource
 }
 
 // NewSerialManager constructs a new SerialManager
-func NewSerialManager() *SerialManager {
+func NewSerialManager(rng RandomSource) *SerialManager {
 	return &SerialManager{
 		used: make(map[Serial]struct{}),
-		rng:  rand.New(rand.NewSource(time.Now().Unix())),
+		rng:  rng,
 	}
 }
 
@@ -52,18 +47,23 @@ func (m *SerialManager) New(t SerialType) Serial {
 
 // RandomMobileSerial returns a randomized non-unique Serial fit for a mobile
 func (m *SerialManager) RandomMobileSerial() Serial {
-	return Serial(m.rng.Int31n(int32(SerialLastMobile-SerialFirstMobile))) + SerialFirstMobile
+	return Serial(m.rng.Random(int(SerialFirstMobile), int(SerialLastMobile)))
 }
 
 // RandomItemSerial returns a randomized non-unique Serial fit for an item
 func (m *SerialManager) RandomItemSerial() Serial {
-	return Serial(m.rng.Int31n(int32(SerialLastItem-SerialFirstItem))) + SerialFirstItem
+	return Serial(m.rng.Random(int(SerialFirstItem), int(SerialLastItem)))
 }
 
 // RandomUnboundSerial returns a randomized non-unique Serial that is NOT FIT
 // for transmission to the client. These serials should be used internally only.
 func (m *SerialManager) RandomUnboundSerial() Serial {
-	return Serial(m.rng.Int31())
+	for {
+		s := Serial(m.rng.Random(0x00000000, 0x7fffffff))
+		if s != 0 {
+			return s
+		}
+	}
 }
 
 // Forcefully adds the serial to the set

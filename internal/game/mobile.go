@@ -1,9 +1,9 @@
 package game
 
 import (
-	"github.com/qbradq/sharduo/internal/util"
 	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/uo"
+	"github.com/qbradq/sharduo/lib/util"
 )
 
 func init() {

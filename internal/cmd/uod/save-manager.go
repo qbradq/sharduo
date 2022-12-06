@@ -18,12 +18,18 @@ type SaveManager struct {
 	savePath string
 	// Save lock
 	lock sync.Mutex
+	// World we are responsible for saving
+	w *World
+	// Account manager associated with this world
+	am *game.AccountManager
 }
 
 // NewSaveManager returns a new SaveManager object.
-func NewSaveManager(savePath string) *SaveManager {
+func NewSaveManager(w *World, am *game.AccountManager, savePath string) *SaveManager {
 	return &SaveManager{
 		savePath: savePath,
+		w:        w,
+		am:       am,
 	}
 }
 
@@ -48,8 +54,6 @@ func (m *SaveManager) Load() error {
 	if err != nil {
 		return err
 	}
-	accountManager = game.NewAccountManager()
-	objectManager = game.NewObjectManager()
 	if len(entries) == 0 {
 		return nil
 	}
@@ -78,7 +82,7 @@ func (m *SaveManager) Load() error {
 	if err != nil {
 		return err
 	}
-	if errs := accountManager.Load(r); errs != nil {
+	if errs := m.am.Load(r); errs != nil {
 		r.Close()
 		return m.reportErrors(errs)
 	}
@@ -88,7 +92,7 @@ func (m *SaveManager) Load() error {
 	if err != nil {
 		return err
 	}
-	if errs := objectManager.Load(r); errs != nil {
+	if errs := world.Load(r); errs != nil {
 		r.Close()
 		return m.reportErrors(errs)
 	}
@@ -105,8 +109,8 @@ func (m *SaveManager) Save() error {
 	}
 	defer m.lock.Unlock()
 
-	// Load in progress
-	if accountManager == nil || objectManager == nil {
+	// Initialization in progress
+	if accountManager == nil || world == nil {
 		return nil
 	}
 
@@ -138,7 +142,7 @@ func (m *SaveManager) Save() error {
 	if err != nil {
 		return err
 	}
-	if errs := objectManager.Save(f); errs != nil {
+	if errs := world.Save(f); errs != nil {
 		return m.reportErrors(errs)
 	}
 

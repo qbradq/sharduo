@@ -12,7 +12,6 @@ func init() {
 	clientPacketFactory.add(0x02, handleWalkRequest)
 	clientPacketFactory.add(0x06, ignorePacket)
 	clientPacketFactory.add(0x09, ignorePacket)
-	clientPacketFactory.add(0x34, handlePlayerStatusRequest)
 	clientPacketFactory.add(0x73, handleClientPing)
 	clientPacketFactory.add(0xad, handleClientSpeech)
 	clientPacketFactory.add(0xbd, handleClientVersion)
@@ -65,8 +64,4 @@ func handleWalkRequest(n *NetState, cp clientpacket.Packet) {
 		Sequence:  p.Sequence,
 		Notoriety: uo.NotorietyInnocent,
 	})
-}
-
-func handlePlayerStatusRequest(n *NetState, cp clientpacket.Packet) {
-
 }

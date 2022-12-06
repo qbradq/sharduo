@@ -1,5 +1,7 @@
 package game
 
+import "github.com/qbradq/sharduo/lib/util"
+
 // Chunk constants
 const (
 	ChunkWidth  int = 16
@@ -11,7 +13,7 @@ type Chunk struct {
 	// Bounds of the chunk
 	bounds Bounds
 	// Collection of all of the objects in the chunk
-	objects ObjectCollection
+	objects util.Slice[Object]
 }
 
 // NewChunk creates and returns a new Chunk object

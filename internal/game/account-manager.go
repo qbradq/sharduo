@@ -4,8 +4,8 @@ import (
 	"io"
 	"sync"
 
-	"github.com/qbradq/sharduo/internal/util"
 	"github.com/qbradq/sharduo/lib/uo"
+	"github.com/qbradq/sharduo/lib/util"
 )
 
 // AccountManager manages all of the accounts on the server
@@ -17,9 +17,9 @@ type AccountManager struct {
 }
 
 // NewAccount`Manager creates and returns a new AccountManager object
-func NewAccountManager() *AccountManager {
+func NewAccountManager(rng uo.RandomSource) *AccountManager {
 	return &AccountManager{
-		ds: util.OpenOrCreateDataStore(true),
+		ds: util.OpenOrCreateDataStore(rng, true),
 	}
 }
 
