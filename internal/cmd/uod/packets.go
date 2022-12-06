@@ -18,21 +18,30 @@ func init() {
 	clientPacketFactory.add(0xc8, handleClientViewRange)
 }
 
-var clientPacketFactory = newPacketHandlerFactory("client")
+// PacketContext represents the context in which a packet may enter the server
+type PacketContext struct {
+	// The net state associated with the packet, if any. System packets tend
+	// not to have net states attached.
+	NetState *NetState
+	// The client packet
+	Packet clientpacket.Packet
+}
 
-func ignorePacket(n *NetState, cp clientpacket.Packet) {
+var clientPacketFactory = util.NewFactory[int, *PacketContext]("client-packets")
+
+func ignorePacket(c *PacketContext) {
 	// Do nothing
 }
 
-func handleClientPing(n *NetState, cp clientpacket.Packet) {
-	p := cp.(*clientpacket.Ping)
+func handleClientPing(c *PacketContext) {
+	p := c.Packet.(*clientpacket.Ping)
 	n.Send(&serverpacket.Ping{
 		Key: p.Key,
 	})
 }
 
-func handleClientSpeech(n *NetState, cp clientpacket.Packet) {
-	p := cp.(*clientpacket.Speech)
+func handleClientSpeech(c *PacketContext) {
+	p := c.Packet.(*clientpacket.Speech)
 	if len(p.Text) == 0 {
 		return
 	}
@@ -44,22 +53,22 @@ func handleClientSpeech(n *NetState, cp clientpacket.Packet) {
 	}
 }
 
-func handleClientVersion(n *NetState, cp clientpacket.Packet) {
-	p := cp.(*clientpacket.Version)
+func handleClientVersion(c *PacketContext) {
+	p := c.Packet.(*clientpacket.Version)
 	if p.String != "7.0.15.1" {
 		n.Error("version check", errors.New("bad client version"))
 	}
 }
 
-func handleClientViewRange(n *NetState, cp clientpacket.Packet) {
-	p := cp.(*clientpacket.ClientViewRange)
+func handleClientViewRange(c *PacketContext) {
+	p := c.Packet.(*clientpacket.ClientViewRange)
 	n.Send(&serverpacket.ClientViewRange{
 		Range: byte(p.Range),
 	})
 }
 
-func handleWalkRequest(n *NetState, cp clientpacket.Packet) {
-	p := cp.(*clientpacket.WalkRequest)
+func handleWalkRequest(c *PacketContext) {
+	p := c.Packet.(*clientpacket.WalkRequest)
 	n.Send(&serverpacket.MoveAcknowledge{
 		Sequence:  p.Sequence,
 		Notoriety: uo.NotorietyInnocent,

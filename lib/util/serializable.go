@@ -51,9 +51,25 @@ type Serializeable interface {
 
 // BaseSerializeable implements the most common case of the Serializeable
 // interface. GetTypeName() is purposefully omitted to force includers of this
-// base struct to register their own name.
+// base struct to register their own name. BaseSerializeable implements
+// comparable.
 type BaseSerializeable struct {
 	Serial uo.Serial
+}
+
+// compare implements the comparable interface
+func (s *BaseSerializeable) compare(other Comparable) int {
+	otherS, ok := other.(Serializeable)
+	if !ok {
+		return 0
+	}
+	if s.GetSerial() < otherS.GetSerial() {
+		return -1
+	}
+	if s.GetSerial() == otherS.GetSerial() {
+		return 0
+	}
+	return 1
 }
 
 // GetSerial implements the Serializeable interface

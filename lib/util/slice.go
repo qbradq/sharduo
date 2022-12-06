@@ -1,7 +1,7 @@
 package util
 
 // Slice is a generic wrapper around slices of values
-type Slice[T any] []T
+type Slice[T comparable] []T
 
 // Append appends a value to the slice and returns the slice
 func (s Slice[T]) Append(v T) Slice[T] {
