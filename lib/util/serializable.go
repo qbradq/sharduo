@@ -47,6 +47,8 @@ type Serializeable interface {
 	Serialize(*TagFileWriter)
 	// Deserializes the object a tag file.
 	Deserialize(*TagFileObject)
+	// compare implements the comparable interface
+	compare(Serializeable) int
 }
 
 // BaseSerializeable implements the most common case of the Serializeable
@@ -58,15 +60,11 @@ type BaseSerializeable struct {
 }
 
 // compare implements the comparable interface
-func (s *BaseSerializeable) compare(other Comparable) int {
-	otherS, ok := other.(Serializeable)
-	if !ok {
-		return 0
-	}
-	if s.GetSerial() < otherS.GetSerial() {
+func (s *BaseSerializeable) compare(other Serializeable) int {
+	if s.GetSerial() < other.GetSerial() {
 		return -1
 	}
-	if s.GetSerial() == otherS.GetSerial() {
+	if s.GetSerial() == other.GetSerial() {
 		return 0
 	}
 	return 1

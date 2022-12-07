@@ -2,6 +2,7 @@ package uod
 
 import (
 	"github.com/qbradq/sharduo/lib/clientpacket"
+	"github.com/qbradq/sharduo/lib/util"
 )
 
 // CommandType are the type codes for commands
@@ -13,11 +14,11 @@ const (
 )
 
 func init() {
-	worldCommandFactory.add(CommandTypeSpeechCommand, handleSpeechCommand)
+	worldCommandFactory.Add(CommandTypeSpeechCommand, handleSpeechCommand)
 }
 
 // Factory for world commands
-var worldCommandFactory = newPacketHandlerFactory("world-commands")
+var worldCommandFactory = util.NewFactory[int, *WorldCommand]("world-commands")
 
 // WorldCommand is used to send client and system packets to the world's
 // goroutine.
@@ -29,7 +30,11 @@ type WorldCommand struct {
 	Packet clientpacket.Packet
 }
 
-func handleSpeechCommand(n *NetState, p clientpacket.Packet) {
-	sp := p.(*clientpacket.Speech)
+func handleSpeechCommand(cmd *WorldCommand) any {
+	sp := cmd.Packet.(*clientpacket.Speech)
 	c := ParseCommand(sp.Text)
+	if err := c.Compile(); err != nil {
+		return err
+	}
+	return c.Execute()
 }

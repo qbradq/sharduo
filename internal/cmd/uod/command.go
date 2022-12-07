@@ -4,6 +4,8 @@ import (
 	"encoding/csv"
 	"log"
 	"strings"
+
+	"github.com/qbradq/sharduo/lib/util"
 )
 
 // Command is the interface all command objects implement
@@ -17,7 +19,7 @@ type Command interface {
 }
 
 // commandFactory manages the available commands
-var commandFactory = util.NewFactory(string, Command)
+var commandFactory = util.NewFactory[string, Command]("commands")
 
 // ParseCommand returns a Command object parsed from a command line
 func ParseCommand(line string) Command {
@@ -31,10 +33,9 @@ func ParseCommand(line string) Command {
 	if len(c) == 0 {
 		return nil
 	}
-	return ret
+	return nil
 }
 
 // BaseCommand implements the most common use case for the command interface
 type BaseCommand struct {
-
 }

@@ -57,7 +57,7 @@ func (f *PacketFactory) Ignore(id int) {
 
 // New creates a new client packet.
 func (f *PacketFactory) New(id int, in []byte) Packet {
-	if p := f.New(id, in); p != nil {
+	if p := f.Factory.New(id, in); p != nil {
 		return p.(Packet)
 	}
 	up := NewUnsupportedPacket(f.GetName(), in)

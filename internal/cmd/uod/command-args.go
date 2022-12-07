@@ -1,5 +1,7 @@
 package uod
 
+import "strconv"
+
 // CommandArgs is a thin wrapper around a slice of command line arguments
 type CommandArgs []string
 
@@ -13,7 +15,7 @@ func (c CommandArgs) String(n int, def string) string {
 
 // Int returns argument n as an integer value, or the default
 func (c CommandArgs) Int(n, def int) int {
-	is ;= c.String(n, "NaN")
+	is := c.String(n, "NaN")
 	if is == "NaN" {
 		return def
 	}
@@ -21,5 +23,5 @@ func (c CommandArgs) Int(n, def int) int {
 	if err != nil {
 		return def
 	}
-	return ret
+	return int(ret)
 }

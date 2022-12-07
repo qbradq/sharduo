@@ -259,24 +259,21 @@ func (n *NetState) readLoop(r *clientpacket.Reader) {
 		case *clientpacket.IgnoredPacket:
 			// Do nothing
 		default:
-			handler := clientPacketFactory.get(cp.GetID())
-			if handler != nil {
-				// This packet is handled inside the net state goroutine, go
-				// ahead and handle it.
-				handler(n, cp)
-			} else {
+			handler, ok := clientPacketFactory.Get(cp.GetID())
+			if !ok || handler == nil {
 				// This packet is handled by the world goroutine, so forward it
 				// on.
 				world.SendCommand(&WorldCommand{
 					NetState: n,
 					Packet:   cp,
 				})
-			}
-			if handler == nil {
-				n.Log("unhandled client packet 0x%04X:\n%s", cp.GetID(),
-					hex.Dump(data))
 			} else {
-				handler(n, cp)
+				// This packet is handled inside the net state goroutine, go
+				// ahead and handle it.
+				handler(&PacketContext{
+					NetState: n,
+					Packet:   cp,
+				})
 			}
 		}
 	}

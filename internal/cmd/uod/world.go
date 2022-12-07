@@ -82,7 +82,7 @@ func (w *World) NewMobile(mob game.Mobile) game.Mobile {
 // Process is the goroutine that services the command queue and is the only
 // goroutine allowed to interact with the contents of the world.
 func (w *World) Process() {
-	for cmd := range w.commandQueue {
+	for range w.commandQueue {
 
 	}
 }

@@ -1,7 +1,7 @@
 package util
 
 // Slice is a generic wrapper around slices of values
-type Slice[T comparable] []T
+type Slice[T Serializeable] []T
 
 // Append appends a value to the slice and returns the slice
 func (s Slice[T]) Append(v T) Slice[T] {
@@ -11,7 +11,7 @@ func (s Slice[T]) Append(v T) Slice[T] {
 // IndexOf returns the index of the first of that value in the slice, or -1
 func (s Slice[T]) IndexOf(v T) int {
 	for idx, iv := range s {
-		if &iv == &v {
+		if iv.GetSerial() == v.GetSerial() {
 			return idx
 		}
 	}
