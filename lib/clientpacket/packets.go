@@ -445,3 +445,39 @@ func newWalkRequest(in []byte) any {
 		FastWalkKey: getuint32(in[2:]),
 	}
 }
+
+// TargetResponse is sent by the client to respond to a targeting cursor
+type TargetResponse struct {
+	Base
+	// Target type
+	TargetType uo.TargetCursorType
+	// Serial of this targeting request
+	Serial uo.Serial
+	// Cursor type
+	CursorType uo.CursorType
+	// TargetObject is the serial of the object clicked on, or uo.SerialZero if
+	// no object was targeted.
+	TargetObject uo.Serial
+	// The X location of the target
+	X int
+	// The Y location of the target
+	Y int
+	// The Z location of the target
+	Z int
+	// Graphic of the object clicked, if any
+	Graphic uo.Item
+}
+
+func newTargetResponse(in []byte) any {
+	return &TargetResponse{
+		Base: Base{ID: 0x6C},
+		TargetType: uo.TargetType(in[0]),
+		Serial:  uo.Serial(getuint32(w, in[1:5])),
+		CursorType: uo.CursorType(in[5]),
+		TargetObject: uo.Serial(getuint32(w, in[6:10])),
+		X: int(getuint16(w, in[10:12])),
+		Y: int(getuint16(w, in[12:14])),
+		Z: int(in[15]),
+		Graphic: uo.Item(getuint16(w, [16:18])),
+	}
+}

@@ -62,6 +62,5 @@ type SpeechCommandRequest struct {
 
 // Executes implements the WorldRequest interface
 func (r *SpeechCommandRequest) Execute() error {
-	log.Println("SpeechCommandRequest")
-	return nil
+	return r.Command.Execute()
 }

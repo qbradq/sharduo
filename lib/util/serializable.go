@@ -6,10 +6,6 @@ import (
 	"github.com/qbradq/sharduo/lib/uo"
 )
 
-// Ctor represents a serializeable constructor function that returns concrete
-// implementations of the interface.
-type Ctor func() Serializeable
-
 // RegisterCtor registers a constructor function for a serializeable object.
 func RegisterCtor(ctor Ctor) {
 	s := ctor()
@@ -47,8 +43,6 @@ type Serializeable interface {
 	Serialize(*TagFileWriter)
 	// Deserializes the object a tag file.
 	Deserialize(*TagFileObject)
-	// compare implements the comparable interface
-	compare(Serializeable) int
 }
 
 // BaseSerializeable implements the most common case of the Serializeable
@@ -57,17 +51,6 @@ type Serializeable interface {
 // comparable.
 type BaseSerializeable struct {
 	Serial uo.Serial
-}
-
-// compare implements the comparable interface
-func (s *BaseSerializeable) compare(other Serializeable) int {
-	if s.GetSerial() < other.GetSerial() {
-		return -1
-	}
-	if s.GetSerial() == other.GetSerial() {
-		return 0
-	}
-	return 1
 }
 
 // GetSerial implements the Serializeable interface

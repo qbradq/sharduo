@@ -163,7 +163,7 @@ const (
 	StatusRequesTypeSkills StatusRequestType = 5
 )
 
-// Mobile flags
+// MobileFlags represent the flags for a mobile
 type MobileFlags uint8
 
 // All MobileFlags flag values
@@ -178,4 +178,24 @@ const (
 	MobileFlagMovable       MobileFlags = 0x20
 	MobileFlagWarMode       MobileFlags = 0x40
 	MobileFlagHidden        MobileFlags = 0x80
+)
+
+// TargetType describes which type of targeting to use
+type TargetCursorType uint8
+
+// All TargetType values
+const (
+	TargetTypeObject   TargetType = 0
+	TargetTypeLocation TargetType = 1
+)
+
+// CursorType describes what the cursor should look like
+type CursorType uint8
+
+// All CursorType values
+const (
+	CursorTypeNeutral CursorType = 0
+	CursorTypeHarmful CursorType = 1
+	CursorTypeHelpful CursorType = 2
+	CursorTypeCancel  CursorType = 3
 )

@@ -19,7 +19,7 @@ type Command interface {
 	Compile() error
 	// Execute executes the command and should only be called after a call
 	// to Compile. Execute may be ran multiple times per object.
-	Execute() error
+	Execute(*NetState) error
 }
 
 // commandFactory manages the available commands
@@ -69,6 +69,11 @@ func (l *LocationCommand) Compile() error {
 }
 
 // Execute implements the Command interface
-func (l *LocationCommand) Execute() error {
-	return nil
+func (l *LocationCommand) Execute(n *NetState) error {
+	if n == nil {
+		return nil
+	}
+	n.Send(&serverpacket.Target{
+
+	})
 }

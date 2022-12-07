@@ -39,6 +39,13 @@ func (f *TagFileWriter) WriteCommentLine(comment string) {
 	}
 }
 
+// WriteBlankLine writes a single blank line to the tag file.
+func (f *TagFileWriter) WriteBlankLine() {
+	if _, err := f.w.Write([]byte("\n")); err != nil {
+		f.handleError(err)
+	}
+}
+
 // WriteObject writes a Serializeable to the given io.Writer.
 func (f *TagFileWriter) WriteObject(s Serializeable) {
 	if _, err := f.w.Write([]byte(fmt.Sprintf("\n[%s]\n", s.GetTypeName()))); err != nil {

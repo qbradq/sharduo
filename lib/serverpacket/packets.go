@@ -53,6 +53,11 @@ func putuint32(w io.Writer, v uint32) {
 	w.Write(b[:])
 }
 
+func putzeros(w, n int) {
+	var b[n]byte
+	w.Write(b[:])
+}
+
 // Packet is the interface all server packets implement.
 type Packet interface {
 	// Write writes the packet data to w.
@@ -335,4 +340,22 @@ func (p *EquippedMobile) Write(w io.Writer) {
 		putuint16(w, uint16(item.Hue))
 	}
 	putuint32(w, 0x00000000) // End of list marker
+}
+
+// Target is used to send and recieve targeting commands to the client
+type Target struct {
+	// Serial of the targeting cursor
+	Serial uo.Serial
+	// Type of targeting request
+	TargetType uo.TargetType
+	// Cursor display type
+	CursorType uo.CursorType
+}
+
+// Write implements the Packet interface.
+func (p *Target) Write(w io.Writer) {
+	putbyte(w, 0x6C) // Packet ID
+	putbyte(w, p.TargetType)
+	putuint32(w, p.)
+	putzeros(w, 12)
 }

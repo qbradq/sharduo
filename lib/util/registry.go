@@ -31,3 +31,9 @@ func (r *Registery[K, V]) Get(k K) (V, bool) {
 func (r *Registery[K, V]) GetName() string {
 	return r.name
 }
+
+// Contains returns true if the key is contained within the registry
+func (r *Registry[K. V]) Contains(k K) bool {
+	_, found := r.Get(k)
+	return found
+}
