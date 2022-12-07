@@ -2,6 +2,7 @@ package uod
 
 import (
 	"io"
+	"log"
 
 	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/lib/util"
@@ -16,8 +17,8 @@ type World struct {
 	om *game.ObjectManager
 	// The random number generator for the world
 	rng *util.RNG
-	// Inbound commands
-	commandQueue chan *WorldCommand
+	// Inbound requests
+	requestQueue chan WorldRequest
 }
 
 // NewWorld creates a new, empty world
@@ -27,7 +28,7 @@ func NewWorld() *World {
 		m:            game.NewMap(),
 		om:           game.NewObjectManager(rng),
 		rng:          rng,
-		commandQueue: make(chan *WorldCommand, 1024),
+		requestQueue: make(chan WorldRequest, 1024),
 	}
 }
 
@@ -51,11 +52,11 @@ func (w *World) Save(o io.Writer) []error {
 	return ret
 }
 
-// SendCommand sends a WorldCommand to the world's goroutine. Returns true if
+// SendRequest sends a WorldRequest to the world's goroutine. Returns true if
 // the command was successfully queued. This never blocks.
-func (w *World) SendCommand(cmd *WorldCommand) bool {
+func (w *World) SendRequest(cmd WorldRequest) bool {
 	select {
-	case w.commandQueue <- cmd:
+	case w.requestQueue <- cmd:
 		return true
 	default:
 		return false
@@ -82,7 +83,9 @@ func (w *World) NewMobile(mob game.Mobile) game.Mobile {
 // Process is the goroutine that services the command queue and is the only
 // goroutine allowed to interact with the contents of the world.
 func (w *World) Process() {
-	for range w.commandQueue {
-
+	for r := range w.requestQueue {
+		if err := r.Execute(); err != nil {
+			log.Println(err)
+		}
 	}
 }

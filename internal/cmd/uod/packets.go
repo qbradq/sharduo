@@ -48,8 +48,21 @@ func handleClientSpeech(c *PacketContext) any {
 	if len(p.Text) == 0 {
 		return nil
 	}
-	if p.Text[0] == '[' {
-
+	if len(p.Text) > 1 {
+		if p.Text[0] == '[' {
+			cmd := ParseCommand(p.Text[1:])
+			if cmd != nil {
+				cmd.Compile()
+				world.SendRequest(&SpeechCommandRequest{
+					BaseWorldRequest: BaseWorldRequest{
+						NetState: c.NetState,
+						Packet:   c.Packet,
+					},
+					Command: cmd,
+				})
+				return nil
+			}
+		}
 	}
 	if c.NetState != nil && c.NetState.m != nil {
 		GlobalChat(c.NetState.m.GetDisplayName(), p.Text)

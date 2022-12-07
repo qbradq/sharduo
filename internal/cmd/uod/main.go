@@ -58,6 +58,7 @@ func Main() {
 		os.Exit(1)
 	}
 
+	go world.Process()
 	go LoginServerMain()
 
 	ipstr := "127.0.0.1"

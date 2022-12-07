@@ -263,9 +263,11 @@ func (n *NetState) readLoop(r *clientpacket.Reader) {
 			if !ok || handler == nil {
 				// This packet is handled by the world goroutine, so forward it
 				// on.
-				world.SendCommand(&WorldCommand{
-					NetState: n,
-					Packet:   cp,
+				world.SendRequest(&ClientPacketRequest{
+					BaseWorldRequest: BaseWorldRequest{
+						NetState: n,
+						Packet:   cp,
+					},
 				})
 			} else {
 				// This packet is handled inside the net state goroutine, go

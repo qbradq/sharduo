@@ -8,6 +8,10 @@ import (
 	"github.com/qbradq/sharduo/lib/util"
 )
 
+func init() {
+	commandFactory.Add("location", newLocationCommand)
+}
+
 // Command is the interface all command objects implement
 type Command interface {
 	// Compile takes all appropriate steps that can be done in advance of
@@ -19,7 +23,7 @@ type Command interface {
 }
 
 // commandFactory manages the available commands
-var commandFactory = util.NewFactory[string, Command]("commands")
+var commandFactory = util.NewFactory[string, CommandArgs]("commands")
 
 // ParseCommand returns a Command object parsed from a command line
 func ParseCommand(line string) Command {
@@ -33,9 +37,38 @@ func ParseCommand(line string) Command {
 	if len(c) == 0 {
 		return nil
 	}
+	cmd := commandFactory.New(c[0], c)
+	if cmd != nil {
+		return cmd.(Command)
+	}
 	return nil
 }
 
-// BaseCommand implements the most common use case for the command interface
+// BaseCommand implements some basic command functionality
 type BaseCommand struct {
+	args CommandArgs
+}
+
+// LocationCommand reports the location of a target
+type LocationCommand struct {
+	BaseCommand
+}
+
+// newLocationCommand constructs a new LocationCommand
+func newLocationCommand(args CommandArgs) any {
+	return &LocationCommand{
+		BaseCommand: BaseCommand{
+			args: args,
+		},
+	}
+}
+
+// Compile implements the Command interface
+func (l *LocationCommand) Compile() error {
+	return nil
+}
+
+// Execute implements the Command interface
+func (l *LocationCommand) Execute() error {
+	return nil
 }
