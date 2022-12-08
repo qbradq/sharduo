@@ -81,7 +81,7 @@ func handleLoginConnection(c *net.TCPConn) {
 		log.Println("client sent wrong packet waiting for account login", cp)
 		return
 	}
-	account := accountManager.GetOrCreate(alp.Username, game.HashPassword(alp.Password))
+	account := world.getOrCreateAccount(alp.Username, game.HashPassword(alp.Password))
 	if account == nil {
 		log.Println("user login failed for", alp.Username)
 		ldp := &serverpacket.LoginDenied{

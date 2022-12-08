@@ -1,9 +1,14 @@
 package uod
 
 import (
-	"io"
 	"log"
 	"sync"
+	"errors"
+	"os"
+	"time"
+	"path"
+	"fmt"
+	"archive/zip"
 
 	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/lib/uo"
@@ -12,7 +17,6 @@ import (
 
 // File lock error
 var ErrSaveFileLocked = errors.New("the save file is currently locked")
-var ErrInitializationInProgress = errors.New("world initialization seems to be in progress")
 
 // World encapsulates all of the data for the world and the goroutine that
 // manipulates it.
@@ -23,6 +27,8 @@ type World struct {
 	ads *util.DataStore[*game.Account]
 	// Index of usernames ot account serials
 	aidx map[string]uo.Serial
+	// Accounting access lock
+	alock sync.Mutex
 	// The object data store for the entire world
 	ods *util.DataStore[game.Object]
 	// The random number generator for the world
@@ -45,7 +51,7 @@ func NewWorld(savePath string) *World {
 		ods:          util.NewDataStore[game.Object]("objects", rng, game.ObjectFactory),
 		rng:          rng,
 		requestQueue: make(chan WorldRequest, 1024),
-		savePath: savePath,
+		savePath:     savePath,
 	}
 }
 
@@ -80,14 +86,21 @@ func (w *World) latestSavePath() string {
 // reportErrors logs all errors in the slice, then returns a single error with
 // a summary report.
 func (w *World) reportErrors(errs []error) error {
+	if len(errs) == 0 {
+		return nil
+	}
 	for _, err := range errs {
 		log.Println(err)
 	}
 	return fmt.Errorf("%d errors reported", len(errs))
 }
 
-// Load loads all of the data stores that the world is responsible for
-func (w *World) Load(r io.Reader) error {
+// Load loads all of the data stores that the world is responsible for.
+// ErrSaveFileLocked is returned when another goroutine is trying to save or
+// load. os.ErrNotExist is returned when there are no saves available to load.
+// nil is returned on success. An error describing how many errors were
+// encountered is returned if there are any.
+func (w *World) Load() error {
 	var errs []error
 
 	if !w.lock.TryLock() {
@@ -98,11 +111,12 @@ func (w *World) Load(r io.Reader) error {
 	sf := util.NewCompressedSaveFileReader()
 	filePath := w.latestSavePath()
 	if filePath == "" {
-		return os.ErrNotExists
+		return os.ErrNotExist
 	}
-	if err := sf.Open(filePath); err {
+	if err := sf.Open(filePath); err != nil {
 		return err
 	}
+	log.Println("loading data stores from", filePath)
 
 	r, err := sf.GetReader("accounts.ini")	
 	if err != nil {
@@ -122,7 +136,7 @@ func (w *World) Load(r io.Reader) error {
 }
 
 // getFileName returns the file name portion of the save path without extension.
-func (m *SaveManager) getFileName() string {
+func (w *World) getFileName() string {
 	return time.Now().Format("2006-01-02_15-04-05")
 }
 
@@ -135,13 +149,8 @@ func (w *World) Save() error {
 	}
 	defer w.lock.Unlock()
 
-	// Initialization in progress
-	if w == nil {
-		return ErrInitializationInProgress
-	}
-
 	// Make sure the save directory is present
-	if err := os.MkdirAll(m.savePath, 0777); err != nil {
+	if err := os.MkdirAll(w.savePath, 0777); err != nil {
 		log.Println("error creating save directory", err)
 		return err
 	}
@@ -156,25 +165,25 @@ func (w *World) Save() error {
 	log.Println("saving data stores to", filePath)
 
 	// Create the zip writer
-	w := zip.NewWriter(z)
-	defer w.Close()
+	zw := zip.NewWriter(z)
+	defer zw.Close()
 
 	// Save data sets
-	f, err := w.Create("accounts.ini")
+	f, err := zw.Create("accounts.ini")
 	if err != nil {
 		errs = append(errs, err)
 	} else {
-		errs = append(errs, w.ads.Save(w)...)
+		errs = append(errs, w.ads.Write(f)...)
 	}
-	f.Close()
 
-	f, err = w.Create("objects.ini")
+	f, err = zw.Create("objects.ini")
 	if err != nil {
 		errs = append(errs, err)
 	} else {
-		errs = append(errs, w.ads.Save(w)...)
+		errs = append(errs, w.ads.Write(f)...)
 	}
-	f.Close()
+
+	return w.reportErrors(errs)
 }
 
 // SendRequest sends a WorldRequest to the world's goroutine. Returns true if
@@ -204,9 +213,9 @@ func (w *World) New(o game.Object) game.Object {
 // password hash. If no account exists for that username, a new one will be
 // created for the user. If an account is found but the password hashes do not
 // match nil is returned. Otherwise the account is returned.
-func (w *World) AuthenticateAccount(username, passwordHash string) *Account {
+func (w *World) AuthenticateAccount(username, passwordHash string) *game.Account {
 	a := w.getOrCreateAccount(username, passwordHash)
-	if a.passwordHash != passwordHash {
+	if a.PasswordHash != passwordHash {
 		return nil
 	}
 	return a
@@ -214,16 +223,33 @@ func (w *World) AuthenticateAccount(username, passwordHash string) *Account {
 
 // getOrCreateAccount adds a new account to the world, or returns the existing
 // account for that username.
-func (w *World) getOrCreateAccount(username, passwordHash) *Account {
+func (w *World) getOrCreateAccount(username, passwordHash string) *game.Account {
+	w.alock.Lock()
+	defer w.alock.Unlock()
+
 	if s, ok := w.aidx[username]; ok {
 		return w.ads.Get(s)
 	}
-	a := &Account{
+	a := &game.Account{
 		Username: username,
 		PasswordHash: passwordHash,
 	}
-	w.ads.Add(a)
-	w.aidx[username] = a
+	w.ads.Add(a, uo.SerialTypeUnbound)
+	w.aidx[username] = a.GetSerial()
+	return a
+}
+
+// AuthenticateLoginSession attempts to find and authenticate the account
+// associated with the username and serial. nil is returned if the account is
+// not found or the password hashes do not match.
+func (w *World) AuthenticateLoginSession(username, passwordHash string, id uo.Serial) *game.Account {
+	w.alock.Lock()
+	defer w.alock.Unlock()
+
+	a := w.ads.Get(id)
+	if a == nil || a.Username != username || a.PasswordHash != passwordHash {
+		return nil
+	}
 	return a
 }
 

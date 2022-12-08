@@ -11,7 +11,6 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/uo"
 )
@@ -32,25 +31,32 @@ func trap(l *net.TCPListener) {
 			// Close the main listener and let the graceful shutdown save the
 			// data stores.
 			l.Close()
-		} else if err := saveManager.Save(); err != nil {
-			// Last-ditch save attempt failed
-			log.Fatal("error while trying to save data stores from signal handler", err)
+		} else {
+			// Last-ditch save attempt
+			log.Println("attempting last-ditch save from signal handler...")
+			if err := world.Save(); err != nil {
+				log.Fatalf("last-ditch save from signal handler failed:%v\n", err)
+			}
 		}
 	}()
 }
 
 // Main is the entry point for uod.
 func Main() {
+	// TODO Configuration
+	savePath := "saves"
+
 	// Initialize our data structures
-	world = NewWorld()
-	accountManager = game.NewAccountManager(world.Random())
+	world = NewWorld(savePath)
 
 	// Try to load the most recent save
-	savePath := "saves"
-	saveManager = NewSaveManager(world, accountManager, savePath)
-	if err := saveManager.Load(); err != nil {
-		log.Println("error while trying to load data stores from main goroutine", err)
-		os.Exit(1)
+	if err := world.Load(); err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			log.Println("warning: no save files found")
+		} else {
+			log.Println("error while trying to load data stores from main goroutine", err)
+			os.Exit(1)
+		}
 	}
 
 	go world.Process()
@@ -72,7 +78,7 @@ func Main() {
 	for {
 		c, err := l.AcceptTCP()
 		if err != nil {
-			if err := saveManager.Save(); err != nil {
+			if err := world.Save(); err != nil {
 				log.Println("error while trying to save data stores from main goroutine", err)
 				os.Exit(1)
 			}
