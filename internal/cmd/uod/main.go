@@ -16,15 +16,10 @@ import (
 	"github.com/qbradq/sharduo/lib/uo"
 )
 
-// Account manager
-var accountManager *game.AccountManager
-
-// Save manager
-var saveManager *SaveManager
-
 // Map of all active net states
 var netStates sync.Map
 
+// The world we are running
 var world *World
 
 // trap is used to trap all of the system signals.
