@@ -53,8 +53,8 @@ func putuint32(w io.Writer, v uint32) {
 	w.Write(b[:])
 }
 
-func putzeros(w, n int) {
-	var b[n]byte
+func putzeros(w io.Writer, n int) {
+	b := make([]byte, n)
 	w.Write(b[:])
 }
 
@@ -355,7 +355,7 @@ type Target struct {
 // Write implements the Packet interface.
 func (p *Target) Write(w io.Writer) {
 	putbyte(w, 0x6C) // Packet ID
-	putbyte(w, p.TargetType)
-	putuint32(w, p.)
+	putbyte(w, byte(p.TargetType))
+	putuint32(w, uint32(p.Serial))
 	putzeros(w, 12)
 }

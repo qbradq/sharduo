@@ -6,11 +6,12 @@ import (
 	"log"
 
 	"github.com/google/uuid"
+	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
 )
 
 func init() {
-	util.RegisterCtor(func() util.Serializeable { return &Account{} })
+	ObjectFactory.RegisterCtor(func(v any) util.Serializeable { return &Account{} })
 }
 
 // Hashes a password suitable for the accounts database.
@@ -31,6 +32,11 @@ type Account struct {
 // GetTypeName implements the util.Serializeable interface.
 func (a *Account) GetTypeName() string {
 	return "Account"
+}
+
+// GetSerialType implements the util.Serializeable interface.
+func (a *Account) GetSerialType() uo.SerialType {
+	return uo.SerialTypeUnbound
 }
 
 // Serialize implements the util.Serializeable interface.

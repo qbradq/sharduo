@@ -5,6 +5,7 @@ import (
 	"log"
 	"strings"
 
+	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/util"
 )
 
@@ -23,7 +24,7 @@ type Command interface {
 }
 
 // commandFactory manages the available commands
-var commandFactory = util.NewFactory[string, CommandArgs]("commands")
+var commandFactory = util.NewFactory[string, CommandArgs, Command]("commands")
 
 // ParseCommand returns a Command object parsed from a command line
 func ParseCommand(line string) Command {
@@ -55,7 +56,7 @@ type LocationCommand struct {
 }
 
 // newLocationCommand constructs a new LocationCommand
-func newLocationCommand(args CommandArgs) any {
+func newLocationCommand(args CommandArgs) Command {
 	return &LocationCommand{
 		BaseCommand: BaseCommand{
 			args: args,
@@ -73,7 +74,6 @@ func (l *LocationCommand) Execute(n *NetState) error {
 	if n == nil {
 		return nil
 	}
-	n.Send(&serverpacket.Target{
-
-	})
+	n.Send(&serverpacket.Target{})
+	return nil
 }

@@ -9,21 +9,21 @@ import (
 )
 
 func init() {
-	packetFactory.Add(0x02, newWalkRequest)
-	packetFactory.Add(0x06, newDoubleClick)
-	packetFactory.Add(0x09, newSingleClick)
-	packetFactory.Add(0x34, newPlayerStatusRequest)
-	packetFactory.Add(0x5D, newCharacterLogin)
-	packetFactory.Add(0x73, newPing)
-	packetFactory.Add(0x80, newAccountLogin)
-	packetFactory.Add(0x91, newGameServerLogin)
-	packetFactory.Add(0xA0, newSelectServer)
-	packetFactory.Add(0xAD, newSpeech)
+	packetFactory.Register(0x02, newWalkRequest)
+	packetFactory.Register(0x06, newDoubleClick)
+	packetFactory.Register(0x09, newSingleClick)
+	packetFactory.Register(0x34, newPlayerStatusRequest)
+	packetFactory.Register(0x5D, newCharacterLogin)
+	packetFactory.Register(0x73, newPing)
+	packetFactory.Register(0x80, newAccountLogin)
+	packetFactory.Register(0x91, newGameServerLogin)
+	packetFactory.Register(0xA0, newSelectServer)
+	packetFactory.Register(0xAD, newSpeech)
 	packetFactory.Ignore(0xB5) // Open chat window request
-	packetFactory.Add(0xBD, newVersion)
-	packetFactory.Add(0xBF, newGeneralInformation)
-	packetFactory.Add(0xC8, newClientViewRange)
-	packetFactory.Add(0xEF, newLoginSeed)
+	packetFactory.Register(0xBD, newVersion)
+	packetFactory.Register(0xBF, newGeneralInformation)
+	packetFactory.Register(0xC8, newClientViewRange)
+	packetFactory.Register(0xEF, newLoginSeed)
 }
 
 // Packet is the interface all client packets implement.
@@ -36,19 +36,19 @@ type Packet interface {
 
 // PacketFactory creates client packets from slices of bytes
 type PacketFactory struct {
-	util.Factory[int, []byte]
+	util.Factory[int, []byte, Packet]
 }
 
 // NewPacketFactory creates a new PacketFactory ready for use
 func NewPacketFactory(name string) *PacketFactory {
 	return &PacketFactory{
-		*util.NewFactory[int, []byte](name),
+		*util.NewFactory[int, []byte, Packet](name),
 	}
 }
 
 // Ignore ignores the given packet ID
 func (f *PacketFactory) Ignore(id int) {
-	f.Add(id, func(in []byte) any {
+	f.Add(id, func(in []byte) Packet {
 		return &IgnoredPacket{
 			Base: Base{ID: id},
 		}
@@ -190,7 +190,7 @@ type LoginSeed struct {
 	VersionExtra int
 }
 
-func newLoginSeed(in []byte) any {
+func newLoginSeed(in []byte) Packet {
 	return &LoginSeed{
 		Base:         Base{ID: 0xEF},
 		Seed:         getuint32(in[0:4]),
@@ -211,7 +211,7 @@ type AccountLogin struct {
 	Password string
 }
 
-func newAccountLogin(in []byte) any {
+func newAccountLogin(in []byte) Packet {
 	return &AccountLogin{
 		Base:     Base{ID: 0x80},
 		Username: nullstr(in[0:30]),
@@ -227,7 +227,7 @@ type SelectServer struct {
 	Index int
 }
 
-func newSelectServer(in []byte) any {
+func newSelectServer(in []byte) Packet {
 	return &SelectServer{
 		Base:  Base{ID: 0xA0},
 		Index: int(getuint16(in[0:2])),
@@ -245,7 +245,7 @@ type GameServerLogin struct {
 	Key []byte
 }
 
-func newGameServerLogin(in []byte) any {
+func newGameServerLogin(in []byte) Packet {
 	return &GameServerLogin{
 		Base:     Base{ID: 0x91},
 		Key:      in[:4],
@@ -261,7 +261,7 @@ type CharacterLogin struct {
 	Slot int
 }
 
-func newCharacterLogin(in []byte) any {
+func newCharacterLogin(in []byte) Packet {
 	return &CharacterLogin{
 		Base: Base{ID: 0x5D},
 		Slot: int(getuint32(in[64:68])),
@@ -275,7 +275,7 @@ type Version struct {
 	String string
 }
 
-func newVersion(in []byte) any {
+func newVersion(in []byte) Packet {
 	// Length check no required, in can be nil
 	return &Version{
 		Base:   Base{ID: 0xBD},
@@ -290,7 +290,7 @@ type Ping struct {
 	Key byte
 }
 
-func newPing(in []byte) any {
+func newPing(in []byte) Packet {
 	return &Ping{
 		Base: Base{ID: 0x73},
 		Key:  in[0],
@@ -310,7 +310,7 @@ type Speech struct {
 	Text string
 }
 
-func newSpeech(in []byte) any {
+func newSpeech(in []byte) Packet {
 	if len(in) < 11 {
 		return &MalformedPacket{
 			Base: Base{ID: 0xAD},
@@ -353,7 +353,7 @@ type SingleClick struct {
 	ID uo.Serial
 }
 
-func newSingleClick(in []byte) any {
+func newSingleClick(in []byte) Packet {
 	return &SingleClick{
 		Base: Base{ID: 0x09},
 		ID:   uo.NewSerialFromData(in),
@@ -369,7 +369,7 @@ type DoubleClick struct {
 	IsSelf bool
 }
 
-func newDoubleClick(in []byte) any {
+func newDoubleClick(in []byte) Packet {
 	s := uo.NewSerialFromData(in)
 	isSelf := s.IsSelf()
 	s = s.StripSelfFlag()
@@ -390,7 +390,7 @@ type PlayerStatusRequest struct {
 	PlayerMobileID uo.Serial
 }
 
-func newPlayerStatusRequest(in []byte) any {
+func newPlayerStatusRequest(in []byte) Packet {
 	return &PlayerStatusRequest{
 		Base:              Base{ID: 0x34},
 		StatusRequestType: uo.StatusRequestType(in[4]),
@@ -405,7 +405,7 @@ type ClientViewRange struct {
 	Range int
 }
 
-func newClientViewRange(in []byte) any {
+func newClientViewRange(in []byte) Packet {
 	r := int(in[0])
 	if r < 4 {
 		r = 4
@@ -433,7 +433,7 @@ type WalkRequest struct {
 	FastWalkKey uint32
 }
 
-func newWalkRequest(in []byte) any {
+func newWalkRequest(in []byte) Packet {
 	d := uo.Direction(in[0])
 	r := d.IsRunning()
 	d = d.StripRunningFlag()
@@ -450,7 +450,7 @@ func newWalkRequest(in []byte) any {
 type TargetResponse struct {
 	Base
 	// Target type
-	TargetType uo.TargetCursorType
+	TargetType uo.TargetType
 	// Serial of this targeting request
 	Serial uo.Serial
 	// Cursor type
@@ -468,16 +468,16 @@ type TargetResponse struct {
 	Graphic uo.Item
 }
 
-func newTargetResponse(in []byte) any {
+func newTargetResponse(in []byte) Packet {
 	return &TargetResponse{
-		Base: Base{ID: 0x6C},
-		TargetType: uo.TargetType(in[0]),
-		Serial:  uo.Serial(getuint32(w, in[1:5])),
-		CursorType: uo.CursorType(in[5]),
-		TargetObject: uo.Serial(getuint32(w, in[6:10])),
-		X: int(getuint16(w, in[10:12])),
-		Y: int(getuint16(w, in[12:14])),
-		Z: int(in[15]),
-		Graphic: uo.Item(getuint16(w, [16:18])),
+		Base:         Base{ID: 0x6C},
+		TargetType:   uo.TargetType(in[0]),
+		Serial:       uo.Serial(getuint32(in[1:5])),
+		CursorType:   uo.CursorType(in[5]),
+		TargetObject: uo.Serial(getuint32(in[6:10])),
+		X:            int(getuint16(in[10:12])),
+		Y:            int(getuint16(in[12:14])),
+		Z:            int(in[15]),
+		Graphic:      uo.Item(getuint16(in[16:18])),
 	}
 }

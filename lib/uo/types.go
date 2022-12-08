@@ -181,7 +181,7 @@ const (
 )
 
 // TargetType describes which type of targeting to use
-type TargetCursorType uint8
+type TargetType uint8
 
 // All TargetType values
 const (

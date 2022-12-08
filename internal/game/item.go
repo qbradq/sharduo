@@ -6,7 +6,7 @@ import (
 )
 
 func init() {
-	util.RegisterCtor(func() util.Serializeable { return &BaseItem{} })
+	ObjectFactory.RegisterCtor(func(v any) util.Serializeable { return &BaseItem{} })
 }
 
 // Item is the interface that all non-static items implement.
@@ -32,6 +32,11 @@ type BaseItem struct {
 // GetTypeName implements the util.Serializeable interface.
 func (i *BaseItem) GetTypeName() string {
 	return "BaseItem"
+}
+
+// GetSerialType implements the util.Serializeable interface.
+func (i *BaseItem) GetSerialType() uo.SerialType {
+	return uo.SerialTypeItem
 }
 
 // Serialize implements the util.Serializeable interface.

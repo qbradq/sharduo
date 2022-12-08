@@ -7,7 +7,7 @@ import (
 )
 
 func init() {
-	util.RegisterCtor(func() util.Serializeable { return &BaseMobile{} })
+	ObjectFactory.RegisterCtor(func(v any) util.Serializeable { return &BaseMobile{} })
 }
 
 // Mobile is the interface all mobiles implement

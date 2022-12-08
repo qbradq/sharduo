@@ -8,8 +8,6 @@ import (
 	"path"
 	"sync"
 	"time"
-
-	"github.com/qbradq/sharduo/internal/game"
 )
 
 // SaveManager manages the saving and loading of save data.
@@ -20,16 +18,13 @@ type SaveManager struct {
 	lock sync.Mutex
 	// World we are responsible for saving
 	w *World
-	// Account manager associated with this world
-	am *game.AccountManager
 }
 
 // NewSaveManager returns a new SaveManager object.
-func NewSaveManager(w *World, am *game.AccountManager, savePath string) *SaveManager {
+func NewSaveManager(w *World, savePath string) *SaveManager {
 	return &SaveManager{
 		savePath: savePath,
 		w:        w,
-		am:       am,
 	}
 }
 
@@ -42,8 +37,8 @@ func (m *SaveManager) reportErrors(errs []error) error {
 	return fmt.Errorf("%d errors reported", len(errs))
 }
 
-// Load reads in an entire save file.
-func (m *SaveManager) Load() error {
+// Read reads in an entire save file.
+func (m *SaveManager) Read() error {
 	if !m.lock.TryLock() {
 		return nil
 	}
@@ -82,7 +77,7 @@ func (m *SaveManager) Load() error {
 	if err != nil {
 		return err
 	}
-	if errs := m.am.Load(r); errs != nil {
+	if errs := m..Load(r); errs != nil {
 		r.Close()
 		return m.reportErrors(errs)
 	}
@@ -101,9 +96,9 @@ func (m *SaveManager) Load() error {
 	return nil
 }
 
-// Save generates and writes all of the save files unless another save is in
+// Write generates and writes all of the save files unless another save is in
 // progress.
-func (m *SaveManager) Save() error {
+func (m *SaveManager) Write() error {
 	if !m.lock.TryLock() {
 		return nil
 	}

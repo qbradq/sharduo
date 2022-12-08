@@ -28,14 +28,14 @@ type PacketContext struct {
 	Packet clientpacket.Packet
 }
 
-var clientPacketFactory = util.NewFactory[int, *PacketContext]("client-packets")
+var clientPacketFactory = util.NewFactory[int, *PacketContext, clientpacket.Packet]("client-packets")
 
-func ignorePacket(c *PacketContext) any {
+func ignorePacket(c *PacketContext) clientpacket.Packet {
 	// Do nothing
 	return nil
 }
 
-func handleClientPing(c *PacketContext) any {
+func handleClientPing(c *PacketContext) clientpacket.Packet {
 	p := c.Packet.(*clientpacket.Ping)
 	c.NetState.Send(&serverpacket.Ping{
 		Key: p.Key,
@@ -43,7 +43,7 @@ func handleClientPing(c *PacketContext) any {
 	return nil
 }
 
-func handleClientSpeech(c *PacketContext) any {
+func handleClientSpeech(c *PacketContext) clientpacket.Packet {
 	p := c.Packet.(*clientpacket.Speech)
 	if len(p.Text) == 0 {
 		return nil
@@ -70,7 +70,7 @@ func handleClientSpeech(c *PacketContext) any {
 	return nil
 }
 
-func handleClientVersion(c *PacketContext) any {
+func handleClientVersion(c *PacketContext) clientpacket.Packet {
 	p := c.Packet.(*clientpacket.Version)
 	if p.String != "7.0.15.1" {
 		c.NetState.Error("version check", errors.New("bad client version"))
@@ -78,7 +78,7 @@ func handleClientVersion(c *PacketContext) any {
 	return nil
 }
 
-func handleClientViewRange(c *PacketContext) any {
+func handleClientViewRange(c *PacketContext) clientpacket.Packet {
 	p := c.Packet.(*clientpacket.ClientViewRange)
 	c.NetState.Send(&serverpacket.ClientViewRange{
 		Range: byte(p.Range),
@@ -86,7 +86,7 @@ func handleClientViewRange(c *PacketContext) any {
 	return nil
 }
 
-func handleWalkRequest(c *PacketContext) any {
+func handleWalkRequest(c *PacketContext) clientpacket.Packet {
 	p := c.Packet.(*clientpacket.WalkRequest)
 	c.NetState.Send(&serverpacket.MoveAcknowledge{
 		Sequence:  p.Sequence,

@@ -13,12 +13,14 @@ type TagFileReader struct {
 	nextObject *TagFileObject
 	eof        bool
 	errs       []error
+	f          *SerializeableFactory
 }
 
 // NewTagFileReader returns a new TagFileReader object ready to use for input.
-func NewTagFileReader(r io.Reader) *TagFileReader {
+func NewTagFileReader(r io.Reader, f *SerializeableFactory) *TagFileReader {
 	return &TagFileReader{
 		s: *bufio.NewScanner(r),
+		f: f,
 	}
 }
 
@@ -34,7 +36,7 @@ func (f *TagFileReader) Errors() []error {
 
 // CreateObject creates and deserializes a new object from a TagFileObject.
 func (f *TagFileReader) CreateObject() Serializeable {
-	s := NewFromCtor(f.nextObject.t)
+	s := f.f.New(f.nextObject.t, f.nextObject)
 	if s == nil {
 		f.handleError(fmt.Errorf("unable to create object of type %s", f.nextObject.t))
 	} else {

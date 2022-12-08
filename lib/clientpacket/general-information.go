@@ -8,7 +8,7 @@ func init() {
 
 var giFactory = NewPacketFactory("general-information")
 
-func newGeneralInformation(in []byte) any {
+func newGeneralInformation(in []byte) Packet {
 	scid := int(getuint16(in[0:2]))
 	data := in[2:]
 	return giFactory.New(scid, data)

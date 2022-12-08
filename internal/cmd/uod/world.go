@@ -3,8 +3,10 @@ package uod
 import (
 	"io"
 	"log"
+	"sync"
 
 	"github.com/qbradq/sharduo/internal/game"
+	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
 )
 
@@ -13,12 +15,18 @@ import (
 type World struct {
 	// The world map
 	m *game.Map
+	// The data store of the user accounts
+	ads *util.DataStore[*game.Account]
+	// Index of usernames ot account serials
+	aidx map[string]uo.Serial
 	// The object data store for the entire world
-	om *game.ObjectManager
+	ods *util.DataStore[game.Object]
 	// The random number generator for the world
 	rng *util.RNG
 	// Inbound requests
 	requestQueue chan WorldRequest
+	// Save/Load Mutex
+	lock sync.Mutex
 }
 
 // NewWorld creates a new, empty world
@@ -26,29 +34,27 @@ func NewWorld() *World {
 	rng := util.NewRNG()
 	return &World{
 		m:            game.NewMap(),
-		om:           game.NewObjectManager(rng),
+		ads:          util.NewDataStore[*game.Account]("accounts", rng, game.ObjectFactory),
+		aidx:         make(map[string]uo.Serial),
+		ods:          util.NewDataStore[game.Object]("objects", rng, game.ObjectFactory),
 		rng:          rng,
 		requestQueue: make(chan WorldRequest, 1024),
 	}
 }
 
-// Load loads all of the data stores that the world is responsible for
-func (w *World) Load(r io.Reader) []error {
+// Read reads all of the data stores that the world is responsible for
+func (w *World) Read(r io.Reader) []error {
 	var ret []error
-	errs := w.om.Load(r)
-	if errs != nil {
-		ret = append(ret, errs...)
-	}
+	ret = append(ret, w.ads.Read(r)...)
+	ret = append(ret, w.ods.Read(r)...)
 	return ret
 }
 
-// Save saves all of the data stores that the world is responsible for
-func (w *World) Save(o io.Writer) []error {
+// Write writes all of the data stores that the world is responsible for
+func (w *World) Write(o io.Writer) []error {
 	var ret []error
-	errs := w.om.Save(o)
-	if errs != nil {
-		ret = append(ret, errs...)
-	}
+	ret = append(ret, w.ods.Write(o)...)
+	ret = append(ret, w.ads.Write(o)...)
 	return ret
 }
 
@@ -68,16 +74,11 @@ func (w *World) Random() *util.RNG {
 	return w.rng
 }
 
-// NewItem adds a new item to the world. It is assigned a unique serial. The
-// item is returned.
-func (w *World) NewItem(item game.Item) game.Item {
-	return w.om.NewItem(item)
-}
-
-// NewMobile adds a new mobile to the world. It is assigned a unique serial. The
-// mobile is returned.
-func (w *World) NewMobile(mob game.Mobile) game.Mobile {
-	return w.om.NewMobile(mob)
+// New adds a new object to the world. It is assigned a unique serial. The
+// object is returned.
+func (w *World) New(o game.Object) game.Object {
+	w.ods.Add(o, o.GetSerialType())
+	return o
 }
 
 // Process is the goroutine that services the command queue and is the only

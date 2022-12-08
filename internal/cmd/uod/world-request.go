@@ -8,7 +8,7 @@ import (
 )
 
 // Factory for world requests
-var worldRequestFactory = util.NewFactory[int, *WorldRequest]("world-requests")
+var worldRequestFactory = util.NewFactory[int, any, WorldRequest]("world-requests")
 
 // WorldRequest is used to send client and system packets to the world's
 // goroutine.
@@ -62,5 +62,5 @@ type SpeechCommandRequest struct {
 
 // Executes implements the WorldRequest interface
 func (r *SpeechCommandRequest) Execute() error {
-	return r.Command.Execute()
+	return r.Command.Execute(r.NetState)
 }

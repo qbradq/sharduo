@@ -1,34 +1,58 @@
 package util
 
-// SerializeablePool manages a pool of Serializeable objects. NOT THREAD SAFE!
+import (
+	"fmt"
+
+	"github.com/qbradq/sharduo/lib/uo"
+)
+
+// SerializeablePool manages a pool of Serializeable objects
 type SerializeablePool struct {
 	objects map[uo.Serial]Serializeable
-	sm      *SerialManager
+	sm      *uo.SerialManager
 	name    string
 }
 
 // NewSerializeablePool returns a new SerializeablePool object ready for use.
-func NewSerializeablePool(name string) *SerializeablePool {
+func NewSerializeablePool(name string, rng uo.RandomSource) *SerializeablePool {
 	return &SerializeablePool{
 		objects: make(map[uo.Serial]Serializeable),
-		sm:      NewSerialManager(),
+		sm:      uo.NewSerialManager(rng),
 		name:    name,
 	}
 }
 
 // Add adds the serializeable object to the pool, assigning it a unique serial.
 func (p *SerializeablePool) Add(o Serializeable, stype uo.SerialType) {
-	o.SetSerial(sm.New(stype))
-	sm.Add(o.GetSerial())
-	objects[o.GetSerial()] = o
+	o.SetSerial(p.sm.New(stype))
+	p.sm.Add(o.GetSerial())
+	p.objects[o.GetSerial()] = o
+}
+
+// Insert adds the serializeable object to the pool without overwriting its
+// serial. This will panic on duplicate insertion.
+func (p *SerializeablePool) Insert(o Serializeable) {
+	if p.sm.Contains(o.GetSerial()) {
+		panic(fmt.Sprintf("duplicate insertion into %s:0x%08X", p.name, o.GetSerial()))
+	}
+	p.sm.Add(o.GetSerial())
+	p.objects[o.GetSerial()] = o
 }
 
 // Remove removes the serializeable object from the pool, assigning it
-// uo.SerialNone.
+// uo.SerialZero.
 func (p *SerializeablePool) Remove(o Serializeable) {
-	sm.Remove(o.GetSerial())
-	delete(objects, o.GetSerial())
-	o.SetSerial(uo.SerialNone)
+	p.sm.Remove(o.GetSerial())
+	delete(p.objects, o.GetSerial())
+	o.SetSerial(uo.SerialZero)
+}
+
+// Get returns the identified object or nil
+func (p *SerializeablePool) Get(id uo.Serial) Serializeable {
+	if o, found := p.objects[id]; found {
+		return o
+	}
+	return nil
 }
 
 // Map executes fn on every object in the pool and returns a slice of all
@@ -43,16 +67,7 @@ func (p *SerializeablePool) Map(fn func(Serializeable) error) []error {
 	return ret
 }
 
-// Save writes the SerialiezablePool and its contents to the writer
-func (p *SerializeablePool) Save(w io.Writer) []error {
-	tfw := NewTagFileWriter(w)
-	tfw.WriteCommentLine(p.name)
-	tfw.WriteBlankLine()
-	for _, o := range p.objects {
-		o.Serialize(tfw)
-		tfw.WriteBlankLine()
-	}
-	return tfw.Errors()
+// Length returns the number of objects in the pool.
+func (p *SerializeablePool) Length() int {
+	return len(p.objects)
 }
-
-// Read reads the contents of the reader

@@ -1,35 +1,8 @@
 package util
 
 import (
-	"fmt"
-
 	"github.com/qbradq/sharduo/lib/uo"
 )
-
-// RegisterCtor registers a constructor function for a serializeable object.
-func RegisterCtor(ctor Ctor) {
-	s := ctor()
-	if s == nil {
-		panic("nil object returned from constructor")
-	}
-	name := s.GetTypeName()
-	if _, duplicate := ctors[name]; duplicate {
-		panic(fmt.Sprintf("duplicate type constructor registered for %s", name))
-	}
-	ctors[name] = ctor
-}
-
-// NewFromCtor creates a new Serializeable implementation by type name, or nil
-// if the named implementation cannot be found.
-func NewFromCtor(name string) Serializeable {
-	if ctor, ok := ctors[name]; ok {
-		return ctor()
-	}
-	return nil
-}
-
-// ctors is the map of all ctor functions to type names.
-var ctors map[string]Ctor = make(map[string]Ctor)
 
 // Serializeable is the interface all serializeable objects implement.
 type Serializeable interface {
@@ -37,8 +10,10 @@ type Serializeable interface {
 	GetSerial() uo.Serial
 	// SetSerial sets the serial of the object
 	SetSerial(uo.Serial)
-	// GetTypeName returns the name of the object's type, which must be unique.
+	// GetTypeName returns the name of the object's type, which must be unique
 	GetTypeName() string
+	// GetSerialType returns the type of serial number used by the object
+	GetSerialType() uo.SerialType
 	// Writes the object to a tag file.
 	Serialize(*TagFileWriter)
 	// Deserializes the object a tag file.
@@ -46,9 +21,8 @@ type Serializeable interface {
 }
 
 // BaseSerializeable implements the most common case of the Serializeable
-// interface. GetTypeName() is purposefully omitted to force includers of this
-// base struct to register their own name. BaseSerializeable implements
-// comparable.
+// interface. GetTypeName() and GetSerialType() are purposefully omitted to
+// force includers of this base struct to register their own.
 type BaseSerializeable struct {
 	Serial uo.Serial
 }

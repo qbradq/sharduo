@@ -5,8 +5,10 @@ import (
 	"github.com/qbradq/sharduo/lib/util"
 )
 
+var ObjectFactory = util.NewSerializeableFactory("objects")
+
 func init() {
-	util.RegisterCtor(func() util.Serializeable { return &BaseObject{} })
+	ObjectFactory.RegisterCtor(func(v any) util.Serializeable { return &BaseObject{} })
 }
 
 // Object is the interface every object in the game implements
@@ -45,6 +47,11 @@ type BaseObject struct {
 // GetTypeName implements the util.Serializeable interface.
 func (o *BaseObject) GetTypeName() string {
 	return "BaseObject"
+}
+
+// GetSerialType implements the util.Serializeable interface.
+func (o *BaseObject) GetSerialType() uo.SerialType {
+	return uo.SerialTypeItem
 }
 
 // Serialize implements the util.Serializeable interface.
