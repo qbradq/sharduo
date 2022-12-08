@@ -18,6 +18,9 @@ import (
 // File lock error
 var ErrSaveFileLocked = errors.New("the save file is currently locked")
 
+// File truncation error
+var ErrSaveFileExists = errors.New("refusing to truncate existing save file")
+
 // World encapsulates all of the data for the world and the goroutine that
 // manipulates it.
 type World struct {
@@ -157,6 +160,11 @@ func (w *World) Save() error {
 
 	// Try to create the output file
 	filePath := path.Join(w.savePath, w.getFileName()+".zip")
+	_, err := os.Stat(filePath)
+	if !errors.Is(err, os.ErrNotExist) {
+		log.Println("refusing to truncate existing save file", filePath, err)
+		return ErrSaveFileExists
+	}
 	z, err := os.Create(filePath)
 	if err != nil {
 		return err
