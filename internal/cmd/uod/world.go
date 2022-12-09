@@ -122,6 +122,7 @@ func (w *World) Load() error {
 	}
 	log.Println("loading data stores from", filePath)
 
+	// Load accounts
 	r, err := sfr.GetReader("accounts.ini")
 	if err != nil {
 		errs = append(errs, err)
@@ -129,6 +130,14 @@ func (w *World) Load() error {
 		errs = append(errs, w.ads.Read(r)...)
 	}
 
+	// Rebuild accounts index
+	w.ads.Map(func(s util.Serialer) error {
+		account := s.(*game.Account)
+		w.aidx[account.Username] = account.Serial
+		return nil
+	})
+
+	// Load objects
 	r, err = sfr.GetReader("objects.ini")
 	if err != nil {
 		errs = append(errs, err)
@@ -160,7 +169,7 @@ func (w *World) Save() error {
 	}
 	log.Println("saving data stores to", filePath)
 
-	// Save data sets
+	// Save accounts
 	f, err := sfw.GetWriter("accounts.ini")
 	if err != nil {
 		errs = append(errs, err)
@@ -168,6 +177,7 @@ func (w *World) Save() error {
 		errs = append(errs, w.ads.Write(f)...)
 	}
 
+	// Save objects
 	f, err = sfw.GetWriter("objects.ini")
 	if err != nil {
 		errs = append(errs, err)
