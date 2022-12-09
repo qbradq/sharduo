@@ -9,14 +9,17 @@ import (
 	"github.com/qbradq/sharduo/lib/util"
 )
 
+// These functions respond to inbound client packets within the network read
+// goroutine directly to offload that work from the world goroutine. Note that
+// these functions CANNOT interact with the world memory model.
 func init() {
-	clientPacketFactory.Add(0x02, handleWalkRequest)
-	clientPacketFactory.Add(0x06, ignorePacket)
-	clientPacketFactory.Add(0x09, ignorePacket)
-	clientPacketFactory.Add(0x73, handleClientPing)
-	clientPacketFactory.Add(0xad, handleClientSpeech)
-	clientPacketFactory.Add(0xbd, handleClientVersion)
-	clientPacketFactory.Add(0xc8, handleClientViewRange)
+	embeddedHandlers.Add(0x02, handleWalkRequest)
+	embeddedHandlers.Add(0x06, ignorePacket)
+	embeddedHandlers.Add(0x09, ignorePacket)
+	embeddedHandlers.Add(0x73, handleClientPing)
+	embeddedHandlers.Add(0xad, handleClientSpeech)
+	embeddedHandlers.Add(0xbd, handleClientVersion)
+	embeddedHandlers.Add(0xc8, handleClientViewRange)
 }
 
 // PacketContext represents the context in which a packet may enter the server
@@ -28,25 +31,23 @@ type PacketContext struct {
 	Packet clientpacket.Packet
 }
 
-var clientPacketFactory = util.NewFactory[int, *PacketContext, clientpacket.Packet]("client-packets")
+var embeddedHandlers = util.NewRegistry[uo.Serial, func(*PacketContext)]("client-packets")
 
-func ignorePacket(c *PacketContext) clientpacket.Packet {
+func ignorePacket(c *PacketContext) {
 	// Do nothing
-	return nil
 }
 
-func handleClientPing(c *PacketContext) clientpacket.Packet {
+func handleClientPing(c *PacketContext) {
 	p := c.Packet.(*clientpacket.Ping)
 	c.NetState.Send(&serverpacket.Ping{
 		Key: p.Key,
 	})
-	return nil
 }
 
-func handleClientSpeech(c *PacketContext) clientpacket.Packet {
+func handleClientSpeech(c *PacketContext) {
 	p := c.Packet.(*clientpacket.Speech)
 	if len(p.Text) == 0 {
-		return nil
+		return
 	}
 	if len(p.Text) > 1 {
 		if p.Text[0] == '[' {
@@ -60,37 +61,33 @@ func handleClientSpeech(c *PacketContext) clientpacket.Packet {
 					},
 					Command: cmd,
 				})
-				return nil
+				return
 			}
 		}
 	}
 	if c.NetState != nil && c.NetState.m != nil {
 		GlobalChat(c.NetState.m.GetDisplayName(), p.Text)
 	}
-	return nil
 }
 
-func handleClientVersion(c *PacketContext) clientpacket.Packet {
+func handleClientVersion(c *PacketContext) {
 	p := c.Packet.(*clientpacket.Version)
 	if p.String != "7.0.15.1" {
 		c.NetState.Error("version check", errors.New("bad client version"))
 	}
-	return nil
 }
 
-func handleClientViewRange(c *PacketContext) clientpacket.Packet {
+func handleClientViewRange(c *PacketContext) {
 	p := c.Packet.(*clientpacket.ClientViewRange)
 	c.NetState.Send(&serverpacket.ClientViewRange{
 		Range: byte(p.Range),
 	})
-	return nil
 }
 
-func handleWalkRequest(c *PacketContext) clientpacket.Packet {
+func handleWalkRequest(c *PacketContext) {
 	p := c.Packet.(*clientpacket.WalkRequest)
 	c.NetState.Send(&serverpacket.MoveAcknowledge{
 		Sequence:  p.Sequence,
 		Notoriety: uo.NotorietyInnocent,
 	})
-	return nil
 }

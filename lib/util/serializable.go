@@ -4,12 +4,34 @@ import (
 	"github.com/qbradq/sharduo/lib/uo"
 )
 
-// Serializeable is the interface all serializeable objects implement.
-type Serializeable interface {
+// Serialer is the interface all objects implement that can be identified by a
+// uo.Serial value.
+type Serialer interface {
 	// GetSerial returns the serial of the object
 	GetSerial() uo.Serial
 	// SetSerial sets the serial of the object
 	SetSerial(uo.Serial)
+}
+
+// BaseSerialer implements the most command use case of the Serialer interface.
+type BaseSerialer struct {
+	// Serial of the object
+	Serial uo.Serial
+}
+
+// GetSerial implements the Serializeable interface
+func (s *BaseSerialer) GetSerial() uo.Serial {
+	return s.Serial
+}
+
+// SetSerial implements the Serializeable interface
+func (s *BaseSerialer) SetSerial(serial uo.Serial) {
+	s.Serial = serial
+}
+
+// Serializeable is the interface all serializeable objects implement.
+type Serializeable interface {
+	Serialer
 	// GetTypeName returns the name of the object's type, which must be unique
 	GetTypeName() string
 	// GetSerialType returns the type of serial number used by the object
@@ -24,17 +46,7 @@ type Serializeable interface {
 // interface. GetTypeName() and GetSerialType() are purposefully omitted to
 // force includers of this base struct to register their own.
 type BaseSerializeable struct {
-	Serial uo.Serial
-}
-
-// GetSerial implements the Serializeable interface
-func (s *BaseSerializeable) GetSerial() uo.Serial {
-	return s.Serial
-}
-
-// SetSerial implements the Serializeable interface
-func (s *BaseSerializeable) SetSerial(serial uo.Serial) {
-	s.Serial = serial
+	BaseSerialer
 }
 
 // Serialize implements the util.Serializeable interface.

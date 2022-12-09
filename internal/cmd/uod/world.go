@@ -1,16 +1,18 @@
 package uod
 
 import (
-	"log"
-	"sync"
-	"errors"
-	"os"
-	"time"
-	"path"
-	"fmt"
 	"archive/zip"
+	"errors"
+	"fmt"
+	"log"
+	"os"
+	"path"
+	"sync"
+	"time"
 
 	"github.com/qbradq/sharduo/internal/game"
+	"github.com/qbradq/sharduo/lib/clientpacket"
+	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
 )
@@ -42,6 +44,8 @@ type World struct {
 	lock sync.Mutex
 	// Save directory string
 	savePath string
+	// TargetManager for the world
+	tm *TargetManager
 }
 
 // NewWorld creates a new, empty world
@@ -55,6 +59,7 @@ func NewWorld(savePath string) *World {
 		rng:          rng,
 		requestQueue: make(chan WorldRequest, 1024),
 		savePath:     savePath,
+		tm:           NewTargetManager(rng),
 	}
 }
 
@@ -121,14 +126,14 @@ func (w *World) Load() error {
 	}
 	log.Println("loading data stores from", filePath)
 
-	r, err := sf.GetReader("accounts.ini")	
+	r, err := sf.GetReader("accounts.ini")
 	if err != nil {
 		errs = append(errs, err)
 	} else {
 		errs = append(errs, w.ads.Read(r)...)
 	}
 
-	r, err = sf.GetReader("objects.ini")	
+	r, err = sf.GetReader("objects.ini")
 	if err != nil {
 		errs = append(errs, err)
 	} else {
@@ -188,10 +193,31 @@ func (w *World) Save() error {
 	if err != nil {
 		errs = append(errs, err)
 	} else {
-		errs = append(errs, w.ads.Write(f)...)
+		errs = append(errs, w.ods.Write(f)...)
 	}
 
 	return w.reportErrors(errs)
+}
+
+// SendTarget sends a targeting request to the client.
+func (w *World) SendTarget(n *NetState, ttype uo.TargetType, ctx interface{}, fn TargetCallback) {
+	t := w.tm.New(&Target{
+		NetState: n,
+		Callback: fn,
+		Context:  ctx,
+		TTL:      uo.DurationSecond * 30,
+	})
+	n.Send(&serverpacket.Target{
+		Serial:     t.Serial,
+		TargetType: ttype,
+		CursorType: uo.CursorTypeNeutral,
+	})
+}
+
+// ExecuteTarget executes a targeting response. Returns true if the target
+// request was still pending and executed.
+func (w *World) ExecuteTarget(r *clientpacket.TargetResponse) bool {
+	return w.tm.Execute(r)
 }
 
 // SendRequest sends a WorldRequest to the world's goroutine. Returns true if
@@ -239,7 +265,7 @@ func (w *World) getOrCreateAccount(username, passwordHash string) *game.Account 
 		return w.ads.Get(s)
 	}
 	a := &game.Account{
-		Username: username,
+		Username:     username,
 		PasswordHash: passwordHash,
 	}
 	w.ads.Add(a, uo.SerialTypeUnbound)

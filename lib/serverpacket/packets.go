@@ -22,9 +22,8 @@ func putstr(w io.Writer, s string) {
 }
 
 func pad(w io.Writer, l int) {
-	var a [1024]byte
-	buf := a[:l]
-	w.Write(buf)
+	var buf [1024]byte
+	w.Write(buf[:l])
 }
 
 func fill(w io.Writer, v byte, l int) {
@@ -50,11 +49,6 @@ func putuint16(w io.Writer, v uint16) {
 func putuint32(w io.Writer, v uint32) {
 	var b [4]byte
 	binary.BigEndian.PutUint32(b[:], v)
-	w.Write(b[:])
-}
-
-func putzeros(w io.Writer, n int) {
-	b := make([]byte, n)
 	w.Write(b[:])
 }
 
@@ -357,5 +351,6 @@ func (p *Target) Write(w io.Writer) {
 	putbyte(w, 0x6C) // Packet ID
 	putbyte(w, byte(p.TargetType))
 	putuint32(w, uint32(p.Serial))
-	putzeros(w, 12)
+	putbyte(w, byte(p.CursorType))
+	pad(w, 12)
 }

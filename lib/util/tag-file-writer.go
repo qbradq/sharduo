@@ -52,6 +52,7 @@ func (f *TagFileWriter) WriteObject(s Serializeable) {
 		f.handleError(err)
 	}
 	s.Serialize(f)
+	f.WriteBlankLine()
 }
 
 // WriteNumber writes a number to the io.Writer in base 10.

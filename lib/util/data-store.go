@@ -9,15 +9,15 @@ import (
 
 // DataStore is a file-backed key-value store.
 type DataStore[K Serializeable] struct {
-	SerializeablePool
+	SerialPool
 	f *SerializeableFactory
 }
 
 // NewDataStore initializes and returns a new DataStore object.
 func NewDataStore[K Serializeable](name string, rng uo.RandomSource, f *SerializeableFactory) *DataStore[K] {
 	return &DataStore[K]{
-		SerializeablePool: *NewSerializeablePool(name, rng),
-		f:                 f,
+		SerialPool: *NewSerialPool(name, rng),
+		f:          f,
 	}
 }
 
@@ -40,13 +40,12 @@ func (p *DataStore[K]) Write(w io.Writer) []error {
 	tfw.WriteCommentLine(p.name)
 	tfw.WriteBlankLine()
 	for _, o := range p.objects {
-		o.Serialize(tfw)
-		tfw.WriteBlankLine()
+		tfw.WriteObject(o.(Serializeable))
 	}
 	return tfw.Errors()
 }
 
 // Get returns the named object or nil.
 func (s *DataStore[K]) Get(which uo.Serial) K {
-	return s.SerializeablePool.Get(which).(K)
+	return s.SerialPool.Get(which).(K)
 }

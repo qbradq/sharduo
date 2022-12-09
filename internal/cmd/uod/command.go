@@ -5,7 +5,8 @@ import (
 	"log"
 	"strings"
 
-	"github.com/qbradq/sharduo/lib/serverpacket"
+	"github.com/qbradq/sharduo/lib/clientpacket"
+	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
 )
 
@@ -38,11 +39,7 @@ func ParseCommand(line string) Command {
 	if len(c) == 0 {
 		return nil
 	}
-	cmd := commandFactory.New(c[0], c)
-	if cmd != nil {
-		return cmd.(Command)
-	}
-	return nil
+	return commandFactory.New(c[0], c)
 }
 
 // BaseCommand implements some basic command functionality
@@ -74,6 +71,8 @@ func (l *LocationCommand) Execute(n *NetState) error {
 	if n == nil {
 		return nil
 	}
-	n.Send(&serverpacket.Target{})
+	world.SendTarget(n, uo.TargetTypeLocation, nil, func(r *clientpacket.TargetResponse, ctx interface{}) {
+		n.SystemMessage("Location X=%d Y=%d Z=%d", r.X, r.Y, r.Z)
+	})
 	return nil
 }
