@@ -18,3 +18,11 @@ var worldHandlers = util.NewRegistry[uo.Serial, func(*NetState, clientpacket.Pac
 func handleTargetResponse(n *NetState, cp clientpacket.Packet) {
 	world.ExecuteTarget(cp.(*clientpacket.TargetResponse))
 }
+
+func handleStatusRequest(n *NetState, cp clientpacket.Packet) {
+	p := cp.(*clientpacket.PlayerStatusRequest)
+	switch p.StatusRequestType {
+	case uo.StatusRequestTypeBasic:
+
+	}
+}
