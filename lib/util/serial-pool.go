@@ -25,24 +25,24 @@ func NewSerialPool(name string, rng uo.RandomSource) *SerialPool {
 // Add adds the object to the pool, assigning it a unique serial.
 func (p *SerialPool) Add(o Serialer, stype uo.SerialType) {
 	o.SetSerial(p.sm.New(stype))
-	p.sm.Add(o.GetSerial())
-	p.objects[o.GetSerial()] = o
+	p.sm.Add(o.Serial())
+	p.objects[o.Serial()] = o
 }
 
 // Insert adds the object to the pool without overwriting its serial. This will
 // panic on duplicate insertion.
 func (p *SerialPool) Insert(o Serialer) {
-	if p.sm.Contains(o.GetSerial()) {
-		panic(fmt.Sprintf("duplicate insertion into %s:0x%08X", p.name, o.GetSerial()))
+	if p.sm.Contains(o.Serial()) {
+		panic(fmt.Sprintf("duplicate insertion into %s:0x%08X", p.name, o.Serial()))
 	}
-	p.sm.Add(o.GetSerial())
-	p.objects[o.GetSerial()] = o
+	p.sm.Add(o.Serial())
+	p.objects[o.Serial()] = o
 }
 
 // Remove removes the object from the pool, assigning it uo.SerialZero.
 func (p *SerialPool) Remove(o Serialer) {
-	p.sm.Remove(o.GetSerial())
-	delete(p.objects, o.GetSerial())
+	p.sm.Remove(o.Serial())
+	delete(p.objects, o.Serial())
 	o.SetSerial(uo.SerialZero)
 }
 

@@ -8,7 +8,7 @@ import (
 // uo.Serial value.
 type Serialer interface {
 	// GetSerial returns the serial of the object
-	GetSerial() uo.Serial
+	Serial() uo.Serial
 	// SetSerial sets the serial of the object
 	SetSerial(uo.Serial)
 }
@@ -16,26 +16,26 @@ type Serialer interface {
 // BaseSerialer implements the most command use case of the Serialer interface.
 type BaseSerialer struct {
 	// Serial of the object
-	Serial uo.Serial
+	serial uo.Serial
 }
 
-// GetSerial implements the Serializeable interface
-func (s *BaseSerialer) GetSerial() uo.Serial {
-	return s.Serial
+// Serial implements the Serializeable interface
+func (s *BaseSerialer) Serial() uo.Serial {
+	return s.serial
 }
 
 // SetSerial implements the Serializeable interface
 func (s *BaseSerialer) SetSerial(serial uo.Serial) {
-	s.Serial = serial
+	s.serial = serial
 }
 
 // Serializeable is the interface all serializeable objects implement.
 type Serializeable interface {
 	Serialer
 	// GetTypeName returns the name of the object's type, which must be unique
-	GetTypeName() string
+	TypeName() string
 	// GetSerialType returns the type of serial number used by the object
-	GetSerialType() uo.SerialType
+	SerialType() uo.SerialType
 	// Writes the object to a tag file.
 	Serialize(*TagFileWriter)
 	// Deserializes the object a tag file.
@@ -51,10 +51,10 @@ type BaseSerializeable struct {
 
 // Serialize implements the util.Serializeable interface.
 func (s *BaseSerializeable) Serialize(f *TagFileWriter) {
-	f.WriteHex("Serial", int(s.Serial))
+	f.WriteHex("Serial", int(s.serial))
 }
 
 // Deserialize implements the util.Serializeable interface.
 func (s *BaseSerializeable) Deserialize(f *TagFileObject) {
-	s.Serial = uo.Serial(f.GetNumber("Serial", int(uo.SerialSystem)))
+	s.serial = uo.Serial(f.GetNumber("Serial", int(uo.SerialSystem)))
 }

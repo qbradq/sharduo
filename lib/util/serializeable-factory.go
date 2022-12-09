@@ -22,5 +22,5 @@ func (f *SerializeableFactory) RegisterCtor(ctor func(any) Serializeable) {
 	if o == nil {
 		panic(fmt.Sprintf("serializeable factory %s got nil result from ctor", f.name))
 	}
-	f.Register(o.GetTypeName(), ctor)
+	f.Register(o.TypeName(), ctor)
 }

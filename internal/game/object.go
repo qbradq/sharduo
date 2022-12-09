@@ -14,12 +14,12 @@ func init() {
 // Object is the interface every object in the game implements
 type Object interface {
 	util.Serializeable
-	// GetLocation returns the current location of the object
-	GetLocation() Location
-	// GetHue returns the hue of the item
-	GetHue() uo.Hue
-	// GetDisplayName returns the name of the object with any articles attached
-	GetDisplayName() string
+	// Location returns the current location of the object
+	Location() Location
+	// Hue returns the hue of the item
+	Hue() uo.Hue
+	// DisplayName returns the name of the object with any articles attached
+	DisplayName() string
 }
 
 // BaseObject is the base of all game objects and implements the Object
@@ -27,72 +27,72 @@ type Object interface {
 type BaseObject struct {
 	util.BaseSerializeable
 	// Display name of the object
-	Name string
+	name string
 	// If true, the article "a" is used to refer to the object. If no article
 	// is specified none will be used.
-	ArticleA bool
+	articleA bool
 	// If true, the article "an" is used to refer to the object. If no article
 	// is specified none will be used.
-	ArticleAn bool
+	articleAn bool
 	// The hue of the object
-	Hue uo.Hue
+	hue uo.Hue
 	// Location of the object
-	Location Location
+	location Location
 	// Facing is the direction the object is facing
-	Facing uo.Direction
+	facing uo.Direction
 	// Contents is the collection of all the items contained within this object
-	Inventory Inventory
+	inventory Inventory
 }
 
-// GetTypeName implements the util.Serializeable interface.
-func (o *BaseObject) GetTypeName() string {
+// TypeName implements the util.Serializeable interface.
+func (o *BaseObject) TypeName() string {
 	return "BaseObject"
 }
 
-// GetSerialType implements the util.Serializeable interface.
-func (o *BaseObject) GetSerialType() uo.SerialType {
+// SerialType implements the util.Serializeable interface.
+func (o *BaseObject) SerialType() uo.SerialType {
 	return uo.SerialTypeItem
 }
 
 // Serialize implements the util.Serializeable interface.
 func (o *BaseObject) Serialize(f *util.TagFileWriter) {
 	o.BaseSerializeable.Serialize(f)
-	f.WriteString("Name", o.Name)
-	f.WriteBool("ArticleA", o.ArticleA)
-	f.WriteBool("ArticleAn", o.ArticleA)
-	f.WriteNumber("Hue", int(o.Hue))
-	f.WriteNumber("X", o.Location.X)
-	f.WriteNumber("Y", o.Location.Y)
-	f.WriteNumber("Z", o.Location.Z)
-	f.WriteNumber("Facing", int(o.Facing))
+	f.WriteString("Name", o.name)
+	f.WriteBool("ArticleA", o.articleA)
+	f.WriteBool("ArticleAn", o.articleA)
+	f.WriteNumber("Hue", int(o.hue))
+	f.WriteNumber("X", o.location.X)
+	f.WriteNumber("Y", o.location.Y)
+	f.WriteNumber("Z", o.location.Z)
+	f.WriteNumber("Facing", int(o.facing))
 }
 
 // Deserialize implements the util.Serializeable interface.
 func (o *BaseObject) Deserialize(f *util.TagFileObject) {
 	o.BaseSerializeable.Deserialize(f)
-	o.Name = f.GetString("Name", "unknown entity")
-	o.ArticleA = f.GetBool("ArticleA", false)
-	o.ArticleAn = f.GetBool("ArticleAn", false)
-	o.Hue = uo.Hue(f.GetNumber("Hue", int(uo.HueIce1)))
-	o.Location.X = f.GetNumber("X", 1607)
-	o.Location.Y = f.GetNumber("Y", 1595)
-	o.Location.Z = f.GetNumber("Z", 13)
-	o.Facing = uo.Direction(f.GetNumber("Facing", int(uo.DirectionSouth)))
+	o.name = f.GetString("Name", "unknown entity")
+	o.articleA = f.GetBool("ArticleA", false)
+	o.articleAn = f.GetBool("ArticleAn", false)
+	o.hue = uo.Hue(f.GetNumber("Hue", int(uo.HueIce1)))
+	o.location.X = f.GetNumber("X", 1607)
+	o.location.Y = f.GetNumber("Y", 1595)
+	o.location.Z = f.GetNumber("Z", 13)
+	o.facing = uo.Direction(f.GetNumber("Facing", int(uo.DirectionSouth)))
 }
 
-// GetLocation implements the Object interface
-func (o *BaseObject) GetLocation() Location { return o.Location }
+// Location implements the Object interface
+func (o *BaseObject) Location() Location { return o.location }
 
-// GetHue implements the Object interface
-func (o *BaseObject) GetHue() uo.Hue { return o.Hue }
+// Hue implements the Object interface
+func (o *BaseObject) Hue() uo.Hue { return o.hue }
 
-// GetDisplayName implements the Object interface
-func (o *BaseObject) GetDisplayName() string {
-	if o.ArticleA {
-		return "a " + o.Name
+// DisplayName implements the Object interface
+func (o *BaseObject) DisplayName() string {
+	if o.articleA {
+		return "a " + o.name
 	}
-	if o.ArticleAn {
-		return "an " + o.Name
+	if o.articleAn {
+		return "an " + o.name
 	}
-	return o.Name
+	return o.name
 }

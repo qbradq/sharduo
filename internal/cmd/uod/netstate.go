@@ -154,40 +154,6 @@ func (n *NetState) Service() {
 	}
 
 	// TODO Character load
-	isFemale := world.Random().RandomBool()
-	n.m = world.New(&game.BaseMobile{
-		BaseObject: game.BaseObject{
-			Name: gslp.Username,
-			Hue:  uo.RandomSkinHue(world.Random()),
-			Location: game.Location{
-				X: 1607,
-				Y: 1595,
-				Z: 13,
-			},
-		},
-		IsFemale:  isFemale,
-		Body:      uo.GetHumanBody(isFemale),
-		Notoriety: uo.NotorietyInnocent,
-	}).(game.Mobile)
-	n.m.Equip(world.New(&game.BaseItem{
-		BaseObject: game.BaseObject{
-			Name:     "shirt",
-			ArticleA: true,
-			Hue:      uo.RandomDyeHue(world.Random()),
-		},
-		Graphic:  0x1517,
-		Wearable: true,
-		Layer:    uo.LayerShirt,
-	}).(game.Item))
-	n.m.Equip(world.New(&game.BaseItem{
-		BaseObject: game.BaseObject{
-			Name: "pants",
-			Hue:  uo.RandomDyeHue(world.Random()),
-		},
-		Graphic:  0x152E,
-		Wearable: true,
-		Layer:    uo.LayerPants,
-	}).(game.Item))
 
 	// Request version string
 	n.Send(&serverpacket.Version{})

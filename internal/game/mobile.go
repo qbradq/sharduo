@@ -26,12 +26,12 @@ type Mobile interface {
 // BaseMobile provides the base implementation for Mobile
 type BaseMobile struct {
 	BaseObject
-	// IsFemale is true if the mobile is female
-	IsFemale bool
+	// isFemale is true if the mobile is female
+	isFemale bool
 	// Animation body of the object
-	Body uo.Body
+	body uo.Body
 	// Notoriety of the mobile
-	Notoriety uo.Notoriety
+	notoriety uo.Notoriety
 	// equipment is the collection of equipment this mobile is wearing, if any
 	equipment EquipmentCollection
 }
@@ -44,9 +44,9 @@ func (m *BaseMobile) GetTypeName() string {
 // Serialize implements the util.Serializeable interface.
 func (m *BaseMobile) Serialize(f *util.TagFileWriter) {
 	m.BaseObject.Serialize(f)
-	f.WriteBool("IsFemale", m.IsFemale)
-	f.WriteNumber("Body", int(m.Body))
-	f.WriteNumber("Notoriety", int(m.Notoriety))
+	f.WriteBool("IsFemale", m.isFemale)
+	f.WriteNumber("Body", int(m.body))
+	f.WriteNumber("Notoriety", int(m.notoriety))
 	m.equipment.Write("Equipment", f)
 }
 
@@ -56,7 +56,7 @@ func (m *BaseMobile) Deserialize(f *util.TagFileObject) {
 }
 
 // GetBody implements the Mobile interface.
-func (m *BaseMobile) GetBody() uo.Body { return m.Body }
+func (m *BaseMobile) GetBody() uo.Body { return m.body }
 
 // Equip implements the Mobile interface.
 func (m *BaseMobile) Equip(item Item) bool {
@@ -66,26 +66,26 @@ func (m *BaseMobile) Equip(item Item) bool {
 // EquippedMobilePacket implements the Mobile interface.
 func (m *BaseMobile) EquippedMobilePacket() *serverpacket.EquippedMobile {
 	flags := uo.MobileFlagNone
-	if m.IsFemale {
+	if m.isFemale {
 		flags |= uo.MobileFlagFemale
 	}
 	p := &serverpacket.EquippedMobile{
-		ID:        m.Serial,
-		Body:      m.Body,
-		X:         m.Location.X,
-		Y:         m.Location.Y,
-		Z:         m.Location.Z,
-		Facing:    m.Facing,
-		Hue:       m.Hue,
+		ID:        m.Serial(),
+		Body:      m.body,
+		X:         m.location.X,
+		Y:         m.location.Y,
+		Z:         m.location.Z,
+		Facing:    m.facing,
+		Hue:       m.hue,
 		Flags:     flags,
-		Notoriety: m.Notoriety,
+		Notoriety: m.notoriety,
 	}
 	m.equipment.Map(func(item Item) error {
 		p.Equipment = append(p.Equipment, &serverpacket.EquippedMobileItem{
-			ID:      item.GetSerial(),
-			Graphic: item.GetGraphic(),
-			Layer:   item.GetLayer(),
-			Hue:     item.GetHue(),
+			ID:      item.Serial(),
+			Graphic: item.Graphic(),
+			Layer:   item.Layer(),
+			Hue:     item.Hue(),
 		})
 		return nil
 	})

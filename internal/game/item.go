@@ -12,51 +12,51 @@ func init() {
 // Item is the interface that all non-static items implement.
 type Item interface {
 	Object
-	// GetLayer returns the layer of the item
-	GetLayer() uo.Layer
-	// GetGraphic returns the graphic of the item
-	GetGraphic() uo.Item
+	// Layer returns the layer of the item
+	Layer() uo.Layer
+	// Graphic returns the graphic of the item
+	Graphic() uo.Item
 }
 
 // BaseItem provides the basic implementation of Item.
 type BaseItem struct {
 	BaseObject
 	// Item graphic of the item, if any
-	Graphic uo.Item
+	graphic uo.Item
 	// Wearable is true if the item is wearable
-	Wearable bool
+	wearable bool
 	// Layer is the layer of the wearable
-	Layer uo.Layer
+	layer uo.Layer
 }
 
-// GetTypeName implements the util.Serializeable interface.
-func (i *BaseItem) GetTypeName() string {
+// TypeName implements the util.Serializeable interface.
+func (i *BaseItem) TypeName() string {
 	return "BaseItem"
 }
 
-// GetSerialType implements the util.Serializeable interface.
-func (i *BaseItem) GetSerialType() uo.SerialType {
+// SerialType implements the util.Serializeable interface.
+func (i *BaseItem) SerialType() uo.SerialType {
 	return uo.SerialTypeItem
 }
 
 // Serialize implements the util.Serializeable interface.
 func (i *BaseItem) Serialize(f *util.TagFileWriter) {
 	i.BaseObject.Serialize(f)
-	f.WriteHex("Graphic", int(i.Graphic))
-	f.WriteBool("Wearable", i.Wearable)
-	f.WriteNumber("Layer", int(i.Layer))
+	f.WriteHex("Graphic", int(i.graphic))
+	f.WriteBool("Wearable", i.wearable)
+	f.WriteNumber("Layer", int(i.layer))
 }
 
 // Deserialize implements the util.Serializeable interface.
 func (i *BaseItem) Deserialize(f *util.TagFileObject) {
 	i.BaseObject.Deserialize(f)
-	i.Graphic = uo.Item(f.GetNumber("Graphic", 0))
-	i.Wearable = f.GetBool("Wearable", false)
-	i.Layer = uo.Layer(f.GetNumber("Layer", int(uo.LayerInvalid)))
+	i.graphic = uo.Item(f.GetNumber("Graphic", 0))
+	i.wearable = f.GetBool("Wearable", false)
+	i.layer = uo.Layer(f.GetNumber("Layer", int(uo.LayerInvalid)))
 }
 
-// GetLayer implements the Item interface.
-func (i *BaseItem) GetLayer() uo.Layer { return i.Layer }
+// Layer implements the Item interface.
+func (i *BaseItem) Layer() uo.Layer { return i.layer }
 
-// GetGraphic implements the Item interface.
-func (i *BaseItem) GetGraphic() uo.Item { return i.Graphic }
+// Graphic implements the Item interface.
+func (i *BaseItem) Graphic() uo.Item { return i.graphic }

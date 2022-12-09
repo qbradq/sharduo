@@ -48,7 +48,7 @@ func (f *TagFileWriter) WriteBlankLine() {
 
 // WriteObject writes a Serializeable to the given io.Writer.
 func (f *TagFileWriter) WriteObject(s Serializeable) {
-	if _, err := f.w.Write([]byte(fmt.Sprintf("\n[%s]\n", s.GetTypeName()))); err != nil {
+	if _, err := f.w.Write([]byte(fmt.Sprintf("\n[%s]\n", s.TypeName()))); err != nil {
 		f.handleError(err)
 	}
 	s.Serialize(f)
