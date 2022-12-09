@@ -14,8 +14,14 @@ import (
 
 // LoginServerMain is the entry point for the login server.
 func LoginServerMain() {
+	// TODO Configuration
 	ipstr := "127.0.0.1"
 	port := 7775
+	defaultUsername := "admin"
+	defaultPassword := game.HashPassword("password")
+
+	admin := world.GetOrCreateAccount(defaultUsername, defaultPassword)
+	log.Println("default admin username", admin.Username)
 
 	l, err := net.ListenTCP("tcp", &net.TCPAddr{
 		IP:   net.ParseIP(ipstr),
@@ -81,7 +87,7 @@ func handleLoginConnection(c *net.TCPConn) {
 		log.Println("client sent wrong packet waiting for account login", cp)
 		return
 	}
-	account := world.getOrCreateAccount(alp.Username, game.HashPassword(alp.Password))
+	account := world.GetOrCreateAccount(alp.Username, game.HashPassword(alp.Password))
 	if account == nil {
 		log.Println("user login failed for", alp.Username)
 		ldp := &serverpacket.LoginDenied{

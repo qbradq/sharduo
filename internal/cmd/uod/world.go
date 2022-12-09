@@ -1,14 +1,13 @@
 package uod
 
 import (
-	"log"
-	"sync"
 	"errors"
-	"os"
-	"time"
-	"path"
 	"fmt"
-	"archive/zip"
+	"log"
+	"os"
+	"path"
+	"sync"
+	"time"
 
 	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/lib/uo"
@@ -74,9 +73,6 @@ func (w *World) latestSavePath() string {
 		if err != nil {
 			return ""
 		}
-		if info.IsDir() {
-			continue
-		}
 		if info.ModTime().After(latestModTime) {
 			latestModTime = info.ModTime()
 			latestIdx = i
@@ -111,24 +107,24 @@ func (w *World) Load() error {
 	}
 	defer w.lock.Unlock()
 
-	sf := util.NewCompressedSaveFileReader()
+	sfr := util.NewDebugSaveFileReader()
 	filePath := w.latestSavePath()
 	if filePath == "" {
 		return os.ErrNotExist
 	}
-	if err := sf.Open(filePath); err != nil {
+	if err := sfr.Open(filePath); err != nil {
 		return err
 	}
 	log.Println("loading data stores from", filePath)
 
-	r, err := sf.GetReader("accounts.ini")	
+	r, err := sfr.GetReader("accounts.ini")
 	if err != nil {
 		errs = append(errs, err)
 	} else {
 		errs = append(errs, w.ads.Read(r)...)
 	}
 
-	r, err = sf.GetReader("objects.ini")	
+	r, err = sfr.GetReader("objects.ini")
 	if err != nil {
 		errs = append(errs, err)
 	} else {
@@ -152,43 +148,26 @@ func (w *World) Save() error {
 	}
 	defer w.lock.Unlock()
 
-	// Make sure the save directory is present
-	if err := os.MkdirAll(w.savePath, 0777); err != nil {
-		log.Println("error creating save directory", err)
+	sfw := util.NewDebugSaveFileWriter()
+	filePath := path.Join(w.savePath, w.getFileName())
+	if err := sfw.Open(filePath); err != nil {
 		return err
 	}
-
-	// Try to create the output file
-	filePath := path.Join(w.savePath, w.getFileName()+".zip")
-	_, err := os.Stat(filePath)
-	if !errors.Is(err, os.ErrNotExist) {
-		log.Println("refusing to truncate existing save file", filePath, err)
-		return ErrSaveFileExists
-	}
-	z, err := os.Create(filePath)
-	if err != nil {
-		return err
-	}
-	defer z.Close()
 	log.Println("saving data stores to", filePath)
 
-	// Create the zip writer
-	zw := zip.NewWriter(z)
-	defer zw.Close()
-
 	// Save data sets
-	f, err := zw.Create("accounts.ini")
+	f, err := sfw.GetWriter("accounts.ini")
 	if err != nil {
 		errs = append(errs, err)
 	} else {
 		errs = append(errs, w.ads.Write(f)...)
 	}
 
-	f, err = zw.Create("objects.ini")
+	f, err = sfw.GetWriter("objects.ini")
 	if err != nil {
 		errs = append(errs, err)
 	} else {
-		errs = append(errs, w.ads.Write(f)...)
+		errs = append(errs, w.ods.Write(f)...)
 	}
 
 	return w.reportErrors(errs)
@@ -222,16 +201,16 @@ func (w *World) New(o game.Object) game.Object {
 // created for the user. If an account is found but the password hashes do not
 // match nil is returned. Otherwise the account is returned.
 func (w *World) AuthenticateAccount(username, passwordHash string) *game.Account {
-	a := w.getOrCreateAccount(username, passwordHash)
+	a := w.GetOrCreateAccount(username, passwordHash)
 	if a.PasswordHash != passwordHash {
 		return nil
 	}
 	return a
 }
 
-// getOrCreateAccount adds a new account to the world, or returns the existing
+// GetOrCreateAccount adds a new account to the world, or returns the existing
 // account for that username.
-func (w *World) getOrCreateAccount(username, passwordHash string) *game.Account {
+func (w *World) GetOrCreateAccount(username, passwordHash string) *game.Account {
 	w.alock.Lock()
 	defer w.alock.Unlock()
 
@@ -239,7 +218,7 @@ func (w *World) getOrCreateAccount(username, passwordHash string) *game.Account 
 		return w.ads.Get(s)
 	}
 	a := &game.Account{
-		Username: username,
+		Username:     username,
 		PasswordHash: passwordHash,
 	}
 	w.ads.Add(a, uo.SerialTypeUnbound)

@@ -40,9 +40,10 @@ func (p *DataStore[K]) Write(w io.Writer) []error {
 	tfw.WriteCommentLine(p.name)
 	tfw.WriteBlankLine()
 	for _, o := range p.objects {
-		o.Serialize(tfw)
+		tfw.WriteObject(o)
 		tfw.WriteBlankLine()
 	}
+	tfw.WriteCommentLine("end of file")
 	return tfw.Errors()
 }
 
