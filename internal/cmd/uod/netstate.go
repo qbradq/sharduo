@@ -247,17 +247,17 @@ func (n *NetState) readLoop(r *clientpacket.Reader) {
 				fmt.Errorf("unknown packet 0x%04X", data[0]))
 		case *clientpacket.MalformedPacket:
 			n.Error("decoding packet",
-				fmt.Errorf("malformed packet 0x%04X", p.GetID()))
+				fmt.Errorf("malformed packet 0x%04X", p.GetSerial()))
 		case *clientpacket.UnknownPacket:
-			n.Log("unknown %s packet 0x%04X", p.PType, cp.GetID())
+			n.Log("unknown %s packet 0x%04X", p.PType, cp.GetSerial())
 			return
 		case *clientpacket.UnsupportedPacket:
-			n.Log("unsupported %s packet 0x%04X:\n%s", p.PType, cp.GetID(),
+			n.Log("unsupported %s packet 0x%08X:\n%s", p.PType, int(cp.GetSerial()),
 				hex.Dump(data))
 		case *clientpacket.IgnoredPacket:
 			// Do nothing
 		default:
-			handler, ok := clientPacketFactory.Get(cp.GetID())
+			handler, ok := embeddedHandlers.Get(cp.GetSerial())
 			if !ok || handler == nil {
 				// This packet is handled by the world goroutine, so forward it
 				// on.

@@ -1,14 +1,10 @@
 package uod
 
 import (
-	"log"
+	"fmt"
 
 	"github.com/qbradq/sharduo/lib/clientpacket"
-	"github.com/qbradq/sharduo/lib/util"
 )
-
-// Factory for world requests
-var worldRequestFactory = util.NewFactory[int, any, WorldRequest]("world-requests")
 
 // WorldRequest is used to send client and system packets to the world's
 // goroutine.
@@ -49,7 +45,11 @@ type ClientPacketRequest struct {
 
 // Execute implements the WorldRequest interface
 func (r *ClientPacketRequest) Execute() error {
-	log.Printf("unhandled packet 0x%02X\n", r.GetPacket().GetID())
+	handler, found := worldHandlers.Get(r.GetPacket().GetSerial())
+	if !found || handler == nil {
+		return fmt.Errorf("unhandled packet 0x%08X", int(r.GetPacket().GetSerial()))
+	}
+	handler(r.GetNetState(), r.GetPacket())
 	return nil
 }
 

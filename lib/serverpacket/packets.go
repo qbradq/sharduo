@@ -8,23 +8,34 @@ import (
 	"github.com/qbradq/sharduo/lib/uo"
 )
 
-func padstr(w io.Writer, s string, l int) {
-	var a [1024]byte
-	buf := a[:l]
-	copy(buf, []byte(s))
-	w.Write(buf)
+// Writes a boolean value
+func putbool(w io.Writer, v bool) {
+	var b [1]byte
+	if v {
+		b[0] = 1
+	} else {
+		b[0] = 0
+	}
+	w.Write(b[:])
 }
 
+// Writes a null-terminated string
 func putstr(w io.Writer, s string) {
 	var b [1]byte
 	w.Write([]byte(s))
 	w.Write(b[:])
 }
 
+// Writes a fixed-length string
+func putstrn(w io.Writer, s string, n int) {
+	var b = make([]byte, n)
+	copy(b, s)
+	w.Write(b)
+}
+
 func pad(w io.Writer, l int) {
-	var a [1024]byte
-	buf := a[:l]
-	w.Write(buf)
+	var buf [1024]byte
+	w.Write(buf[:l])
 }
 
 func fill(w io.Writer, v byte, l int) {
@@ -50,11 +61,6 @@ func putuint16(w io.Writer, v uint16) {
 func putuint32(w io.Writer, v uint32) {
 	var b [4]byte
 	binary.BigEndian.PutUint32(b[:], v)
-	w.Write(b[:])
-}
-
-func putzeros(w io.Writer, n int) {
-	b := make([]byte, n)
 	w.Write(b[:])
 }
 
@@ -88,9 +94,9 @@ func (p *ServerList) Write(w io.Writer) {
 	putuint16(w, uint16(len(p.Entries))) // Server count
 	// Server list
 	for idx, entry := range p.Entries {
-		putuint16(w, uint16(idx)) // Server index
-		padstr(w, entry.Name, 32) // Server name
-		pad(w, 2)                 // Padding and timezone offset
+		putuint16(w, uint16(idx))  // Server index
+		putstrn(w, entry.Name, 32) // Server name
+		pad(w, 2)                  // Padding and timezone offset
 		// The IP is backward
 		putbyte(w, entry.IP.To4()[3])
 		putbyte(w, entry.IP.To4()[2])
@@ -136,15 +142,15 @@ func (p *CharacterList) Write(w io.Writer) {
 	putuint16(w, uint16(length))   // Length
 	putbyte(w, byte(len(p.Names))) // Number of character slots
 	for _, name := range p.Names {
-		padstr(w, name, 30)
+		putstrn(w, name, 30)
 		pad(w, 30)
 	}
 	// Starting locations
 	putbyte(w, byte(len(StartingLocations))) // Count
 	for i, loc := range StartingLocations {
 		putbyte(w, byte(i)) // Index
-		padstr(w, loc.City, 31)
-		padstr(w, loc.Area, 31)
+		putstrn(w, loc.City, 31)
+		putstrn(w, loc.Area, 31)
 	}
 	// Flags
 	putuint32(w, 0x000001e8)
@@ -240,7 +246,7 @@ func (p *Speech) Write(w io.Writer) {
 	putbyte(w, byte(p.Type))
 	putuint16(w, uint16(p.Hue))
 	putuint16(w, uint16(p.Font))
-	padstr(w, p.Name, 30)
+	putstrn(w, p.Name, 30)
 	putstr(w, p.Text)
 }
 
@@ -357,5 +363,74 @@ func (p *Target) Write(w io.Writer) {
 	putbyte(w, 0x6C) // Packet ID
 	putbyte(w, byte(p.TargetType))
 	putuint32(w, uint32(p.Serial))
-	putzeros(w, 12)
+	putbyte(w, byte(p.CursorType))
+	pad(w, 12)
+}
+
+// StatusBarInfo sends basic status info to the client.
+type StatusBarInfo struct {
+	// Serial of the mobile this status applies to
+	Mobile uo.Serial
+	// Name of the mobile (this gets truncated to 30 characters)
+	Name string
+	// Current hit points
+	HP int
+	// Max hit points
+	MaxHP int
+	// Can the player change the name of this mobile?
+	NameChangeFlag bool
+	// If true the mobile is female
+	Female bool
+	// Strength
+	Strength int
+	// Dexterity
+	Dexterity int
+	// Intelligence
+	Intelligence int
+	// Current stamina
+	Stamina int
+	// Max stamina
+	MaxStamina int
+	// Current mana
+	Mana int
+	// Max mana
+	MaxMana int
+	// Total amount of gold this mobile is currently holding
+	Gold int
+	// Armor rating
+	ArmorRating int
+	// Current weight of all equipment and inventory
+	Weight int
+	// Total stats cap
+	StatsCap int
+	// Current number of follower slots used
+	Followers int
+	// Maximum number of follower slots
+	MaxFollowers int
+}
+
+// Write implements the Packet interface.
+func (p *StatusBarInfo) Write(w io.Writer) {
+	putbyte(w, 0x11) // Packet ID
+	putuint16(w, 70) // Packet length
+	putuint32(w, uint32(p.Mobile))
+	putstrn(w, p.Name, 30)
+	putuint16(w, uint16(p.HP))
+	putuint16(w, uint16(p.MaxHP))
+	putbool(w, p.NameChangeFlag)
+	putbyte(w, 0x03) // UO:R status bar information
+	putbool(w, p.Female)
+	putuint16(w, uint16(p.Strength))
+	putuint16(w, uint16(p.Dexterity))
+	putuint16(w, uint16(p.Intelligence))
+	putuint16(w, uint16(p.Stamina))
+	putuint16(w, uint16(p.MaxStamina))
+	putuint16(w, uint16(p.Mana))
+	putuint16(w, uint16(p.MaxMana))
+	putuint32(w, uint32(p.Gold))
+	putuint16(w, uint16(p.ArmorRating))
+	putuint16(w, uint16(p.Weight))
+	putuint16(w, uint16(p.StatsCap))
+	putbyte(w, byte(p.Followers))
+	putbyte(w, byte(p.MaxFollowers))
 }
