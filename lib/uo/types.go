@@ -158,9 +158,9 @@ type StatusRequestType byte
 
 // All StatusRequestType values
 const (
-	StatusRequesTypeGod    StatusRequestType = 0
-	StatusRequesTypeBasic  StatusRequestType = 4
-	StatusRequesTypeSkills StatusRequestType = 5
+	StatusRequestTypeGod    StatusRequestType = 0
+	StatusRequestTypeBasic  StatusRequestType = 4
+	StatusRequestTypeSkills StatusRequestType = 5
 )
 
 // MobileFlags represent the flags for a mobile
