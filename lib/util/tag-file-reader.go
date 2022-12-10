@@ -13,14 +13,12 @@ type TagFileReader struct {
 	nextObject *TagFileObject
 	eof        bool
 	errs       []error
-	f          *SerializeableFactory
 }
 
 // NewTagFileReader returns a new TagFileReader object ready to use for input.
-func NewTagFileReader(r io.Reader, f *SerializeableFactory) *TagFileReader {
+func NewTagFileReader(r io.Reader) *TagFileReader {
 	return &TagFileReader{
 		s: *bufio.NewScanner(r),
-		f: f,
 	}
 }
 
@@ -34,23 +32,11 @@ func (f *TagFileReader) Errors() []error {
 	return f.errs
 }
 
-// CreateObject creates and deserializes a new object from a TagFileObject.
-func (f *TagFileReader) CreateObject() Serializeable {
-	s := f.f.New(f.nextObject.t, f.nextObject)
-	if s == nil {
-		f.handleError(fmt.Errorf("unable to create object of type %s", f.nextObject.t))
-	} else {
-		s.Deserialize(f.nextObject)
-	}
-	f.nextObject = NewTagFileObject(f)
-	return s
-}
-
 // ReadObject returns the next object in the file, or nil, io.EOF on end of
 // file or end of data store in the current file. nil, nil is returned when
 // there was an error creating or deserializing the object. Use Errors() to
 // inspect the accumulated errors. error will only ever be nil or io.EOF.
-func (f *TagFileReader) ReadObject() (Serializeable, error) {
+func (f *TagFileReader) ReadObject() (*TagFileObject, error) {
 	if f.eof {
 		return nil, io.EOF
 	}
@@ -65,7 +51,7 @@ func (f *TagFileReader) ReadObject() (Serializeable, error) {
 				if f.nextObject == nil {
 					return nil, io.EOF
 				} else {
-					return f.CreateObject(), nil
+					return f.nextObject, nil
 				}
 			}
 			// Genuine error
@@ -85,17 +71,17 @@ func (f *TagFileReader) ReadObject() (Serializeable, error) {
 				f.handleError(fmt.Errorf("error loading tag file at line %d:initial object type not found", f.ln))
 				return nil, nil
 			}
-			f.nextObject = NewTagFileObject(f)
+			f.nextObject = NewTagFileObject()
 			f.nextObject.t = extractObjectType(line)
 		} else if isTypeLine(line) {
 			f.nextObject.t = extractObjectType(line)
-			s := f.CreateObject()
-			f.nextObject = NewTagFileObject(f)
+			ret := f.nextObject
+			f.nextObject = NewTagFileObject()
 			if err := f.nextObject.HandleTypeLine(line); err != nil {
 				f.handleError(fmt.Errorf("error deserializing object at line %d:%w", f.ln, f.s.Err()))
 				return nil, nil
 			}
-			return s, nil
+			return ret, nil
 		}
 
 		// Handle property line for the next object and go to the next line

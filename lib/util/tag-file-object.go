@@ -11,16 +11,14 @@ import (
 // TagFileObject is the intermediate representation of an object in tag file
 // format.
 type TagFileObject struct {
-	backRef *TagFileReader
-	t       string
-	p       map[string]string
+	t string
+	p map[string]string
 }
 
 // NewTagFileObject creates a new TagFileObject for the given tag file reader.
-func NewTagFileObject(backRef *TagFileReader) *TagFileObject {
+func NewTagFileObject() *TagFileObject {
 	return &TagFileObject{
-		backRef: backRef,
-		p:       make(map[string]string),
+		p: make(map[string]string),
 	}
 }
 
@@ -45,6 +43,11 @@ func extractObjectType(line string) string {
 		return ""
 	}
 	return line[1 : len(line)-1]
+}
+
+// TypeName returns the type name of the object described
+func (o *TagFileObject) TypeName() string {
+	return o.t
 }
 
 // HandleTypeLine handles the type line for the next object.
@@ -86,11 +89,9 @@ func (o *TagFileObject) GetString(name, def string) string {
 // found.
 func (o *TagFileObject) GetNumber(name string, def int) int {
 	if v, found := o.p[name]; found {
-		var n int64
-		var err error
-		if n, err = strconv.ParseInt(v, 0, 32); err != nil {
-			o.backRef.errs = append(o.backRef.errs, err)
-			return def
+		n, err := strconv.ParseInt(v, 0, 32)
+		if err != nil {
+			panic(err)
 		}
 		return int(n)
 	}

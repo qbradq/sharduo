@@ -24,13 +24,13 @@ type Target struct {
 
 // TargetManager manages all targeting requests for the world
 type TargetManager struct {
-	targets *util.SerialPool
+	targets *util.SerialPool[*Target]
 }
 
 // NewTargetManager returns a new TargetManager object ready for use
 func NewTargetManager(rng uo.RandomSource) *TargetManager {
 	return &TargetManager{
-		targets: util.NewSerialPool("targets", rng),
+		targets: util.NewSerialPool[*Target]("targets", rng),
 	}
 }
 
@@ -44,7 +44,7 @@ func (m *TargetManager) New(t *Target) *Target {
 // Execute attempts to execute the callback for the given target. It returns
 // true if the target still existed and the callback was executed.
 func (m *TargetManager) Execute(r *clientpacket.TargetResponse) bool {
-	t := m.targets.Get(r.Serial()).(*Target)
+	t := m.targets.Get(r.Serial())
 	if t != nil {
 		t.Callback(r, t.Context)
 		return true

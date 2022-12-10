@@ -122,20 +122,13 @@ func (w *World) Load() error {
 	}
 	log.Println("loading data stores from", filePath)
 
-	// Load accounts
+	// Create account objects
 	r, err := sfr.GetReader("accounts.ini")
 	if err != nil {
 		errs = append(errs, err)
 	} else {
 		errs = append(errs, w.ads.Read(r)...)
 	}
-
-	// Rebuild accounts index
-	w.ads.Map(func(s util.Serialer) error {
-		account := s.(*game.Account)
-		w.aidx[account.Username()] = account.Serial()
-		return nil
-	})
 
 	// Load objects
 	r, err = sfr.GetReader("objects.ini")
@@ -144,6 +137,17 @@ func (w *World) Load() error {
 	} else {
 		errs = append(errs, w.ods.Read(r)...)
 	}
+
+	// Deserialize all data stores. This can panic in the TagFileObject
+	// functions.
+	w.ods.Deserialize()
+	w.ads.Deserialize()
+
+	// Rebuild accounts index
+	w.ads.Map(func(a *game.Account) error {
+		w.aidx[a.Username()] = a.Serial()
+		return nil
+	})
 
 	return w.reportErrors(errs)
 }
