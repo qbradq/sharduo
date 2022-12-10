@@ -154,6 +154,7 @@ func (n *NetState) Service() {
 	}
 
 	// TODO Character load
+	n.m = world.New(templates.NewObject("Player")).(game.Mobile)
 
 	// Request version string
 	n.Send(&serverpacket.Version{})
@@ -166,8 +167,8 @@ func (n *NetState) Service() {
 		Y:      n.m.Location().Y,
 		Z:      n.m.Location().Z,
 		Facing: uo.DirectionSouth | uo.DirectionRunningFlag,
-		Width:  7168,
-		Height: 4096,
+		Width:  game.MapWidth,
+		Height: game.MapHeight,
 	})
 	n.Send(&serverpacket.LoginComplete{})
 	Broadcast("Welcome %s to Trammel Time!", n.m.DisplayName())

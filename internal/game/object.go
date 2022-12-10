@@ -59,7 +59,7 @@ func (o *BaseObject) Serialize(f *util.TagFileWriter) {
 	o.BaseSerializeable.Serialize(f)
 	f.WriteString("Name", o.name)
 	f.WriteBool("ArticleA", o.articleA)
-	f.WriteBool("ArticleAn", o.articleA)
+	f.WriteBool("ArticleAn", o.articleAn)
 	f.WriteNumber("Hue", int(o.hue))
 	f.WriteNumber("X", o.location.X)
 	f.WriteNumber("Y", o.location.Y)

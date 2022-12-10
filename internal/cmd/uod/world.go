@@ -36,7 +36,7 @@ type World struct {
 	// The object data store for the entire world
 	ods *util.DataStore[game.Object]
 	// The random number generator for the world
-	rng *util.RNG
+	rng uo.RandomSource
 	// Inbound requests
 	requestQueue chan WorldRequest
 	// Save/Load Mutex
@@ -48,8 +48,7 @@ type World struct {
 }
 
 // NewWorld creates a new, empty world
-func NewWorld(savePath string) *World {
-	rng := util.NewRNG()
+func NewWorld(savePath string, rng uo.RandomSource) *World {
 	return &World{
 		m:            game.NewMap(),
 		ads:          util.NewDataStore[*game.Account]("accounts", rng, game.ObjectFactory),
@@ -224,8 +223,8 @@ func (w *World) SendRequest(cmd WorldRequest) bool {
 	}
 }
 
-// Random returns the *util.RNG the world is using for sync operations
-func (w *World) Random() *util.RNG {
+// Random returns the uo.RandomSource the world is using for sync operations
+func (w *World) Random() uo.RandomSource {
 	return w.rng
 }
 

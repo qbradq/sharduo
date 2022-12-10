@@ -76,6 +76,11 @@ func (o *TagFileObject) HandlePropertyLine(line string) error {
 	return nil
 }
 
+// Delete removes the named property from the object
+func (o *TagFileObject) Delete(name string) {
+	delete(o.p, name)
+}
+
 // GetString returns the named property as a string or the default if not
 // found.
 func (o *TagFileObject) GetString(name, def string) string {
@@ -102,6 +107,10 @@ func (o *TagFileObject) GetNumber(name string, def int) int {
 // found.
 func (o *TagFileObject) GetBool(name string, def bool) bool {
 	if v, found := o.p[name]; found {
+		// This is the naked boolean case
+		if v == "" {
+			return true
+		}
 		var b bool
 		var err error
 		if b, err = strconv.ParseBool(v); err != nil {

@@ -1,5 +1,7 @@
 package util
 
+import "fmt"
+
 // Registry is a managed map that only supports Add and Get operations. This is
 // used in the factory pattern as well as a few other things.
 type Registry[K comparable, V any] struct {
@@ -17,6 +19,9 @@ func NewRegistry[K comparable, V any](name string) *Registry[K, V] {
 
 // Add adds a value to the registry
 func (r *Registry[K, V]) Add(k K, v V) {
+	if _, duplicate := r.values[k]; duplicate {
+		panic(fmt.Sprintf("duplicate key in registry %s", r.name))
+	}
 	r.values[k] = v
 }
 

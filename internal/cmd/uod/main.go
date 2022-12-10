@@ -13,6 +13,7 @@ import (
 
 	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/uo"
+	"github.com/qbradq/sharduo/lib/util"
 )
 
 // Map of all active net states
@@ -20,6 +21,9 @@ var netStates sync.Map
 
 // The world we are running
 var world *World
+
+// The template objects
+var templates *TemplateManager
 
 // trap is used to trap all of the system signals.
 func trap(l *net.TCPListener) {
@@ -43,11 +47,24 @@ func trap(l *net.TCPListener) {
 
 // Main is the entry point for uod.
 func Main() {
-	// TODO Configuration
+	// TODO Load configuration
 	savePath := "saves"
 
+	// RNG initialization
+	rng := util.NewRNG()
+
+	// Load object templates
+	templates = NewTemplateManager("templates")
+	errs := templates.LoadAll("templates")
+	for _, err := range errs {
+		log.Println(err)
+	}
+	if len(errs) > 0 {
+		log.Fatal("errors while loading object templates")
+	}
+
 	// Initialize our data structures
-	world = NewWorld(savePath)
+	world = NewWorld(savePath, rng)
 
 	// Try to load the most recent save
 	if err := world.Load(); err != nil {

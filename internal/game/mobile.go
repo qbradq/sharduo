@@ -53,6 +53,9 @@ func (m *BaseMobile) Serialize(f *util.TagFileWriter) {
 // Deserialize implements the util.Serializeable interface.
 func (m *BaseMobile) Deserialize(f *util.TagFileObject) {
 	m.BaseObject.Deserialize(f)
+	m.isFemale = f.GetBool("IsFemale", false)
+	m.body = uo.Body(f.GetNumber("Body", 999))
+	m.notoriety = uo.Notoriety(f.GetNumber("Notoriety", int(uo.NotorietyInnocent)))
 }
 
 // Body implements the Mobile interface.
