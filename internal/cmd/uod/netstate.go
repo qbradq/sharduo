@@ -137,7 +137,7 @@ func (n *NetState) Service() {
 	// Character list
 	n.Send(&serverpacket.CharacterList{
 		Names: []string{
-			account.Username, "", "", "", "", "",
+			account.Username(), "", "", "", "", "",
 		},
 	})
 
@@ -160,17 +160,17 @@ func (n *NetState) Service() {
 
 	// Debug
 	n.Send(&serverpacket.EnterWorld{
-		Player: n.m.GetSerial(),
-		Body:   n.m.GetBody(),
-		X:      n.m.GetLocation().X,
-		Y:      n.m.GetLocation().Y,
-		Z:      n.m.GetLocation().Z,
+		Player: n.m.Serial(),
+		Body:   n.m.Body(),
+		X:      n.m.Location().X,
+		Y:      n.m.Location().Y,
+		Z:      n.m.Location().Z,
 		Facing: uo.DirectionSouth | uo.DirectionRunningFlag,
 		Width:  7168,
 		Height: 4096,
 	})
 	n.Send(&serverpacket.LoginComplete{})
-	Broadcast("Welcome %s to Trammel Time!", n.m.GetDisplayName())
+	Broadcast("Welcome %s to Trammel Time!", n.m.DisplayName())
 	n.Send(n.m.EquippedMobilePacket())
 
 	n.readLoop(r)
@@ -213,17 +213,17 @@ func (n *NetState) readLoop(r *clientpacket.Reader) {
 				fmt.Errorf("unknown packet 0x%04X", data[0]))
 		case *clientpacket.MalformedPacket:
 			n.Error("decoding packet",
-				fmt.Errorf("malformed packet 0x%04X", p.GetSerial()))
+				fmt.Errorf("malformed packet 0x%04X", p.Serial()))
 		case *clientpacket.UnknownPacket:
-			n.Log("unknown %s packet 0x%04X", p.PType, cp.GetSerial())
+			n.Log("unknown %s packet 0x%04X", p.PType, cp.Serial())
 			return
 		case *clientpacket.UnsupportedPacket:
-			n.Log("unsupported %s packet 0x%08X:\n%s", p.PType, int(cp.GetSerial()),
+			n.Log("unsupported %s packet 0x%08X:\n%s", p.PType, int(cp.Serial()),
 				hex.Dump(data))
 		case *clientpacket.IgnoredPacket:
 			// Do nothing
 		default:
-			handler, ok := embeddedHandlers.Get(cp.GetSerial())
+			handler, ok := embeddedHandlers.Get(cp.Serial())
 			if !ok || handler == nil {
 				// This packet is handled by the world goroutine, so forward it
 				// on.

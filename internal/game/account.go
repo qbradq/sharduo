@@ -20,47 +20,57 @@ func HashPassword(password string) string {
 	return hex.EncodeToString(hd[:])
 }
 
+// NewAccount creates a new account object
+func NewAccount(username, passwordHash string) *Account {
+	return &Account{
+		username:     username,
+		passwordHash: passwordHash,
+	}
+}
+
 // Account holds all of the account information for one user
 type Account struct {
 	util.BaseSerializeable
 	// Username
-	Username string
+	username string
 	// Password hash
-	PasswordHash string
+	passwordHash string
 }
 
 // GetTypeName implements the util.Serializeable interface.
-func (a *Account) GetTypeName() string {
+func (a *Account) TypeName() string {
 	return "Account"
 }
 
 // GetSerialType implements the util.Serializeable interface.
-func (a *Account) GetSerialType() uo.SerialType {
+func (a *Account) SerialType() uo.SerialType {
 	return uo.SerialTypeUnbound
 }
 
 // Serialize implements the util.Serializeable interface.
 func (a *Account) Serialize(f *util.TagFileWriter) {
 	a.BaseSerializeable.Serialize(f)
-	f.WriteString("Username", a.Username)
-	f.WriteString("PasswordHash", a.PasswordHash)
+	f.WriteString("Username", a.username)
+	f.WriteString("PasswordHash", a.passwordHash)
 }
 
 // Deserialize implements the util.Serializeable interface.
 func (a *Account) Deserialize(f *util.TagFileObject) {
 	a.BaseSerializeable.Deserialize(f)
 	accountRecoveryString := "__bad_account__" + uuid.New().String()
-	a.Username = f.GetString("Username", accountRecoveryString)
-	if a.Username == accountRecoveryString {
+	a.username = f.GetString("Username", accountRecoveryString)
+	if a.username == accountRecoveryString {
 		log.Println("account recovery required:", accountRecoveryString)
 	}
-	a.PasswordHash = f.GetString("PasswordHash", "")
+	a.passwordHash = f.GetString("PasswordHash", "")
 }
 
-// NewAccount creates a new account object
-func NewAccount(username, passwordHash string) *Account {
-	return &Account{
-		Username:     username,
-		PasswordHash: passwordHash,
-	}
+// Username returns the username of the account
+func (a *Account) Username() string {
+	return a.username
+}
+
+// ComparePasswordHash returns true if the hash given matches this account's
+func (a *Account) ComparePasswordHash(hash string) bool {
+	return a.passwordHash == hash
 }

@@ -4,6 +4,8 @@ import (
 	"errors"
 	"strconv"
 	"strings"
+
+	"github.com/qbradq/sharduo/lib/uo"
 )
 
 // TagFileObject is the intermediate representation of an object in tag file
@@ -107,4 +109,22 @@ func (o *TagFileObject) GetBool(name string, def bool) bool {
 		return b
 	}
 	return def
+}
+
+// GetObjectReferences returns a slice of uo.Serial values. nil is the default
+// value.
+func (o *TagFileObject) GetObjectReferences(name string) []uo.Serial {
+	if v, found := o.p[name]; found {
+		parts := strings.Split(v, ",")
+		ret := make([]uo.Serial, 0, len(parts))
+		for _, str := range parts {
+			n, err := strconv.ParseInt(str, 0, 32)
+			if err != nil {
+				panic(err)
+			}
+			ret = append(ret, uo.Serial(n))
+		}
+		return ret
+	}
+	return nil
 }

@@ -10,6 +10,7 @@ import (
 // access to the memory model.
 func init() {
 	worldHandlers.Add(0x6C, handleTargetResponse)
+	worldHandlers.Add(0x34, handleStatusRequest)
 }
 
 // Registry of packet handler functions

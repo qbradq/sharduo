@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/qbradq/sharduo/lib/uo"
+	"golang.org/x/exp/maps"
 )
 
 // TagFileWriter reads and writes tag files
@@ -91,8 +92,35 @@ func (f *TagFileWriter) WriteBool(name string, value bool) {
 	}
 }
 
-// WriteSerialSlice writes a slice of serial values to the io.Writer.
-func (f *TagFileWriter) WriteSerialSlice(name string, ss []uo.Serial) {
+// ValuesAsSerials returns the values of the input map as a slice of uo.Serial
+// values.
+func ValuesAsSerials[K comparable, T Serialer](in map[K]T) []uo.Serial {
+	vs := maps.Values(in)
+	ret := make([]uo.Serial, 0, len(vs))
+	for _, v := range vs {
+		ret = append(ret, v.Serial())
+	}
+	return ret
+}
+
+// ToSerials returns the input slice converted to a slice of uo.Serial values.
+func ToSerials[T Serialer](in []T) []uo.Serial {
+	ret := make([]uo.Serial, 0, len(in))
+	for _, s := range in {
+		ret = append(ret, s.Serial())
+	}
+	return ret
+}
+
+// WriteObjectReferences writes a slice of serial values to the io.Writer.
+func (f *TagFileWriter) WriteObjectReferences(name string, ss []uo.Serial) {
+	// Empty slices are omitted, the default value for an object reference list
+	// is a nil slice.
+	if len(ss) == 0 {
+		return
+	}
+
+	// Build the property string
 	b := strings.Builder{}
 	if _, err := b.WriteString(name); err != nil {
 		panic(err)
@@ -104,7 +132,12 @@ func (f *TagFileWriter) WriteSerialSlice(name string, ss []uo.Serial) {
 		if idx == 0 {
 			b.WriteString(s.String())
 		} else {
-			b.WriteString(", " + s.String())
+			b.Write([]byte(","))
+			b.WriteString(s.String())
 		}
 	}
+	b.Write([]byte("\n"))
+
+	// Write the property string to the tag file
+	f.w.Write([]byte(b.String()))
 }

@@ -8,7 +8,7 @@ type Inventory struct {
 }
 
 // Add tries to add an item to the inventory
-func (n Inventory) Add(item Item) bool {
+func (n *Inventory) Add(item Item) bool {
 	if n.c.Contains(item) {
 		return false
 	}
@@ -17,11 +17,11 @@ func (n Inventory) Add(item Item) bool {
 }
 
 // Remove removes the item from the inventory
-func (n Inventory) Remove(item Item) {
+func (n *Inventory) Remove(item Item) {
 	n.c = n.c.Remove(item)
 }
 
 // Contains returns true if the collection contains the given item.
-func (n Inventory) Contains(item Item) bool {
+func (n *Inventory) Contains(item Item) bool {
 	return n.c.Contains(item)
 }

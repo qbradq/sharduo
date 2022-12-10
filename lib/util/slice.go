@@ -20,11 +20,13 @@ func (s Slice[T]) IndexOf(v T) int {
 
 // Remove returns the slice with the first value v removed
 func (s Slice[T]) Remove(v T) Slice[T] {
+	var zero T
 	idx := s.IndexOf(v)
 	if idx < 0 {
 		return s
 	}
 	copy(s[idx:], s[idx+1:])
+	s[len(s)-1] = zero
 	return s[:len(s)-1]
 }
 

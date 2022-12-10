@@ -33,7 +33,7 @@ func NewChunk(x, y int) *Chunk {
 // Add adds the object to the chunk and returns true if it is located in this
 // chunk.
 func (c *Chunk) Add(o Object) bool {
-	if !c.bounds.Contains(o.GetLocation()) {
+	if !c.bounds.Contains(o.Location()) {
 		return false
 	}
 	c.objects = c.objects.Append(o)

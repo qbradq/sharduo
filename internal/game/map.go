@@ -41,7 +41,7 @@ func (m *Map) GetChunk(l Location) *Chunk {
 
 // AddNewObject adds a new object to the map.
 func (m *Map) AddNewObject(o Object) {
-	c := m.GetChunk(o.GetLocation())
+	c := m.GetChunk(o.Location())
 	c.Add(o)
 }
 
@@ -73,7 +73,7 @@ func (m *Map) GetObjectsInRange(l Location, r int) []Object {
 	var ret []Object
 	for _, c := range m.GetChunksInRange(l, r) {
 		for _, o := range c.objects {
-			ol := o.GetLocation()
+			ol := o.Location()
 			dx := l.X - ol.X
 			if dx < 0 {
 				dx *= -1

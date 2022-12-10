@@ -14,11 +14,7 @@ type EquipmentCollection struct {
 
 // Write writes the the collection to the given tag file.
 func (c *EquipmentCollection) Write(name string, f *util.TagFileWriter) {
-	var serials []uo.Serial
-	for _, item := range c.equipment {
-		serials = append(serials, item.GetSerial())
-	}
-	f.WriteSerialSlice(name, serials)
+	f.WriteObjectReferences(name, util.ValuesAsSerials(c.equipment))
 }
 
 // Map executes a function for every item in the collection.
@@ -38,9 +34,9 @@ func (c *EquipmentCollection) Equip(o Item) bool {
 	if c.equipment == nil {
 		c.equipment = make(map[uo.Layer]Item)
 	}
-	if _, duplicate := c.equipment[o.GetLayer()]; duplicate {
+	if _, duplicate := c.equipment[o.Layer()]; duplicate {
 		return false
 	}
-	c.equipment[o.GetLayer()] = o
+	c.equipment[o.Layer()] = o
 	return true
 }

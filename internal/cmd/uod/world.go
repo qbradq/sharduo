@@ -133,7 +133,7 @@ func (w *World) Load() error {
 	// Rebuild accounts index
 	w.ads.Map(func(s util.Serialer) error {
 		account := s.(*game.Account)
-		w.aidx[account.Username] = account.Serial
+		w.aidx[account.Username()] = account.Serial()
 		return nil
 	})
 
@@ -197,7 +197,7 @@ func (w *World) SendTarget(n *NetState, ttype uo.TargetType, ctx interface{}, fn
 		TTL:      uo.DurationSecond * 30,
 	})
 	n.Send(&serverpacket.Target{
-		Serial:     t.Serial,
+		Serial:     t.Serial(),
 		TargetType: ttype,
 		CursorType: uo.CursorTypeNeutral,
 	})
@@ -228,7 +228,7 @@ func (w *World) Random() *util.RNG {
 // New adds a new object to the world. It is assigned a unique serial. The
 // object is returned.
 func (w *World) New(o game.Object) game.Object {
-	w.ods.Add(o, o.GetSerialType())
+	w.ods.Add(o, o.SerialType())
 	return o
 }
 
@@ -238,7 +238,7 @@ func (w *World) New(o game.Object) game.Object {
 // match nil is returned. Otherwise the account is returned.
 func (w *World) AuthenticateAccount(username, passwordHash string) *game.Account {
 	a := w.GetOrCreateAccount(username, passwordHash)
-	if a.PasswordHash != passwordHash {
+	if !a.ComparePasswordHash(passwordHash) {
 		return nil
 	}
 	return a
@@ -253,12 +253,9 @@ func (w *World) GetOrCreateAccount(username, passwordHash string) *game.Account 
 	if s, ok := w.aidx[username]; ok {
 		return w.ads.Get(s)
 	}
-	a := &game.Account{
-		Username:     username,
-		PasswordHash: passwordHash,
-	}
+	a := game.NewAccount(username, passwordHash)
 	w.ads.Add(a, uo.SerialTypeUnbound)
-	w.aidx[username] = a.GetSerial()
+	w.aidx[username] = a.Serial()
 	return a
 }
 
@@ -270,7 +267,7 @@ func (w *World) AuthenticateLoginSession(username, passwordHash string, id uo.Se
 	defer w.alock.Unlock()
 
 	a := w.ads.Get(id)
-	if a == nil || a.Username != username || a.PasswordHash != passwordHash {
+	if a == nil || a.Username() != username || !a.ComparePasswordHash(passwordHash) {
 		return nil
 	}
 	return a

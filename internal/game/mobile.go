@@ -14,7 +14,7 @@ func init() {
 type Mobile interface {
 	Object
 	// GetBody returns the animation body of the mobile.
-	GetBody() uo.Body
+	Body() uo.Body
 	// Equip equips the given item in the item's layer, returns false if the
 	// equip operation failed for any reason.
 	Equip(Item) bool
@@ -37,7 +37,7 @@ type BaseMobile struct {
 }
 
 // GetTypeName implements the util.Serializeable interface.
-func (m *BaseMobile) GetTypeName() string {
+func (m *BaseMobile) TypeName() string {
 	return "BaseMobile"
 }
 
@@ -55,8 +55,8 @@ func (m *BaseMobile) Deserialize(f *util.TagFileObject) {
 	m.BaseObject.Deserialize(f)
 }
 
-// GetBody implements the Mobile interface.
-func (m *BaseMobile) GetBody() uo.Body { return m.body }
+// Body implements the Mobile interface.
+func (m *BaseMobile) Body() uo.Body { return m.body }
 
 // Equip implements the Mobile interface.
 func (m *BaseMobile) Equip(item Item) bool {

@@ -66,7 +66,7 @@ func handleClientSpeech(c *PacketContext) {
 		}
 	}
 	if c.NetState != nil && c.NetState.m != nil {
-		GlobalChat(c.NetState.m.GetDisplayName(), p.Text)
+		GlobalChat(c.NetState.m.DisplayName(), p.Text)
 	}
 }
 

@@ -21,7 +21,7 @@ func LoginServerMain() {
 	defaultPassword := game.HashPassword("password")
 
 	admin := world.GetOrCreateAccount(defaultUsername, defaultPassword)
-	log.Println("default admin username", admin.Username)
+	log.Println("default admin username", admin.Username())
 
 	l, err := net.ListenTCP("tcp", &net.TCPAddr{
 		IP:   net.ParseIP(ipstr),
@@ -102,7 +102,7 @@ func handleLoginConnection(c *net.TCPConn) {
 		time.Sleep(time.Second * 5)
 		return
 	}
-	log.Printf("user login successful for %s 0x%08X", account.Username, account.GetSerial())
+	log.Printf("user login successful for %s 0x%08X", account.Username(), account.Serial())
 
 	// Server list packet
 	var sp serverpacket.Packet
@@ -136,7 +136,7 @@ func handleLoginConnection(c *net.TCPConn) {
 	sp = &serverpacket.ConnectToGameServer{
 		IP:   net.ParseIP("127.0.0.1"),
 		Port: 7777,
-		Key:  account.GetSerial().Data(),
+		Key:  account.Serial().Data(),
 	}
 	sp.Write(pw)
 	if err := pw.Flush(); err != nil {

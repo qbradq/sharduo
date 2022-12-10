@@ -44,7 +44,7 @@ func (m *TargetManager) New(t *Target) *Target {
 // Execute attempts to execute the callback for the given target. It returns
 // true if the target still existed and the callback was executed.
 func (m *TargetManager) Execute(r *clientpacket.TargetResponse) bool {
-	t := m.targets.Get(r.Serial).(*Target)
+	t := m.targets.Get(r.Serial()).(*Target)
 	if t != nil {
 		t.Callback(r, t.Context)
 		return true
