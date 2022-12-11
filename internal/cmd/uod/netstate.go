@@ -154,7 +154,7 @@ func (n *NetState) Service() {
 	}
 
 	// TODO Character load
-	n.m = world.New(templates.NewObject("Player")).(game.Mobile)
+	n.m = world.New(templateManager.NewObject("Player")).(game.Mobile)
 
 	// Request version string
 	n.Send(&serverpacket.Version{})

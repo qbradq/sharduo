@@ -67,15 +67,17 @@ func (s *DataStore[K]) InvalidateCache() {
 
 // Deserialize executes the Deserialize method on every object in the data store
 // in a non-deterministic order. This should be called after every data store
-// has been loaded with a Read call. This call might panic if any of the
-// TagFileObject functions do. As a side effect this function calls
+// has been loaded with a Read call. As a side effect this function calls
 // InvalidateCache to free memory that is no longer needed.
-func (s *DataStore[K]) Deserialize() {
+func (s *DataStore[K]) Deserialize() []error {
+	var errs []error
 	for k, o := range s.objects {
-
-		o.Deserialize(s.tfoPool[k])
+		tfo := s.tfoPool[k]
+		o.Deserialize(tfo)
+		errs = append(errs, tfo.Errors()...)
 	}
 	s.InvalidateCache()
+	return errs
 }
 
 // Write writes the contents to the writer

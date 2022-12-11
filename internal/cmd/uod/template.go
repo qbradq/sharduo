@@ -7,54 +7,115 @@ import (
 	"io"
 	"log"
 	"path"
+	"strings"
+	"text/template"
 
 	"github.com/qbradq/sharduo/data"
 	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/lib/util"
 )
 
+// TemplateContext is the context object given to all template templates
+type TemplateContext struct {
+	BodyHumanMale   int
+	BodyHumanFemale int
+}
+
+// The singular, global template context for all template invokations
+var templateContext = &TemplateContext{
+	BodyHumanMale:   400,
+	BodyHumanFemale: 401,
+}
+
 // Template represents a collection of data used to initialize new objects
 type Template struct {
+	// Registered type name of the object to create
+	typeName string
 	// Name of this template, MUST BE UNIQUE
 	templateName string
 	// Base of the base template this one inherits from
 	baseTemplateName string
-	// The TagFileObject that describes this template, with template-specific
-	// fields stripped
-	tfo *util.TagFileObject
+	// Collection of properties, which might be a string or a *template.Template
+	properties map[string]interface{}
 }
 
 // NewTemplate creates a new Template object from the provided TagFileObject.
-// The inheritence chain has not been resolved for this object.
-func NewTemplate(tfo *util.TagFileObject) *Template {
+// The inheritence chain has not been resolved for this object, but all text
+// templates have been pre-compiles and ready to run.
+func NewTemplate(tfo *util.TagFileObject, tm *TemplateManager) (*Template, []error) {
 	t := &Template{
-		templateName:     tfo.GetString("TemplateName", "__ERROR__"),
-		baseTemplateName: tfo.GetString("BaseTemplate", ""),
-		tfo:              tfo,
+		typeName:   tfo.TypeName(),
+		properties: make(map[string]interface{}),
 	}
-	if t.templateName == "__ERROR__" {
+	templateName := tfo.GetString("TemplateName", "")
+	if templateName == "" {
 		panic(fmt.Sprintf("template of type %s missing TemplateName field", tfo.TypeName()))
 	}
-	tfo.Delete("TemplateName")
-	tfo.Delete("BaseTemplate")
-	return t
+	errs := tfo.Map(func(name, value string) error {
+		if name == "TemplateName" {
+			t.templateName = value
+			return nil
+		}
+		if name == "BaseTemplate" {
+			t.baseTemplateName = value
+			return nil
+		}
+		if !strings.Contains(value, "{{") {
+			t.properties[name] = value
+			return nil
+		}
+		if tm.pctp.Contains(value) {
+			return nil
+		}
+		tt := template.New(value)
+		tt, err := tt.Parse(value)
+		if err != nil {
+			return err
+		}
+		tm.pctp.Add(value, tt)
+		t.properties[name] = tt
+		return nil
+	})
+	return t, errs
 }
 
 // generateTagFileObject generates a new TagFileObject by executing the
-// preprocessor over all of the strings of the template.
-func (t *Template) generateTagFileObject() *util.TagFileObject {
-	return t.tfo
+// templates contained within the strings.
+func (t *Template) generateTagFileObject(tm *TemplateManager, ctx *TemplateContext) (*util.TagFileObject, error) {
+	tfo := util.NewTagFileObject()
+	for k, p := range t.properties {
+		switch v := p.(type) {
+		case string:
+			tfo.Set(k, v)
+		case *template.Template:
+			tm.syncBuffer.Reset()
+			if err := v.Execute(tm.syncBuffer, ctx); err != nil {
+				return nil, err
+			}
+			tfo.Set(k, tm.syncBuffer.String())
+		default:
+			panic("unhandled type in generateTagFileObject")
+		}
+	}
+	return tfo, nil
 }
 
 // TemplateManager manages a collection of templates
 type TemplateManager struct {
+	// Registry of templates in the manager
 	templates *util.Registry[string, *Template]
+	// Registry of pre-compiled go templates
+	pctp *util.Registry[string, *template.Template]
+	// Text buffer for template execution, to reduce memory allocations
+	syncBuffer *bytes.Buffer
 }
 
 // NewTemplateManager returns a new TemplateManager object
 func NewTemplateManager(name string) *TemplateManager {
 	return &TemplateManager{
-		templates: util.NewRegistry[string, *Template](name),
+		templates:  util.NewRegistry[string, *Template](name),
+		pctp:       util.NewRegistry[string, *template.Template]("templates"),
+		syncBuffer: bytes.NewBuffer(nil),
 	}
 }
 
@@ -78,33 +139,55 @@ func (m *TemplateManager) LoadAll(dirPath string) []error {
 
 // loadFile loads all the template definitions in the provided file
 func (m *TemplateManager) loadFile(filePath string) []error {
-	log.Println(filePath)
+	var errs []error
 	d, err := data.FS.ReadFile(filePath)
 	if err != nil {
 		return []error{err}
 	}
 	tfr := util.NewTagFileReader(bytes.NewReader(d))
+
+	// Load all template objects in the file
 	for {
 		tfo, err := tfr.ReadObject()
 		if errors.Is(err, io.EOF) {
-			return tfr.Errors()
+			return append(errs, tfr.Errors()...)
 		}
 		if tfo == nil {
 			continue
 		}
-		t := NewTemplate(tfo)
-		m.templates.Add(t.templateName, t)
+		t, terrs := NewTemplate(tfo, m)
+		if len(terrs) > 0 {
+			errs = append(errs, terrs...)
+		} else {
+			m.templates.Add(t.templateName, t)
+		}
 	}
 }
 
 // NewObject creates a new object with the given template name, or nil if the
-// template was not found.
+// template was not found, there was an error executing the template, or there
+// was an error deserializing the object.
 func (m *TemplateManager) NewObject(templateName string) game.Object {
 	t, found := m.templates.Get(templateName)
 	if !found {
+		log.Printf("template %s not found\n", templateName)
 		return nil
 	}
-	s := game.ObjectFactory.New(t.tfo.TypeName(), t.generateTagFileObject())
-	s.Deserialize(t.tfo)
+	tfo, err := t.generateTagFileObject(m, templateContext)
+	if err != nil {
+		log.Printf("error while processing template %s", t.templateName)
+		return nil
+	}
+	s := game.ObjectFactory.New(t.typeName, nil)
+	if s == nil {
+		log.Printf("error while creating object for type %s", t.typeName)
+		return nil
+	}
+	// If we've gotten here we at least have an uninitialized object of the
+	// proper type. We can return it in case of error.
+	s.Deserialize(tfo)
+	for _, err := range tfo.Errors() {
+		log.Println(err)
+	}
 	return s.(game.Object)
 }

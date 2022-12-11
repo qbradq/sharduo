@@ -7,7 +7,7 @@ type Body uint16
 // Pre-defined values for Body
 const (
 	BodyNone    Body = 0
-	BodyDefault Body = 999
+	BodyDefault Body = 991 // Blackthorne
 	BodySystem  Body = 0x7fff
 )
 

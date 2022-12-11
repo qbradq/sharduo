@@ -54,7 +54,7 @@ func (m *BaseMobile) Serialize(f *util.TagFileWriter) {
 func (m *BaseMobile) Deserialize(f *util.TagFileObject) {
 	m.BaseObject.Deserialize(f)
 	m.isFemale = f.GetBool("IsFemale", false)
-	m.body = uo.Body(f.GetNumber("Body", 999))
+	m.body = uo.Body(f.GetNumber("Body", int(uo.BodyDefault)))
 	m.notoriety = uo.Notoriety(f.GetNumber("Notoriety", int(uo.NotorietyInnocent)))
 }
 

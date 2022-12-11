@@ -11,8 +11,9 @@ import (
 // TagFileObject is the intermediate representation of an object in tag file
 // format.
 type TagFileObject struct {
-	t string
-	p map[string]string
+	t    string
+	p    map[string]string
+	errs []error
 }
 
 // NewTagFileObject creates a new TagFileObject for the given tag file reader.
@@ -76,9 +77,28 @@ func (o *TagFileObject) HandlePropertyLine(line string) error {
 	return nil
 }
 
-// Delete removes the named property from the object
-func (o *TagFileObject) Delete(name string) {
-	delete(o.p, name)
+// Errors returns a slice of all of the errors encountered by this object.
+func (o *TagFileObject) Errors() []error {
+	if len(o.errs) > 0 {
+		return o.errs
+	}
+	return nil
+}
+
+// Map executes fn for every key/value pair in the object.
+func (o *TagFileObject) Map(fn func(name, value string) error) []error {
+	var errs []error
+	for k, v := range o.p {
+		if err := fn(k, v); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return errs
+}
+
+// Set adds or overwrites the raw string associated with the name
+func (o *TagFileObject) Set(name, value string) {
+	o.p[name] = value
 }
 
 // GetString returns the named property as a string or the default if not
@@ -91,12 +111,13 @@ func (o *TagFileObject) GetString(name, def string) string {
 }
 
 // GetNumber returns the named property as a number or the default if not
-// found.
+// found. This function may add errors to the internal error slice.
 func (o *TagFileObject) GetNumber(name string, def int) int {
 	if v, found := o.p[name]; found {
 		n, err := strconv.ParseInt(v, 0, 32)
 		if err != nil {
-			panic(err)
+			o.errs = append(o.errs, err)
+			return def
 		}
 		return int(n)
 	}
@@ -104,7 +125,7 @@ func (o *TagFileObject) GetNumber(name string, def int) int {
 }
 
 // GetBool returns the named property as a boolean value or the default if not
-// found.
+// found. This function may add errors to the internal error slice.
 func (o *TagFileObject) GetBool(name string, def bool) bool {
 	if v, found := o.p[name]; found {
 		// This is the naked boolean case
@@ -114,6 +135,7 @@ func (o *TagFileObject) GetBool(name string, def bool) bool {
 		var b bool
 		var err error
 		if b, err = strconv.ParseBool(v); err != nil {
+			o.errs = append(o.errs, err)
 			return def
 		}
 		return b
@@ -122,7 +144,7 @@ func (o *TagFileObject) GetBool(name string, def bool) bool {
 }
 
 // GetObjectReferences returns a slice of uo.Serial values. nil is the default
-// value.
+// value. This function may add errors to the internal error slice.
 func (o *TagFileObject) GetObjectReferences(name string) []uo.Serial {
 	if v, found := o.p[name]; found {
 		parts := strings.Split(v, ",")
@@ -130,9 +152,10 @@ func (o *TagFileObject) GetObjectReferences(name string) []uo.Serial {
 		for _, str := range parts {
 			n, err := strconv.ParseInt(str, 0, 32)
 			if err != nil {
-				panic(err)
+				o.errs = append(o.errs, err)
+			} else {
+				ret = append(ret, uo.Serial(n))
 			}
-			ret = append(ret, uo.Serial(n))
 		}
 		return ret
 	}

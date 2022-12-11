@@ -121,13 +121,14 @@ func (w *World) Load() error {
 	}
 	log.Println("loading data stores from", filePath)
 
-	// Create account objects
+	// Load account objects
 	r, err := sfr.GetReader("accounts.ini")
 	if err != nil {
 		errs = append(errs, err)
 	} else {
 		errs = append(errs, w.ads.Read(r)...)
 	}
+	r.Close()
 
 	// Load objects
 	r, err = sfr.GetReader("objects.ini")
@@ -136,11 +137,24 @@ func (w *World) Load() error {
 	} else {
 		errs = append(errs, w.ods.Read(r)...)
 	}
+	r.Close()
 
-	// Deserialize all data stores. This can panic in the TagFileObject
-	// functions.
-	w.ods.Deserialize()
-	w.ads.Deserialize()
+	// If there were errors trying to load objects into the data stores we
+	// should just stop now. There will be tons of dereferencing errors if we
+	// try to continue with deserialization.
+	if len(errs) > 0 {
+		for _, err := range errs {
+			log.Println(err)
+		}
+		log.Fatalf("found %d errors while allocating data store objects", len(errs))
+	}
+
+	// Deserialize all data stores
+	errs = append(errs, w.ods.Deserialize()...)
+	errs = append(errs, w.ads.Deserialize()...)
+
+	// If there were errors trying to deserialize any of our objects we need to
+	// report and bail.
 
 	// Rebuild accounts index
 	w.ads.Map(func(a *game.Account) error {

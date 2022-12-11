@@ -23,7 +23,7 @@ var netStates sync.Map
 var world *World
 
 // The template objects
-var templates *TemplateManager
+var templateManager *TemplateManager
 
 // trap is used to trap all of the system signals.
 func trap(l *net.TCPListener) {
@@ -54,8 +54,8 @@ func Main() {
 	rng := util.NewRNG()
 
 	// Load object templates
-	templates = NewTemplateManager("templates")
-	errs := templates.LoadAll("templates")
+	templateManager = NewTemplateManager("templates")
+	errs := templateManager.LoadAll("templates")
 	for _, err := range errs {
 		log.Println(err)
 	}
@@ -75,6 +75,9 @@ func Main() {
 			os.Exit(1)
 		}
 	}
+
+	// Debug
+	templateManager.NewObject("Player")
 
 	go world.Process()
 	go LoginServerMain()
