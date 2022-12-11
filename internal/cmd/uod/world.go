@@ -254,16 +254,16 @@ func (w *World) New(o game.Object) game.Object {
 // created for the user. If an account is found but the password hashes do not
 // match nil is returned. Otherwise the account is returned.
 func (w *World) AuthenticateAccount(username, passwordHash string) *game.Account {
-	a := w.GetOrCreateAccount(username, passwordHash)
+	a := w.getOrCreateAccount(username, passwordHash)
 	if !a.ComparePasswordHash(passwordHash) {
 		return nil
 	}
 	return a
 }
 
-// GetOrCreateAccount adds a new account to the world, or returns the existing
+// getOrCreateAccount adds a new account to the world, or returns the existing
 // account for that username.
-func (w *World) GetOrCreateAccount(username, passwordHash string) *game.Account {
+func (w *World) getOrCreateAccount(username, passwordHash string) *game.Account {
 	w.alock.Lock()
 	defer w.alock.Unlock()
 

@@ -20,7 +20,7 @@ func LoginServerMain() {
 	defaultUsername := "admin"
 	defaultPassword := game.HashPassword("password")
 
-	admin := world.GetOrCreateAccount(defaultUsername, defaultPassword)
+	admin := world.AuthenticateAccount(defaultUsername, defaultPassword)
 	log.Println("default admin username", admin.Username())
 
 	l, err := net.ListenTCP("tcp", &net.TCPAddr{
@@ -87,7 +87,7 @@ func handleLoginConnection(c *net.TCPConn) {
 		log.Println("client sent wrong packet waiting for account login", cp)
 		return
 	}
-	account := world.GetOrCreateAccount(alp.Username, game.HashPassword(alp.Password))
+	account := world.AuthenticateAccount(alp.Username, game.HashPassword(alp.Password))
 	if account == nil {
 		log.Println("user login failed for", alp.Username)
 		ldp := &serverpacket.LoginDenied{
