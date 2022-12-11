@@ -42,3 +42,15 @@ func (r *Registry[K, V]) Contains(k K) bool {
 	_, found := r.Get(k)
 	return found
 }
+
+// Map executes fn on every object in the pool and returns a slice of all
+// non-nil return values.
+func (r *Registry[K, V]) Map(fn func(K, V) error) []error {
+	var ret []error
+	for k, v := range r.values {
+		if err := fn(k, v); err != nil {
+			ret = append(ret, err)
+		}
+	}
+	return ret
+}
