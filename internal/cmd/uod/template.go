@@ -12,19 +12,21 @@ import (
 
 	"github.com/qbradq/sharduo/data"
 	"github.com/qbradq/sharduo/internal/game"
+	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
 )
 
-// TemplateContext is the context object given to all template templates
-type TemplateContext struct {
-	BodyHumanMale   int
-	BodyHumanFemale int
+// Global function map for templates
+var templateFuncMap = template.FuncMap{
+	// RandomBool returns a random boolean value
+	"RandomBool": randomBool,
+	// RandomSkinHue returns a random human skin hue
+	"RandomSkinHue": randomSkinHue,
 }
 
-// The singular, global template context for all template invokations
-var templateContext = &TemplateContext{
-	BodyHumanMale:   400,
-	BodyHumanFemale: 401,
+// Global context for constants in templates
+var templateContext = map[string]string{
+	"BodyHuman": "400",
 }
 
 // Template represents a collection of data used to initialize new objects
@@ -68,6 +70,7 @@ func NewTemplate(tfo *util.TagFileObject, tm *TemplateManager) (*Template, []err
 			return nil
 		}
 		tt := template.New(value)
+		tt = tt.Funcs(templateFuncMap)
 		tt, err := tt.Parse(value)
 		if err != nil {
 			return err
@@ -81,7 +84,7 @@ func NewTemplate(tfo *util.TagFileObject, tm *TemplateManager) (*Template, []err
 
 // generateTagFileObject generates a new TagFileObject by executing the
 // templates contained within the strings.
-func (t *Template) generateTagFileObject(tm *TemplateManager, ctx *TemplateContext) (*util.TagFileObject, error) {
+func (t *Template) generateTagFileObject(tm *TemplateManager, ctx map[string]string) (*util.TagFileObject, error) {
 	tfo := util.NewTagFileObject()
 	for k, p := range t.properties {
 		switch v := p.(type) {
@@ -190,4 +193,12 @@ func (m *TemplateManager) NewObject(templateName string) game.Object {
 		log.Println(err)
 	}
 	return s.(game.Object)
+}
+
+func randomBool() bool {
+	return world.Random().RandomBool()
+}
+
+func randomSkinHue() uo.Hue {
+	return uo.RandomSkinHue(world.Random())
 }

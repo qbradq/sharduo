@@ -55,6 +55,10 @@ func (m *BaseMobile) Deserialize(f *util.TagFileObject) {
 	m.BaseObject.Deserialize(f)
 	m.isFemale = f.GetBool("IsFemale", false)
 	m.body = uo.Body(f.GetNumber("Body", int(uo.BodyDefault)))
+	// Special case for human bodies to select between male and female models
+	if m.body == uo.BodyHuman && m.isFemale {
+		m.body += 1
+	}
 	m.notoriety = uo.Notoriety(f.GetNumber("Notoriety", int(uo.NotorietyInnocent)))
 }
 

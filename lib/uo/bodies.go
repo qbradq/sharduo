@@ -7,6 +7,7 @@ type Body uint16
 // Pre-defined values for Body
 const (
 	BodyNone    Body = 0
+	BodyHuman   Body = 400 // Human male body
 	BodyDefault Body = 991 // Blackthorne
 	BodySystem  Body = 0x7fff
 )
