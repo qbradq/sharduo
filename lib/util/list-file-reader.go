@@ -18,6 +18,7 @@ type ListFileReader struct {
 	errs            []error
 	scanner         *bufio.Scanner
 	nextFileSegment *ListFileSegment
+	sawEOF          bool
 }
 
 func (f *ListFileReader) isCommentLine(line string) bool {
@@ -50,20 +51,24 @@ func (f *ListFileReader) Errors() []error {
 func (f *ListFileReader) StartReading(r io.Reader) {
 	f.scanner = bufio.NewScanner(r)
 	f.nextFileSegment = &ListFileSegment{}
+	f.sawEOF = false
 }
 
 // ReadNextSegment returns the next segment in the current reader stream or nil
 // if the end of the stream has been reached.
 func (f *ListFileReader) ReadNextSegment() *ListFileSegment {
 	for {
+		if f.sawEOF {
+			return nil
+		}
 		if !f.scanner.Scan() {
 			err := f.scanner.Err()
-			if !errors.Is(err, io.EOF) {
+			if err != nil {
 				f.errs = append(f.errs, err)
+				return nil
 			}
-			var ret = f.nextFileSegment
-			f.nextFileSegment = &ListFileSegment{}
-			return ret
+			f.sawEOF = true
+			return f.nextFileSegment
 		}
 		line := strings.TrimSpace(f.scanner.Text())
 		if f.isCommentLine(line) {
@@ -72,6 +77,10 @@ func (f *ListFileReader) ReadNextSegment() *ListFileSegment {
 			ret := f.nextFileSegment
 			f.nextFileSegment = &ListFileSegment{
 				Name: f.extractSegmentName(line),
+			}
+			// Special case, if the root segment has no lines do not emmit it
+			if ret.Name == "" && len(ret.Contents) == 0 {
+				continue
 			}
 			return ret
 		} else {
