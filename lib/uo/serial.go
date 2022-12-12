@@ -2,6 +2,7 @@ package uo
 
 import (
 	"encoding/binary"
+	"fmt"
 	"strconv"
 )
 
@@ -50,7 +51,7 @@ func NewSerialFromString(in string) Serial {
 
 // String returns the string representation of the serial.
 func (s Serial) String() string {
-	return string(strconv.AppendInt(nil, int64(s), 16))
+	return fmt.Sprintf("0x%08X", uint32(s))
 }
 
 // IsMobile returns true if the serial refers to a mobile

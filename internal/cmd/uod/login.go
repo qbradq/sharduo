@@ -102,7 +102,7 @@ func handleLoginConnection(c *net.TCPConn) {
 		time.Sleep(time.Second * 5)
 		return
 	}
-	log.Printf("user login successful for %s 0x%08X", account.Username(), account.Serial())
+	log.Printf("user login successful for %s %s", account.Username(), account.Serial().String())
 
 	// Server list packet
 	var sp serverpacket.Packet

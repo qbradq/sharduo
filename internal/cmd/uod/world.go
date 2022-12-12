@@ -155,6 +155,12 @@ func (w *World) Load() error {
 
 	// If there were errors trying to deserialize any of our objects we need to
 	// report and bail.
+	if len(errs) > 0 {
+		for _, err := range errs {
+			log.Println(err)
+		}
+		log.Fatalf("found %d errors while allocating data store objects", len(errs))
+	}
 
 	// Rebuild accounts index
 	w.ads.Map(func(a *game.Account) error {
@@ -243,10 +249,19 @@ func (w *World) Random() uo.RandomSource {
 }
 
 // New adds a new object to the world. It is assigned a unique serial. The
-// object is returned.
+// object is returned. As a special case this function refuses to add a nil
+// value to the game data store.
 func (w *World) New(o game.Object) game.Object {
-	w.ods.Add(o, o.SerialType())
+	if o != nil {
+		w.ods.Add(o, o.SerialType())
+	}
 	return o
+}
+
+// Find returns the object with the given serial, or nil if it is not found in
+// the game data store.
+func (w *World) Find(id uo.Serial) game.Object {
+	return w.ods.Get(id)
 }
 
 // AuthenticateAccount attempts to authenticate an account by username and

@@ -72,9 +72,11 @@ func (f *TagFileReader) ReadObject() (*TagFileObject, error) {
 				return nil, nil
 			}
 			f.nextObject = NewTagFileObject()
-			f.nextObject.t = extractObjectType(line)
+			if err := f.nextObject.HandleTypeLine(line); err != nil {
+				f.handleError(fmt.Errorf("error deserializing object at line %d:%w", f.ln, f.s.Err()))
+				return nil, nil
+			}
 		} else if isTypeLine(line) {
-			f.nextObject.t = extractObjectType(line)
 			ret := f.nextObject
 			f.nextObject = NewTagFileObject()
 			if err := f.nextObject.HandleTypeLine(line); err != nil {

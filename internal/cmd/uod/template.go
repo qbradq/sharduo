@@ -18,15 +18,43 @@ import (
 
 // Global function map for templates
 var templateFuncMap = template.FuncMap{
-	// RandomBool returns a random boolean value
-	"RandomBool": randomBool,
-	// RandomSkinHue returns a random human skin hue
-	"RandomSkinHue": randomSkinHue,
+	"New":           templateNew,   // New creates a new object from the named template, adds it to the world datastores, then returns the string representation of the object's serial
+	"RandomBool":    randomBool,    // RandomBool returns a random boolean value
+	"RandomSkinHue": randomSkinHue, // RandomSkinHue returns a random human skin hue
+	"RandomDyeHue":  randomDyeHue,  // RandomDueHue returns a random hue that can come from a standard dye tub
 }
 
 // Global context for constants in templates
 var templateContext = map[string]string{
-	"BodyHuman": "400",
+	"BodyHuman":                     "400", // Human body base (male)
+	"LayerInvalid":                  "0",   // Wearable layers
+	"LayerWeapon":                   "1",
+	"LayerShield":                   "2",
+	"LayerShoes":                    "3",
+	"LayerPants":                    "4",
+	"LayerShirt":                    "5",
+	"LayerHat":                      "6",
+	"LayerGloves":                   "7",
+	"LayerRing":                     "8",
+	"LayerNeckArmor":                "10,",
+	"LayerHair":                     "11",
+	"LayerBelt":                     "12",
+	"LayerChestArmor":               "13",
+	"LayerBracelet":                 "14",
+	"LayerBeard":                    "16",
+	"LayerCoat":                     "17",
+	"LayerEarrings":                 "18",
+	"LayerArmArmor":                 "19",
+	"LayerCloak":                    "20",
+	"LayerBackpack":                 "21",
+	"LayerRobe":                     "22",
+	"LayerSkirt":                    "23",
+	"LayerLegArmor":                 "24",
+	"LayerMount":                    "25",
+	"LayerNPCBuyRestockContainer":   "26",
+	"LayerNPCBuyNoRestockContainer": "27",
+	"LayerNPCSellContainer":         "28",
+	"LayerBankBox":                  "29",
 }
 
 // ObjectTemplate represents a collection of data used to initialize new objects
@@ -93,11 +121,13 @@ func (t *ObjectTemplate) generateTagFileObject(tm *TemplateManager, ctx map[stri
 		case string:
 			tfo.Set(k, v)
 		case *template.Template:
-			tm.syncBuffer.Reset()
+			tm.syncBuffer.Truncate(0)
 			if err := v.Execute(tm.syncBuffer, ctx); err != nil {
 				return nil, err
 			}
+			log.Println(k, tm.syncBuffer.String())
 			tfo.Set(k, tm.syncBuffer.String())
+			tm.syncBuffer.Truncate(0)
 		default:
 			panic("unhandled type in generateTagFileObject")
 		}
@@ -252,12 +282,22 @@ func (m *TemplateManager) NewObject(templateName string) game.Object {
 	return s.(game.Object)
 }
 
-// ResolveTemplates
-
 func randomBool() bool {
 	return world.Random().RandomBool()
 }
 
 func randomSkinHue() uo.Hue {
 	return uo.RandomSkinHue(world.Random())
+}
+
+func randomDyeHue() uo.Hue {
+	return uo.RandomDyeHue(world.Random())
+}
+
+func templateNew(name string) string {
+	o := world.New(templateManager.NewObject(name))
+	if o == nil {
+		return "0x00000000"
+	}
+	return o.Serial().String()
 }

@@ -33,7 +33,7 @@ func (p *SerialPool[K]) Add(o K, stype uo.SerialType) {
 // panic on duplicate insertion.
 func (p *SerialPool[K]) Insert(o K, s uo.Serial) {
 	if p.sm.Contains(s) {
-		panic(fmt.Sprintf("duplicate insertion into %s:0x%08X", p.name, s))
+		panic(fmt.Sprintf("duplicate insertion into %s:%s", p.name, s.String()))
 	}
 	p.sm.Add(s)
 	p.objects[s] = o

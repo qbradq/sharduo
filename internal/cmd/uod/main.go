@@ -11,6 +11,7 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
@@ -65,6 +66,7 @@ func Main() {
 
 	// Initialize our data structures
 	world = NewWorld(savePath, rng)
+	game.RegisterWorld(world)
 
 	// Try to load the most recent save
 	if err := world.Load(); err != nil {
@@ -75,9 +77,6 @@ func Main() {
 			os.Exit(1)
 		}
 	}
-
-	// Debug
-	templateManager.NewObject("Player")
 
 	go world.Process()
 	go LoginServerMain()

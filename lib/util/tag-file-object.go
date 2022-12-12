@@ -85,6 +85,12 @@ func (o *TagFileObject) Errors() []error {
 	return nil
 }
 
+// InjectError injects the error into this object's error slice. This is used
+// by higher-level data loading functions to report out errors without panicing.
+func (o *TagFileObject) InjectError(err error) {
+	o.errs = append(o.errs, err)
+}
+
 // Map executes fn for every key/value pair in the object.
 func (o *TagFileObject) Map(fn func(name, value string) error) []error {
 	var errs []error

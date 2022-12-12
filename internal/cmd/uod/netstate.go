@@ -211,15 +211,15 @@ func (n *NetState) readLoop(r *clientpacket.Reader) {
 		switch p := cp.(type) {
 		case nil:
 			n.Error("decoding packet",
-				fmt.Errorf("unknown packet 0x%04X", data[0]))
+				fmt.Errorf("unknown packet 0x%02X", data[0]))
 		case *clientpacket.MalformedPacket:
 			n.Error("decoding packet",
-				fmt.Errorf("malformed packet 0x%04X", p.Serial()))
+				fmt.Errorf("malformed packet %s", p.Serial().String()))
 		case *clientpacket.UnknownPacket:
-			n.Log("unknown %s packet 0x%04X", p.PType, cp.Serial())
+			n.Log("unknown %s packet %s", p.PType, cp.Serial().String())
 			return
 		case *clientpacket.UnsupportedPacket:
-			n.Log("unsupported %s packet 0x%08X:\n%s", p.PType, int(cp.Serial()),
+			n.Log("unsupported %s packet %s:\n%s", p.PType, cp.Serial().String(),
 				hex.Dump(data))
 		case *clientpacket.IgnoredPacket:
 			// Do nothing

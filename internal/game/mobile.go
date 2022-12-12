@@ -17,7 +17,7 @@ type Mobile interface {
 	Body() uo.Body
 	// Equip equips the given item in the item's layer, returns false if the
 	// equip operation failed for any reason.
-	Equip(Item) bool
+	Equip(Wearable) bool
 	// EquippedMobilePacket returns a serverpacket.EquippedMobile packet for
 	// this mobile.
 	EquippedMobilePacket() *serverpacket.EquippedMobile
@@ -60,14 +60,15 @@ func (m *BaseMobile) Deserialize(f *util.TagFileObject) {
 		m.body += 1
 	}
 	m.notoriety = uo.Notoriety(f.GetNumber("Notoriety", int(uo.NotorietyInnocent)))
+	m.equipment.Read("Equipment", f)
 }
 
 // Body implements the Mobile interface.
 func (m *BaseMobile) Body() uo.Body { return m.body }
 
 // Equip implements the Mobile interface.
-func (m *BaseMobile) Equip(item Item) bool {
-	return m.equipment.Equip(item)
+func (m *BaseMobile) Equip(w Wearable) bool {
+	return m.equipment.Equip(w)
 }
 
 // EquippedMobilePacket implements the Mobile interface.
@@ -87,12 +88,12 @@ func (m *BaseMobile) EquippedMobilePacket() *serverpacket.EquippedMobile {
 		Flags:     flags,
 		Notoriety: m.notoriety,
 	}
-	m.equipment.Map(func(item Item) error {
+	m.equipment.Map(func(w Wearable) error {
 		p.Equipment = append(p.Equipment, &serverpacket.EquippedMobileItem{
-			ID:      item.Serial(),
-			Graphic: item.Graphic(),
-			Layer:   item.Layer(),
-			Hue:     item.Hue(),
+			ID:      w.Serial(),
+			Graphic: w.Graphic(),
+			Layer:   w.Layer(),
+			Hue:     w.Hue(),
 		})
 		return nil
 	})
