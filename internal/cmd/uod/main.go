@@ -50,13 +50,15 @@ func trap(l *net.TCPListener) {
 func Main() {
 	// TODO Load configuration
 	savePath := "saves"
+	templatePath := "templates"
+	listPath := "lists"
 
 	// RNG initialization
 	rng := util.NewRNG()
 
 	// Load object templates
 	templateManager = NewTemplateManager("templates")
-	errs := templateManager.LoadAll("templates")
+	errs := templateManager.LoadAll(templatePath, listPath)
 	for _, err := range errs {
 		log.Println(err)
 	}
@@ -77,6 +79,9 @@ func Main() {
 			os.Exit(1)
 		}
 	}
+
+	// Debug
+	world.New(templateManager.NewObject("Player"))
 
 	go world.Process()
 	go LoginServerMain()

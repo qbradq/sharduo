@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"path"
 	"strings"
 	"text/template"
 
@@ -143,6 +142,8 @@ type TemplateManager struct {
 	pctp *util.Registry[string, *template.Template]
 	// Text buffer for template execution, to reduce memory allocations
 	syncBuffer *bytes.Buffer
+	// Collection of lists used by the random object creation methods
+	lists *util.Registry[string, []string]
 }
 
 // NewTemplateManager returns a new TemplateManager object
@@ -151,6 +152,7 @@ func NewTemplateManager(name string) *TemplateManager {
 		templates:  util.NewRegistry[string, *ObjectTemplate](name),
 		pctp:       util.NewRegistry[string, *template.Template]("templates"),
 		syncBuffer: bytes.NewBuffer(nil),
+		lists:      util.NewRegistry[string, []string]("lists"),
 	}
 }
 
@@ -158,37 +160,56 @@ func NewTemplateManager(name string) *TemplateManager {
 // that this uses the embedded file system from the data package. On successful
 // completion, all templates will have inheritance resolved, be parsed and be
 // ready to execute.
-func (m *TemplateManager) LoadAll(dirPath string) []error {
-	var errs []error
-	files, err := data.FS.ReadDir(dirPath)
-	if err != nil {
-		return []error{err}
-	}
-	for _, file := range files {
-		if file.IsDir() {
-			errs = append(errs, m.LoadAll(path.Join(dirPath, file.Name()))...)
-		} else {
-			errs = append(errs, m.loadFile(path.Join(dirPath, file.Name()))...)
-		}
-	}
-	// If we have errors at this point then at least one template failed to
-	// to load. This might break inheritance chains, so go ahead and bail.
+func (m *TemplateManager) LoadAll(templatePath, listPath string) []error {
+	// Load all templates
+	errs := data.Walk(templatePath, m.loadTemplateFile)
 	if len(errs) > 0 {
 		return errs
 	}
-	return m.resolveInheritance()
+	log.Println("templates loaded")
+	// Resolve template inheritance chains
+	errs = m.resolveInheritance()
+	if len(errs) > 0 {
+		return errs
+	}
+	log.Println("templates resolved")
+	// Load all lists
+	return data.Walk(listPath, m.loadListFile)
 }
 
-// loadFile loads all the template definitions in the provided file
-func (m *TemplateManager) loadFile(filePath string) []error {
+// loadListFile loads a single list file and merges that list with the current.
+func (m *TemplateManager) loadListFile(filePath string, d []byte) []error {
 	var errs []error
-	d, err := data.FS.ReadFile(filePath)
-	if err != nil {
-		return []error{err}
+
+	// Load all segments in the file
+	lfr := &util.ListFileReader{}
+	lfr.StartReading(bytes.NewReader(d))
+	for l := lfr.ReadNextSegment(); l != nil; l = lfr.ReadNextSegment() {
+		log.Println(l.Name)
+		// Avoid panic on duplicate Add, because I'd like to see all the errors
+		if m.lists.Contains(l.Name) {
+			errs = append(errs, fmt.Errorf("duplicate list name %s", l.Name))
+			continue
+		}
+		m.lists.Add(l.Name, l.Contents)
+		// Make sure every referenced template exists
+		for _, tn := range l.Contents {
+			if !m.templates.Contains(tn) {
+				errs = append(errs, fmt.Errorf("list %s referenced unknown template %s", l.Name, tn))
+				continue
+			}
+		}
 	}
-	tfr := util.NewTagFileReader(bytes.NewReader(d))
+
+	return errs
+}
+
+// loadTemplateFile loads all the template definitions in the provided file
+func (m *TemplateManager) loadTemplateFile(filePath string, d []byte) []error {
+	var errs []error
 
 	// Load all template objects in the file
+	tfr := util.NewTagFileReader(bytes.NewReader(d))
 	for {
 		tfo, err := tfr.ReadObject()
 		if errors.Is(err, io.EOF) {
