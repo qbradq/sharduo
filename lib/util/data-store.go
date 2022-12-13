@@ -1,7 +1,6 @@
 package util
 
 import (
-	"errors"
 	"fmt"
 	"io"
 
@@ -36,22 +35,27 @@ func NewDataStore[K Serializeable](name string, rng uo.RandomSource, f *Serializ
 // InvalidateCache or as a side-effect of calling Deserialize.
 func (s *DataStore[K]) Read(r io.Reader) []error {
 	var errs []error
-	tfr := NewTagFileReader(r)
+	tfr := &TagFileReader{}
+	tfr.StartReading(r)
 	for {
-		tfo, err := tfr.ReadObject()
-		if errors.Is(err, io.EOF) {
-			return append(tfr.Errors(), errs...)
-		}
+		tfo := tfr.ReadObject()
 		if tfo == nil {
+			// No more objects in the file
+			return append(errs, tfr.Errors()...)
+		}
+		if tfo.HasErrors() {
+			errs = append(errs, tfr.Errors()...)
 			continue
 		}
 		o := s.f.New(tfo.TypeName(), nil)
 		if o == nil {
 			errs = append(errs, fmt.Errorf("failed to create object of type %s", tfo.TypeName()))
+			continue
 		} else {
 			serial := uo.Serial(tfo.GetNumber("Serial", int(uo.SerialZero)))
 			if serial == uo.SerialZero {
-				panic(fmt.Sprintf("object of type %s did not contain a Serial", tfo.TypeName()))
+				errs = append(errs, fmt.Errorf("object of type %s did not contain a Serial", tfo.TypeName()))
+				continue
 			}
 			s.objects[serial] = o.(K)
 			s.tfoPool[serial] = tfo

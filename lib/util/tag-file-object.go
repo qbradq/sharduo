@@ -23,41 +23,9 @@ func NewTagFileObject() *TagFileObject {
 	}
 }
 
-// stripLine strips a line of whitespace and returns it.
-func stripLine(line string) string {
-	return strings.TrimSpace(line)
-}
-
-// isCommentLine returns true if the line given looks like a comment.
-func isCommentLine(line string) bool {
-	return len(line) == 0 || line[0] == ';'
-}
-
-// isTypeLine returns true if the line given looks like a object type.
-func isTypeLine(line string) bool {
-	return len(line) > 0 && line[0] == '[' && line[len(line)-1] == ']'
-}
-
-// extractObjectType returns the type from an object line.
-func extractObjectType(line string) string {
-	if len(line) < 3 {
-		return ""
-	}
-	return line[1 : len(line)-1]
-}
-
 // TypeName returns the type name of the object described
 func (o *TagFileObject) TypeName() string {
 	return o.t
-}
-
-// HandleTypeLine handles the type line for the next object.
-func (o *TagFileObject) HandleTypeLine(line string) error {
-	if !isTypeLine(line) {
-		return errors.New("syntax error at type line")
-	}
-	o.t = extractObjectType(line)
-	return nil
 }
 
 // HandlePropertyLine attempts to handle a single property line in the file.
@@ -75,6 +43,11 @@ func (o *TagFileObject) HandlePropertyLine(line string) error {
 	}
 	o.p[key] = value
 	return nil
+}
+
+// HasErrors returns true if the object has encountered any errors.
+func (o *TagFileObject) HasErrors() bool {
+	return len(o.errs) > 0
 }
 
 // Errors returns a slice of all of the errors encountered by this object.

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io"
 	"log"
 	"strconv"
 	"strings"
@@ -23,39 +22,9 @@ var templateFuncMap = template.FuncMap{
 	"Random":     randomListMember, // Random returns a random string from the named list, or an empty string if the named list was not found
 }
 
-// Global context for constants in templates
-var templateContext = map[string]string{
-	"BodyHumanMale":                 "400",
-	"BodyHumanFemale":               "401",
-	"LayerInvalid":                  "0", // Wearable layers
-	"LayerWeapon":                   "1",
-	"LayerShield":                   "2",
-	"LayerShoes":                    "3",
-	"LayerPants":                    "4",
-	"LayerShirt":                    "5",
-	"LayerHat":                      "6",
-	"LayerGloves":                   "7",
-	"LayerRing":                     "8",
-	"LayerNeckArmor":                "10,",
-	"LayerHair":                     "11",
-	"LayerBelt":                     "12",
-	"LayerChestArmor":               "13",
-	"LayerBracelet":                 "14",
-	"LayerBeard":                    "16",
-	"LayerCoat":                     "17",
-	"LayerEarrings":                 "18",
-	"LayerArmArmor":                 "19",
-	"LayerCloak":                    "20",
-	"LayerBackpack":                 "21",
-	"LayerRobe":                     "22",
-	"LayerSkirt":                    "23",
-	"LayerLegArmor":                 "24",
-	"LayerMount":                    "25",
-	"LayerNPCBuyRestockContainer":   "26",
-	"LayerNPCBuyNoRestockContainer": "27",
-	"LayerNPCSellContainer":         "28",
-	"LayerBankBox":                  "29",
-}
+// Global context for constants in templates. This is built from
+// data/template-variables.ini
+var templateContext = map[string]string{}
 
 // ObjectTemplate represents a collection of data used to initialize new objects
 type ObjectTemplate struct {
@@ -125,7 +94,6 @@ func (t *ObjectTemplate) generateTagFileObject(tm *TemplateManager, ctx map[stri
 			if err := v.Execute(buf, ctx); err != nil {
 				return nil, err
 			}
-			log.Println(k, buf.String())
 			tfo.Set(k, buf.String())
 		default:
 			panic("unhandled type in generateTagFileObject")
@@ -140,8 +108,6 @@ type TemplateManager struct {
 	templates *util.Registry[string, *ObjectTemplate]
 	// Registry of pre-compiled go templates
 	pctp *util.Registry[string, *template.Template]
-	// Text buffer for template execution, to reduce memory allocations
-	syncBuffer *bytes.Buffer
 	// Collection of lists used by the random object creation methods
 	lists *util.Registry[string, []string]
 }
@@ -149,10 +115,9 @@ type TemplateManager struct {
 // NewTemplateManager returns a new TemplateManager object
 func NewTemplateManager(name string) *TemplateManager {
 	return &TemplateManager{
-		templates:  util.NewRegistry[string, *ObjectTemplate](name),
-		pctp:       util.NewRegistry[string, *template.Template]("templates"),
-		syncBuffer: bytes.NewBuffer(nil),
-		lists:      util.NewRegistry[string, []string]("lists"),
+		templates: util.NewRegistry[string, *ObjectTemplate](name),
+		pctp:      util.NewRegistry[string, *template.Template]("templates"),
+		lists:     util.NewRegistry[string, []string]("lists"),
 	}
 }
 
@@ -172,7 +137,27 @@ func (m *TemplateManager) LoadAll(templatePath, listPath string) []error {
 		return errs
 	}
 	// Load all lists
-	return data.Walk(listPath, m.loadListFile)
+	errs = data.Walk(listPath, m.loadListFile)
+	if len(errs) > 0 {
+		return errs
+	}
+	// Load all variables
+	vd, err := data.FS.Open("template-variables.ini")
+	if err != nil {
+		return []error{err}
+	}
+	tfr := &util.TagFileReader{}
+	tfr.StartReading(vd)
+	tfo := tfr.ReadObject()
+	if tfo == nil {
+		return []error{errors.New("failed to read template variables list")}
+	}
+	tfo.Map(func(name, value string) error {
+		templateContext[name] = value
+		return nil
+	})
+
+	return nil
 }
 
 // loadListFile loads a single list file and merges that list with the current.
@@ -199,15 +184,13 @@ func (m *TemplateManager) loadTemplateFile(filePath string, d []byte) []error {
 	var errs []error
 
 	// Load all template objects in the file
-	tfr := util.NewTagFileReader(bytes.NewReader(d))
+	tfr := &util.TagFileReader{}
+	tfr.StartReading(bytes.NewReader(d))
 	for {
-		tfo, err := tfr.ReadObject()
-		if errors.Is(err, io.EOF) {
+		tfo := tfr.ReadObject()
+		if tfo == nil {
 			errs = append(errs, tfr.Errors()...)
 			break
-		}
-		if tfo == nil {
-			continue
 		}
 		t, terrs := NewTemplate(tfo, m)
 		if len(terrs) > 0 {

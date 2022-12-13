@@ -55,7 +55,8 @@ func (f *ListFileReader) StartReading(r io.Reader) {
 }
 
 // ReadNextSegment returns the next segment in the current reader stream or nil
-// if the end of the stream has been reached.
+// if the end of the stream has been reached. Use HasErrors and Errors to
+// see if there were errors in execution.
 func (f *ListFileReader) ReadNextSegment() *ListFileSegment {
 	for {
 		if f.sawEOF {

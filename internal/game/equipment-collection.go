@@ -2,6 +2,7 @@ package game
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
@@ -25,11 +26,16 @@ func (c *EquipmentCollection) Read(name string, f *util.TagFileObject) {
 	c.equipment = make(map[uo.Layer]Wearable)
 	for _, id := range f.GetObjectReferences(name) {
 		o := world.Find(id)
+		if o == nil {
+			f.InjectError(fmt.Errorf("object %s does not exist", id.String()))
+			continue
+		}
 		w, ok := o.(Wearable)
 		if !ok {
 			f.InjectError(fmt.Errorf("object %s does not implement the wearable interface", id.String()))
 			continue
 		}
+		log.Printf("%vv\n", w)
 		if _, duplicate := c.equipment[w.Layer()]; duplicate {
 			f.InjectError(fmt.Errorf("object %s duplicate layer %d", id.String(), w.Layer()))
 			continue
