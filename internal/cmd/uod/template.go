@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"strconv"
 	"strings"
 	"text/template"
 
@@ -24,8 +25,9 @@ var templateFuncMap = template.FuncMap{
 
 // Global context for constants in templates
 var templateContext = map[string]string{
-	"BodyHuman":                     "400", // Human body base (male)
-	"LayerInvalid":                  "0",   // Wearable layers
+	"BodyHumanMale":                 "400",
+	"BodyHumanFemale":               "401",
+	"LayerInvalid":                  "0", // Wearable layers
 	"LayerWeapon":                   "1",
 	"LayerShield":                   "2",
 	"LayerShoes":                    "3",
@@ -119,12 +121,16 @@ func (t *ObjectTemplate) generateTagFileObject(tm *TemplateManager, ctx map[stri
 		case string:
 			tfo.Set(k, v)
 		case *template.Template:
-			tm.syncBuffer.Truncate(0)
+			tm.syncBuffer.Reset()
+			//buf := bytes.NewBuffer(nil)
 			if err := v.Execute(tm.syncBuffer, ctx); err != nil {
+				//if err := v.Execute(buf, ctx); err != nil {
 				return nil, err
 			}
+			// log.Println(k, buf.String())
+			// tfo.Set(k, buf.String())
+			log.Println(k, tm.syncBuffer.String())
 			tfo.Set(k, tm.syncBuffer.String())
-			tm.syncBuffer.Truncate(0)
 		default:
 			panic("unhandled type in generateTagFileObject")
 		}
@@ -267,16 +273,21 @@ func (m *TemplateManager) resolveInheritance() []error {
 // template was not found, there was an error executing the template, or there
 // was an error deserializing the object.
 func (m *TemplateManager) NewObject(templateName string) game.Object {
+	// Find the template
 	t, found := m.templates.Get(templateName)
 	if !found {
 		log.Printf("template %s not found\n", templateName)
 		return nil
 	}
+	// Inject dynamic values into the template context
+	templateContext["IsFemale"] = strconv.FormatBool(world.Random().RandomBool())
+	// Generate the deserialization object
 	tfo, err := t.generateTagFileObject(m, templateContext)
 	if err != nil {
 		log.Printf("error while processing template %s", t.templateName)
 		return nil
 	}
+	// Create the object
 	s := game.ObjectFactory.New(t.typeName, nil)
 	if s == nil {
 		log.Printf("error while creating object for type %s", t.typeName)
@@ -314,7 +325,6 @@ func randomListMember(name string) string {
 
 func randomNew(name string) string {
 	tn := randomListMember(name)
-	log.Println(tn)
 	if tn == "" {
 		return "0"
 	}
