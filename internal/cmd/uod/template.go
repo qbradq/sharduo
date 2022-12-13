@@ -121,16 +121,12 @@ func (t *ObjectTemplate) generateTagFileObject(tm *TemplateManager, ctx map[stri
 		case string:
 			tfo.Set(k, v)
 		case *template.Template:
-			tm.syncBuffer.Reset()
-			//buf := bytes.NewBuffer(nil)
-			if err := v.Execute(tm.syncBuffer, ctx); err != nil {
-				//if err := v.Execute(buf, ctx); err != nil {
+			buf := bytes.NewBuffer(nil)
+			if err := v.Execute(buf, ctx); err != nil {
 				return nil, err
 			}
-			// log.Println(k, buf.String())
-			// tfo.Set(k, buf.String())
-			log.Println(k, tm.syncBuffer.String())
-			tfo.Set(k, tm.syncBuffer.String())
+			log.Println(k, buf.String())
+			tfo.Set(k, buf.String())
 		default:
 			panic("unhandled type in generateTagFileObject")
 		}
