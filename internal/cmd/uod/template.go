@@ -11,16 +11,15 @@ import (
 
 	"github.com/qbradq/sharduo/data"
 	"github.com/qbradq/sharduo/internal/game"
-	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
 )
 
 // Global function map for templates
 var templateFuncMap = template.FuncMap{
-	"New":           templateNew,   // New creates a new object from the named template, adds it to the world datastores, then returns the string representation of the object's serial
-	"RandomBool":    randomBool,    // RandomBool returns a random boolean value
-	"RandomSkinHue": randomSkinHue, // RandomSkinHue returns a random human skin hue
-	"RandomDyeHue":  randomDyeHue,  // RandomDueHue returns a random hue that can come from a standard dye tub
+	"New":        templateNew,      // New creates a new object from the named template, adds it to the world datastores, then returns the string representation of the object's serial
+	"RandomNew":  randomNew,        // RandomNew creates a new object of a template randomly selected from the named list"RandomNew"
+	"RandomBool": randomBool,       // RandomBool returns a random boolean value
+	"Random":     randomListMember, // Random returns a random string from the named list, or an empty string if the named list was not found
 }
 
 // Global context for constants in templates
@@ -124,7 +123,6 @@ func (t *ObjectTemplate) generateTagFileObject(tm *TemplateManager, ctx map[stri
 			if err := v.Execute(tm.syncBuffer, ctx); err != nil {
 				return nil, err
 			}
-			log.Println(k, tm.syncBuffer.String())
 			tfo.Set(k, tm.syncBuffer.String())
 			tm.syncBuffer.Truncate(0)
 		default:
@@ -166,13 +164,11 @@ func (m *TemplateManager) LoadAll(templatePath, listPath string) []error {
 	if len(errs) > 0 {
 		return errs
 	}
-	log.Println("templates loaded")
 	// Resolve template inheritance chains
 	errs = m.resolveInheritance()
 	if len(errs) > 0 {
 		return errs
 	}
-	log.Println("templates resolved")
 	// Load all lists
 	return data.Walk(listPath, m.loadListFile)
 }
@@ -185,20 +181,12 @@ func (m *TemplateManager) loadListFile(filePath string, d []byte) []error {
 	lfr := &util.ListFileReader{}
 	lfr.StartReading(bytes.NewReader(d))
 	for l := lfr.ReadNextSegment(); l != nil; l = lfr.ReadNextSegment() {
-		log.Println(l.Name)
 		// Avoid panic on duplicate Add, because I'd like to see all the errors
 		if m.lists.Contains(l.Name) {
 			errs = append(errs, fmt.Errorf("duplicate list name %s", l.Name))
 			continue
 		}
 		m.lists.Add(l.Name, l.Contents)
-		// Make sure every referenced template exists
-		for _, tn := range l.Contents {
-			if !m.templates.Contains(tn) {
-				errs = append(errs, fmt.Errorf("list %s referenced unknown template %s", l.Name, tn))
-				continue
-			}
-		}
 	}
 
 	return errs
@@ -307,18 +295,28 @@ func randomBool() bool {
 	return world.Random().RandomBool()
 }
 
-func randomSkinHue() uo.Hue {
-	return uo.RandomSkinHue(world.Random())
-}
-
-func randomDyeHue() uo.Hue {
-	return uo.RandomDyeHue(world.Random())
-}
-
 func templateNew(name string) string {
 	o := world.New(templateManager.NewObject(name))
 	if o == nil {
-		return "0x00000000"
+		return "0"
 	}
 	return o.Serial().String()
+}
+
+func randomListMember(name string) string {
+	l, ok := templateManager.lists.Get(name)
+	if !ok || len(l) == 0 {
+		log.Printf("list %s not found\n", name)
+		return ""
+	}
+	return l[world.Random().Random(0, len(l)-1)]
+}
+
+func randomNew(name string) string {
+	tn := randomListMember(name)
+	log.Println(tn)
+	if tn == "" {
+		return "0"
+	}
+	return templateNew(tn)
 }
