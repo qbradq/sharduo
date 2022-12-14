@@ -23,8 +23,11 @@ var netStates sync.Map
 // The world we are running
 var world *World
 
-// The template objects
+// The template manager
 var templateManager *TemplateManager
+
+// The configuration
+var configuration *Configuration
 
 // trap is used to trap all of the system signals.
 func trap(l *net.TCPListener) {
@@ -49,25 +52,26 @@ func trap(l *net.TCPListener) {
 // Main is the entry point for uod.
 func Main() {
 	// TODO Load configuration
-	savePath := "saves"
-	templatePath := "templates"
-	listPath := "lists"
+	configuration = newConfiguration()
+	if err := configuration.LoadConfiguration(); err != nil {
+		log.Fatal(err)
+	}
 
 	// RNG initialization
 	rng := util.NewRNG()
 
 	// Load object templates
 	templateManager = NewTemplateManager("templates")
-	errs := templateManager.LoadAll(templatePath, listPath)
+	errs := templateManager.LoadAll(configuration.TemplatesDirectory, configuration.ListsDirectory)
 	for _, err := range errs {
 		log.Println(err)
 	}
 	if len(errs) > 0 {
-		log.Fatal("errors while loading object templates")
+		log.Fatalf("%d errors while loading object templates", len(errs))
 	}
 
 	// Initialize our data structures
-	world = NewWorld(savePath, rng)
+	world = NewWorld(configuration.SaveDirectory, rng)
 	game.RegisterWorld(world)
 
 	// Try to load the most recent save

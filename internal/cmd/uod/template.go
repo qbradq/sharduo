@@ -142,7 +142,7 @@ func (m *TemplateManager) LoadAll(templatePath, listPath string) []error {
 		return errs
 	}
 	// Load all variables
-	vd, err := data.FS.Open("template-variables.ini")
+	vd, err := data.FS.Open(configuration.TemplateVariablesFile)
 	if err != nil {
 		return []error{err}
 	}
