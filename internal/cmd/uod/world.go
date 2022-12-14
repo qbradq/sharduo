@@ -162,6 +162,19 @@ func (w *World) Load() error {
 		log.Fatalf("found %d errors while allocating data store objects", len(errs))
 	}
 
+	// Call the deserialize hooks for all data stores
+	errs = append(errs, w.ods.OnAfterDeserialize()...)
+	errs = append(errs, w.ads.OnAfterDeserialize()...)
+
+	// If there were errors during the deserialize hooks we need to report and
+	// bail.
+	if len(errs) > 0 {
+		for _, err := range errs {
+			log.Println(err)
+		}
+		log.Fatalf("found %d errors while allocating data store objects", len(errs))
+	}
+
 	// Rebuild accounts index
 	w.ads.Map(func(a *game.Account) error {
 		w.aidx[a.Username()] = a.Serial()
@@ -313,4 +326,9 @@ func (w *World) Process() {
 			log.Println(err)
 		}
 	}
+}
+
+// Map returns the map the world is using.
+func (w *World) Map() *game.Map {
+	return w.m
 }

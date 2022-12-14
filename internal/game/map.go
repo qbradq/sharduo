@@ -14,52 +14,54 @@ const (
 // Map contains the tile matrix, static items, and all dynamic objects of a map.
 type Map struct {
 	// The chunks of the map
-	chunks []*Chunk
+	chunks []*chunk
 }
 
 // NewMap creates and returns a new Map
 func NewMap() *Map {
 	m := &Map{
-		chunks: make([]*Chunk, MapChunksWidth*MapChunksHeight),
+		chunks: make([]*chunk, MapChunksWidth*MapChunksHeight),
 	}
 
 	for cx := 0; cx < MapChunksWidth; cx++ {
 		for cy := 0; cy < MapChunksHeight; cy++ {
-			m.chunks[cy*MapChunksWidth+cx] = NewChunk(cx*ChunkWidth, cy*ChunkHeight)
+			m.chunks[cy*MapChunksWidth+cx] = newChunk(cx*ChunkWidth, cy*ChunkHeight)
 		}
 	}
 	return m
 }
 
-// GetChunk returns a pointer to the chunk for the given location.
-func (m *Map) GetChunk(l Location) *Chunk {
+// getChunk returns a pointer to the chunk for the given location.
+func (m *Map) getChunk(l Location) *chunk {
 	l = l.WrapAndBound(l)
 	cx := l.X / ChunkWidth
 	cy := l.Y / ChunkHeight
 	return m.chunks[cy*MapChunksWidth+cx]
 }
 
-// AddNewObject adds a new object to the map.
-func (m *Map) AddNewObject(o Object) {
-	c := m.GetChunk(o.Location())
-	c.Add(o)
+// AddNewObject adds a new object to the map at the given location
+func (m *Map) AddNewObject(o Object, l Location) {
+	c := m.getChunk(l)
+	ob := o.(*BaseObject)
+	ob.location = l
+	c.Add(ob)
 }
 
-// GetChunksInBounds returns a slice of all the chunks within a given bounds.
-func (m *Map) GetChunksInBounds(b Bounds) []*Chunk {
-	var ret []*Chunk
+// getChunksInBounds returns a slice of all the chunks within a given bounds.
+func (m *Map) getChunksInBounds(b Bounds) []*chunk {
+	var ret []*chunk
 	l := Location{}
 	for l.Y = b.Y; l.Y < b.Y+b.H; l.Y += ChunkHeight {
 		for l.X = b.X; l.X < b.X+b.W; l.X += ChunkWidth {
-			ret = append(ret, m.GetChunk(l))
+			ret = append(ret, m.getChunk(l))
 		}
 	}
 	return ret
 }
 
-// GetChunksInRange gets chunks in the given range of a reference point.
-func (m *Map) GetChunksInRange(l Location, r int) []*Chunk {
-	return m.GetChunksInBounds(Bounds{
+// getChunksInRange gets chunks in the given range of a reference point.
+func (m *Map) getChunksInRange(l Location, r int) []*chunk {
+	return m.getChunksInBounds(Bounds{
 		X: l.X - r,
 		Y: l.Y - r,
 		W: r*2 + 1,
@@ -71,7 +73,7 @@ func (m *Map) GetChunksInRange(l Location, r int) []*Chunk {
 // the given location.
 func (m *Map) GetObjectsInRange(l Location, r int) []Object {
 	var ret []Object
-	for _, c := range m.GetChunksInRange(l, r) {
+	for _, c := range m.getChunksInRange(l, r) {
 		for _, o := range c.objects {
 			ol := o.Location()
 			dx := l.X - ol.X

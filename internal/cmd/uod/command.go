@@ -2,9 +2,11 @@ package uod
 
 import (
 	"encoding/csv"
+	"fmt"
 	"log"
 	"strings"
 
+	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/lib/clientpacket"
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
@@ -12,6 +14,7 @@ import (
 
 func init() {
 	commandFactory.Add("location", newLocationCommand)
+	commandFactory.Add("new", newNewCommand)
 }
 
 // Command is the interface all command objects implement
@@ -62,17 +65,58 @@ func newLocationCommand(args CommandArgs) Command {
 }
 
 // Compile implements the Command interface
-func (l *LocationCommand) Compile() error {
+func (c *LocationCommand) Compile() error {
 	return nil
 }
 
 // Execute implements the Command interface
-func (l *LocationCommand) Execute(n *NetState) error {
+func (c *LocationCommand) Execute(n *NetState) error {
 	if n == nil {
 		return nil
 	}
 	world.SendTarget(n, uo.TargetTypeLocation, nil, func(r *clientpacket.TargetResponse, ctx interface{}) {
 		n.SystemMessage("Location X=%d Y=%d Z=%d", r.X, r.Y, r.Z)
+	})
+	return nil
+}
+
+// NewCommand creates a new object from the named template
+type NewCommand struct {
+	BaseCommand
+}
+
+// newNewCommand constructs a new NewCommand
+func newNewCommand(args CommandArgs) Command {
+	return &NewCommand{
+		BaseCommand: BaseCommand{
+			args: args,
+		},
+	}
+}
+
+// Compile implements the Command interface
+func (c *NewCommand) Compile() error {
+	if len(c.args) != 2 {
+		return fmt.Errorf("new command requires exactly 2 arguments, go %d", len(c.args))
+	}
+	return nil
+}
+
+// Execute implements the Command interface
+func (c *NewCommand) Execute(n *NetState) error {
+	if n == nil {
+		return nil
+	}
+	world.SendTarget(n, uo.TargetTypeLocation, nil, func(r *clientpacket.TargetResponse, ctx interface{}) {
+		o := templateManager.NewObject(c.args[1])
+		if o == nil {
+			return
+		}
+		world.Map().AddNewObject(o, game.Location{
+			X: r.X,
+			Y: r.Y,
+			Z: r.Z,
+		})
 	})
 	return nil
 }

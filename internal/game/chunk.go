@@ -8,17 +8,17 @@ const (
 	ChunkHeight int = 16
 )
 
-// Chunk contains the tile matrix, static and dynamic objects in one 8x8 chunk
-type Chunk struct {
+// chunk contains the tile matrix, static and dynamic objects in one 8x8 chunk
+type chunk struct {
 	// Bounds of the chunk
 	bounds Bounds
 	// Collection of all of the objects in the chunk
 	objects util.Slice[Object]
 }
 
-// NewChunk creates and returns a new Chunk object
-func NewChunk(x, y int) *Chunk {
-	return &Chunk{
+// newChunk creates and returns a new Chunk object
+func newChunk(x, y int) *chunk {
+	return &chunk{
 		bounds: Bounds{
 			X: x,
 			Y: y,
@@ -32,7 +32,7 @@ func NewChunk(x, y int) *Chunk {
 
 // Add adds the object to the chunk and returns true if it is located in this
 // chunk.
-func (c *Chunk) Add(o Object) bool {
+func (c *chunk) Add(o Object) bool {
 	if !c.bounds.Contains(o.Location()) {
 		return false
 	}
@@ -41,6 +41,6 @@ func (c *Chunk) Add(o Object) bool {
 }
 
 // Remove removes the object from the chunk.
-func (c *Chunk) Remove(o Object) {
+func (c *chunk) Remove(o Object) {
 	c.objects = c.objects.Remove(o)
 }

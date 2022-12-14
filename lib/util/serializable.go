@@ -38,8 +38,10 @@ type Serializeable interface {
 	SerialType() uo.SerialType
 	// Writes the object to a tag file.
 	Serialize(*TagFileWriter)
-	// Deserializes the object a tag file.
+	// Deserializes the object from a tag file object.
 	Deserialize(*TagFileObject)
+	// Called on all objects after Deserialize has been called on all objects.
+	OnAfterDeserialize(*TagFileObject)
 }
 
 // BaseSerializeable implements the most common case of the Serializeable
@@ -57,4 +59,9 @@ func (s *BaseSerializeable) Serialize(f *TagFileWriter) {
 // Deserialize implements the util.Serializeable interface.
 func (s *BaseSerializeable) Deserialize(f *TagFileObject) {
 	s.serial = uo.Serial(f.GetNumber("Serial", int(uo.SerialSystem)))
+}
+
+// OnAfterDeserialize implements the util.Serializeable interface.
+func (s *BaseSerializeable) OnAfterDeserialize(f *TagFileObject) {
+	// Do nothing
 }

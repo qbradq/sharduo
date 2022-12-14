@@ -274,10 +274,18 @@ func (m *TemplateManager) NewObject(templateName string) game.Object {
 	}
 	// If we've gotten here we at least have an uninitialized object of the
 	// proper type. We can return it in case of error.
+	// Deserialize the object.
 	s.Deserialize(tfo)
 	for _, err := range tfo.Errors() {
 		log.Println(err)
 	}
+
+	// Call the deserialization hook.
+	s.OnAfterDeserialize(tfo)
+	for _, err := range tfo.Errors() {
+		log.Println(err)
+	}
+
 	return s.(game.Object)
 }
 

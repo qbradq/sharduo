@@ -1,7 +1,7 @@
 package game
 
 import (
-	"fmt"
+	"log"
 
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
@@ -14,32 +14,42 @@ type EquipmentCollection struct {
 	equipment map[uo.Layer]Wearable
 }
 
-// Write writes the collection to the given tag file.
-func (c *EquipmentCollection) Write(name string, f *util.TagFileWriter) {
-	f.WriteObjectReferences(name, util.ValuesAsSerials(c.equipment))
+// NewEquipmentCollection creates a new, empty EquipmentCollection and returns
+// it.
+func NewEquipmentCollection() *EquipmentCollection {
+	return &EquipmentCollection{
+		equipment: make(map[uo.Layer]Wearable),
+	}
 }
 
-// Read reads the collection from the given tag file object and rebuilds the
-// collection's pointers.
-func (c *EquipmentCollection) Read(name string, f *util.TagFileObject) {
-	c.equipment = make(map[uo.Layer]Wearable)
-	for _, id := range f.GetObjectReferences(name) {
+// NewEquipmentCollectionWith reads the collection references from the given
+// slice of object IDs and rebuilds the pointers.
+func NewEquipmentCollectionWith(ids []uo.Serial) *EquipmentCollection {
+	log.Println(ids)
+	c := NewEquipmentCollection()
+	for _, id := range ids {
 		o := world.Find(id)
 		if o == nil {
-			f.InjectError(fmt.Errorf("object %s does not exist", id.String()))
+			log.Printf("object %s does not exist", id.String())
 			continue
 		}
 		w, ok := o.(Wearable)
 		if !ok {
-			f.InjectError(fmt.Errorf("object %s does not implement the wearable interface", id.String()))
+			log.Printf("object %s does not implement the wearable interface", id.String())
 			continue
 		}
 		if _, duplicate := c.equipment[w.Layer()]; duplicate {
-			f.InjectError(fmt.Errorf("object %s duplicate layer %d", id.String(), w.Layer()))
+			log.Printf("object %s duplicate layer %d", id.String(), w.Layer())
 			continue
 		}
 		c.equipment[w.Layer()] = w
 	}
+	return c
+}
+
+// Write writes the collection to the given tag file.
+func (c *EquipmentCollection) Write(name string, f *util.TagFileWriter) {
+	f.WriteObjectReferences(name, util.ValuesAsSerials(c.equipment))
 }
 
 // Map executes a function for every item in the collection.

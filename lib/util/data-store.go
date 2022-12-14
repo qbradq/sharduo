@@ -80,6 +80,21 @@ func (s *DataStore[K]) Deserialize() []error {
 		o.Deserialize(tfo)
 		errs = append(errs, tfo.Errors()...)
 	}
+	return errs
+}
+
+// OnAfterDeserialize executes the OnAfterDeserialize method on every object in
+// the data store in a non-deterministic order. This should be called after
+// every data store has been deserialized with a Deserialize call. As a side
+// effect this function calls InvalidateCache to free memory that is no longer
+// needed.
+func (s *DataStore[K]) OnAfterDeserialize() []error {
+	var errs []error
+	for k, o := range s.objects {
+		tfo := s.tfoPool[k]
+		o.OnAfterDeserialize(tfo)
+		errs = append(errs, tfo.Errors()...)
+	}
 	s.InvalidateCache()
 	return errs
 }

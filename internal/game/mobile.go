@@ -33,7 +33,7 @@ type BaseMobile struct {
 	// Notoriety of the mobile
 	notoriety uo.Notoriety
 	// equipment is the collection of equipment this mobile is wearing, if any
-	equipment EquipmentCollection
+	equipment *EquipmentCollection
 }
 
 // GetTypeName implements the util.Serializeable interface.
@@ -47,7 +47,9 @@ func (m *BaseMobile) Serialize(f *util.TagFileWriter) {
 	f.WriteBool("IsFemale", m.isFemale)
 	f.WriteNumber("Body", int(m.body))
 	f.WriteNumber("Notoriety", int(m.notoriety))
-	m.equipment.Write("Equipment", f)
+	if m.equipment != nil {
+		m.equipment.Write("Equipment", f)
+	}
 }
 
 // Deserialize implements the util.Serializeable interface.
@@ -60,7 +62,11 @@ func (m *BaseMobile) Deserialize(f *util.TagFileObject) {
 		m.body += 1
 	}
 	m.notoriety = uo.Notoriety(f.GetNumber("Notoriety", int(uo.NotorietyInnocent)))
-	m.equipment.Read("Equipment", f)
+}
+
+// OnAfterDeserialize implements the util.Serializeable interface.
+func (m *BaseMobile) OnAfterDeserialize(f *util.TagFileObject) {
+	m.equipment = NewEquipmentCollectionWith(f.GetObjectReferences("Equipment"))
 }
 
 // Body implements the Mobile interface.
@@ -68,6 +74,9 @@ func (m *BaseMobile) Body() uo.Body { return m.body }
 
 // Equip implements the Mobile interface.
 func (m *BaseMobile) Equip(w Wearable) bool {
+	if m.equipment == nil {
+		m.equipment = NewEquipmentCollection()
+	}
 	return m.equipment.Equip(w)
 }
 
@@ -88,14 +97,16 @@ func (m *BaseMobile) EquippedMobilePacket() *serverpacket.EquippedMobile {
 		Flags:     flags,
 		Notoriety: m.notoriety,
 	}
-	m.equipment.Map(func(w Wearable) error {
-		p.Equipment = append(p.Equipment, &serverpacket.EquippedMobileItem{
-			ID:      w.Serial(),
-			Graphic: w.Graphic(),
-			Layer:   w.Layer(),
-			Hue:     w.Hue(),
+	if m.equipment != nil {
+		m.equipment.Map(func(w Wearable) error {
+			p.Equipment = append(p.Equipment, &serverpacket.EquippedMobileItem{
+				ID:      w.Serial(),
+				Graphic: w.Graphic(),
+				Layer:   w.Layer(),
+				Hue:     w.Hue(),
+			})
+			return nil
 		})
-		return nil
-	})
+	}
 	return p
 }
