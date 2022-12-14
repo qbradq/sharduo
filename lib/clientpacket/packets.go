@@ -461,7 +461,7 @@ type TargetResponse struct {
 	// The Z location of the target
 	Z int
 	// Graphic of the object clicked, if any
-	Graphic uo.Item
+	Graphic uo.Graphic
 }
 
 func newTargetResponse(in []byte) Packet {
@@ -473,7 +473,7 @@ func newTargetResponse(in []byte) Packet {
 		X:            int(getuint16(in[10:12])),
 		Y:            int(getuint16(in[12:14])),
 		Z:            int(in[15]),
-		Graphic:      uo.Item(getuint16(in[16:18])),
+		Graphic:      uo.Graphic(getuint16(in[16:18])),
 	}
 	p.SetSerial(0x6C)
 	return p

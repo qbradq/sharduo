@@ -16,6 +16,9 @@ type Object interface {
 	util.Serializeable
 	// Location returns the current location of the object
 	Location() Location
+	// SetLocation sets the absolute location of the object without regard to
+	// the map.
+	SetLocation(Location)
 	// Hue returns the hue of the item
 	Hue() uo.Hue
 	// DisplayName returns the name of the object with any articles attached
@@ -82,6 +85,11 @@ func (o *BaseObject) Deserialize(f *util.TagFileObject) {
 
 // Location implements the Object interface
 func (o *BaseObject) Location() Location { return o.location }
+
+// SetLocation implements the Object interface
+func (o *BaseObject) SetLocation(l Location) {
+	o.location = l
+}
 
 // Hue implements the Object interface
 func (o *BaseObject) Hue() uo.Hue { return o.hue }

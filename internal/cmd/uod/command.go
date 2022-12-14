@@ -112,11 +112,12 @@ func (c *NewCommand) Execute(n *NetState) error {
 		if o == nil {
 			return
 		}
-		world.Map().AddNewObject(o, game.Location{
+		o.SetLocation(game.Location{
 			X: r.X,
 			Y: r.Y,
 			Z: r.Z,
 		})
+		world.Map().AddNewObject(o)
 	})
 	return nil
 }

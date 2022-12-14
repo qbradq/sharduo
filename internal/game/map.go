@@ -1,5 +1,7 @@
 package game
 
+import "github.com/qbradq/sharduo/lib/uo"
+
 // Map constants
 const (
 	MapWidth          int = 7168
@@ -40,11 +42,21 @@ func (m *Map) getChunk(l Location) *chunk {
 }
 
 // AddNewObject adds a new object to the map at the given location
-func (m *Map) AddNewObject(o Object, l Location) {
-	c := m.getChunk(l)
-	ob := o.(*BaseObject)
-	ob.location = l
-	c.Add(ob)
+func (m *Map) AddNewObject(o Object) {
+	c := m.getChunk(o.Location())
+	c.Add(o)
+
+	for _, other := range m.GetObjectsInRange(o.Location(), uo.MaxViewRange) {
+		m, ok := other.(Mobile)
+		if !ok {
+			continue
+		}
+		if m.NetState() != nil {
+			if item, ok := o.(Item); ok {
+				m.NetState().SendItem(item)
+			}
+		}
+	}
 }
 
 // getChunksInBounds returns a slice of all the chunks within a given bounds.
@@ -75,19 +87,8 @@ func (m *Map) GetObjectsInRange(l Location, r int) []Object {
 	var ret []Object
 	for _, c := range m.getChunksInRange(l, r) {
 		for _, o := range c.objects {
-			ol := o.Location()
-			dx := l.X - ol.X
-			if dx < 0 {
-				dx *= -1
-			}
-			if dx > r {
-				continue
-			}
-			dy := l.Y - ol.Y
-			if dy < 0 {
-				dx *= -1
-			}
-			if dy > r {
+			d := l.XYDistance(o.Location())
+			if d > r {
 				continue
 			}
 			ret = append(ret, o)

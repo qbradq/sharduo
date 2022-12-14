@@ -25,7 +25,6 @@ func NewEquipmentCollection() *EquipmentCollection {
 // NewEquipmentCollectionWith reads the collection references from the given
 // slice of object IDs and rebuilds the pointers.
 func NewEquipmentCollectionWith(ids []uo.Serial) *EquipmentCollection {
-	log.Println(ids)
 	c := NewEquipmentCollection()
 	for _, id := range ids {
 		o := world.Find(id)

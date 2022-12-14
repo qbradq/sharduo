@@ -80,9 +80,7 @@ func Main() {
 		}
 	}
 
-	// Debug
-	world.New(templateManager.NewObject("Player"))
-
+	// Start the goroutines
 	go world.Process()
 	go LoginServerMain()
 

@@ -56,3 +56,20 @@ func (l Location) WrapAndBound(ref Location) Location {
 		return l.WrapToDungeonServer()
 	}
 }
+
+// XYDistance returns the maximum distance from l to d along either the X or Y
+// axis.
+func (l Location) XYDistance(d Location) int {
+	dx := l.X - d.X
+	dy := l.Y - d.Y
+	if dx < 0 {
+		dx = dx * -1
+	}
+	if dy < 0 {
+		dy = dy * -1
+	}
+	if dx > dy {
+		return dx
+	}
+	return dy
+}

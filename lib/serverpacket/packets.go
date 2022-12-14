@@ -319,7 +319,7 @@ type EquippedMobileItem struct {
 	// ID of the item
 	ID uo.Serial
 	// Graphic of the item
-	Graphic uo.Item
+	Graphic uo.Graphic
 	// Layer of the item
 	Layer uo.Layer
 	// Hue of the item
@@ -433,4 +433,76 @@ func (p *StatusBarInfo) Write(w io.Writer) {
 	putuint16(w, uint16(p.StatsCap))
 	putbyte(w, byte(p.Followers))
 	putbyte(w, byte(p.MaxFollowers))
+}
+
+// ObjectInfo sends information about a single item or multi to the client.
+type ObjectInfo struct {
+	// If true we are sending information about a multi
+	IsMulti bool
+	// Serial of the item or multi
+	Serial uo.Serial
+	// Graphic of the item or index of the multi into multi.mul
+	Graphic uo.Graphic
+	// Facing of the item - always 0 for multi
+	Facing uo.Direction
+	// Amount, must be at least 1, no greater than 60000 - always 1 for multi
+	Amount int
+	// X location of the item or multi
+	X int
+	// X location of the item or multi
+	Y int
+	// Z location of the item or multi
+	Z int
+	// Layer of the item or 0 if not equipable or multi
+	Layer uo.Layer
+	// Hue - 0 if multi
+	Hue uo.Hue
+}
+
+// Write implements the Packet interface.
+func (p *ObjectInfo) Write(w io.Writer) {
+	putbyte(w, 0xF3) // Packet ID
+	putuint16(w, 0x0001)
+	// Data type
+	if p.IsMulti {
+		putbyte(w, 0x02)
+	} else {
+		putbyte(w, 0x00)
+	}
+	putuint32(w, uint32(p.Serial))
+	putuint16(w, uint16(p.Graphic))
+	// Facing
+	if p.IsMulti {
+		putbyte(w, 0)
+	} else {
+		putbyte(w, byte(p.Facing))
+	}
+	// Amount
+	var n int
+	if p.Amount < int(uo.MinStackAmount) {
+		n = int(uo.MinStackAmount)
+	} else if p.Amount > int(uo.MaxStackAmount) {
+		n = int(uo.MaxStackAmount)
+	} else {
+		n = p.Amount
+	}
+	putuint16(w, uint16(n))
+	putuint16(w, uint16(n))
+	// Location
+	putuint16(w, uint16(p.X))
+	putuint16(w, uint16(p.Y))
+	putbyte(w, byte(int8(p.Z)))
+	// Layer
+	if p.IsMulti {
+		putbyte(w, 0)
+	} else {
+		putbyte(w, byte(p.Layer))
+	}
+	// Hue
+	if p.IsMulti {
+		putuint16(w, 0)
+	} else {
+		putuint16(w, uint16(p.Hue))
+	}
+	putbyte(w, 0)
 }

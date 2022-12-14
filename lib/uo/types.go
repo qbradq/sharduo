@@ -1,5 +1,13 @@
 package uo
 
+// Random constants
+const (
+	MinStackAmount uint16 = 1
+	MaxStackAmount uint16 = 60000
+	MinViewRange   int    = 5
+	MaxViewRange   int    = 18
+)
+
 // A Dir is a 3-bit value indicating the direction a mobile is facing
 type Direction byte
 

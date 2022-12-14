@@ -155,6 +155,8 @@ func (n *NetState) Service() {
 
 	// TODO Character load
 	n.m = world.New(templateManager.NewObject("Player")).(game.Mobile)
+	n.m.SetNetState(n)
+	world.Map().AddNewObject(n.m)
 
 	// Request version string
 	n.Send(&serverpacket.Version{})
@@ -244,4 +246,22 @@ func (n *NetState) readLoop(r *clientpacket.Reader) {
 			}
 		}
 	}
+}
+
+// SendItem implements the game.NetState interface.
+func (n *NetState) SendItem(i game.Item) {
+	var layer uo.Layer
+	if w, ok := i.(game.Wearable); ok {
+		layer = w.Layer()
+	}
+	n.Send(&serverpacket.ObjectInfo{
+		Serial:  i.Serial(),
+		Graphic: i.Graphic(),
+		Amount:  i.Amount(),
+		X:       i.Location().X,
+		Y:       i.Location().Y,
+		Z:       i.Location().Z,
+		Layer:   layer,
+		Hue:     i.Hue(),
+	})
 }

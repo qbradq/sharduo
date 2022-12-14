@@ -13,6 +13,12 @@ func init() {
 // Mobile is the interface all mobiles implement
 type Mobile interface {
 	Object
+	// NetState returns the NetState implementation currently bound to this
+	// mobile, or nil if there is none.
+	NetState() NetState
+	// SetNetState sets the currently bound NetState. Use SetNetState(nil) to
+	// disconnect the mobile.
+	SetNetState(NetState)
 	// GetBody returns the animation body of the mobile.
 	Body() uo.Body
 	// Equip equips the given item in the item's layer, returns false if the
@@ -26,6 +32,8 @@ type Mobile interface {
 // BaseMobile provides the base implementation for Mobile
 type BaseMobile struct {
 	BaseObject
+	// Attached NetState implementation
+	n NetState
 	// isFemale is true if the mobile is female
 	isFemale bool
 	// Animation body of the object
@@ -67,6 +75,14 @@ func (m *BaseMobile) Deserialize(f *util.TagFileObject) {
 // OnAfterDeserialize implements the util.Serializeable interface.
 func (m *BaseMobile) OnAfterDeserialize(f *util.TagFileObject) {
 	m.equipment = NewEquipmentCollectionWith(f.GetObjectReferences("Equipment"))
+}
+
+// NetState implements the Mobile interface.
+func (m *BaseMobile) NetState() NetState { return m.n }
+
+// SetNetState implements the Mobile interface.
+func (m *BaseMobile) SetNetState(n NetState) {
+	m.n = n
 }
 
 // Body implements the Mobile interface.
