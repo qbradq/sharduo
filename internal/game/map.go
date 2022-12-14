@@ -1,6 +1,10 @@
 package game
 
-import "github.com/qbradq/sharduo/lib/uo"
+import (
+	"log"
+
+	"github.com/qbradq/sharduo/lib/uo"
+)
 
 // Map constants
 const (
@@ -46,7 +50,11 @@ func (m *Map) AddNewObject(o Object) {
 	c := m.getChunk(o.Location())
 	c.Add(o)
 
+	// Send the item to all mobiles in range with an attached NetState
 	for _, other := range m.GetObjectsInRange(o.Location(), uo.MaxViewRange) {
+		if o == other {
+			continue
+		}
 		m, ok := other.(Mobile)
 		if !ok {
 			continue
@@ -54,6 +62,23 @@ func (m *Map) AddNewObject(o Object) {
 		if m.NetState() != nil {
 			if item, ok := o.(Item); ok {
 				m.NetState().SendItem(item)
+			}
+		}
+	}
+
+	// If this is a mobile with a NetState we have to send all of the items
+	// and mobiles in range.
+	mob, ok := o.(Mobile)
+	if ok && mob.NetState() != nil {
+		mobs := m.GetObjectsInRange(mob.Location(), uo.MaxViewRange)
+		log.Println(len(mobs))
+		for _, other := range mobs {
+			log.Println(other)
+			if o == other {
+				continue
+			}
+			if item, ok := other.(Item); ok {
+				mob.NetState().SendItem(item)
 			}
 		}
 	}

@@ -156,12 +156,8 @@ func (n *NetState) Service() {
 	// TODO Character load
 	n.m = world.New(templateManager.NewObject("Player")).(game.Mobile)
 	n.m.SetNetState(n)
-	world.Map().AddNewObject(n.m)
 
-	// Request version string
-	n.Send(&serverpacket.Version{})
-
-	// Debug
+	// Send the EnterWorld packet
 	n.Send(&serverpacket.EnterWorld{
 		Player: n.m.Serial(),
 		Body:   n.m.Body(),
@@ -176,6 +172,12 @@ func (n *NetState) Service() {
 	Broadcast("Welcome %s to Trammel Time!", n.m.DisplayName())
 	n.Send(n.m.EquippedMobilePacket())
 
+	world.Map().AddNewObject(n.m)
+
+	// Send version string request. This isn't needed anymore but whatever.
+	n.Send(&serverpacket.Version{})
+
+	// Start the read loop
 	n.readLoop(r)
 }
 

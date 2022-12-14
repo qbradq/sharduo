@@ -80,6 +80,15 @@ func Main() {
 		}
 	}
 
+	// Debug
+	for i := 0; i < 50; i++ {
+		o := world.New(templateManager.NewObject("FancyShirt"))
+		l := o.Location()
+		l.X += i
+		o.SetLocation(l)
+		world.Map().AddNewObject(o)
+	}
+
 	// Start the goroutines
 	go world.Process()
 	go LoginServerMain()
