@@ -443,8 +443,8 @@ type ObjectInfo struct {
 	Serial uo.Serial
 	// Graphic of the item or index of the multi into multi.mul
 	Graphic uo.Graphic
-	// Facing of the item - always 0 for multi
-	Facing uo.Direction
+	// Add this number to the graphic index if amount > 1
+	GraphicIncrement int
 	// Amount, must be at least 1, no greater than 60000 - always 1 for multi
 	Amount int
 	// X location of the item or multi
@@ -453,6 +453,8 @@ type ObjectInfo struct {
 	Y int
 	// Z location of the item or multi
 	Z int
+	// Facing of the item - always 0 for multi
+	Facing uo.Direction
 	// Layer of the item or 0 if not equipable or multi
 	Layer uo.Layer
 	// Hue - 0 if multi
@@ -461,8 +463,8 @@ type ObjectInfo struct {
 
 // Write implements the Packet interface.
 func (p *ObjectInfo) Write(w io.Writer) {
-	putbyte(w, 0xF3) // Packet ID
-	putuint16(w, 0x0001)
+	putbyte(w, 0xF3)     // Packet ID
+	putuint16(w, 0x0001) // Always 0x0001 on OSI according to POL
 	// Data type
 	if p.IsMulti {
 		putbyte(w, 0x02)
@@ -471,13 +473,9 @@ func (p *ObjectInfo) Write(w io.Writer) {
 	}
 	putuint32(w, uint32(p.Serial))
 	putuint16(w, uint16(p.Graphic))
-	// Facing
-	if p.IsMulti {
-		putbyte(w, 0)
-	} else {
-		putbyte(w, byte(p.Facing))
-	}
-	// Amount
+	putbyte(w, byte(p.GraphicIncrement))
+	// Amount POL server documentation says the amount field is repeated,
+	// ClassicUO ignores the second as unknown.
 	var n int
 	if p.Amount < int(uo.MinStackAmount) {
 		n = int(uo.MinStackAmount)
@@ -492,11 +490,11 @@ func (p *ObjectInfo) Write(w io.Writer) {
 	putuint16(w, uint16(p.X))
 	putuint16(w, uint16(p.Y))
 	putbyte(w, byte(int8(p.Z)))
-	// Layer
+	// Facing
 	if p.IsMulti {
 		putbyte(w, 0)
 	} else {
-		putbyte(w, byte(p.Layer))
+		putbyte(w, byte(p.Facing))
 	}
 	// Hue
 	if p.IsMulti {
@@ -504,5 +502,8 @@ func (p *ObjectInfo) Write(w io.Writer) {
 	} else {
 		putuint16(w, uint16(p.Hue))
 	}
+	// Flags
 	putbyte(w, 0)
+	// Unknown
+	pad(w, 2)
 }
