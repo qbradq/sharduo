@@ -1,11 +1,8 @@
 package game
 
-import "github.com/qbradq/sharduo/lib/util"
-
-// Chunk constants
-const (
-	ChunkWidth  int = 16
-	ChunkHeight int = 16
+import (
+	"github.com/qbradq/sharduo/lib/uo"
+	"github.com/qbradq/sharduo/lib/util"
 )
 
 // chunk contains the tile matrix, static and dynamic objects in one 8x8 chunk
@@ -22,10 +19,10 @@ func newChunk(x, y int) *chunk {
 		bounds: Bounds{
 			X: x,
 			Y: y,
-			Z: MapMinZ,
-			W: ChunkWidth,
-			H: ChunkHeight,
-			D: MapMaxZ - MapMinZ,
+			Z: uo.MapMinZ,
+			W: uo.ChunkWidth,
+			H: uo.ChunkHeight,
+			D: uo.MapMaxZ - uo.MapMinZ,
 		},
 	}
 }

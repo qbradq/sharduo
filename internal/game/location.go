@@ -1,5 +1,7 @@
 package game
 
+import "github.com/qbradq/sharduo/lib/uo"
+
 // Location identifies an absolute location in the universe.
 type Location struct {
 	// Absolute X position on the map [0-)
@@ -14,16 +16,16 @@ type Location struct {
 // map.
 func (l Location) WrapToOverworld() Location {
 	for l.X < 0 {
-		l.X += MapOverworldWidth
+		l.X += uo.MapOverworldWidth
 	}
-	for l.X >= MapOverworldWidth {
-		l.X -= MapOverworldWidth
+	for l.X >= uo.MapOverworldWidth {
+		l.X -= uo.MapOverworldWidth
 	}
 	for l.Y < 0 {
-		l.Y += MapHeight
+		l.Y += uo.MapHeight
 	}
-	for l.Y >= MapHeight {
-		l.Y -= MapHeight
+	for l.Y >= uo.MapHeight {
+		l.Y -= uo.MapHeight
 	}
 	return l
 }
@@ -31,17 +33,17 @@ func (l Location) WrapToOverworld() Location {
 // WrapToDungeonServer returns the location wrapped to the dungeon server
 // section of the map.
 func (l Location) WrapToDungeonServer() Location {
-	for l.X < MapOverworldWidth {
-		l.X += MapWidth - MapOverworldWidth
+	for l.X < uo.MapOverworldWidth {
+		l.X += uo.MapWidth - uo.MapOverworldWidth
 	}
-	for l.X > MapWidth {
-		l.X -= MapWidth - MapOverworldWidth
+	for l.X > uo.MapWidth {
+		l.X -= uo.MapWidth - uo.MapOverworldWidth
 	}
 	for l.Y < 0 {
-		l.Y += MapHeight
+		l.Y += uo.MapHeight
 	}
-	for l.Y >= MapHeight {
-		l.Y -= MapHeight
+	for l.Y >= uo.MapHeight {
+		l.Y -= uo.MapHeight
 	}
 	return l
 }
@@ -50,7 +52,7 @@ func (l Location) WrapToDungeonServer() Location {
 // map dimensions relative to a reference point. UpdateAndBound will handle map
 // wrapping as appropriate based on the reference location.
 func (l Location) WrapAndBound(ref Location) Location {
-	if ref.X < MapOverworldWidth {
+	if ref.X < uo.MapOverworldWidth {
 		return l.WrapToOverworld()
 	} else {
 		return l.WrapToDungeonServer()

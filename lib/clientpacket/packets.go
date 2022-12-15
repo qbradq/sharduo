@@ -1,9 +1,7 @@
 package clientpacket
 
 import (
-	"encoding/binary"
-	"unicode/utf16"
-
+	. "github.com/qbradq/sharduo/lib/dataconv"
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
 )
@@ -71,7 +69,7 @@ func New(data []byte) Packet {
 
 	length := InfoTable[data[0]].Length
 	if length == -1 {
-		length = int(getuint16(data[1:3]))
+		length = int(GetUint16(data[1:3]))
 		pdat = data[3:length]
 	} else if length == 0 {
 		return newUnknownPacket(packetFactory.GetName(), uo.Serial(data[0]))
@@ -79,41 +77,6 @@ func New(data []byte) Packet {
 		pdat = data[1:length]
 	}
 	return packetFactory.New(uo.Serial(data[0]), pdat)
-}
-
-func nullstr(buf []byte) string {
-	for i, b := range buf {
-		if b == 0 {
-			return string(buf[:i])
-		}
-	}
-	return string(buf)
-}
-
-func utf16str(b []byte) string {
-	var utf [256]uint16
-	ib := 0
-	iu := 0
-	for {
-		if ib+1 >= len(b) || iu >= len(utf) {
-			break
-		}
-		if b[ib+1] == 0 && b[ib] == 0 {
-			break
-		}
-		utf[iu] = binary.BigEndian.Uint16(b[ib:])
-		ib += 2
-		iu++
-	}
-	return string(utf16.Decode(utf[:iu]))
-}
-
-func getuint16(buf []byte) uint16 {
-	return binary.BigEndian.Uint16(buf)
-}
-
-func getuint32(buf []byte) uint32 {
-	return binary.BigEndian.Uint32(buf)
 }
 
 // UnsupportedPacket is sent when the packet being decoded does not have a
@@ -184,11 +147,11 @@ type LoginSeed struct {
 
 func newLoginSeed(in []byte) Packet {
 	p := &LoginSeed{
-		Seed:         getuint32(in[0:4]),
-		VersionMajor: int(getuint32(in[4:8])),
-		VersionMinor: int(getuint32(in[8:12])),
-		VersionPatch: int(getuint32(in[12:16])),
-		VersionExtra: int(getuint32(in[16:20])),
+		Seed:         GetUint32(in[0:4]),
+		VersionMajor: int(GetUint32(in[4:8])),
+		VersionMinor: int(GetUint32(in[8:12])),
+		VersionPatch: int(GetUint32(in[12:16])),
+		VersionExtra: int(GetUint32(in[16:20])),
 	}
 	p.SetSerial(0xEF)
 	return p
@@ -206,8 +169,8 @@ type AccountLogin struct {
 
 func newAccountLogin(in []byte) Packet {
 	p := &AccountLogin{
-		Username: nullstr(in[0:30]),
-		Password: nullstr(in[30:60]),
+		Username: NullString(in[0:30]),
+		Password: NullString(in[30:60]),
 	}
 	p.SetSerial(0x80)
 	return p
@@ -223,7 +186,7 @@ type SelectServer struct {
 
 func newSelectServer(in []byte) Packet {
 	p := &SelectServer{
-		Index: int(getuint16(in[0:2])),
+		Index: int(GetUint16(in[0:2])),
 	}
 	p.SetSerial(0xA0)
 	return p
@@ -243,8 +206,8 @@ type GameServerLogin struct {
 func newGameServerLogin(in []byte) Packet {
 	p := &GameServerLogin{
 		Key:      in[:4],
-		Username: nullstr(in[4:34]),
-		Password: nullstr(in[34:64]),
+		Username: NullString(in[4:34]),
+		Password: NullString(in[34:64]),
 	}
 	p.SetSerial(0x91)
 	return p
@@ -259,7 +222,7 @@ type CharacterLogin struct {
 
 func newCharacterLogin(in []byte) Packet {
 	p := &CharacterLogin{
-		Slot: int(getuint32(in[64:68])),
+		Slot: int(GetUint32(in[64:68])),
 	}
 	p.SetSerial(0x5D)
 	return p
@@ -275,7 +238,7 @@ type Version struct {
 func newVersion(in []byte) Packet {
 	// Length check not required, it can be nil
 	p := &Version{
-		String: nullstr(in),
+		String: NullString(in),
 	}
 	p.SetSerial(0xBD)
 	return p
@@ -315,8 +278,8 @@ func newSpeech(in []byte) Packet {
 	}
 	s := &Speech{
 		Type: uo.SpeechType(in[0]),
-		Hue:  uo.Hue(getuint16(in[1:3])),
-		Font: uo.Font(getuint16(in[3:5])),
+		Hue:  uo.Hue(GetUint16(in[1:3])),
+		Font: uo.Font(GetUint16(in[3:5])),
 	}
 	s.SetSerial(0xAD)
 	if s.Type >= uo.SpeechTypeClientParsed {
@@ -330,10 +293,10 @@ func newSpeech(in []byte) Packet {
 		if len(in) < 13+skip {
 			return newMalformedPacket(0xAD)
 		}
-		s.Text = nullstr(in[12+skip:])
+		s.Text = NullString(in[12+skip:])
 		return s
 	}
-	s.Text = utf16str(in[9:])
+	s.Text = UTF16String(in[9:])
 	return s
 }
 
@@ -436,7 +399,7 @@ func newWalkRequest(in []byte) Packet {
 		Direction:   d,
 		IsRunning:   r,
 		Sequence:    int(in[1]),
-		FastWalkKey: getuint32(in[2:]),
+		FastWalkKey: GetUint32(in[2:]),
 	}
 	p.SetSerial(0x02)
 	return p
@@ -467,13 +430,13 @@ type TargetResponse struct {
 func newTargetResponse(in []byte) Packet {
 	p := &TargetResponse{
 		TargetType:   uo.TargetType(in[0]),
-		TargetSerial: uo.Serial(getuint32(in[1:5])),
+		TargetSerial: uo.Serial(GetUint32(in[1:5])),
 		CursorType:   uo.CursorType(in[5]),
-		TargetObject: uo.Serial(getuint32(in[6:10])),
-		X:            int(getuint16(in[10:12])),
-		Y:            int(getuint16(in[12:14])),
+		TargetObject: uo.Serial(GetUint32(in[6:10])),
+		X:            int(GetUint16(in[10:12])),
+		Y:            int(GetUint16(in[12:14])),
 		Z:            int(in[15]),
-		Graphic:      uo.Graphic(getuint16(in[16:18])),
+		Graphic:      uo.Graphic(GetUint16(in[16:18])),
 	}
 	p.SetSerial(0x6C)
 	return p

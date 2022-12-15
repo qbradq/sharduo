@@ -18,6 +18,14 @@ debug
 
 *.log
 
+# Debug files
+debug-map.png
+
 # Save directory
 saves/
 
+# Client data directory
+client/
+
+# Machine-specific configuration file
+configuration.ini

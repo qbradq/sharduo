@@ -165,8 +165,8 @@ func (n *NetState) Service() {
 		Y:      n.m.Location().Y,
 		Z:      n.m.Location().Z,
 		Facing: uo.DirectionSouth | uo.DirectionRunningFlag,
-		Width:  game.MapWidth,
-		Height: game.MapHeight,
+		Width:  uo.MapWidth,
+		Height: uo.MapHeight,
 	})
 	n.Send(&serverpacket.LoginComplete{})
 	Broadcast("Welcome %s to Trammel Time!", n.m.DisplayName())
