@@ -24,11 +24,11 @@ func NewRadarColMulFromFile(fname string) *RadarColMul {
 	for i := range ret.colors {
 		c := dataconv.GetUint16(m.GetSegment(i))
 		r := (c & 0b0111110000000000) >> 7
-		r |= r >> 5
+		// r |= r >> 5
 		g := (c & 0b0000001111100000) >> 2
-		g |= g >> 5
+		// g |= g >> 5
 		b := (c & 0b0000000000011111) << 3
-		b |= b >> 5
+		// b |= b >> 5
 		ret.colors[i] = color.RGBA{
 			R: uint8(r),
 			G: uint8(g),

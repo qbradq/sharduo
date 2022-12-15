@@ -1,8 +1,6 @@
 package file
 
 import (
-	"log"
-
 	. "github.com/qbradq/sharduo/lib/dataconv"
 	"github.com/qbradq/sharduo/lib/uo"
 )
@@ -31,8 +29,6 @@ func NewMapMulFromFile(fname string) *MapMul {
 	}
 	// Load the mul and do sanity checks
 	sm := NewStaticMulFromFile(fname, 196, 0)
-	n := sm.NumberOfSegments()
-	log.Println(n, uo.MapChunksWidth, uo.MapChunksHeight, uo.MapChunksWidth*uo.MapChunksHeight)
 	if sm.NumberOfSegments() != uo.MapChunksWidth*uo.MapChunksHeight {
 		return nil
 	}
@@ -47,11 +43,13 @@ func NewMapMulFromFile(fname string) *MapMul {
 			sofs := 0
 			for ty := 0; ty < uo.ChunkHeight; ty++ {
 				for tx := 0; tx < uo.ChunkWidth; tx++ {
-					chunk.Tiles[ty*uo.ChunkWidth+tx] = uo.Tile{
-						Graphic: uo.Graphic(GetUint16(seg[sofs : sofs+2])),
-						Z:       int(seg[sofs+2]),
-					}
+					graphic := uo.Graphic(GetUint16(seg[sofs : sofs+2]))
+					z := int(seg[sofs+2])
 					sofs += 3
+					chunk.Tiles[ty*uo.ChunkWidth+tx] = uo.Tile{
+						Graphic: graphic,
+						Z:       z,
+					}
 				}
 			}
 		}
