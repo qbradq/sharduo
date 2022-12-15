@@ -1,21 +1,11 @@
 package game
 
 import (
-	"log"
-
 	"github.com/qbradq/sharduo/lib/uo"
 )
 
 // Map constants
-const (
-	MapWidth          int = 7168
-	MapHeight         int = 4096
-	MapOverworldWidth int = MapHeight
-	MapChunksWidth    int = MapWidth / ChunkWidth
-	MapChunksHeight   int = MapHeight / ChunkHeight
-	MapMinZ           int = -127
-	MapMaxZ           int = 128
-)
+const ()
 
 // Map contains the tile matrix, static items, and all dynamic objects of a map.
 type Map struct {
@@ -26,12 +16,12 @@ type Map struct {
 // NewMap creates and returns a new Map
 func NewMap() *Map {
 	m := &Map{
-		chunks: make([]*chunk, MapChunksWidth*MapChunksHeight),
+		chunks: make([]*chunk, uo.MapChunksWidth*uo.MapChunksHeight),
 	}
 
-	for cx := 0; cx < MapChunksWidth; cx++ {
-		for cy := 0; cy < MapChunksHeight; cy++ {
-			m.chunks[cy*MapChunksWidth+cx] = newChunk(cx*ChunkWidth, cy*ChunkHeight)
+	for cx := 0; cx < uo.MapChunksWidth; cx++ {
+		for cy := 0; cy < uo.MapChunksHeight; cy++ {
+			m.chunks[cy*uo.MapChunksWidth+cx] = newChunk(cx*uo.ChunkWidth, cy*uo.ChunkHeight)
 		}
 	}
 	return m
@@ -40,9 +30,9 @@ func NewMap() *Map {
 // getChunk returns a pointer to the chunk for the given location.
 func (m *Map) getChunk(l Location) *chunk {
 	l = l.WrapAndBound(l)
-	cx := l.X / ChunkWidth
-	cy := l.Y / ChunkHeight
-	return m.chunks[cy*MapChunksWidth+cx]
+	cx := l.X / uo.ChunkWidth
+	cy := l.Y / uo.ChunkHeight
+	return m.chunks[cy*uo.MapChunksWidth+cx]
 }
 
 // AddNewObject adds a new object to the map at the given location
@@ -71,9 +61,7 @@ func (m *Map) AddNewObject(o Object) {
 	mob, ok := o.(Mobile)
 	if ok && mob.NetState() != nil {
 		mobs := m.GetObjectsInRange(mob.Location(), uo.MaxViewRange)
-		log.Println(len(mobs))
 		for _, other := range mobs {
-			log.Println(other)
 			if o == other {
 				continue
 			}
@@ -103,8 +91,8 @@ func (m *Map) MoveObject(o Object, dir uo.Direction) bool {
 func (m *Map) getChunksInBounds(b Bounds) []*chunk {
 	var ret []*chunk
 	l := Location{}
-	for l.Y = b.Y; l.Y < b.Y+b.H; l.Y += ChunkHeight {
-		for l.X = b.X; l.X < b.X+b.W; l.X += ChunkWidth {
+	for l.Y = b.Y; l.Y < b.Y+b.H; l.Y += uo.ChunkHeight {
+		for l.X = b.X; l.X < b.X+b.W; l.X += uo.ChunkWidth {
 			ret = append(ret, m.getChunk(l))
 		}
 	}

@@ -2,11 +2,19 @@ package uo
 
 // Random constants
 const (
-	MinStackAmount uint16 = 1
-	MaxStackAmount uint16 = 60000
-	MinViewRange   int    = 5
-	MaxViewRange   int    = 18
-	UpdateRange    int    = 24
+	MinStackAmount    uint16 = 1
+	MaxStackAmount    uint16 = 60000
+	MinViewRange      int    = 5
+	MaxViewRange      int    = 18
+	ChunkWidth        int    = 8
+	ChunkHeight       int    = 8
+	MapWidth          int    = 6144
+	MapHeight         int    = 4096
+	MapOverworldWidth int    = MapHeight
+	MapChunksWidth    int    = MapWidth / ChunkWidth
+	MapChunksHeight   int    = MapHeight / ChunkHeight
+	MapMinZ           int    = -127
+	MapMaxZ           int    = 128
 )
 
 // A Dir is a 3-bit value indicating the direction a mobile is facing
@@ -26,7 +34,6 @@ const (
 )
 
 // Internal slice of direction offsets for use with GetForwardOffset
-
 
 // Bound returns the direction code bounded to valid values while presearving
 // the running flag.
@@ -225,4 +232,16 @@ const (
 	CursorTypeHarmful CursorType = 1
 	CursorTypeHelpful CursorType = 2
 	CursorTypeCancel  CursorType = 3
+)
+
+// A Body is a 16-bit value that describes the set of animations to use for a
+// mobile. Body values used by UO range 1-999.
+type Body uint16
+
+// Pre-defined values for Body
+const (
+	BodyNone    Body = 0
+	BodyHuman   Body = 400 // Human male body
+	BodyDefault Body = 991 // Blackthorne
+	BodySystem  Body = 0x7fff
 )
