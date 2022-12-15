@@ -23,7 +23,11 @@ type Object interface {
 	Hue() uo.Hue
 	// DisplayName returns the name of the object with any articles attached
 	DisplayName() string
-}
+	// Facing returns the direction the object is currently facing. 8-way for
+	// mobiles, 2-way for most items, and 4-way for a few items.
+	Facing() uo.Direction
+	// SetFacing sets the direction the object is currently facing.
+	SetFacing(uo.Direction)
 
 // BaseObject is the base of all game objects and implements the Object
 // interface
@@ -103,4 +107,12 @@ func (o *BaseObject) DisplayName() string {
 		return "an " + o.name
 	}
 	return o.name
+}
+
+// Facing implements the Object interface
+func (o *BaseObject) Facing() uo.Direction { return o.facing; }
+
+// SetFacing implements the Object interface
+func (o *BaseObject) SetFacing(f uo.Direction) {
+	
 }

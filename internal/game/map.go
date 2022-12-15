@@ -84,6 +84,21 @@ func (m *Map) AddNewObject(o Object) {
 	}
 }
 
+// MoveObject moves an object in the given direction. Returns true if the
+// movement was successfull.
+func (m *Map) MoveObject(o Object, dir uo.Direction) bool {
+	// Change facing request
+	dir = dir.Bound()
+	if o.Facing() != dir {
+		o.SetFacing(dir)	
+		return true
+	}
+	// Movement request
+	oldLocation := o.Location()
+	newLocation := o.Location().Forward(dir)	
+	return false
+}
+
 // getChunksInBounds returns a slice of all the chunks within a given bounds.
 func (m *Map) getChunksInBounds(b Bounds) []*chunk {
 	var ret []*chunk

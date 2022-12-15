@@ -6,6 +6,7 @@ const (
 	MaxStackAmount uint16 = 60000
 	MinViewRange   int    = 5
 	MaxViewRange   int    = 18
+	UpdateRange    int    = 24
 )
 
 // A Dir is a 3-bit value indicating the direction a mobile is facing
@@ -22,17 +23,35 @@ const (
 	DirectionWest        Direction = 6
 	DirectionNorthWest   Direction = 7
 	DirectionRunningFlag Direction = 0x80
-	DirectionRunningMask Direction = 0x7f
 )
+
+// Internal slice of direction offsets for use with GetForwardOffset
+
+
+// Bound returns the direction code bounded to valid values while presearving
+// the running flag.
+func (d Direction) Bound() Direction {
+	isRunning := d.IsRunning()
+	dirpart := d & 0x07
+	if isRunning {
+		return dirpart.SetRunningFlag()
+	}
+	return dirpart.StripRunningFlag()
+}
 
 // IsRunning returns true if the running flag is set
 func (d Direction) IsRunning() bool {
 	return d&DirectionRunningFlag == DirectionRunningFlag
 }
 
-// Strips the running flag off of a Direction if present
+// StripRunningFlag strips the running flag off of a Direction if present
 func (d Direction) StripRunningFlag() Direction {
-	return d & DirectionRunningMask
+	return d & ^DirectionRunningFlag
+}
+
+// SetRunningFlag sets the running flag of a Direction
+func (d Direction) SetRunningFlag() Direction {
+	return d | DirectionRunningFlag
 }
 
 // A Layer is a 6-bit value that indicates at which rendering layer a given
