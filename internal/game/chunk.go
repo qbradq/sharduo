@@ -8,7 +8,7 @@ import (
 // chunk contains the tile matrix, static and dynamic objects in one 8x8 chunk
 type chunk struct {
 	// Bounds of the chunk
-	bounds Bounds
+	bounds uo.Bounds
 	// Collection of all of the objects in the chunk
 	objects util.Slice[Object]
 }
@@ -16,7 +16,7 @@ type chunk struct {
 // newChunk creates and returns a new Chunk object
 func newChunk(x, y int) *chunk {
 	return &chunk{
-		bounds: Bounds{
+		bounds: uo.Bounds{
 			X: x,
 			Y: y,
 			Z: uo.MapMinZ,

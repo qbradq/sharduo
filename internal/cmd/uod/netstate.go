@@ -27,6 +27,7 @@ type NetState struct {
 	sendQueue chan serverpacket.Packet
 	id        string
 	m         game.Mobile
+	viewRange int
 }
 
 // NewNetState constructs a new NetState object.
@@ -36,6 +37,7 @@ func NewNetState(conn *net.TCPConn) *NetState {
 		conn:      conn,
 		sendQueue: make(chan serverpacket.Packet, 128),
 		id:        uuid.String(),
+		viewRange: uo.MaxViewRange,
 	}
 }
 
@@ -250,6 +252,11 @@ func (n *NetState) readLoop(r *clientpacket.Reader) {
 	}
 }
 
+// ViewRange implements the game.NetState interface.
+func (n *NetState) ViewRange() int {
+	return n.viewRange
+}
+
 // SendItem implements the game.NetState interface.
 func (n *NetState) SendItem(i game.Item) {
 	var layer uo.Layer
@@ -265,5 +272,12 @@ func (n *NetState) SendItem(i game.Item) {
 		Z:       i.Location().Z,
 		Layer:   layer,
 		Hue:     i.Hue(),
+	})
+}
+
+// RemoveObject implements the game.NetState interface.
+func (n *NetState) RemoveObject(o game.Object) {
+	n.Send(&serverpacket.DeleteObject{
+		Serial: o.Serial(),
 	})
 }

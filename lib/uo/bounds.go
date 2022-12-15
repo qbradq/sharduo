@@ -1,4 +1,4 @@
-package game
+package uo
 
 // Bounds represents a 3D bounding box in the world.
 type Bounds struct {

@@ -28,7 +28,7 @@ func NewMap() *Map {
 }
 
 // getChunk returns a pointer to the chunk for the given location.
-func (m *Map) getChunk(l Location) *chunk {
+func (m *Map) getChunk(l uo.Location) *chunk {
 	l = l.WrapAndBound(l)
 	cx := l.X / uo.ChunkWidth
 	cy := l.Y / uo.ChunkHeight
@@ -78,19 +78,60 @@ func (m *Map) MoveObject(o Object, dir uo.Direction) bool {
 	// Change facing request
 	dir = dir.Bound()
 	if o.Facing() != dir {
-		o.SetFacing(dir)	
+		o.SetFacing(dir)
 		return true
 	}
 	// Movement request
 	oldLocation := o.Location()
-	newLocation := o.Location().Forward(dir)	
-	return false
+	newLocation := o.Location().Forward(dir)
+	oldChunk := m.getChunk(oldLocation)
+	newChunk := m.getChunk(newLocation)
+	// If this is a mobile with an attached net state we need to check for
+	// new and old objects.
+	others := m.GetObjectsInRange(newLocation, mob.NetState().ViewRange()+1)
+	if mob, ok := o.(Mobile); ok {
+		if mob.NetState() != nil {
+			for _, other := range others {
+				if other == o {
+					continue
+				}
+				// Object used to be in range and isn't anymore, delete it
+				if oldLocation.XYDistance(other.Location()) <= mob.NetState().ViewRange() &&
+					newLocation.XYDistance(other.Location()) > mob.NetState().ViewRange() {
+					mob.NetState().RemoveObject(other)
+				} else if oldLocation.XYDistance(other.Location()) > mob.NetState().ViewRange() &&
+					newLocation.XYDistance(other.Location()) <= mob.NetState().ViewRange() {
+					// Object used to be out of range but is in range now, send information about it
+					if item, ok := other.(Item); ok {
+						mob.NetState().SendItem(item)
+					}
+				}
+			}
+		}
+	}
+	// Now we need to check for attached net states that we might need to push
+	// new new object to
+	for _, other := range others {
+		if other == o {
+			continue
+		}
+		mob, ok := other.(Mobile)
+		if !ok || mob.NetState() == nil {
+			continue
+		}
+	}
+	// Chunk updates
+	if oldChunk != newChunk {
+		oldChunk.Remove(o)
+		newChunk.Add(o)
+	}
+	return true
 }
 
 // getChunksInBounds returns a slice of all the chunks within a given bounds.
-func (m *Map) getChunksInBounds(b Bounds) []*chunk {
+func (m *Map) getChunksInBounds(b uo.Bounds) []*chunk {
 	var ret []*chunk
-	l := Location{}
+	l := uo.Location{}
 	for l.Y = b.Y; l.Y < b.Y+b.H; l.Y += uo.ChunkHeight {
 		for l.X = b.X; l.X < b.X+b.W; l.X += uo.ChunkWidth {
 			ret = append(ret, m.getChunk(l))
@@ -100,8 +141,8 @@ func (m *Map) getChunksInBounds(b Bounds) []*chunk {
 }
 
 // getChunksInRange gets chunks in the given range of a reference point.
-func (m *Map) getChunksInRange(l Location, r int) []*chunk {
-	return m.getChunksInBounds(Bounds{
+func (m *Map) getChunksInRange(l uo.Location, r int) []*chunk {
+	return m.getChunksInBounds(uo.Bounds{
 		X: l.X - r,
 		Y: l.Y - r,
 		W: r*2 + 1,
@@ -111,7 +152,7 @@ func (m *Map) getChunksInRange(l Location, r int) []*chunk {
 
 // GetObjectsInRange returns a slice of all objects within the given range of
 // the given location.
-func (m *Map) GetObjectsInRange(l Location, r int) []Object {
+func (m *Map) GetObjectsInRange(l uo.Location, r int) []Object {
 	var ret []Object
 	for _, c := range m.getChunksInRange(l, r) {
 		for _, o := range c.objects {

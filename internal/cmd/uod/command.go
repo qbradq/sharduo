@@ -6,7 +6,6 @@ import (
 	"log"
 	"strings"
 
-	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/lib/clientpacket"
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
@@ -112,7 +111,7 @@ func (c *NewCommand) Execute(n *NetState) error {
 		if o == nil {
 			return
 		}
-		o.SetLocation(game.Location{
+		o.SetLocation(uo.Location{
 			X: r.X,
 			Y: r.Y,
 			Z: r.Z,

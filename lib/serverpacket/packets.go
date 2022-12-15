@@ -451,3 +451,15 @@ func (p *ObjectInfo) Write(w io.Writer) {
 	// Unknown
 	Pad(w, 2)
 }
+
+// DeleteObject tells the client to forget about an object
+type DeleteObject struct {
+	// Serial of the object to remove
+	Serial uo.Serial
+}
+
+// Write implements the Packet interface.
+func (p *DeleteObject) Write(w io.Writer) {
+	PutByte(w, 0x1D)     // Packet ID
+	PutUint32(w, uint32(p.Serial)) // Always 0x0001 on OSI according to POL
+}

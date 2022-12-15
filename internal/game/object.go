@@ -15,10 +15,10 @@ func init() {
 type Object interface {
 	util.Serializeable
 	// Location returns the current location of the object
-	Location() Location
+	Location() uo.Location
 	// SetLocation sets the absolute location of the object without regard to
 	// the map.
-	SetLocation(Location)
+	SetLocation(uo.Location)
 	// Hue returns the hue of the item
 	Hue() uo.Hue
 	// DisplayName returns the name of the object with any articles attached
@@ -28,6 +28,7 @@ type Object interface {
 	Facing() uo.Direction
 	// SetFacing sets the direction the object is currently facing.
 	SetFacing(uo.Direction)
+}
 
 // BaseObject is the base of all game objects and implements the Object
 // interface
@@ -44,7 +45,7 @@ type BaseObject struct {
 	// The hue of the object
 	hue uo.Hue
 	// Location of the object
-	location Location
+	location uo.Location
 	// Facing is the direction the object is facing
 	facing uo.Direction
 	// Contents is the collection of all the items contained within this object
@@ -88,10 +89,10 @@ func (o *BaseObject) Deserialize(f *util.TagFileObject) {
 }
 
 // Location implements the Object interface
-func (o *BaseObject) Location() Location { return o.location }
+func (o *BaseObject) Location() uo.Location { return o.location }
 
 // SetLocation implements the Object interface
-func (o *BaseObject) SetLocation(l Location) {
+func (o *BaseObject) SetLocation(l uo.Location) {
 	o.location = l
 }
 
@@ -110,9 +111,9 @@ func (o *BaseObject) DisplayName() string {
 }
 
 // Facing implements the Object interface
-func (o *BaseObject) Facing() uo.Direction { return o.facing; }
+func (o *BaseObject) Facing() uo.Direction { return o.facing }
 
 // SetFacing implements the Object interface
 func (o *BaseObject) SetFacing(f uo.Direction) {
-	
+	o.facing = f.Bound()
 }
