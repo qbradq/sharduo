@@ -73,7 +73,6 @@ func (c *Configuration) LoadConfiguration() error {
 		}
 		return fmt.Errorf("%d errors while loading configuration", len(tfr.Errors()))
 	}
-
 	// Read configuration values
 	c.TemplatesDirectory = tfo.GetString("TemplatesDirectory", "templates")
 	c.ListsDirectory = tfo.GetString("ListsDirectory", "templates")

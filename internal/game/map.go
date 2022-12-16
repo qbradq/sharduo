@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/qbradq/sharduo/lib/uo"
+	"github.com/qbradq/sharduo/lib/uo/file"
 )
 
 // Map constants
@@ -29,12 +30,30 @@ func NewMap() *Map {
 	return m
 }
 
+// LoadFromMul reads in all of the segments of the given MapMul object and
+// updates the map
+func (m *Map) LoadFromMul(f *file.MapMul) {
+	for iy := 0; iy < uo.MapHeight; iy++ {
+		for ix := 0; ix < uo.MapWidth; ix++ {
+			m.getChunk(uo.Location{X: ix, Y: iy}).setTile(ix, iy, f.GetTile(ix, iy))
+		}
+	}
+}
+
 // getChunk returns a pointer to the chunk for the given location.
 func (m *Map) getChunk(l uo.Location) *chunk {
 	l = l.WrapAndBound(l)
 	cx := l.X / uo.ChunkWidth
 	cy := l.Y / uo.ChunkHeight
 	return m.chunks[cy*uo.MapChunksWidth+cx]
+}
+
+// GetTile returns the Tile value for the location
+func (m *Map) GetTile(x, y int) uo.Tile {
+	return m.getChunk(uo.Location{
+		X: x,
+		Y: y,
+	}).GetTile(x%uo.ChunkWidth, y%uo.ChunkHeight)
 }
 
 // AddNewObject adds a new object to the map at the given location
@@ -60,9 +79,8 @@ func (m *Map) AddNewObject(o Object) {
 
 	// If this is a mobile with a NetState we have to send all of the items
 	// and mobiles in range.
-	mob, ok := o.(Mobile)
-	if ok && mob.NetState() != nil {
-		mobs := m.GetObjectsInRange(mob.Location(), mob.NetState().ViewRange())
+	if mob, ok := o.(Mobile); ok && mob.NetState() != nil {
+		mobs := m.GetObjectsInRange(mob.Location(), mob.ViewRange())
 		for _, other := range mobs {
 			if o == other {
 				continue
@@ -77,37 +95,36 @@ func (m *Map) AddNewObject(o Object) {
 // MoveObject moves an object in the given direction. Returns true if the
 // movement was successfull.
 func (m *Map) MoveObject(o Object, dir uo.Direction) bool {
+	mob, ok := o.(Mobile)
+	if !ok {
+		return false
+	}
 	// Change facing request
 	dir = dir.Bound()
-	if o.Facing() != dir {
-		o.SetFacing(dir)
+	if mob.Facing() != dir {
+		mob.SetFacing(dir)
 		return true
 	}
 	// Movement request
-	oldLocation := o.Location()
-	newLocation := o.Location().Forward(dir).WrapAndBound(oldLocation)
+	oldLocation := mob.Location()
+	newLocation := mob.Location().Forward(dir).WrapAndBound(oldLocation)
 	oldChunk := m.getChunk(oldLocation)
 	newChunk := m.getChunk(newLocation)
-	viewRange := uo.MaxViewRange
-	mob, ok := o.(Mobile)
-	if ok && mob.NetState() != nil {
-		viewRange = mob.NetState().ViewRange()
-	}
-	others := m.GetObjectsInRange(oldLocation, viewRange+1)
-	log.Println(others)
+	others := m.GetObjectsInRange(oldLocation, mob.ViewRange()+1)
+	log.Println("OTHERS:", others)
 	// If this is a mobile with an attached net state we need to check for
 	// new and old objects.
 	if ok && mob.NetState() != nil {
 		for _, other := range others {
-			if other == o {
+			if other == mob {
 				continue
 			}
 			// Object used to be in range and isn't anymore, delete it
-			if oldLocation.XYDistance(other.Location()) <= mob.NetState().ViewRange() &&
-				newLocation.XYDistance(other.Location()) > mob.NetState().ViewRange() {
+			if oldLocation.XYDistance(other.Location()) <= mob.ViewRange() &&
+				newLocation.XYDistance(other.Location()) > mob.ViewRange() {
 				mob.NetState().RemoveObject(other)
-			} else if oldLocation.XYDistance(other.Location()) > mob.NetState().ViewRange() &&
-				newLocation.XYDistance(other.Location()) <= mob.NetState().ViewRange() {
+			} else if oldLocation.XYDistance(other.Location()) > mob.ViewRange() &&
+				newLocation.XYDistance(other.Location()) <= mob.ViewRange() {
 				// Object used to be out of range but is in range now, send information about it
 				if item, ok := other.(Item); ok {
 					log.Println(item.Serial(), item.Location().X, item.Location().Y, item.Location().Z)

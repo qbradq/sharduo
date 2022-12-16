@@ -3,8 +3,6 @@ package uod
 import (
 	"errors"
 	"fmt"
-	"image"
-	"image/png"
 	"io"
 	"log"
 	"net"
@@ -62,32 +60,32 @@ func Main() {
 	}
 
 	// TODO Load client data files
-	// Debug
 	log.Println("loading client files...")
 	rcolmul := file.NewRadarColMulFromFile(path.Join(configuration.ClientFilesDirectory, "radarcol.mul"))
 	mapmul := file.NewMapMulFromFile(path.Join(configuration.ClientFilesDirectory, "map0.mul"))
 	if rcolmul == nil || mapmul == nil {
 		os.Exit(1)
 	}
-	log.Println("generating debug map...")
-	rcols := rcolmul.Colors()
-	mapimg := image.NewRGBA(image.Rect(0, 0, uo.MapWidth, uo.MapHeight))
-	for iy := 0; iy < uo.MapHeight; iy++ {
-		for ix := 0; ix < uo.MapWidth; ix++ {
-			t := mapmul.GetTile(ix, iy)
-			mapimg.Set(ix, iy, rcols[t.Graphic])
-		}
-	}
-	mapimgf, err := os.Create("debug-map.png")
-	if err != nil {
-		log.Fatal(err)
-	}
-	if err := png.Encode(mapimgf, mapimg); err != nil {
-		log.Fatal(err)
-	}
-	mapimgf.Close()
-	log.Println(mapmul.GetTile(0, 0))
-	log.Println(mapmul.GetTile(1324, 1624))
+	// Debug
+	// log.Println("generating debug map...")
+	// rcols := rcolmul.Colors()
+	// mapimg := image.NewRGBA(image.Rect(0, 0, uo.MapWidth, uo.MapHeight))
+	// for iy := 0; iy < uo.MapHeight; iy++ {
+	// 	for ix := 0; ix < uo.MapWidth; ix++ {
+	// 		t := mapmul.GetTile(ix, iy)
+	// 		mapimg.Set(ix, iy, rcols[t.Graphic])
+	// 	}
+	// }
+	// mapimgf, err := os.Create("debug-map.png")
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// if err := png.Encode(mapimgf, mapimg); err != nil {
+	// 	log.Fatal(err)
+	// }
+	// mapimgf.Close()
+	// log.Println(mapmul.GetTile(0, 0))
+	// log.Println(mapmul.GetTile(1324, 1624))
 
 	// RNG initialization
 	rng := util.NewRNG()

@@ -9,6 +9,8 @@ import (
 type chunk struct {
 	// Bounds of the chunk
 	bounds uo.Bounds
+	// The slice of all tiles in the chunk
+	tiles []uo.Tile
 	// Collection of all of the objects in the chunk
 	objects util.Slice[Object]
 }
@@ -24,6 +26,7 @@ func newChunk(x, y int) *chunk {
 			H: uo.ChunkHeight,
 			D: uo.MapMaxZ - uo.MapMinZ,
 		},
+		tiles: make([]uo.Tile, uo.ChunkWidth*uo.ChunkHeight),
 	}
 }
 
@@ -40,4 +43,16 @@ func (c *chunk) Add(o Object) bool {
 // Remove removes the object from the chunk.
 func (c *chunk) Remove(o Object) {
 	c.objects = c.objects.Remove(o)
+}
+
+// GetTile reutrns the Tile value for the given chunk-relative location. x and y
+// must be between 0 and 7 inclusive.
+func (c *chunk) GetTile(x, y int) uo.Tile {
+	return c.tiles[(y%uo.ChunkHeight)*uo.ChunkWidth+(x%uo.ChunkWidth)]
+}
+
+// setTile sets the tile value at the given chunk-relative location. x and y
+// must be between 0 and 7 inclusive.
+func (c *chunk) setTile(x, y int, t uo.Tile) {
+	c.tiles[(y%uo.ChunkHeight)*uo.ChunkWidth+(x%uo.ChunkWidth)] = t
 }

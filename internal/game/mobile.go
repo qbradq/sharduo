@@ -19,6 +19,10 @@ type Mobile interface {
 	// SetNetState sets the currently bound NetState. Use SetNetState(nil) to
 	// disconnect the mobile.
 	SetNetState(NetState)
+	// ViewRange returns the number of tiles this mobile can see and visually
+	// observe objects in the world. If this mobile has an attached NetState,
+	// this value can change at any time at the request of the player.
+	ViewRange() int
 	// GetBody returns the animation body of the mobile.
 	Body() uo.Body
 	// Equip equips the given item in the item's layer, returns false if the
@@ -34,6 +38,9 @@ type BaseMobile struct {
 	BaseObject
 	// Attached NetState implementation
 	n NetState
+	// Current view range of the mobile. Please note that the zero value IS NOT
+	// SANE for this variable!
+	viewRange int
 	// isFemale is true if the mobile is female
 	isFemale bool
 	// Animation body of the object
@@ -52,6 +59,7 @@ func (m *BaseMobile) TypeName() string {
 // Serialize implements the util.Serializeable interface.
 func (m *BaseMobile) Serialize(f *util.TagFileWriter) {
 	m.BaseObject.Serialize(f)
+	f.WriteNumber("ViewRange", m.viewRange)
 	f.WriteBool("IsFemale", m.isFemale)
 	f.WriteNumber("Body", int(m.body))
 	f.WriteNumber("Notoriety", int(m.notoriety))
@@ -63,6 +71,7 @@ func (m *BaseMobile) Serialize(f *util.TagFileWriter) {
 // Deserialize implements the util.Serializeable interface.
 func (m *BaseMobile) Deserialize(f *util.TagFileObject) {
 	m.BaseObject.Deserialize(f)
+	m.viewRange = f.GetNumber("ViewRange", uo.MaxViewRange)
 	m.isFemale = f.GetBool("IsFemale", false)
 	m.body = uo.Body(f.GetNumber("Body", int(uo.BodyDefault)))
 	// Special case for human bodies to select between male and female models
@@ -84,6 +93,9 @@ func (m *BaseMobile) NetState() NetState { return m.n }
 func (m *BaseMobile) SetNetState(n NetState) {
 	m.n = n
 }
+
+// ViewRange implements the Mobile interface.
+func (m *BaseMobile) ViewRange() int { return m.viewRange }
 
 // Body implements the Mobile interface.
 func (m *BaseMobile) Body() uo.Body { return m.body }
