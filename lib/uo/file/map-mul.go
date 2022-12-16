@@ -44,7 +44,7 @@ func NewMapMulFromFile(fname string) *MapMul {
 			iseg++
 			chunk := m.Chunks[cy*uo.MapChunksWidth+cx]
 			// Load all tiles in the chunk
-			sofs := 0
+			sofs := 4 // Each map chunk has a 4-byte header of unknown use
 			for ty := 0; ty < uo.ChunkHeight; ty++ {
 				for tx := 0; tx < uo.ChunkWidth; tx++ {
 					graphic := uo.Graphic(GetUint16(seg[sofs : sofs+2]))
