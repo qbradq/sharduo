@@ -1,6 +1,8 @@
 package file
 
 import (
+	"log"
+
 	. "github.com/qbradq/sharduo/lib/dataconv"
 	"github.com/qbradq/sharduo/lib/uo"
 )
@@ -32,6 +34,8 @@ func NewMapMulFromFile(fname string) *MapMul {
 	if sm.NumberOfSegments() != uo.MapChunksWidth*uo.MapChunksHeight {
 		return nil
 	}
+	log.Println(sm.GetSegment(0))
+	log.Println(sm.GetSegment(1))
 	// Load all chunks
 	iseg := 0
 	for cx := 0; cx < uo.MapChunksWidth; cx++ {
