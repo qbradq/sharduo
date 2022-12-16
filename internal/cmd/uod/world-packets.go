@@ -1,7 +1,11 @@
 package uod
 
 import (
+	"log"
+	"time"
+
 	"github.com/qbradq/sharduo/lib/clientpacket"
+	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
 )
@@ -9,6 +13,7 @@ import (
 // These functions handle client packets within the world process with direct
 // access to the memory model.
 func init() {
+	worldHandlers.Add(0x02, handleWalkRequest)
 	worldHandlers.Add(0x6C, handleTargetResponse)
 	worldHandlers.Add(0x34, handleStatusRequest)
 }
@@ -24,6 +29,25 @@ func handleStatusRequest(n *NetState, cp clientpacket.Packet) {
 	p := cp.(*clientpacket.PlayerStatusRequest)
 	switch p.StatusRequestType {
 	case uo.StatusRequestTypeBasic:
+		// TODO
+	}
+}
 
+func handleWalkRequest(n *NetState, cp clientpacket.Packet) {
+	p := cp.(*clientpacket.WalkRequest)
+	if time.Now().UnixMilli()-n.lastWalkRequestTime < uo.FastWalkDelayMS {
+		log.Printf("fast walk prevention triggered for account %s\n", n.id)
+		return
+	}
+	if n.m == nil {
+		return
+	}
+	if world.Map().MoveObject(n.m, p.Direction.Bound()) {
+		n.Send(&serverpacket.MoveAcknowledge{
+			Sequence:  p.Sequence,
+			Notoriety: uo.NotorietyInnocent,
+		})
+	} else {
+		// TODO reject movement packet
 	}
 }

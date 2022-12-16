@@ -1,6 +1,8 @@
 package game
 
 import (
+	"log"
+
 	"github.com/qbradq/sharduo/lib/uo"
 )
 
@@ -60,7 +62,7 @@ func (m *Map) AddNewObject(o Object) {
 	// and mobiles in range.
 	mob, ok := o.(Mobile)
 	if ok && mob.NetState() != nil {
-		mobs := m.GetObjectsInRange(mob.Location(), uo.MaxViewRange)
+		mobs := m.GetObjectsInRange(mob.Location(), mob.NetState().ViewRange())
 		for _, other := range mobs {
 			if o == other {
 				continue
@@ -83,34 +85,39 @@ func (m *Map) MoveObject(o Object, dir uo.Direction) bool {
 	}
 	// Movement request
 	oldLocation := o.Location()
-	newLocation := o.Location().Forward(dir)
+	newLocation := o.Location().Forward(dir).WrapAndBound(oldLocation)
 	oldChunk := m.getChunk(oldLocation)
 	newChunk := m.getChunk(newLocation)
+	viewRange := uo.MaxViewRange
+	mob, ok := o.(Mobile)
+	if ok && mob.NetState() != nil {
+		viewRange = mob.NetState().ViewRange()
+	}
+	others := m.GetObjectsInRange(oldLocation, viewRange+1)
+	log.Println(others)
 	// If this is a mobile with an attached net state we need to check for
 	// new and old objects.
-	others := m.GetObjectsInRange(newLocation, mob.NetState().ViewRange()+1)
-	if mob, ok := o.(Mobile); ok {
-		if mob.NetState() != nil {
-			for _, other := range others {
-				if other == o {
-					continue
-				}
-				// Object used to be in range and isn't anymore, delete it
-				if oldLocation.XYDistance(other.Location()) <= mob.NetState().ViewRange() &&
-					newLocation.XYDistance(other.Location()) > mob.NetState().ViewRange() {
-					mob.NetState().RemoveObject(other)
-				} else if oldLocation.XYDistance(other.Location()) > mob.NetState().ViewRange() &&
-					newLocation.XYDistance(other.Location()) <= mob.NetState().ViewRange() {
-					// Object used to be out of range but is in range now, send information about it
-					if item, ok := other.(Item); ok {
-						mob.NetState().SendItem(item)
-					}
+	if ok && mob.NetState() != nil {
+		for _, other := range others {
+			if other == o {
+				continue
+			}
+			// Object used to be in range and isn't anymore, delete it
+			if oldLocation.XYDistance(other.Location()) <= mob.NetState().ViewRange() &&
+				newLocation.XYDistance(other.Location()) > mob.NetState().ViewRange() {
+				mob.NetState().RemoveObject(other)
+			} else if oldLocation.XYDistance(other.Location()) > mob.NetState().ViewRange() &&
+				newLocation.XYDistance(other.Location()) <= mob.NetState().ViewRange() {
+				// Object used to be out of range but is in range now, send information about it
+				if item, ok := other.(Item); ok {
+					log.Println(item.Serial(), item.Location().X, item.Location().Y, item.Location().Z)
+					mob.NetState().SendItem(item)
 				}
 			}
 		}
 	}
 	// Now we need to check for attached net states that we might need to push
-	// new new object to
+	// a new object to
 	for _, other := range others {
 		if other == o {
 			continue

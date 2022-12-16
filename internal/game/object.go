@@ -48,8 +48,6 @@ type BaseObject struct {
 	location uo.Location
 	// Facing is the direction the object is facing
 	facing uo.Direction
-	// Contents is the collection of all the items contained within this object
-	inventory Inventory
 }
 
 // TypeName implements the util.Serializeable interface.

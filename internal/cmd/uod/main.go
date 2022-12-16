@@ -3,21 +3,17 @@ package uod
 import (
 	"errors"
 	"fmt"
-	"image"
-	"image/png"
 	"io"
 	"log"
 	"net"
 	"os"
 	"os/signal"
-	"path"
 	"sync"
 	"syscall"
 
 	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/uo"
-	"github.com/qbradq/sharduo/lib/uo/file"
 	"github.com/qbradq/sharduo/lib/util"
 )
 
@@ -63,29 +59,29 @@ func Main() {
 
 	// TODO Load client data files
 	// Debug
-	log.Println("loading client files...")
-	rcolmul := file.NewRadarColMulFromFile(path.Join(configuration.ClientFilesDirectory, "radarcol.mul"))
-	mapmul := file.NewMapMulFromFile(path.Join(configuration.ClientFilesDirectory, "map0.mul"))
-	if rcolmul == nil || mapmul == nil {
-		os.Exit(1)
-	}
-	log.Println("generating debug map...")
-	rcols := rcolmul.Colors()
-	mapimg := image.NewRGBA(image.Rect(0, 0, uo.MapWidth, uo.MapHeight))
-	for iy := 0; iy < uo.MapHeight; iy++ {
-		for ix := 0; ix < uo.MapWidth; ix++ {
-			t := mapmul.GetTile(ix, iy)
-			mapimg.Set(ix, iy, rcols[t.Graphic])
-		}
-	}
-	mapimgf, err := os.Create("debug-map.png")
-	if err != nil {
-		log.Fatal(err)
-	}
-	if err := png.Encode(mapimgf, mapimg); err != nil {
-		log.Fatal(err)
-	}
-	mapimgf.Close()
+	// log.Println("loading client files...")
+	// rcolmul := file.NewRadarColMulFromFile(path.Join(configuration.ClientFilesDirectory, "radarcol.mul"))
+	// mapmul := file.NewMapMulFromFile(path.Join(configuration.ClientFilesDirectory, "map0.mul"))
+	// if rcolmul == nil || mapmul == nil {
+	// 	os.Exit(1)
+	// }
+	// log.Println("generating debug map...")
+	// rcols := rcolmul.Colors()
+	// mapimg := image.NewRGBA(image.Rect(0, 0, uo.MapWidth, uo.MapHeight))
+	// for iy := 0; iy < uo.MapHeight; iy++ {
+	// 	for ix := 0; ix < uo.MapWidth; ix++ {
+	// 		t := mapmul.GetTile(ix, iy)
+	// 		mapimg.Set(ix, iy, rcols[t.Graphic])
+	// 	}
+	// }
+	// mapimgf, err := os.Create("debug-map.png")
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// if err := png.Encode(mapimgf, mapimg); err != nil {
+	// 	log.Fatal(err)
+	// }
+	// mapimgf.Close()
 
 	// RNG initialization
 	rng := util.NewRNG()

@@ -17,6 +17,16 @@ const (
 	MapMaxZ           int    = 128
 )
 
+// BoundViewRange bounds a view range value
+func BoundViewRange(r int) int {
+	if r < MinViewRange {
+		return MinViewRange
+	} else if r > MaxViewRange {
+		return MaxViewRange
+	}
+	return r
+}
+
 // A Layer is a 6-bit value that indicates at which rendering layer a given
 // animation body is rendered. It is also used in paper doll gumps to layer the
 // equipment gump images. The zero value is invalid.

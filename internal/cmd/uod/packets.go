@@ -13,7 +13,6 @@ import (
 // goroutine directly to offload that work from the world goroutine. Note that
 // these functions CANNOT interact with the world memory model.
 func init() {
-	embeddedHandlers.Add(0x02, handleWalkRequest)
 	embeddedHandlers.Add(0x06, ignorePacket)
 	embeddedHandlers.Add(0x09, ignorePacket)
 	embeddedHandlers.Add(0x73, handleClientPing)
@@ -79,15 +78,9 @@ func handleClientVersion(c *PacketContext) {
 
 func handleClientViewRange(c *PacketContext) {
 	p := c.Packet.(*clientpacket.ClientViewRange)
+	c.NetState.viewRange = uo.BoundViewRange(p.Range)
 	c.NetState.Send(&serverpacket.ClientViewRange{
-		Range: byte(p.Range),
+		Range: byte(c.NetState.ViewRange()),
 	})
-}
-
-func handleWalkRequest(c *PacketContext) {
-	p := c.Packet.(*clientpacket.WalkRequest)
-	c.NetState.Send(&serverpacket.MoveAcknowledge{
-		Sequence:  p.Sequence,
-		Notoriety: uo.NotorietyInnocent,
-	})
+	// TODO Update visible objects for the client
 }

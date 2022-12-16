@@ -1,5 +1,11 @@
 package uo
 
+// Wall clock constants
+const (
+	MinWalkRequestDelayMS int64 = 250
+	FastWalkDelayMS       int64 = 175
+)
+
 // A uo.Time value represents the number of seconds since the beginning of
 // the Sossarian universe. One second of Sossarian time equals about 1/12 second
 // real-world time.
