@@ -1,9 +1,8 @@
 package file
 
 import (
-	"log"
+	"encoding/binary"
 
-	. "github.com/qbradq/sharduo/lib/dataconv"
 	"github.com/qbradq/sharduo/lib/uo"
 )
 
@@ -34,8 +33,6 @@ func NewMapMulFromFile(fname string) *MapMul {
 	if sm.NumberOfSegments() != uo.MapChunksWidth*uo.MapChunksHeight {
 		return nil
 	}
-	log.Println(sm.GetSegment(0))
-	log.Println(sm.GetSegment(1))
 	// Load all chunks
 	iseg := 0
 	for cx := 0; cx < uo.MapChunksWidth; cx++ {
@@ -47,8 +44,8 @@ func NewMapMulFromFile(fname string) *MapMul {
 			sofs := 4 // Each map chunk has a 4-byte header of unknown use
 			for ty := 0; ty < uo.ChunkHeight; ty++ {
 				for tx := 0; tx < uo.ChunkWidth; tx++ {
-					graphic := uo.Graphic(GetUint16(seg[sofs : sofs+2]))
-					z := int(seg[sofs+2])
+					graphic := uo.Graphic(binary.LittleEndian.Uint16(seg[sofs : sofs+2]))
+					z := int(int8(seg[sofs+2]))
 					sofs += 3
 					chunk.Tiles[ty*uo.ChunkWidth+tx] = uo.Tile{
 						Graphic: graphic,
