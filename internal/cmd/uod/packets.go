@@ -56,7 +56,6 @@ func handleClientSpeech(c *PacketContext) {
 				world.SendRequest(&SpeechCommandRequest{
 					BaseWorldRequest: BaseWorldRequest{
 						NetState: c.NetState,
-						Packet:   c.Packet,
 					},
 					Command: cmd,
 				})

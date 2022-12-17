@@ -1,11 +1,11 @@
 package game
 
 import (
-	"log"
-
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/uo/file"
 )
+
+// TODO Save and load references to every object on the map
 
 // Map constants
 const ()
@@ -60,19 +60,19 @@ func (m *Map) GetTile(x, y int) uo.Tile {
 func (m *Map) AddNewObject(o Object) {
 	c := m.getChunk(o.Location())
 	c.Add(o)
-
+	others := m.GetObjectsInRange(o.Location(), uo.MaxViewRange+1)
 	// Send the item to all mobiles in range with an attached NetState
-	for _, other := range m.GetObjectsInRange(o.Location(), uo.MaxViewRange) {
+	for _, other := range others {
 		if o == other {
 			continue
 		}
-		m, ok := other.(Mobile)
+		mob, ok := other.(Mobile)
 		if !ok {
 			continue
 		}
-		if m.NetState() != nil {
+		if mob.NetState() != nil && o.Location().XYDistance(mob.Location()) <= mob.ViewRange() {
 			if item, ok := o.(Item); ok {
-				m.NetState().SendItem(item)
+				mob.NetState().SendItem(item)
 			}
 		}
 	}
@@ -110,8 +110,7 @@ func (m *Map) MoveObject(o Object, dir uo.Direction) bool {
 	newLocation := mob.Location().Forward(dir).WrapAndBound(oldLocation)
 	oldChunk := m.getChunk(oldLocation)
 	newChunk := m.getChunk(newLocation)
-	others := m.GetObjectsInRange(oldLocation, mob.ViewRange()+1)
-	log.Println("OTHERS:", others)
+	others := m.GetObjectsInRange(oldLocation, mob.ViewRange()+2)
 	// If this is a mobile with an attached net state we need to check for
 	// new and old objects.
 	if ok && mob.NetState() != nil {
@@ -127,7 +126,6 @@ func (m *Map) MoveObject(o Object, dir uo.Direction) bool {
 				newLocation.XYDistance(other.Location()) <= mob.ViewRange() {
 				// Object used to be out of range but is in range now, send information about it
 				if item, ok := other.(Item); ok {
-					log.Println(item.Serial(), item.Location().X, item.Location().Y, item.Location().Z)
 					mob.NetState().SendItem(item)
 				}
 			}
@@ -147,6 +145,9 @@ func (m *Map) MoveObject(o Object, dir uo.Direction) bool {
 	// Chunk updates
 	if oldChunk != newChunk {
 		oldChunk.Remove(o)
+	}
+	o.SetLocation(newLocation)
+	if oldChunk != newChunk {
 		newChunk.Add(o)
 	}
 	return true
@@ -156,8 +157,8 @@ func (m *Map) MoveObject(o Object, dir uo.Direction) bool {
 func (m *Map) getChunksInBounds(b uo.Bounds) []*chunk {
 	var ret []*chunk
 	l := uo.Location{}
-	for l.Y = b.Y; l.Y < b.Y+b.H; l.Y += uo.ChunkHeight {
-		for l.X = b.X; l.X < b.X+b.W; l.X += uo.ChunkWidth {
+	for l.Y = b.Y - 1; l.Y <= b.Y+b.H; l.Y += uo.ChunkHeight {
+		for l.X = b.X - 1; l.X <= b.X+b.W; l.X += uo.ChunkWidth {
 			ret = append(ret, m.getChunk(l))
 		}
 	}

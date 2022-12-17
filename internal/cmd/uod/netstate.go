@@ -157,29 +157,11 @@ func (n *NetState) Service() {
 		return
 	}
 
-	// TODO Character load
-	n.m = world.New(templateManager.NewObject("Player")).(game.Mobile)
-	n.m.SetNetState(n)
-
-	// Send the EnterWorld packet
-	n.Send(&serverpacket.EnterWorld{
-		Player: n.m.Serial(),
-		Body:   n.m.Body(),
-		X:      n.m.Location().X,
-		Y:      n.m.Location().Y,
-		Z:      n.m.Location().Z,
-		Facing: uo.DirectionSouth | uo.DirectionRunningFlag,
-		Width:  uo.MapWidth,
-		Height: uo.MapHeight,
+	world.SendRequest(&CharacterLoginRequest{
+		BaseWorldRequest: BaseWorldRequest{
+			NetState: n,
+		},
 	})
-	n.Send(&serverpacket.LoginComplete{})
-	Broadcast("Welcome %s to Trammel Time!", n.m.DisplayName())
-	n.Send(n.m.EquippedMobilePacket())
-
-	world.Map().AddNewObject(n.m)
-
-	// Send version string request. This isn't needed anymore but whatever.
-	n.Send(&serverpacket.Version{})
 
 	// Start the read loop
 	n.readLoop(r)
@@ -239,8 +221,8 @@ func (n *NetState) readLoop(r *clientpacket.Reader) {
 				world.SendRequest(&ClientPacketRequest{
 					BaseWorldRequest: BaseWorldRequest{
 						NetState: n,
-						Packet:   cp,
 					},
+					Packet: cp,
 				})
 			} else {
 				// This packet is handled inside the net state goroutine, go

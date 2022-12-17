@@ -3,7 +3,10 @@ package uod
 import (
 	"fmt"
 
+	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/lib/clientpacket"
+	"github.com/qbradq/sharduo/lib/serverpacket"
+	"github.com/qbradq/sharduo/lib/uo"
 )
 
 // WorldRequest is used to send client and system packets to the world's
@@ -11,8 +14,6 @@ import (
 type WorldRequest interface {
 	// Returns the NetState associated with this request, if any
 	GetNetState() *NetState
-	// Returns the Packet associated with this request, if any
-	GetPacket() clientpacket.Packet
 	// Execute executes the request
 	Execute() error
 }
@@ -23,8 +24,6 @@ type BaseWorldRequest struct {
 	// The net state associated with the command, if any. System commands tend
 	// not to have associated net states.
 	NetState *NetState
-	// The client or system packet associated with this command.
-	Packet clientpacket.Packet
 }
 
 // GetNetState implements the WorldRequest interface
@@ -32,24 +31,21 @@ func (r *BaseWorldRequest) GetNetState() *NetState {
 	return r.NetState
 }
 
-// GetPacket implements the WorldRequest interface
-func (r *BaseWorldRequest) GetPacket() clientpacket.Packet {
-	return r.Packet
-}
-
 // ClientPacketRequest is sent by the NetState for packets that should be
 // addressed directly in the world goroutine.
 type ClientPacketRequest struct {
 	BaseWorldRequest
+	// The client or system packet associated with this command.
+	Packet clientpacket.Packet
 }
 
 // Execute implements the WorldRequest interface
 func (r *ClientPacketRequest) Execute() error {
-	handler, found := worldHandlers.Get(r.GetPacket().Serial())
+	handler, found := worldHandlers.Get(r.Packet.Serial())
 	if !found || handler == nil {
-		return fmt.Errorf("unhandled packet %s", r.GetPacket().Serial().String())
+		return fmt.Errorf("unhandled packet %s", r.Packet.Serial().String())
 	}
-	handler(r.GetNetState(), r.GetPacket())
+	handler(r.GetNetState(), r.Packet)
 	return nil
 }
 
@@ -60,7 +56,43 @@ type SpeechCommandRequest struct {
 	Command Command
 }
 
-// Executes implements the WorldRequest interface
+// Execute implements the WorldRequest interface
 func (r *SpeechCommandRequest) Execute() error {
 	return r.Command.Execute(r.NetState)
+}
+
+// CharacterLoginRequest is sent by the server accepting a character login
+type CharacterLoginRequest struct {
+	BaseWorldRequest
+}
+
+// Execute implements the WorldRequest interface
+func (r *CharacterLoginRequest) Execute() error {
+	// TODO Character load
+	r.NetState.m = world.New(templateManager.NewObject("Player")).(game.Mobile)
+	r.NetState.m.SetNetState(r.NetState)
+	// DEBUG
+	r.NetState.m.SetLocation(uo.Location{
+		X: 5250,
+		Y: 400,
+		Z: 15,
+	})
+	Broadcast("Welcome %s to Trammel Time!", r.NetState.m.DisplayName())
+
+	// Send the EnterWorld packet
+	r.NetState.Send(&serverpacket.EnterWorld{
+		Player: r.NetState.m.Serial(),
+		Body:   r.NetState.m.Body(),
+		X:      r.NetState.m.Location().X,
+		Y:      r.NetState.m.Location().Y,
+		Z:      r.NetState.m.Location().Z,
+		Facing: uo.DirectionSouth | uo.DirectionRunningFlag,
+		Width:  uo.MapWidth,
+		Height: uo.MapHeight,
+	})
+	r.NetState.Send(&serverpacket.LoginComplete{})
+	r.NetState.Send(r.NetState.m.EquippedMobilePacket())
+
+	world.Map().AddNewObject(r.NetState.m)
+	return nil
 }
