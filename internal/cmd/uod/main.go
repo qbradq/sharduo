@@ -118,18 +118,15 @@ func Main() {
 	go world.Process()
 	go LoginServerMain()
 
-	ipstr := "127.0.0.1"
-	port := 7777
-
 	l, err := net.ListenTCP("tcp", &net.TCPAddr{
-		IP:   net.ParseIP(ipstr),
-		Port: port,
+		IP:   net.ParseIP(configuration.GameServerAddress),
+		Port: configuration.GameServerPort,
 	})
 	if err != nil {
 		log.Fatal(err)
 		return
 	}
-	log.Printf("game server listening at %s:%d\n", ipstr, port)
+	log.Printf("game server listening at %s:%d\n", configuration.GameServerAddress, configuration.GameServerPort)
 	trap(l)
 	for {
 		c, err := l.AcceptTCP()

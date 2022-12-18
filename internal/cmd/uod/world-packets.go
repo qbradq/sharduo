@@ -30,7 +30,7 @@ func handleStatusRequest(n *NetState, cp clientpacket.Packet) {
 	p := cp.(*clientpacket.PlayerStatusRequest)
 	switch p.StatusRequestType {
 	case uo.StatusRequestTypeBasic:
-		// TODO
+		// TODO Status update response
 	}
 }
 

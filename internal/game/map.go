@@ -9,8 +9,6 @@ import (
 	"github.com/qbradq/sharduo/lib/util"
 )
 
-// TODO Save and load references to every object on the map
-
 // Map constants
 const ()
 

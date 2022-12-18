@@ -14,24 +14,21 @@ import (
 
 // LoginServerMain is the entry point for the login server.
 func LoginServerMain() {
-	// TODO Configuration
-	ipstr := "127.0.0.1"
-	port := 7775
-	defaultUsername := "admin"
-	defaultPassword := game.HashPassword("password")
+	defaultUsername := configuration.DefaultAdminUsername
+	defaultPassword := game.HashPassword(configuration.DefaultAdminPassword)
 
 	admin := world.AuthenticateAccount(defaultUsername, defaultPassword)
 	log.Println("default admin username", admin.Username())
 
 	l, err := net.ListenTCP("tcp", &net.TCPAddr{
-		IP:   net.ParseIP(ipstr),
-		Port: port,
+		IP:   net.ParseIP(configuration.LoginServerAddress),
+		Port: configuration.LoginServerPort,
 	})
 	if err != nil {
 		log.Fatal(err)
 		return
 	}
-	log.Printf("login server listening at %s:%d\n", ipstr, port)
+	log.Printf("login server listening at %s:%d\n", configuration.LoginServerAddress, configuration.LoginServerPort)
 	for {
 		c, err := l.AcceptTCP()
 		if err != nil {

@@ -55,6 +55,15 @@ type Configuration struct {
 	LoginServerAddress string
 	// TCP port to bind to
 	LoginServerPort int
+
+	//
+	// Game service configuration
+	//
+
+	// IPv4 address to bind to
+	GameServerAddress string
+	// TCP port to bind to
+	GameServerPort int
 }
 
 // newConfiguration returns a new Configuration object
@@ -91,12 +100,25 @@ func (c *Configuration) LoadConfiguration() error {
 		}
 		return fmt.Errorf("%d errors while loading configuration", len(tfr.Errors()))
 	}
+	//
 	// Read configuration values
+	//
+	// Internal paths
 	c.TemplatesDirectory = tfo.GetString("TemplatesDirectory", "templates")
 	c.ListsDirectory = tfo.GetString("ListsDirectory", "templates")
 	c.TemplateVariablesFile = tfo.GetString("TemplateVariablesFile", "misc/templates")
+	// External paths
 	c.SaveDirectory = tfo.GetString("SaveDirectory", "saves")
 	c.ClientFilesDirectory = tfo.GetString("ClientFilesDirectory", "client")
+	// Account configuration
+	c.DefaultAdminUsername = tfo.GetString("DefaultAdminUsername", "admin")
+	c.DefaultAdminPassword = tfo.GetString("DefaultAdminPassword", "password")
+	// Login service configuration
+	c.LoginServerAddress = tfo.GetString("LoginServerAddress", "0.0.0.0")
+	c.LoginServerPort = tfo.GetNumber("LoginServerPort", 7775)
+	// Game service configuration
+	c.GameServerAddress = tfo.GetString("GameServerAddress", "0.0.0.0")
+	c.GameServerPort = tfo.GetNumber("GameServerPort", 7777)
 
 	return nil
 }
