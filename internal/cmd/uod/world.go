@@ -159,8 +159,17 @@ func (w *World) Load() error {
 		for _, err := range errs {
 			log.Println(err)
 		}
-		log.Fatalf("found %d errors while allocating data store objects", len(errs))
+		log.Fatalf("found %d errors while deserializing data store objects", len(errs))
 	}
+
+	// Place all objects on the map
+	r, err = sfr.GetReader("map.ini")
+	if err != nil {
+		errs = append(errs, err)
+	} else {
+		errs = append(errs, w.m.Read(r)...)
+	}
+	r.Close()
 
 	// Call the deserialize hooks for all data stores
 	errs = append(errs, w.ods.OnAfterDeserialize()...)
@@ -172,7 +181,7 @@ func (w *World) Load() error {
 		for _, err := range errs {
 			log.Println(err)
 		}
-		log.Fatalf("found %d errors while allocating data store objects", len(errs))
+		log.Fatalf("found %d errors while running deserialization hooks", len(errs))
 	}
 
 	// Rebuild accounts index
@@ -212,6 +221,7 @@ func (w *World) Save() error {
 	} else {
 		errs = append(errs, w.ads.Write(f)...)
 	}
+	f.Close()
 
 	// Save objects
 	f, err = sfw.GetWriter("objects.ini")
@@ -220,6 +230,16 @@ func (w *World) Save() error {
 	} else {
 		errs = append(errs, w.ods.Write(f)...)
 	}
+	f.Close()
+
+	// Save the map
+	f, err = sfw.GetWriter("map.ini")
+	if err != nil {
+		errs = append(errs, err)
+	} else {
+		errs = append(errs, w.m.Write(f)...)
+	}
+	f.Close()
 
 	return w.reportErrors(errs)
 }

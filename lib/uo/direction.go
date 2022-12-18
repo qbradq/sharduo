@@ -25,7 +25,7 @@ var dirOfs = [][]int{
 	{0, 1},
 	{-1, 1},
 	{-1, 0},
-	{1, -1},
+	{-1, -1},
 }
 
 // Bound returns the direction code bounded to valid values while presearving

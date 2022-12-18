@@ -36,7 +36,7 @@ func NewNetState(conn *net.TCPConn) *NetState {
 	uuid, _ := uuid.NewRandom()
 	return &NetState{
 		conn:      conn,
-		sendQueue: make(chan serverpacket.Packet, 128),
+		sendQueue: make(chan serverpacket.Packet, 1024*16),
 		id:        uuid.String(),
 		viewRange: uo.MaxViewRange,
 	}
