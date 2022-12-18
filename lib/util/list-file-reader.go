@@ -152,36 +152,19 @@ func (f *ListFileReader) SkipCurrentSegment() bool {
 // if the end of the stream has been reached. Use HasErrors and Errors to
 // see if there were errors in execution.
 func (f *ListFileReader) ReadNextSegment() *ListFileSegment {
-	for {
-		if f.sawEOF {
-			return nil
-		}
-		if !f.scanner.Scan() {
-			err := f.scanner.Err()
-			if err != nil {
-				f.errs = append(f.errs, err)
-				return nil
-			}
-			f.sawEOF = true
-			return f.nextFileSegment
-		}
-		line := strings.TrimSpace(f.scanner.Text())
-		if f.isCommentLine(line) {
-			// Do nothing
-		} else if f.isSegmentLine(line) {
-			ret := f.nextFileSegment
-			f.nextFileSegment = &ListFileSegment{
-				Name: f.extractSegmentName(line),
-			}
-			// Special case, if the root segment has no lines do not emmit it
-			if ret.Name == "" && len(ret.Contents) == 0 {
-				continue
-			}
-			return ret
-		} else {
-			f.nextFileSegment.Contents = append(f.nextFileSegment.Contents, line)
-		}
+	lfs := &ListFileSegment{}
+	lfs.Name = f.StreamNextSegmentHeader()
+	if lfs.Name == "" {
+		return nil
 	}
+	for {
+		e := f.StreamNextEntry()
+		if e == "" {
+			break
+		}
+		lfs.Contents = append(lfs.Contents, e)
+	}
+	return lfs
 }
 
 // ReadSegments returns all of the list segments from the reader. Use HasErrors
