@@ -45,11 +45,6 @@ func (i *BaseItem) TypeName() string {
 	return "BaseItem"
 }
 
-// SerialType implements the util.Serializeable interface.
-func (i *BaseItem) SerialType() uo.SerialType {
-	return uo.SerialTypeItem
-}
-
 // Serialize implements the util.Serializeable interface.
 func (i *BaseItem) Serialize(f *util.TagFileWriter) {
 	i.BaseObject.Serialize(f)

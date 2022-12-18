@@ -14,6 +14,7 @@ import (
 // access to the memory model.
 func init() {
 	worldHandlers.Add(0x02, handleWalkRequest)
+	worldHandlers.Add(0x06, handleDoubleClickRequest)
 	worldHandlers.Add(0x6C, handleTargetResponse)
 	worldHandlers.Add(0x34, handleStatusRequest)
 }
@@ -49,5 +50,20 @@ func handleWalkRequest(n *NetState, cp clientpacket.Packet) {
 		})
 	} else {
 		// TODO reject movement packet
+	}
+}
+
+func handleDoubleClickRequest(n *NetState, cp clientpacket.Packet) {
+	p := cp.(*clientpacket.DoubleClick)
+	if p.IsSelf {
+		// This is a double-click on the player's mobile. Ignore the rest of
+		// the serial and directly access the mobile. NEVER trust a random
+		// serial from the client :)
+		n.Send(&serverpacket.OpenPaperDoll{
+			Serial:    n.m.Serial(),
+			Text:      n.m.DisplayName(),
+			WarMode:   false,
+			Alterable: true,
+		})
 	}
 }

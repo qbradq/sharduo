@@ -1,7 +1,6 @@
 package uo
 
 import (
-	"encoding/binary"
 	"fmt"
 	"strconv"
 )
@@ -26,19 +25,6 @@ const (
 	SerialLastMobileSelf  Serial = 0xcfffffff
 	SerialSystem          Serial = 0xffffffff
 )
-
-// NewSerialFromData creates a new Serial from a []byte slice of at least length
-// four.
-func NewSerialFromData(in []byte) Serial {
-	return Serial(binary.BigEndian.Uint32(in))
-}
-
-// Data creates a new byte slice of the serial for transmission on the wire.
-func (s Serial) Data() []byte {
-	buf := make([]byte, 4)
-	binary.BigEndian.PutUint32(buf, uint32(s))
-	return buf
-}
 
 // NewSerialFromString returns a new Serial parsed as a hex number.
 func NewSerialFromString(in string) Serial {

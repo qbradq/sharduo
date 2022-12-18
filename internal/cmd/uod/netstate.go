@@ -131,7 +131,7 @@ func (n *NetState) Service() {
 		n.Error("waiting for game server login", ErrWrongPacket)
 		return
 	}
-	account := world.AuthenticateLoginSession(gslp.Username, game.HashPassword(gslp.Password), uo.NewSerialFromData(gslp.Key))
+	account := world.AuthenticateLoginSession(gslp.Username, game.HashPassword(gslp.Password), gslp.Key)
 	if account == nil {
 		n.Error(fmt.Sprintf("bad login seed 0x%08X", gslp.Key), nil)
 		return

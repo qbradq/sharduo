@@ -56,6 +56,11 @@ func (m *BaseMobile) TypeName() string {
 	return "BaseMobile"
 }
 
+// SerialType implements the util.Serializeable interface.
+func (o *BaseMobile) SerialType() uo.SerialType {
+	return uo.SerialTypeMobile
+}
+
 // Serialize implements the util.Serializeable interface.
 func (m *BaseMobile) Serialize(f *util.TagFileWriter) {
 	m.BaseObject.Serialize(f)

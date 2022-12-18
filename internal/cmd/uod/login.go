@@ -136,7 +136,7 @@ func handleLoginConnection(c *net.TCPConn) {
 	sp = &serverpacket.ConnectToGameServer{
 		IP:   net.ParseIP("127.0.0.1"),
 		Port: 7777,
-		Key:  account.Serial().Data(),
+		Key:  account.Serial(),
 	}
 	sp.Write(pw)
 	if err := pw.Flush(); err != nil {

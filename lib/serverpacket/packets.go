@@ -57,7 +57,7 @@ type ConnectToGameServer struct {
 	// Port is the port the server listens on.
 	Port uint16
 	// Key is the connection key.
-	Key []byte
+	Key uo.Serial
 }
 
 // Write implements the Packet interface.
@@ -69,7 +69,7 @@ func (p *ConnectToGameServer) Write(w io.Writer) {
 	PutByte(w, p.IP.To4()[2])
 	PutByte(w, p.IP.To4()[3])
 	PutUint16(w, p.Port) // Port
-	w.Write(p.Key)
+	PutUint32(w, uint32(p.Key))
 }
 
 // CharacterList is sent on game server login and lists all characters on the
@@ -460,6 +460,34 @@ type DeleteObject struct {
 
 // Write implements the Packet interface.
 func (p *DeleteObject) Write(w io.Writer) {
-	PutByte(w, 0x1D)     // Packet ID
-	PutUint32(w, uint32(p.Serial)) // Always 0x0001 on OSI according to POL
+	PutByte(w, 0x1D) // Packet ID
+	PutUint32(w, uint32(p.Serial))
+}
+
+// OpenPaperDoll tells the client to open the paper doll window for a mobile
+type OpenPaperDoll struct {
+	// Serial of the mobile to display the paper doll of
+	Serial uo.Serial
+	// Text displayed in the name and title area. Note this gets truncated to
+	// 60 characters when sent to the client.
+	Text string
+	// If true the character is currently in war mode
+	WarMode bool
+	// If true the player may alter the paper doll
+	Alterable bool
+}
+
+// Write implements the Packet interface.
+func (p *OpenPaperDoll) Write(w io.Writer) {
+	var flags byte
+	if p.WarMode {
+		flags |= 0x01
+	}
+	if p.Alterable {
+		flags |= 0x02
+	}
+	PutByte(w, 0x88) // Open paper doll
+	PutUint32(w, uint32(p.Serial))
+	PutStringN(w, p.Text, 60)
+	PutByte(w, flags)
 }

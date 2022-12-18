@@ -1,6 +1,8 @@
 package clientpacket
 
 import (
+	"log"
+
 	. "github.com/qbradq/sharduo/lib/dataconv"
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
@@ -54,7 +56,7 @@ func (f *PacketFactory) Ignore(id uo.Serial) {
 // New creates a new client packet.
 func (f *PacketFactory) New(id uo.Serial, in []byte) Packet {
 	if p := f.Factory.New(id, in); p != nil {
-		return p.(Packet)
+		return p
 	}
 	up := NewUnsupportedPacket(f.GetName(), in)
 	up.SetSerial(id)
@@ -200,12 +202,12 @@ type GameServerLogin struct {
 	// Account password in plain-text
 	Password string
 	// Key given by the login server
-	Key []byte
+	Key uo.Serial
 }
 
 func newGameServerLogin(in []byte) Packet {
 	p := &GameServerLogin{
-		Key:      in[:4],
+		Key:      uo.Serial(GetUint32(in[:4])),
 		Username: NullString(in[4:34]),
 		Password: NullString(in[34:64]),
 	}
@@ -309,7 +311,7 @@ type SingleClick struct {
 
 func newSingleClick(in []byte) Packet {
 	p := &SingleClick{
-		ID: uo.NewSerialFromData(in),
+		ID: uo.Serial(GetUint32(in)),
 	}
 	p.SetSerial(0x09)
 	return p
@@ -325,7 +327,8 @@ type DoubleClick struct {
 }
 
 func newDoubleClick(in []byte) Packet {
-	s := uo.NewSerialFromData(in)
+	s := uo.Serial(GetUint32(in[:4]))
+	log.Println(s)
 	isSelf := s.IsSelf()
 	s = s.StripSelfFlag()
 	p := &DoubleClick{
@@ -349,7 +352,7 @@ type PlayerStatusRequest struct {
 func newPlayerStatusRequest(in []byte) Packet {
 	p := &PlayerStatusRequest{
 		StatusRequestType: uo.StatusRequestType(in[4]),
-		PlayerMobileID:    uo.NewSerialFromData(in[5:]),
+		PlayerMobileID:    uo.Serial(GetUint32(in[5:])),
 	}
 	p.SetSerial(0x34)
 	return p
