@@ -37,6 +37,24 @@ type Configuration struct {
 	SaveDirectory string
 	// External directory containing the client files
 	ClientFilesDirectory string
+
+	//
+	// Account configuration
+	//
+
+	// The default name for the auto-generated administrator account
+	DefaultAdminUsername string
+	// The default password for the auto-generated administrator account
+	DefaultAdminPassword string
+
+	//
+	// Login service configuration
+	//
+
+	// IPv4 address to bind to
+	LoginServerAddress string
+	// TCP port to bind to
+	LoginServerPort int
 }
 
 // newConfiguration returns a new Configuration object

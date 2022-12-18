@@ -28,4 +28,4 @@ saves/
 client/
 
 # Machine-specific configuration file
-configuration.ini
+./configuration.ini
