@@ -64,6 +64,13 @@ type Configuration struct {
 	GameServerAddress string
 	// TCP port to bind to
 	GameServerPort int
+
+	//
+	// Debug flags
+	//
+
+	// If true we should generate all of the debug maps at server start
+	GenerateDebugMaps bool
 }
 
 // newConfiguration returns a new Configuration object
@@ -119,6 +126,8 @@ func (c *Configuration) LoadConfiguration() error {
 	// Game service configuration
 	c.GameServerAddress = tfo.GetString("GameServerAddress", "0.0.0.0")
 	c.GameServerPort = tfo.GetNumber("GameServerPort", 7777)
+	// Debug flags
+	c.GenerateDebugMaps = tfo.GetBool("GenerateDebugMaps", false)
 
 	return nil
 }

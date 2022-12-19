@@ -3,6 +3,8 @@ package uod
 import (
 	"errors"
 	"fmt"
+	"image"
+	"image/png"
 	"io"
 	"log"
 	"net"
@@ -63,29 +65,38 @@ func Main() {
 	log.Println("loading client files...")
 	rcolmul := file.NewRadarColMulFromFile(path.Join(configuration.ClientFilesDirectory, "radarcol.mul"))
 	mapmul := file.NewMapMulFromFile(path.Join(configuration.ClientFilesDirectory, "map0.mul"))
-	if rcolmul == nil || mapmul == nil {
+	staticsmul := file.NewStaticsMulFromFile(
+		path.Join(configuration.ClientFilesDirectory, "staidx0.mul"),
+		path.Join(configuration.ClientFilesDirectory, "statics0.mul"))
+	if rcolmul == nil || mapmul == nil || staticsmul == nil {
 		os.Exit(1)
 	}
-	// Debug
-	// log.Println("generating debug map...")
-	// rcols := rcolmul.Colors()
-	// mapimg := image.NewRGBA(image.Rect(0, 0, uo.MapWidth, uo.MapHeight))
-	// for iy := 0; iy < uo.MapHeight; iy++ {
-	// 	for ix := 0; ix < uo.MapWidth; ix++ {
-	// 		t := mapmul.GetTile(ix, iy)
-	// 		mapimg.Set(ix, iy, rcols[t.Graphic])
-	// 	}
-	// }
-	// mapimgf, err := os.Create("debug-map.png")
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// if err := png.Encode(mapimgf, mapimg); err != nil {
-	// 	log.Fatal(err)
-	// }
-	// mapimgf.Close()
-	// log.Println(mapmul.GetTile(0, 0))
-	// log.Println(mapmul.GetTile(1324, 1624))
+
+	if configuration.GenerateDebugMaps {
+		log.Println("generating debug map...")
+		rcols := rcolmul.Colors()
+		mapimg := image.NewRGBA(image.Rect(0, 0, uo.MapWidth, uo.MapHeight))
+		// Lay down the tiles
+		for iy := 0; iy < uo.MapHeight; iy++ {
+			for ix := 0; ix < uo.MapWidth; ix++ {
+				t := mapmul.GetTile(ix, iy)
+				mapimg.Set(ix, iy, rcols[t.Graphic])
+			}
+		}
+		// Add statics
+		for _, static := range staticsmul.Statics() {
+			mapimg.Set(static.Location.X, static.Location.Y, rcols[static.Graphic+0x4000])
+		}
+		// Write out the map
+		mapimgf, err := os.Create("debug-map.png")
+		if err != nil {
+			log.Fatal(err)
+		}
+		if err := png.Encode(mapimgf, mapimg); err != nil {
+			log.Fatal(err)
+		}
+		mapimgf.Close()
+	}
 
 	// RNG initialization
 	rng := util.NewRNG()

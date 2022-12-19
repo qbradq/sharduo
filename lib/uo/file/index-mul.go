@@ -1,7 +1,7 @@
 package file
 
 import (
-	"github.com/qbradq/sharduo/lib/dataconv"
+	"encoding/binary"
 )
 
 // SegmentIndex represents one index in the file
@@ -34,10 +34,29 @@ func NewIndexFrom(idxp string) *IndexMul {
 	for i := range idx.indexes {
 		d := m.GetSegment(i)
 		idx.indexes[i] = SegmentIndex{
-			Offset: int(dataconv.GetUint32(d[0:4])),
-			Length: int(dataconv.GetUint32(d[4:8])),
-			Extra:  int(dataconv.GetUint32(d[8:12])),
+			Offset: int(binary.LittleEndian.Uint32(d[0:4])),
+			Length: int(binary.LittleEndian.Uint32(d[4:8])),
+			Extra:  int(binary.LittleEndian.Uint32(d[8:12])),
 		}
 	}
 	return idx
+}
+
+// NumberOfEntries returns the number of entries in the index
+func (m *IndexMul) NumberOfEntries() int {
+	return len(m.indexes)
+}
+
+// GetEntry returns the given entry or nil if idx is out of range, or the offset
+// of the index entry is 0xFFFFFFFF, in which case nil is also returned.
+func (m *IndexMul) GetEntry(idx int) *SegmentIndex {
+	if idx < 0 || idx >= m.NumberOfEntries() {
+		return nil
+	}
+	e := &m.indexes[idx]
+	// Empty segment
+	if e.Offset == 0xFFFFFFFF || e.Length == 0xFFFFFFFF || e.Length == 0 {
+		return nil
+	}
+	return e
 }
