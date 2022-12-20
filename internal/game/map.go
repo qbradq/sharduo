@@ -140,7 +140,7 @@ func (m *Map) AddNewObject(o Object) {
 	// If this is a mobile with a NetState we have to send all of the items
 	// and mobiles in range.
 	if mob, ok := o.(Mobile); ok && mob.NetState() != nil {
-		mobs := m.GetObjectsInRange(mob.Location(), mob.ViewRange()+1)
+		mobs := m.GetObjectsInRange(mob.Location(), mob.ViewRange())
 		for _, other := range mobs {
 			if o == other {
 				continue
@@ -216,10 +216,13 @@ func (m *Map) MoveObject(o Object, dir uo.Direction) bool {
 // getChunksInBounds returns a slice of all the chunks within a given bounds.
 func (m *Map) getChunksInBounds(b uo.Bounds) []*chunk {
 	var ret []*chunk
-	l := uo.Location{}
-	for l.Y = b.Y - 1; l.Y <= b.Y+b.H; l.Y += uo.ChunkHeight {
-		for l.X = b.X - 1; l.X <= b.X+b.W; l.X += uo.ChunkWidth {
-			ret = append(ret, m.getChunk(l))
+	scx := b.X / uo.ChunkWidth
+	scy := b.Y / uo.ChunkHeight
+	ecx := (b.X + b.W - 1) / uo.ChunkWidth
+	ecy := (b.Y + b.H - 1) / uo.ChunkHeight
+	for cy := scy; cy <= ecy; cy++ {
+		for cx := scx; cx <= ecx; cx++ {
+			ret = append(ret, m.chunks[cy*uo.MapChunksWidth+cx])
 		}
 	}
 	return ret

@@ -1,135 +1,214 @@
 package game
 
 import (
-    "testing"
-    
-    "github.com/qbradq/sharduo/lib/uo"
+	"testing"
+
+	"github.com/qbradq/sharduo/lib/uo"
 )
 
 type MockNetState struct {
-    ItemsSeen int
-    ObjectsRemoved int
+	ItemsSeen      int
+	ObjectsRemoved int
 }
 
 func (n *MockNetState) SendItem(i Item) {
-    n.ItemsSeen++
+	n.ItemsSeen++
 }
 
 func (n *MockNetState) RemoveObject(o Object) {
-    n.ObjectsRemoved++
+	n.ObjectsRemoved++
 }
 
 func (n *MockNetState) Reset() {
-    n.ItemsSeen = 0
-    n.ObjectsRemoved = 0
+	n.ItemsSeen = 0
+	n.ObjectsRemoved = 0
 }
 
 func makeTestObjects() (*Map, *BaseMobile) {
-   m = NewMap()
-    mob = &BaseMobile{
-        Object: {
-            location: uo.Location{X:100,Y:100},
-        },
-        n: &MockNetState{},
-        viewRange: 18,
-    }
-    for iy := 50; iy <= 150; iy++ {
-        for ix := 50; ix 150; ix++ {
-            item := &Item{
-                Object: {
-                    location: uo.Location{X:ix,Y:iy},
-                },
-            }
-            m.AddNewObject(item)
-        }
-    }
-    return m, mob
+	m := NewMap()
+	mob := &BaseMobile{
+		BaseObject: BaseObject{
+			location: uo.Location{X: 100, Y: 100},
+		},
+		n:         &MockNetState{},
+		viewRange: 18,
+	}
+	for iy := 50; iy <= 150; iy++ {
+		for ix := 50; ix <= 150; ix++ {
+			item := &BaseItem{
+				BaseObject: BaseObject{
+					location: uo.Location{X: ix, Y: iy},
+				},
+			}
+			m.AddNewObject(item)
+		}
+	}
+	return m, mob
+}
+
+func TestMapGetChunksInBounds(t *testing.T) {
+	uat, _ := makeTestObjects()
+	tests := []struct {
+		X               int
+		Y               int
+		W               int
+		H               int
+		ExpectedNChunks int
+	}{
+		{
+			X:               100,
+			Y:               100,
+			W:               uo.ChunkWidth,
+			H:               uo.ChunkHeight,
+			ExpectedNChunks: 4,
+		},
+		{
+			X:               96,
+			Y:               96,
+			W:               uo.ChunkWidth,
+			H:               uo.ChunkHeight,
+			ExpectedNChunks: 1,
+		},
+		{
+			X:               100,
+			Y:               100,
+			W:               uo.ChunkWidth*4 - 1,
+			H:               uo.ChunkHeight*3 - 2,
+			ExpectedNChunks: 20,
+		},
+	}
+	for _, test := range tests {
+		chunks := uat.getChunksInBounds(uo.Bounds{
+			X: test.X,
+			Y: test.Y,
+			W: test.W,
+			H: test.H,
+		})
+		if len(chunks) != test.ExpectedNChunks {
+			t.Errorf("getChunksInBounds returned %d chunks, expected %d at X=%d Y=%d W=%d H=%d",
+				len(chunks), test.ExpectedNChunks, test.X, test.Y, test.W, test.H)
+		}
+	}
+}
+
+func TestMapGetChunksInRange(t *testing.T) {
+	uat, _ := makeTestObjects()
+	tests := []struct {
+		X               int
+		Y               int
+		R               int
+		ExpectedNChunks int
+	}{
+		{
+			X:               100,
+			Y:               100,
+			R:               2,
+			ExpectedNChunks: 1,
+		},
+		{
+			X:               100,
+			Y:               100,
+			R:               uo.ChunkWidth,
+			ExpectedNChunks: 9,
+		},
+	}
+	for _, test := range tests {
+		chunks := uat.getChunksInRange(uo.Location{
+			X: test.X,
+			Y: test.Y,
+		}, test.R)
+		if len(chunks) != test.ExpectedNChunks {
+			t.Errorf("getChunksInRange got %d chunks back, expected %d at X=%d Y=%d R=%d",
+				len(chunks), test.ExpectedNChunks, test.X, test.Y, test.R)
+		}
+	}
 }
 
 func TestMapAddNewMobile(t *testing.T) {
-    uat, mob := makeTestObjects()
-    nExpected := ((mob.viewRange*2)+1)*((mob.viewRange*2)+1)
-    for iy := 96; iy < 104; iy++ {
-        for ix := 96; ix < 104; ix++ {
-            mob.location.X = ix
-            mob.location.Y = iy
-            m.n.Reset()
-            uat.AddNewObject(mob)
-            if mob.n.ItemsSeen != nExpected {
-                t.Errorf("mob insert test at %dx%d, saw %d items, expected %d", ix, iy, mob.n.ItemsSeen, nExpected)
-            }
-        }
-    }
+	uat, mob := makeTestObjects()
+	nExpected := ((mob.viewRange * 2) + 1) * ((mob.viewRange * 2) + 1)
+	for iy := 96; iy < 104; iy++ {
+		for ix := 96; ix < 104; ix++ {
+			mob.location.X = ix
+			mob.location.Y = iy
+			mob.n.(*MockNetState).Reset()
+			uat.AddNewObject(mob)
+			if mob.n.(*MockNetState).ItemsSeen != nExpected {
+				t.Errorf("mob insert test at %dx%d, saw %d items, expected %d", ix, iy, mob.n.(*MockNetState).ItemsSeen, nExpected)
+			}
+		}
+	}
 }
 
 func TestMapMoveMobile(t *testing.T) {
-    uat, mob := makeTestObjects()
-    uat.AddNewObject(mob)
-    var tests []struct {
-        Name string
-        Direction uo.Direction
-        ExpectedRemoved int
-        ExpectedShown int
-    }{
-        // Cardinal directions
-        {
-            Name: "north",
-            Direction: uo.DirectionNorth,
-            ExpectedRemoved: mob.viewRange*2+1,
-            ExpectedShow: mob.viewRange*2+1,
-        },
-        {
-            Name: "east",
-            Direction: uo.DirectionEast,
-            ExpectedRemoved: mob.viewRange*2+1,
-            ExpectedShow: mob.viewRange*2+1,
-        },
-        {
-            Name: "south",
-            Direction: uo.DirectionSouth,
-            ExpectedRemoved: mob.viewRange*2+1,
-            ExpectedShow: mob.viewRange*2+1,
-        },
-        {
-            Name: "west",
-            Direction: uo.DirectionWest,
-            ExpectedRemoved: mob.viewRange*2+1,
-            ExpectedShow: mob.viewRange*2+1,
-        },
-        // Diagonals
-        {
-            Name: "northeast",
-            Direction: uo.DirectionNorthEast,
-            ExpectedRemoved: mob.viewRange*4+1,
-            ExpectedShow: mob.viewRange*4+1,
-        },
-        {
-            Name: "southeast",
-            Direction: uo.DirectionSouthEast,
-            ExpectedRemoved: mob.viewRange*4+1,
-            ExpectedShow: mob.viewRange*4+1,
-        },
-        {
-            Name: "southwest",
-            Direction: uo.DirectionSouthWest,
-            ExpectedRemoved: mob.viewRange*4+1,
-            ExpectedShow: mob.viewRange*4+1,
-        },
-        {
-            Name: "northwest",
-            Direction: uo.DirectionNorthWest,
-            ExpectedRemoved: mob.viewRange*4+1,
-            ExpectedShow: mob.viewRange*4+1,
-        },
-    }
-    for _, test := range moveTests {
-        uat.n.Reset()
-        uat.MoveObject(mob, test.Direction)
-        if uat.n.ItemsSeen != ExpectedShown {
-            t.Errorf("move test %s saw %d new items, expected %d", test.Name, uat.n.ItemsSeen, test.ExpectedShow)
-        }
-        if uat.n.ObjectsRemoved != ExpectedRemoved {
-            t.Errorf("move test %s removed %d items, expected %d", test.Name, uat.n.ObjectsRemoved, test.ExpectedRemoved)
-        }
-    }
+	uat, mob := makeTestObjects()
+	uat.AddNewObject(mob)
+	tests := []struct {
+		Name            string
+		Direction       uo.Direction
+		ExpectedRemoved int
+		ExpectedShown   int
+	}{
+		// Cardinal directions
+		{
+			Name:            "north",
+			Direction:       uo.DirectionNorth,
+			ExpectedRemoved: mob.viewRange*2 + 1,
+			ExpectedShown:   mob.viewRange*2 + 1,
+		},
+		{
+			Name:            "east",
+			Direction:       uo.DirectionEast,
+			ExpectedRemoved: mob.viewRange*2 + 1,
+			ExpectedShown:   mob.viewRange*2 + 1,
+		},
+		{
+			Name:            "south",
+			Direction:       uo.DirectionSouth,
+			ExpectedRemoved: mob.viewRange*2 + 1,
+			ExpectedShown:   mob.viewRange*2 + 1,
+		},
+		{
+			Name:            "west",
+			Direction:       uo.DirectionWest,
+			ExpectedRemoved: mob.viewRange*2 + 1,
+			ExpectedShown:   mob.viewRange*2 + 1,
+		},
+		// Diagonals
+		{
+			Name:            "northeast",
+			Direction:       uo.DirectionNorthEast,
+			ExpectedRemoved: mob.viewRange*4 + 1,
+			ExpectedShown:   mob.viewRange*4 + 1,
+		},
+		{
+			Name:            "southeast",
+			Direction:       uo.DirectionSouthEast,
+			ExpectedRemoved: mob.viewRange*4 + 1,
+			ExpectedShown:   mob.viewRange*4 + 1,
+		},
+		{
+			Name:            "southwest",
+			Direction:       uo.DirectionSouthWest,
+			ExpectedRemoved: mob.viewRange*4 + 1,
+			ExpectedShown:   mob.viewRange*4 + 1,
+		},
+		{
+			Name:            "northwest",
+			Direction:       uo.DirectionNorthWest,
+			ExpectedRemoved: mob.viewRange*4 + 1,
+			ExpectedShown:   mob.viewRange*4 + 1,
+		},
+	}
+	for _, test := range tests {
+		mob.n.(*MockNetState).Reset()
+		mob.facing = test.Direction
+		uat.MoveObject(mob, test.Direction)
+		if mob.n.(*MockNetState).ItemsSeen != test.ExpectedShown {
+			t.Errorf("move test %s saw %d new items, expected %d", test.Name, mob.n.(*MockNetState).ItemsSeen, test.ExpectedShown)
+		}
+		if mob.n.(*MockNetState).ObjectsRemoved != test.ExpectedRemoved {
+			t.Errorf("move test %s removed %d items, expected %d", test.Name, mob.n.(*MockNetState).ObjectsRemoved, test.ExpectedRemoved)
+		}
+	}
 }

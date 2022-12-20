@@ -1,8 +1,6 @@
 package clientpacket
 
 import (
-	"log"
-
 	. "github.com/qbradq/sharduo/lib/dataconv"
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
@@ -328,7 +326,6 @@ type DoubleClick struct {
 
 func newDoubleClick(in []byte) Packet {
 	s := uo.Serial(GetUint32(in[:4]))
-	log.Println(s)
 	isSelf := s.IsSelf()
 	s = s.StripSelfFlag()
 	p := &DoubleClick{
