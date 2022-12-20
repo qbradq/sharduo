@@ -17,6 +17,7 @@ func init() {
 	worldHandlers.Add(0x06, handleDoubleClickRequest)
 	worldHandlers.Add(0x6C, handleTargetResponse)
 	worldHandlers.Add(0x34, handleStatusRequest)
+	worldHandlers.Add(0xC8, handleClientViewRange)
 }
 
 // Registry of packet handler functions
@@ -69,4 +70,16 @@ func handleDoubleClickRequest(n *NetState, cp clientpacket.Packet) {
 		// TODO Movement reject
 		log.Println(p)
 	}
+}
+
+func handleClientViewRange(n *NetState, cp clientpacket.Packet) {
+	if n.m == nil {
+		return
+	}
+	p := cp.(*clientpacket.ClientViewRange)
+	world.Map().UpdateViewRangeForMobile(n.m, p.Range)
+	n.Send(&serverpacket.ClientViewRange{
+		Range: byte(n.m.ViewRange()),
+	})
+	// TODO Update visible objects for the client
 }

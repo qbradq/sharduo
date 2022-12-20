@@ -269,3 +269,37 @@ func (m *Map) GetMobilesInRange(l uo.Location, r int) []Mobile {
 	}
 	return ret
 }
+
+// UpdateViewRangeForMobile handles an update of the mobiles ViewRange value
+// in a way that sends the correct packets to the attached NetState, if any.
+func (m *Map) UpdateViewRangeForMobile(mob Mobile, r int) {
+	r = uo.BoundViewRange(r)
+	if r == mob.ViewRange() {
+		return
+	}
+	if r < mob.ViewRange() {
+		// Look for the set of currently-visible objects that will no longer be
+		for _, item := range m.GetItemsInRange(mob.Location(), mob.ViewRange()) {
+			if mob.Location().XYDistance(item.Location()) > r {
+				mob.NetState().RemoveObject(item)
+			}
+		}
+		for _, othermob := range m.GetMobilesInRange(mob.Location(), mob.ViewRange()) {
+			if mob.Location().XYDistance(othermob.Location()) > r {
+				mob.NetState().RemoveObject(othermob)
+			}
+		}
+	} else {
+		// Look for the set of currently-non-visible objects that will be
+		for _, item := range m.GetItemsInRange(mob.Location(), r) {
+			if mob.Location().XYDistance(item.Location()) > mob.ViewRange() {
+				mob.NetState().SendItem(item)
+			}
+		}
+		for _, othermob := range m.GetMobilesInRange(mob.Location(), r) {
+			if mob.Location().XYDistance(othermob.Location()) > mob.ViewRange() {
+				// TODO Send mobile
+			}
+		}
+	}
+}

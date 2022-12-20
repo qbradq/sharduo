@@ -27,7 +27,6 @@ type NetState struct {
 	sendQueue           chan serverpacket.Packet
 	id                  string
 	m                   game.Mobile
-	viewRange           int
 	lastWalkRequestTime int64
 }
 
@@ -38,7 +37,6 @@ func NewNetState(conn *net.TCPConn) *NetState {
 		conn:      conn,
 		sendQueue: make(chan serverpacket.Packet, 1024*16),
 		id:        uuid.String(),
-		viewRange: uo.MaxViewRange,
 	}
 }
 
@@ -234,11 +232,6 @@ func (n *NetState) readLoop(r *clientpacket.Reader) {
 			}
 		}
 	}
-}
-
-// ViewRange implements the game.NetState interface.
-func (n *NetState) ViewRange() int {
-	return n.viewRange
 }
 
 // SendItem implements the game.NetState interface.

@@ -17,7 +17,6 @@ func init() {
 	embeddedHandlers.Add(0x73, handleClientPing)
 	embeddedHandlers.Add(0xad, handleClientSpeech)
 	embeddedHandlers.Add(0xbd, handleClientVersion)
-	embeddedHandlers.Add(0xc8, handleClientViewRange)
 }
 
 // PacketContext represents the context in which a packet may enter the server
@@ -72,13 +71,4 @@ func handleClientVersion(c *PacketContext) {
 	if p.String != "7.0.15.1" {
 		c.NetState.Error("version check", errors.New("bad client version"))
 	}
-}
-
-func handleClientViewRange(c *PacketContext) {
-	p := c.Packet.(*clientpacket.ClientViewRange)
-	c.NetState.viewRange = uo.BoundViewRange(p.Range)
-	c.NetState.Send(&serverpacket.ClientViewRange{
-		Range: byte(c.NetState.ViewRange()),
-	})
-	// TODO Update visible objects for the client
 }
