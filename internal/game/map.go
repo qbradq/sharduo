@@ -167,7 +167,7 @@ func (m *Map) AddNewObject(o Object) {
 // movement was successful.
 func (m *Map) MoveMobile(mob Mobile, dir uo.Direction) bool {
 	// Change facing request
-	dir = dir.Bound()
+	dir = dir.Bound().StripRunningFlag()
 	if mob.Facing() != dir {
 		mob.SetFacing(dir)
 		return true

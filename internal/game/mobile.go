@@ -32,6 +32,10 @@ type Mobile interface {
 	IsFemale() bool
 	// IsHumanBody returns true if the body value is humanoid.
 	IsHumanBody() bool
+	// IsRunning returns true if the mobile is running.
+	IsRunning() bool
+	// SetRunning sets the running flag of the mobile.
+	SetRunning(bool)
 	// Equip equips the given item in the item's layer, returns false if the
 	// equip operation failed for any reason.
 	Equip(Wearable) bool
@@ -52,6 +56,8 @@ type BaseMobile struct {
 	isFemale bool
 	// Animation body of the object
 	body uo.Body
+	// Running flag
+	isRunning bool
 	// Notoriety of the mobile
 	notoriety uo.Notoriety
 	// equipment is the collection of equipment this mobile is wearing, if any
@@ -123,6 +129,12 @@ func (m *BaseMobile) IsHumanBody() bool {
 	return m.body == uo.BodyHumanMale || m.body == uo.BodyHumanFemale
 }
 
+// IsRunning implements the Mobile interface.
+func (m *BaseMobile) IsRunning() bool { return m.isRunning }
+
+// SetRunning implements the Mobile interface.
+func (m *BaseMobile) SetRunning(v bool) { m.isRunning = v }
+
 // Equip implements the Mobile interface.
 func (m *BaseMobile) Equip(w Wearable) bool {
 	if m.equipment == nil {
@@ -144,6 +156,7 @@ func (m *BaseMobile) EquippedMobilePacket() *serverpacket.EquippedMobile {
 		Y:         m.location.Y,
 		Z:         m.location.Z,
 		Facing:    m.facing,
+		IsRunning: m.isRunning,
 		Hue:       m.hue,
 		Flags:     flags,
 		Notoriety: m.notoriety,

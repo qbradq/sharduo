@@ -213,3 +213,14 @@ const (
 	BodyDefault     Body = 991 // Blackthorne
 	BodySystem      Body = 0x7fff
 )
+
+// MoveSpeed represents one of the available movement speeds.
+type MoveSpeed byte
+
+// All valid values for MovementSpeed
+const (
+	MoveSpeedNormal   MoveSpeed = 0
+	MoveSpeedFast     MoveSpeed = 1
+	MoveSpeedSlow     MoveSpeed = 2
+	MoveSpeedTeleport MoveSpeed = 3
+)

@@ -247,6 +247,8 @@ type EquippedMobile struct {
 	Z int
 	// Direction the mobile is facing
 	Facing uo.Direction
+	// Running flag
+	IsRunning bool
 	// Hue of the mobile
 	Hue uo.Hue
 	// Flags
@@ -279,7 +281,12 @@ func (p *EquippedMobile) Write(w io.Writer) {
 	PutUint16(w, uint16(p.X))
 	PutUint16(w, uint16(p.Y))
 	PutByte(w, byte(int8(p.Z)))
-	PutByte(w, byte(p.Facing))
+	// Facing
+	if p.IsRunning {
+		PutByte(w, byte(p.Facing.SetRunningFlag()))
+	} else {
+		PutByte(w, byte(p.Facing.StripRunningFlag()))
+	}
 	PutUint16(w, uint16(p.Hue))
 	PutByte(w, byte(p.Flags))
 	PutByte(w, byte(p.Notoriety))
@@ -490,4 +497,18 @@ func (p *OpenPaperDoll) Write(w io.Writer) {
 	PutUint32(w, uint32(p.Serial))
 	PutStringN(w, p.Text, 60)
 	PutByte(w, flags)
+}
+
+// MoveSpeed sets the movement speed of the player on the client. This is a
+// psuedo-packet for General Information packet 0xBF-0x0026.
+type MoveSpeed struct {
+	MoveSpeed uo.MoveSpeed
+}
+
+// Write implements the Packet interface.
+func (p *MoveSpeed) Write(w io.Writer) {
+	PutByte(w, 0xBF)     // General Information packet
+	PutUint16(w, 6)      // Packet length
+	PutUint16(w, 0x0026) // MoveSpeed sub-command
+	PutByte(w, byte(p.MoveSpeed))
 }

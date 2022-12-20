@@ -1,9 +1,6 @@
 package uod
 
 import (
-	"log"
-	"time"
-
 	"github.com/qbradq/sharduo/lib/clientpacket"
 	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/uo"
@@ -44,14 +41,10 @@ func handleStatusRequest(n *NetState, cp clientpacket.Packet) {
 
 func handleWalkRequest(n *NetState, cp clientpacket.Packet) {
 	p := cp.(*clientpacket.WalkRequest)
-	if time.Now().UnixMilli()-n.lastWalkRequestTime < uo.FastWalkDelayMS {
-		log.Printf("fast walk prevention triggered for account %s\n", n.id)
-		return
-	}
 	if n.m == nil {
 		return
 	}
-	if world.Map().MoveMobile(n.m, p.Direction.Bound()) {
+	if world.Map().MoveMobile(n.m, p.Direction) {
 		n.Send(&serverpacket.MoveAcknowledge{
 			Sequence:  p.Sequence,
 			Notoriety: uo.NotorietyInnocent,
