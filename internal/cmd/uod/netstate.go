@@ -169,14 +169,23 @@ func (n *NetState) Service() {
 func (n *NetState) SendService() {
 	w := serverpacket.NewCompressedWriter()
 	pw := bufio.NewWriterSize(n.conn, 128*1024)
-	for p := range n.sendQueue {
-		if err := w.Write(p, pw); err != nil {
-			n.Error("writing packet", err)
-			return
-		}
-		if err := pw.Flush(); err != nil {
-			n.Error("sending packet", err)
-			return
+	for {
+		select {
+		case p := <-n.sendQueue:
+			if p == nil {
+				return
+			}
+			if err := w.Write(p, pw); err != nil {
+				n.Error("writing packet", err)
+				return
+			}
+		default:
+			if pw.Size() > 0 {
+				if err := pw.Flush(); err != nil {
+					n.Error("sending packet", err)
+					return
+				}
+			}
 		}
 	}
 }
