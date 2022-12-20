@@ -302,4 +302,5 @@ func (m *Map) UpdateViewRangeForMobile(mob Mobile, r int) {
 			}
 		}
 	}
+	mob.SetViewRange(r)
 }

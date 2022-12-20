@@ -23,6 +23,9 @@ type Mobile interface {
 	// observe objects in the world. If this mobile has an attached NetState,
 	// this value can change at any time at the request of the player.
 	ViewRange() int
+	// SetViewRange sets the view range of the mobile, bounding it to sane
+	// values.
+	SetViewRange(int)
 	// GetBody returns the animation body of the mobile.
 	Body() uo.Body
 	// Equip equips the given item in the item's layer, returns false if the
@@ -101,6 +104,9 @@ func (m *BaseMobile) SetNetState(n NetState) {
 
 // ViewRange implements the Mobile interface.
 func (m *BaseMobile) ViewRange() int { return m.viewRange }
+
+// SetViewRange implements the Mobile interface.
+func (m *BaseMobile) SetViewRange(r int) { m.viewRange = uo.BoundViewRange(r) }
 
 // Body implements the Mobile interface.
 func (m *BaseMobile) Body() uo.Body { return m.body }

@@ -96,18 +96,3 @@ func (r *CharacterLoginRequest) Execute() error {
 	world.Map().AddNewObject(r.NetState.m)
 	return nil
 }
-
-// ViewRangeChangeRequest asks the world to update the player's view range
-type ViewRangeChangeRequest struct {
-	BaseWorldRequest
-	NewRange int
-}
-
-// Execute implements the WorldRequest interface
-func (r *ViewRangeChangeRequest) Execute() error {
-	if r.NetState == nil || r.NetState.m == nil {
-		return nil
-	}
-	world.Map().UpdateViewRangeForMobile(r.NetState.m, r.NewRange)
-	return nil
-}
