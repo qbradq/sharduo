@@ -11,6 +11,8 @@ type chunk struct {
 	bounds uo.Bounds
 	// The slice of all tiles in the chunk
 	tiles []uo.Tile
+	// Collection of all statics in the chunk
+	statics []Static
 	// Collection of all of the objects in the chunk
 	objects util.Slice[Object]
 }

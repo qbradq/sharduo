@@ -113,6 +113,7 @@ func Main() {
 
 	// Initialize our data structures
 	world = NewWorld(configuration.SaveDirectory, rng)
+	world.Map().LoadFromMuls(mapmul, staticsmul)
 	game.RegisterWorld(world)
 
 	// Try to load the most recent save

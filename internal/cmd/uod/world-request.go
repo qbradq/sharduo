@@ -2,7 +2,6 @@ package uod
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/lib/clientpacket"
@@ -72,8 +71,7 @@ func (r *CharacterLoginRequest) Execute() error {
 	// TODO Character load
 	r.NetState.m = world.New(templateManager.NewObject("Player")).(game.Mobile)
 	r.NetState.m.SetNetState(r.NetState)
-	log.Println(r.NetState.m.Serial().String())
-	// DEBUG
+	// TODO Remove porting to Green Acres
 	r.NetState.m.SetLocation(uo.Location{
 		X: 5250,
 		Y: 400,

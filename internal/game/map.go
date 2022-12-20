@@ -34,11 +34,20 @@ func NewMap() *Map {
 
 // LoadFromMul reads in all of the segments of the given MapMul object and
 // updates the map
-func (m *Map) LoadFromMul(f *file.MapMul) {
+func (m *Map) LoadFromMuls(mapmul *file.MapMul, staticsmul *file.StaticsMul) {
+	// Load the tiles
 	for iy := 0; iy < uo.MapHeight; iy++ {
 		for ix := 0; ix < uo.MapWidth; ix++ {
-			m.getChunk(uo.Location{X: ix, Y: iy}).setTile(ix, iy, f.GetTile(ix, iy))
+			m.getChunk(uo.Location{X: ix, Y: iy}).setTile(ix, iy, mapmul.GetTile(ix, iy))
 		}
+	}
+	// Load the statics
+	for _, static := range staticsmul.Statics() {
+		m.getChunk(static.Location).statics = append(m.getChunk(static.Location).statics,
+			Static{
+				Graphic:  static.Graphic,
+				Location: static.Location,
+			})
 	}
 }
 

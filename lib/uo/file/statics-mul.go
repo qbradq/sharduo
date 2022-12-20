@@ -2,7 +2,6 @@ package file
 
 import (
 	"encoding/binary"
-	"log"
 
 	"github.com/qbradq/sharduo/lib/uo"
 )
@@ -31,9 +30,6 @@ func NewStaticsMulFromFile(staidxPath, staticsPath string) *StaticsMul {
 	chunkIdx := 0
 	for cx := 0; cx < uo.MapChunksWidth; cx++ {
 		for cy := 0; cy < uo.MapChunksHeight; cy++ {
-			if cx == 1324/uo.ChunkWidth && cy == 1624/uo.ChunkHeight {
-				log.Println("debug hook")
-			}
 			cd := m.mul.GetSegment(chunkIdx)
 			chunkIdx++
 			if cd == nil {
@@ -45,11 +41,11 @@ func NewStaticsMulFromFile(staidxPath, staticsPath string) *StaticsMul {
 					break
 				}
 				e := StaticsMulEntry{
-					Graphic: uo.Graphic(binary.LittleEndian.Uint16(cd[staticOfs+0 : staticOfs+4])),
+					Graphic: uo.Graphic(binary.LittleEndian.Uint16(cd[staticOfs+0 : staticOfs+2])),
 					Location: uo.Location{
-						X: (int(cx) * int(uo.ChunkWidth)) + int(cd[staticOfs+4]),
-						Y: (int(cy) * int(uo.ChunkHeight)) + int(cd[staticOfs+5]),
-						Z: int(int8(cd[staticOfs+6])),
+						X: (int(cx) * int(uo.ChunkWidth)) + int(cd[staticOfs+2]),
+						Y: (int(cy) * int(uo.ChunkHeight)) + int(cd[staticOfs+3]),
+						Z: int(int8(cd[staticOfs+4])),
 					},
 				}
 				staticOfs += 7

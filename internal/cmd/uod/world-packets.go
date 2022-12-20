@@ -65,5 +65,8 @@ func handleDoubleClickRequest(n *NetState, cp clientpacket.Packet) {
 			WarMode:   false,
 			Alterable: true,
 		})
+	} else {
+		// TODO Movement reject
+		log.Println(p)
 	}
 }
