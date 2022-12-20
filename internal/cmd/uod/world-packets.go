@@ -31,6 +31,13 @@ func handleStatusRequest(n *NetState, cp clientpacket.Packet) {
 	p := cp.(*clientpacket.PlayerStatusRequest)
 	switch p.StatusRequestType {
 	case uo.StatusRequestTypeBasic:
+		n.Send(&serverpacket.StatusBarInfo{
+			Mobile: n.m.Serial(),
+			Name:   n.m.DisplayName(),
+			Female: n.m.IsFemale(),
+			HP:     70,
+			MaxHP:  72,
+		})
 		// TODO Status update response
 	}
 }
@@ -55,8 +62,11 @@ func handleWalkRequest(n *NetState, cp clientpacket.Packet) {
 }
 
 func handleDoubleClickRequest(n *NetState, cp clientpacket.Packet) {
+	if n.m == nil {
+		return
+	}
 	p := cp.(*clientpacket.DoubleClick)
-	if p.IsSelf {
+	if p.IsSelf || p.ID == n.m.Serial() {
 		// This is a double-click on the player's mobile. Ignore the rest of
 		// the serial and directly access the mobile. NEVER trust a random
 		// serial from the client :)
@@ -67,8 +77,7 @@ func handleDoubleClickRequest(n *NetState, cp clientpacket.Packet) {
 			Alterable: true,
 		})
 	} else {
-		// TODO Movement reject
-		log.Println(p)
+		// TODO Handle double-click on other objects
 	}
 }
 

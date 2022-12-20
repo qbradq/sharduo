@@ -28,6 +28,10 @@ type Mobile interface {
 	SetViewRange(int)
 	// GetBody returns the animation body of the mobile.
 	Body() uo.Body
+	// IsFemale returns true if the mobile is female.
+	IsFemale() bool
+	// IsHumanBody returns true if the body value is humanoid.
+	IsHumanBody() bool
 	// Equip equips the given item in the item's layer, returns false if the
 	// equip operation failed for any reason.
 	Equip(Wearable) bool
@@ -110,6 +114,14 @@ func (m *BaseMobile) SetViewRange(r int) { m.viewRange = uo.BoundViewRange(r) }
 
 // Body implements the Mobile interface.
 func (m *BaseMobile) Body() uo.Body { return m.body }
+
+// IsFemale implements the Mobile interface.
+func (m *BaseMobile) IsFemale() bool { return m.isFemale }
+
+// IsHumanBody implements the Mobile interface.
+func (m *BaseMobile) IsHumanBody() bool {
+	return m.body == uo.BodyHumanMale || m.body == uo.BodyHumanFemale
+}
 
 // Equip implements the Mobile interface.
 func (m *BaseMobile) Equip(w Wearable) bool {
