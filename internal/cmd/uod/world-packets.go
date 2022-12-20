@@ -43,7 +43,7 @@ func handleWalkRequest(n *NetState, cp clientpacket.Packet) {
 	if n.m == nil {
 		return
 	}
-	if world.Map().MoveObject(n.m, p.Direction.Bound()) {
+	if world.Map().MoveMobile(n.m, p.Direction.Bound()) {
 		n.Send(&serverpacket.MoveAcknowledge{
 			Sequence:  p.Sequence,
 			Notoriety: uo.NotorietyInnocent,

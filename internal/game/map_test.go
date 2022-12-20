@@ -200,15 +200,33 @@ func TestMapMoveMobile(t *testing.T) {
 			ExpectedShown:   mob.viewRange*4 + 1,
 		},
 	}
+	// Single-step tests
 	for _, test := range tests {
 		mob.n.(*MockNetState).Reset()
 		mob.facing = test.Direction
-		uat.MoveObject(mob, test.Direction)
+		uat.MoveMobile(mob, test.Direction)
 		if mob.n.(*MockNetState).ItemsSeen != test.ExpectedShown {
-			t.Errorf("move test %s saw %d new items, expected %d", test.Name, mob.n.(*MockNetState).ItemsSeen, test.ExpectedShown)
+			t.Errorf("single-step move test %s saw %d new items, expected %d", test.Name, mob.n.(*MockNetState).ItemsSeen, test.ExpectedShown)
 		}
 		if mob.n.(*MockNetState).ObjectsRemoved != test.ExpectedRemoved {
-			t.Errorf("move test %s removed %d items, expected %d", test.Name, mob.n.(*MockNetState).ObjectsRemoved, test.ExpectedRemoved)
+			t.Errorf("single-step move test %s removed %d items, expected %d", test.Name, mob.n.(*MockNetState).ObjectsRemoved, test.ExpectedRemoved)
+		}
+	}
+	// Multi-step tests
+	for _, test := range tests {
+		mob.n.(*MockNetState).Reset()
+		mob.facing = test.Direction
+		for i := 0; i < 30; i++ {
+			mob.n.(*MockNetState).Reset()
+			mob.location.X = 100
+			mob.location.Y = 100
+			uat.MoveMobile(mob, test.Direction)
+			if mob.n.(*MockNetState).ItemsSeen != test.ExpectedShown {
+				t.Errorf("multi-step move test %s saw %d new items, expected %d on step %d", test.Name, mob.n.(*MockNetState).ItemsSeen, test.ExpectedShown, i)
+			}
+			if mob.n.(*MockNetState).ObjectsRemoved != test.ExpectedRemoved {
+				t.Errorf("multi-step move test %s removed %d items, expected %d on step %d", test.Name, mob.n.(*MockNetState).ObjectsRemoved, test.ExpectedRemoved, i)
+			}
 		}
 	}
 }

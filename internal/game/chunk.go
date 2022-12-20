@@ -13,8 +13,10 @@ type chunk struct {
 	tiles []uo.Tile
 	// Collection of all statics in the chunk
 	statics []Static
-	// Collection of all of the objects in the chunk
-	objects util.Slice[Object]
+	// Collection of all items in the chunk
+	items util.Slice[Item]
+	// Collection of all mobiles in the chunk
+	mobiles util.Slice[Mobile]
 }
 
 // newChunk creates and returns a new Chunk object
@@ -38,13 +40,24 @@ func (c *chunk) Add(o Object) bool {
 	if !c.bounds.Contains(o.Location()) {
 		return false
 	}
-	c.objects = c.objects.Append(o)
+	if item, ok := o.(Item); ok {
+		c.items = c.items.Append(item)
+	} else if mobile, ok := o.(Mobile); ok {
+		c.mobiles = c.mobiles.Append(mobile)
+	} else {
+		// Unknown object interface
+		return false
+	}
 	return true
 }
 
 // Remove removes the object from the chunk.
 func (c *chunk) Remove(o Object) {
-	c.objects = c.objects.Remove(o)
+	if item, ok := o.(Item); ok {
+		c.items = c.items.Remove(item)
+	} else if mobile, ok := o.(Mobile); ok {
+		c.mobiles = c.mobiles.Remove(mobile)
+	}
 }
 
 // GetTile reutrns the Tile value for the given chunk-relative location. x and y
