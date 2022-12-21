@@ -16,6 +16,7 @@ including all features required to mine ore and smelt it into ingots.
 * ~~Stats~~
 * ~~Running~~
 * Picking up and dropping items on the ground
+* Player persistance
 * Removing equipment
 * Equipping equipment
 * Using equipment

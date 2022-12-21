@@ -53,12 +53,12 @@ type BaseSerializeable struct {
 
 // Serialize implements the util.Serializeable interface.
 func (s *BaseSerializeable) Serialize(f *TagFileWriter) {
-	f.WriteHex("Serial", int(s.serial))
+	f.WriteHex("Serial", uint32(s.serial))
 }
 
 // Deserialize implements the util.Serializeable interface.
 func (s *BaseSerializeable) Deserialize(f *TagFileObject) {
-	s.serial = uo.Serial(f.GetNumber("Serial", int(uo.SerialSystem)))
+	s.serial = uo.Serial(f.GetHex("Serial", uint32(uo.SerialSystem)))
 }
 
 // OnAfterDeserialize implements the util.Serializeable interface.

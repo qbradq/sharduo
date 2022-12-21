@@ -1,6 +1,9 @@
 package uod
 
 import (
+	"log"
+
+	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/lib/clientpacket"
 	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/uo"
@@ -12,6 +15,8 @@ import (
 func init() {
 	worldHandlers.Add(0x02, handleWalkRequest)
 	worldHandlers.Add(0x06, handleDoubleClickRequest)
+	worldHandlers.Add(0x07, handleLiftRequest)
+	worldHandlers.Add(0x08, handleDropRequest)
 	worldHandlers.Add(0x6C, handleTargetResponse)
 	worldHandlers.Add(0x34, handleStatusRequest)
 	worldHandlers.Add(0xC8, handleClientViewRange)
@@ -50,7 +55,7 @@ func handleStatusRequest(n *NetState, cp clientpacket.Packet) {
 			MaxFollowers:   uo.MaxFollowers,
 		})
 	case uo.StatusRequestTypeSkills:
-
+		// TODO Respond to skills request
 	}
 }
 
@@ -99,4 +104,39 @@ func handleClientViewRange(n *NetState, cp clientpacket.Packet) {
 		Range: byte(n.m.ViewRange()),
 	})
 	// TODO Update visible objects for the client
+}
+
+func handleLiftRequest(n *NetState, cp clientpacket.Packet) {
+	if n.m == nil || n.m.IsItemOnCursor() {
+		return
+	}
+	p := cp.(*clientpacket.LiftRequest)
+	o := world.Find(p.Item)
+	if o == nil {
+		return
+	}
+	item, ok := o.(game.Item)
+	if !ok {
+		return
+	}
+	// TODO Range check
+	n.m.SetItemInCursor(item)
+}
+
+func handleDropRequest(n *NetState, cp clientpacket.Packet) {
+	if n.m == nil || !n.m.IsItemOnCursor() {
+		log.Println("drop request with no item on cursor")
+		return
+	}
+	p := cp.(*clientpacket.DropRequest)
+	if p.Item != n.m.ItemInCursor().Serial() {
+		log.Println("drop request for an item that was not on the player's cursor")
+		return
+	}
+	// TODO Range check
+	item := world.Find(p.Item)
+	item.SetLocation(uo.Location{X: p.X, Y: p.Y, Z: p.Z})
+	if !world.Map().SetNewParent(item, nil) {
+		// TODO Drop reject
+	}
 }

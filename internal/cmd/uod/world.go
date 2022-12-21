@@ -343,6 +343,9 @@ func (w *World) AuthenticateLoginSession(username, passwordHash string, id uo.Se
 func (w *World) Process() {
 	for r := range w.requestQueue {
 		if err := r.Execute(); err != nil {
+			if r.GetNetState() != nil {
+				r.GetNetState().SystemMessage(err.Error())
+			}
 			log.Println(err)
 		}
 	}

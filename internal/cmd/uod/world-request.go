@@ -93,6 +93,6 @@ func (r *CharacterLoginRequest) Execute() error {
 	r.NetState.Send(&serverpacket.LoginComplete{})
 	r.NetState.Send(r.NetState.m.EquippedMobilePacket())
 
-	world.Map().AddNewObject(r.NetState.m)
+	world.Map().AddObject(r.NetState.m)
 	return nil
 }

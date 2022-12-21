@@ -103,6 +103,20 @@ func (o *TagFileObject) GetNumber(name string, def int) int {
 	return def
 }
 
+// GetHex returns the named property as an unsigned number or the default if not
+// found. This function may add errors to the internal error slice.
+func (o *TagFileObject) GetHex(name string, def uint32) uint32 {
+	if v, found := o.p[name]; found {
+		n, err := strconv.ParseInt(v, 0, 64)
+		if err != nil {
+			o.errs = append(o.errs, err)
+			return def
+		}
+		return uint32(n)
+	}
+	return def
+}
+
 // GetBool returns the named property as a boolean value or the default if not
 // found. This function may add errors to the internal error slice.
 func (o *TagFileObject) GetBool(name string, def bool) bool {

@@ -64,7 +64,7 @@ func (f *TagFileWriter) WriteNumber(name string, value int) {
 }
 
 // WriteHex writes a number to the io.Writer in base 16 without leading zeros.
-func (f *TagFileWriter) WriteHex(name string, value int) {
+func (f *TagFileWriter) WriteHex(name string, value uint32) {
 	if _, err := f.w.Write([]byte(fmt.Sprintf("%s=0x%X\n", name, value))); err != nil {
 		f.handleError(err)
 	}

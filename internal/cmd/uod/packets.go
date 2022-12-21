@@ -50,7 +50,10 @@ func handleClientSpeech(c *PacketContext) {
 		if p.Text[0] == '[' {
 			cmd := ParseCommand(p.Text[1:])
 			if cmd != nil {
-				cmd.Compile()
+				if err := cmd.Compile(); err != nil {
+					c.NetState.SystemMessage(err.Error())
+					return
+				}
 				world.SendRequest(&SpeechCommandRequest{
 					BaseWorldRequest: BaseWorldRequest{
 						NetState: c.NetState,

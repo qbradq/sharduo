@@ -40,7 +40,7 @@ func makeTestObjects() (*Map, *BaseMobile) {
 					location: uo.Location{X: ix, Y: iy},
 				},
 			}
-			m.AddNewObject(item)
+			m.AddObject(item)
 		}
 	}
 	return m, mob
@@ -132,7 +132,7 @@ func TestMapAddNewMobile(t *testing.T) {
 			mob.location.X = ix
 			mob.location.Y = iy
 			mob.n.(*MockNetState).Reset()
-			uat.AddNewObject(mob)
+			uat.AddObject(mob)
 			if mob.n.(*MockNetState).ItemsSeen != nExpected {
 				t.Errorf("mob insert test at %dx%d, saw %d items, expected %d", ix, iy, mob.n.(*MockNetState).ItemsSeen, nExpected)
 			}
@@ -142,7 +142,7 @@ func TestMapAddNewMobile(t *testing.T) {
 
 func TestMapMoveMobile(t *testing.T) {
 	uat, mob := makeTestObjects()
-	uat.AddNewObject(mob)
+	uat.AddObject(mob)
 	tests := []struct {
 		Name            string
 		Direction       uo.Direction

@@ -81,6 +81,14 @@ type Mobile interface {
 	// Equipment and inventory
 	//
 
+	// ItemInHand returns a pointer to the item held in the mobile's cursor.
+	// This is usually only used by mobiles being controlled by a client.
+	ItemInCursor() Item
+	// Returns true if the mobile's cursor has an item on it.
+	IsItemOnCursor() bool
+	// SetItemInCursor sets the item held in the mobile's cursor. Returns true
+	// if successful.
+	SetItemInCursor(Item) bool
 	// Equip equips the given item in the item's layer, returns false if the
 	// equip operation failed for any reason.
 	Equip(Wearable) bool
@@ -102,6 +110,8 @@ type BaseMobile struct {
 	isRunning bool
 	// Notoriety of the mobile
 	notoriety uo.Notoriety
+	// Pointer to the item held in the cursor
+	itemInCursor Item
 	// The collection of equipment this mobile is wearing, if any
 	equipment *EquipmentCollection
 	// Base strength
@@ -227,6 +237,44 @@ func (m *BaseMobile) Stamina() int { return m.stamina }
 
 // MaxStamina implements the Mobile interface.
 func (m *BaseMobile) MaxStamina() int { return m.Dexterity() }
+
+func (m *BaseMobile) ItemInCursor() Item { return m.itemInCursor }
+
+// Returns true if the mobile's cursor has an item on it.
+func (m *BaseMobile) IsItemOnCursor() bool { return m.itemInCursor != nil }
+
+// SetItemInCursor sets the item held in the mobile's cursor. It returns true
+// if successful.
+func (m *BaseMobile) SetItemInCursor(item Item) bool {
+	if m.itemInCursor == item {
+		return true
+	}
+	if m.itemInCursor != nil {
+		return false
+	}
+	m.itemInCursor = item
+	return world.Map().SetNewParent(item, m)
+}
+
+// AddObject adds the object to the mobile. It returns true if successful.
+func (m *BaseMobile) AddObject(o Object) bool {
+	if item, ok := o.(Item); ok {
+		if m.itemInCursor == item {
+			return true
+		}
+	}
+	return false
+}
+
+// RemoveObject removes the object from the mobile. It returns true if
+// successful.
+func (m *BaseMobile) RemoveObject(o Object) bool {
+	if m.itemInCursor == o {
+		m.itemInCursor = nil
+		return true
+	}
+	return false
+}
 
 // Equip implements the Mobile interface.
 func (m *BaseMobile) Equip(w Wearable) bool {

@@ -9,6 +9,8 @@ import (
 func init() {
 	packetFactory.Register(0x02, newWalkRequest)
 	packetFactory.Register(0x06, newDoubleClick)
+	packetFactory.Register(0x07, newLiftRequest)
+	packetFactory.Register(0x08, newDropRequest)
 	packetFactory.Register(0x09, newSingleClick)
 	packetFactory.Register(0x34, newPlayerStatusRequest)
 	packetFactory.Register(0x5D, newCharacterLogin)
@@ -439,5 +441,51 @@ func newTargetResponse(in []byte) Packet {
 		Graphic:      uo.Graphic(GetUint16(in[16:18])),
 	}
 	p.SetSerial(0x6C)
+	return p
+}
+
+// LiftRequest is sent when the player lifts an item with the cursor.
+type LiftRequest struct {
+	util.BaseSerialer
+	// Serial of the object to lift
+	Item uo.Serial
+	// Amount to lift
+	Amount int
+}
+
+func newLiftRequest(in []byte) Packet {
+	p := &LiftRequest{
+		Item:   uo.Serial(GetUint32(in[0:4])),
+		Amount: int(GetUint16(in[4:6])),
+	}
+	p.SetSerial(0x07)
+	return p
+}
+
+// DropRequest is sent when the player drops an item from the cursor.
+type DropRequest struct {
+	util.BaseSerialer
+	// Serial of the object to drop
+	Item uo.Serial
+	// X location to drop the item
+	X int
+	// Y location to drop the item
+	Y int
+	// Z location to drop the item
+	Z int
+	// Serial of the container to drop the item into. uo.SerialSystem means to
+	// drop to the world.
+	Container uo.Serial
+}
+
+func newDropRequest(in []byte) Packet {
+	p := &DropRequest{
+		Item:      uo.Serial(GetUint32(in[0:4])),
+		X:         int(GetUint16(in[4:6])),
+		Y:         int(GetUint16(in[6:8])),
+		Z:         int(int8(in[8])),
+		Container: uo.Serial(GetUint32(in[9:13])),
+	}
+	p.SetSerial(0x08)
 	return p
 }

@@ -48,7 +48,7 @@ func (i *BaseItem) TypeName() string {
 // Serialize implements the util.Serializeable interface.
 func (i *BaseItem) Serialize(f *util.TagFileWriter) {
 	i.BaseObject.Serialize(f)
-	f.WriteHex("Graphic", int(i.graphic))
+	f.WriteHex("Graphic", uint32(i.graphic))
 }
 
 // Deserialize implements the util.Serializeable interface.

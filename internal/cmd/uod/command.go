@@ -99,7 +99,7 @@ func newNewCommand(args CommandArgs) Command {
 // Compile implements the Command interface
 func (c *NewCommand) Compile() error {
 	if len(c.args) != 2 {
-		return fmt.Errorf("new command requires exactly 2 arguments, go %d", len(c.args))
+		return fmt.Errorf("new command requires exactly 2 arguments, got %d", len(c.args))
 	}
 	return nil
 }
@@ -112,6 +112,7 @@ func (c *NewCommand) Execute(n *NetState) error {
 	world.SendTarget(n, uo.TargetTypeLocation, nil, func(r *clientpacket.TargetResponse, ctx interface{}) {
 		o := templateManager.NewObject(c.args[1])
 		if o == nil {
+			n.SystemMessage("template %s not found", c.args[1])
 			return
 		}
 		o.SetLocation(uo.Location{
@@ -119,7 +120,7 @@ func (c *NewCommand) Execute(n *NetState) error {
 			Y: r.Y,
 			Z: r.Z,
 		})
-		world.Map().AddNewObject(world.New(o))
+		world.Map().AddObject(world.New(o))
 	})
 	return nil
 }
@@ -148,6 +149,8 @@ func (c *DebugCommand) Compile() error {
 		if len(c.args) != 3 {
 			return errors.New("debug splat command requires 3 arguments")
 		}
+	default:
+		return fmt.Errorf("unknown debug command %s", c.args[1])
 	}
 	return nil
 }
@@ -164,20 +167,19 @@ func (c *DebugCommand) Execute(n *NetState) error {
 			for ix := n.m.Location().X - 50; ix < n.m.Location().X+50; ix++ {
 				o := templateManager.NewObject(c.args[2])
 				if o == nil {
-					log.Println("debug splat failed to find template name")
-					return nil
+					return fmt.Errorf("debug splat failed to find template %s", c.args[2])
 				}
 				o.SetLocation(uo.Location{
 					X: ix,
 					Y: iy,
 					Z: n.m.Location().Z,
 				})
-				world.Map().AddNewObject(world.New(o))
+				world.Map().AddObject(world.New(o))
 				count++
 			}
 		}
 		end := time.Now().UnixMilli()
-		log.Printf("generated %d items in %d milliseconds\n", count, end-start)
+		n.SystemMessage("generated %d items in %d milliseconds\n", count, end-start)
 	}
 	return nil
 }

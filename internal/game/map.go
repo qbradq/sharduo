@@ -9,9 +9,6 @@ import (
 	"github.com/qbradq/sharduo/lib/util"
 )
 
-// Map constants
-const ()
-
 // Map contains the tile matrix, static items, and all dynamic objects of a map.
 type Map struct {
 	// The chunks of the map
@@ -132,12 +129,62 @@ func (m *Map) GetTile(x, y int) uo.Tile {
 	}).GetTile(x%uo.ChunkWidth, y%uo.ChunkHeight)
 }
 
-// AddNewObject adds a new object to the map at the given location
-func (m *Map) AddNewObject(o Object) {
+// SetNewParent sets the parent object of this object. It properly removes
+// the object from the old parent and adds the object to the new parent. Use
+// nil to represent the world. This function returns false if the operation
+// failed for any reason.
+func (m *Map) SetNewParent(o, p Object) bool {
+	oldParent := o.Parent()
+	if oldParent == nil {
+		if !world.Map().RemoveObject(o) {
+			return false
+		}
+	} else {
+		if !oldParent.RemoveObject(o) {
+			return false
+		}
+	}
+	o.SetParent(p)
+	addFailed := false
+	if p == nil {
+		if !world.Map().AddObject(o) {
+			addFailed = true
+		}
+	} else {
+		if !p.AddObject(o) {
+			addFailed = true
+		}
+	}
+	if addFailed {
+		// Make our best effort to not leak the object
+		o.SetParent(oldParent)
+		if oldParent == nil {
+			world.Map().AddObject(o)
+		} else {
+			oldParent.AddObject(o)
+		}
+	}
+	return true
+}
+
+// RemoveObject removes the object from the map. It always returns true, even if
+// the object was not on the map to begin with.
+func (m *Map) RemoveObject(o Object) bool {
 	c := m.getChunk(o.Location())
-	c.Add(o)
+	c.Remove(o)
+	return true
+}
+
+// AddObject adds an object to the map sending all proper updates. It returns
+// false only if the object could not fit on the map.
+func (m *Map) AddObject(o Object) bool {
+	c := m.getChunk(o.Location())
+	// TODO Make sure there is enough room
+	if !c.Add(o) {
+		return false
+	}
 	// Send the new object to all mobiles in range with an attached net state
-	mobs := m.GetMobilesInRange(o.Location(), uo.MaxViewRange+1)
+	mobs := m.GetMobilesInRange(o.Location(), uo.MaxViewRange)
 	for _, mob := range mobs {
 		if mob.NetState() == nil {
 			continue
@@ -161,6 +208,7 @@ func (m *Map) AddNewObject(o Object) {
 			mob.NetState().SendItem(item)
 		}
 	}
+	return true
 }
 
 // MoveMobile moves a mobile in the given direction. Returns true if the

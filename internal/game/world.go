@@ -1,12 +1,16 @@
 package game
 
-import "github.com/qbradq/sharduo/lib/uo"
+import (
+	"github.com/qbradq/sharduo/lib/uo"
+)
 
 // World is the interface the server's game world model must implement for the
 // internal game objects to work properly.
 type World interface {
 	// Find returns a pointer to the object with the given ID or nil
 	Find(uo.Serial) Object
+	// Map returns the map the world is using.
+	Map() *Map
 }
 
 var world World
