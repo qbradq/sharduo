@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 	"time"
 
@@ -14,9 +15,10 @@ import (
 )
 
 func init() {
+	commandFactory.Add("debug", newDebugCommand)
 	commandFactory.Add("location", newLocationCommand)
 	commandFactory.Add("new", newNewCommand)
-	commandFactory.Add("debug", newDebugCommand)
+	commandFactory.Add("teleport", newTeleportCommand)
 }
 
 // Command is the interface all command objects implement
@@ -122,6 +124,96 @@ func (c *NewCommand) Execute(n *NetState) error {
 		})
 		world.Map().AddObject(world.New(o))
 	})
+	return nil
+}
+
+// TeleportCommand teleports the user either by target to an absolute location
+type TeleportCommand struct {
+	BaseCommand
+	Targeted      bool
+	MultiTargeted bool
+	Location      uo.Location
+}
+
+// newTeleportCommand constructs a new TeleportCommand
+func newTeleportCommand(args CommandArgs) Command {
+	return &TeleportCommand{
+		BaseCommand: BaseCommand{
+			args: args,
+		},
+	}
+}
+
+// Compile implements the Command interface
+func (c *TeleportCommand) Compile() error {
+	c.Location.Z = uo.MapMaxZ
+	if len(c.args) > 4 {
+		return errors.New("teleport command expects a maximum of 3 arguments")
+	}
+	if len(c.args) == 4 {
+		z, err := strconv.ParseInt(c.args[3], 0, 32)
+		if err != nil {
+			return err
+		}
+		c.Location.Z = int(z)
+	}
+	if len(c.args) > 3 {
+		y, err := strconv.ParseInt(c.args[2], 0, 32)
+		if err != nil {
+			return err
+		}
+		c.Location.Y = int(y)
+		x, err := strconv.ParseInt(c.args[1], 0, 32)
+		if err != nil {
+			return err
+		}
+		c.Location.X = int(x)
+	}
+	if len(c.args) == 2 {
+		if c.args[1] == "multi" {
+			c.Targeted = true
+			c.MultiTargeted = true
+		} else {
+			return errors.New("incorrect usage of teleport command. Use [teleport (multi|X Y|X Y Z)")
+		}
+	}
+	if len(c.args) == 1 {
+		c.Targeted = true
+	}
+	return nil
+}
+
+// Execute implements the Command interface
+func (c *TeleportCommand) Execute(n *NetState) error {
+	if n.m == nil {
+		return nil
+	}
+	if !c.Targeted {
+		if c.Location.Z == uo.MapMaxZ {
+			surface := world.Map().GetTopSurface(c.Location, uo.MapMaxZ)
+			c.Location.Z = surface.Z()
+		}
+		if !world.Map().TeleportMobile(n.m, c.Location) {
+			return errors.New("something is blocking that location")
+		}
+		return nil
+	}
+
+	var fn func(*clientpacket.TargetResponse, interface{})
+	fn = func(r *clientpacket.TargetResponse, ctx interface{}) {
+		if !world.Map().TeleportMobile(n.m, uo.Location{
+			X: r.X,
+			Y: r.Y,
+			Z: r.Z,
+		}) {
+			n.SystemMessage("something is blocking that location")
+		}
+		if c.MultiTargeted {
+			world.SendTarget(n, uo.TargetTypeLocation, nil, fn)
+		}
+	}
+	world.SendTarget(n, uo.TargetTypeLocation, nil, fn)
+
 	return nil
 }
 

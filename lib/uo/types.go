@@ -19,6 +19,16 @@ const (
 	MaxFollowers      int    = 5
 )
 
+// BoundZ bounds a Z value
+func BoundZ(z int) int {
+	if z < MapMinZ {
+		return MapMinZ
+	} else if z > MapMaxZ {
+		return MapMaxZ
+	}
+	return z
+}
+
 // BoundViewRange bounds a view range value
 func BoundViewRange(r int) int {
 	if r < MinViewRange {
@@ -225,54 +235,6 @@ const (
 	MoveSpeedFast     MoveSpeed = 1
 	MoveSpeedSlow     MoveSpeed = 2
 	MoveSpeedTeleport MoveSpeed = 3
-)
-
-// TileFlags represents the bit field of flags for a tile
-// definition.
-type TileFlags uint64
-
-// Bit definitions for TileFlags
-const (
-	TileFlagsNone         TileFlags = 0x000000000000
-	TileFlagsBackground   TileFlags = 0x000000000001
-	TileFlagsWeapon       TileFlags = 0x000000000002
-	TileFlagsTransparent  TileFlags = 0x000000000004
-	TileFlagsTranslucent  TileFlags = 0x000000000008
-	TileFlagsWall         TileFlags = 0x000000000010
-	TileFlagsDamaging     TileFlags = 0x000000000020
-	TileFlagsImpassable   TileFlags = 0x000000000040
-	TileFlagsWet          TileFlags = 0x000000000008
-	TileFlagsUnknown1     TileFlags = 0x000000000100
-	TileFlagsSurface      TileFlags = 0x000000000200
-	TileFlagsBridge       TileFlags = 0x000000000400
-	TileFlagsGeneric      TileFlags = 0x000000000800
-	TileFlagsWindow       TileFlags = 0x000000001000
-	TileFlagsNoShoot      TileFlags = 0x000000002000
-	TileFlagsArticleA     TileFlags = 0x000000004000
-	TileFlagsArticleAn    TileFlags = 0x000000008000
-	TileFlagsInternal     TileFlags = 0x000000010000
-	TileFlagsFoliage      TileFlags = 0x000000020000
-	TileFlagsPartialHue   TileFlags = 0x000000040000
-	TileFlagsNoHouse      TileFlags = 0x000000080000
-	TileFlagsMap          TileFlags = 0x000000100000
-	TileFlagsContainer    TileFlags = 0x000000200000
-	TileFlagsWearable     TileFlags = 0x000000400000
-	TileFlagsLightSource  TileFlags = 0x000000800000
-	TileFlagsAnimation    TileFlags = 0x000001000000
-	TileFlagsNoDiagonal   TileFlags = 0x000002000000
-	TileFlagsUnknown2     TileFlags = 0x000004000000
-	TileFlagsArmor        TileFlags = 0x000008000000
-	TileFlagsRoof         TileFlags = 0x00000010000000
-	TileFlagsDoor         TileFlags = 0x000020000000
-	TileFlagsStairBack    TileFlags = 0x000040000000
-	TileFlagsStairRight   TileFlags = 0x000080000000
-	TileFlagsAlphaBlend   TileFlags = 0x000100000000
-	TileFlagsUseNewArt    TileFlags = 0x000200000000
-	TileFlagsArtUsed      TileFlags = 0x000400000000
-	TileFlagsNoShadow     TileFlags = 0x001000000000
-	TileFlagsPixelBleed   TileFlags = 0x002000000000
-	TileFlagsPlayAnimOnce TileFlags = 0x004000000000
-	TileFlagsMultiMovable TileFlags = 0x010000000000
 )
 
 // Texture represents a texture ID

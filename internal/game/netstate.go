@@ -7,4 +7,6 @@ type NetState interface {
 	SendItem(Item)
 	// RemoveObject sends a delete object packet to the client
 	RemoveObject(Object)
+	// SendDrawPlayer sends a DrawPlayer packet for the attached mobile if any
+	SendDrawPlayer()
 }

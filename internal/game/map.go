@@ -163,11 +163,45 @@ func (m *Map) SetNewParent(o, p Object) bool {
 	return true
 }
 
+// SendEverything sends everything in range to the mobile
+func (m *Map) SendEverything(mob Mobile) {
+	if mob.NetState() == nil {
+		return
+	}
+	// Send items
+	for _, item := range m.GetItemsInRange(mob.Location(), mob.ViewRange()) {
+		mob.NetState().SendItem(item)
+	}
+	// Send other mobiles
+	// for _, othermob := range m.GetMobilesInRange(mob.Location(), mob.ViewRange()) {
+	// 	// TODO Send mobile
+	// }
+}
+
+// RemoveEverything removes everything in range of the mobile
+func (m *Map) RemoveEverything(mob Mobile) {
+	if mob.NetState() == nil {
+		return
+	}
+	// Remove items
+	for _, item := range m.GetItemsInRange(mob.Location(), mob.ViewRange()) {
+		mob.NetState().RemoveObject(item)
+	}
+	for _, otherMob := range m.GetMobilesInRange(mob.Location(), mob.ViewRange()) {
+		mob.NetState().RemoveObject(otherMob)
+	}
+}
+
 // RemoveObject removes the object from the map. It always returns true, even if
 // the object was not on the map to begin with.
 func (m *Map) RemoveObject(o Object) bool {
 	c := m.getChunk(o.Location())
 	c.Remove(o)
+	// TODO Tell other mobiles with net states in range about the object removal
+	// If this is a mobile with a net state we need to remove all objects
+	if mob, ok := o.(Mobile); ok && mob.NetState() != nil {
+		m.RemoveEverything(mob)
+	}
 	return true
 }
 
@@ -194,15 +228,7 @@ func (m *Map) AddObject(o Object) bool {
 	// If this is a mobile with a NetState we have to send all of the items
 	// and mobiles in range.
 	if mob, ok := o.(Mobile); ok && mob.NetState() != nil {
-		for _, othermob := range mobs {
-			if othermob == o {
-				continue
-			}
-			// TODO Send mobile
-		}
-		for _, item := range m.GetItemsInRange(o.Location(), mob.ViewRange()) {
-			mob.NetState().SendItem(item)
-		}
+		m.SendEverything(mob)
 	}
 	return true
 }
@@ -250,9 +276,33 @@ func (m *Map) MoveMobile(mob Mobile, dir uo.Direction) bool {
 	if oldChunk != newChunk {
 		oldChunk.Remove(mob)
 	}
+	// TODO Trigger events for moving off the tile
 	mob.SetLocation(newLocation)
+	// TODO Trigger events for moving onto the tile
 	if oldChunk != newChunk {
 		newChunk.Add(mob)
+	}
+	return true
+}
+
+// TeleportMobile moves a mobile from where it is now to the new location. This
+// returns false if there is not enough room at that location for the mobile.
+// This will also trigger all events as if the mobile left the tile normally,
+// and arrived at the new tile normally.
+func (m *Map) TeleportMobile(mob Mobile, l uo.Location) bool {
+	oldLocation := mob.Location()
+	world.Map().RemoveObject(mob) // This triggers on leave events
+	mob.SetLocation(l)
+	if !world.Map().AddObject(mob) { // This triggers on enter events
+		// Best effort to not leak the mobile. Note that if we leak a player
+		// mobile it will still be in the data set and will be retrieved when
+		// the player logs in again.
+		mob.SetLocation(oldLocation)
+		world.Map().AddObject(mob)
+		return false
+	}
+	if mob.NetState() != nil {
+		mob.NetState().SendDrawPlayer()
 	}
 	return true
 }
@@ -347,4 +397,89 @@ func (m *Map) UpdateViewRangeForMobile(mob Mobile, r int) {
 		}
 	}
 	mob.SetViewRange(r)
+}
+
+// GetHighestZ returns the highest Z coordinate of a solid surface at the given
+// location that has a Z altitude less than or equal to zlimit.
+func (m *Map) GetTopSurface(l uo.Location, zLimit int) uo.CommonObject {
+	var topObj uo.CommonObject
+	zLimit = uo.BoundZ(zLimit)
+	topZ := uo.MapMinZ
+	c := m.getChunk(l)
+	t := c.GetTile(l.X%uo.ChunkWidth, l.Y%uo.ChunkHeight)
+	topObj = t
+	if !t.Ignore() {
+		avgZ := m.GetAverageTerrainZ(l)
+		if avgZ == zLimit {
+			return t
+		} else if avgZ < zLimit {
+			topZ = avgZ
+		}
+		// Else topz is still uo.MapMinZ and we are looking for statics and
+		// items underground.
+	}
+	for _, static := range c.statics {
+		// Only select surfaces
+		if !static.Surface() && !static.Wet() {
+			continue
+		}
+		staticTopZ := static.Z() + static.Height()
+		if staticTopZ > topZ && staticTopZ <= zLimit {
+			if staticTopZ == zLimit {
+				return static
+			} else {
+				topZ = staticTopZ
+				topObj = static
+			}
+		}
+	}
+	// TODO Check items
+	return topObj
+}
+
+// GetAverageTerrainZ returns the average Z coordinate of the terrain at the
+// location.
+func (m *Map) GetAverageTerrainZ(l uo.Location) int {
+	var ret int
+	zTop := m.GetTile(l.X, l.Y).Z()
+	zLeft := m.GetTile(l.X, l.Y+1).Z()
+	zRight := m.GetTile(l.X+1, l.Y).Z()
+	zBottom := m.GetTile(l.X+1, l.Y+1).Z()
+	z := zTop
+	if zLeft < z {
+		z = zLeft
+	}
+	if zRight < z {
+		z = zRight
+	}
+	if zBottom < z {
+		z = zBottom
+	}
+	top := zTop
+	if zLeft > top {
+		top = zLeft
+	}
+	if zRight > top {
+		top = zRight
+	}
+	if zBottom > top {
+		top = zBottom
+	}
+	tbdif := zTop - zBottom
+	if tbdif < 0 {
+		tbdif *= -1
+	}
+	lrdif := zLeft - zRight
+	if lrdif < 0 {
+		lrdif *= -1
+	}
+	if tbdif > lrdif {
+		ret = zLeft + zRight
+	} else {
+		ret = zTop + zBottom
+	}
+	if ret < 0 {
+		ret--
+	}
+	return ret / 2
 }

@@ -267,3 +267,18 @@ func (n *NetState) RemoveObject(o game.Object) {
 		Serial: o.Serial(),
 	})
 }
+
+// SendDrawPlayer implements the game.NetState interface.
+func (n *NetState) SendDrawPlayer() {
+	if n.m == nil {
+		return
+	}
+	n.Send(&serverpacket.DrawPlayer{
+		ID:       n.m.Serial(),
+		Body:     n.m.Body(),
+		Hue:      n.m.Hue(),
+		Flags:    n.m.MobileFlags(),
+		Location: n.m.Location(),
+		Facing:   n.m.Facing(),
+	})
+}

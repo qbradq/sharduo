@@ -64,7 +64,7 @@ func (i *BaseItem) Graphic() uo.Graphic { return i.graphic }
 func (i *BaseItem) Dyable() bool { return i.dyable }
 
 // Flippable implements the Item interface.
-func (i *BaseItem) Flippable() bool { return i.flippedGraphic != uo.ItemNone }
+func (i *BaseItem) Flippable() bool { return i.flippedGraphic != uo.GraphicNone }
 
 // Stackable implements the Item interface.
 func (i *BaseItem) Stackable() bool { return i.stackable }

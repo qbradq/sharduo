@@ -514,3 +514,34 @@ func (p *MoveSpeed) Write(w io.Writer) {
 	PutUint16(w, 0x0026) // MoveSpeed sub-command
 	PutByte(w, byte(p.MoveSpeed))
 }
+
+// DrawPlayer updates the player's location and appearance
+type DrawPlayer struct {
+	// Serial of the player
+	ID uo.Serial
+	// Body graphic
+	Body uo.Body
+	// Skin hue
+	Hue uo.Hue
+	// Flags field
+	Flags uo.MobileFlags
+	// Location of the mobile
+	Location uo.Location
+	// Direction the mobile is facing
+	Facing uo.Direction
+}
+
+// Write implements the Packet interface.
+func (p *DrawPlayer) Write(w io.Writer) {
+	PutByte(w, 0x20) // General Information packet
+	PutUint32(w, uint32(p.ID))
+	PutUint16(w, uint16(p.Body))
+	Pad(w, 1)
+	PutUint16(w, uint16(p.Hue))
+	PutByte(w, byte(p.Flags))
+	PutUint16(w, uint16(p.Location.X))
+	PutUint16(w, uint16(p.Location.Y))
+	Pad(w, 2)
+	PutByte(w, byte(p.Facing))
+	PutByte(w, byte(int8(p.Location.Z)))
+}

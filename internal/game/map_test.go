@@ -19,6 +19,8 @@ func (n *MockNetState) RemoveObject(o Object) {
 	n.ObjectsRemoved++
 }
 
+func (n *MockNetState) SendDrawPlayer() {}
+
 func (n *MockNetState) Reset() {
 	n.ItemsSeen = 0
 	n.ObjectsRemoved = 0

@@ -31,6 +31,8 @@ type Mobile interface {
 	// Stats, attributes, and skills
 	//
 
+	// MobileFlags returns the MobileFlags value for this mobile
+	MobileFlags() uo.MobileFlags
 	// Strength returns the current effective strength
 	Strength() int
 	// Dexterity returns the current effective dexterity
@@ -114,6 +116,8 @@ type BaseMobile struct {
 	itemInCursor Item
 	// The collection of equipment this mobile is wearing, if any
 	equipment *EquipmentCollection
+	// Mobile flags
+	flags uo.MobileFlags
 	// Base strength
 	baseStrength int
 	// Base dexterity
@@ -210,6 +214,9 @@ func (m *BaseMobile) IsRunning() bool { return m.isRunning }
 
 // SetRunning implements the Mobile interface.
 func (m *BaseMobile) SetRunning(v bool) { m.isRunning = v }
+
+// MobileFlags implements the Mobile interface.
+func (m *BaseMobile) MobileFlags() uo.MobileFlags { return m.flags }
 
 // Strength implements the Mobile interface.
 func (m *BaseMobile) Strength() int { return m.baseStrength }
