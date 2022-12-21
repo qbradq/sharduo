@@ -12,7 +12,7 @@ type chunk struct {
 	// The slice of all tiles in the chunk
 	tiles []uo.Tile
 	// Collection of all statics in the chunk
-	statics []Static
+	statics []uo.Static
 	// Collection of all items in the chunk
 	items util.Slice[Item]
 	// Collection of all mobiles in the chunk

@@ -6,22 +6,16 @@ import (
 	"github.com/qbradq/sharduo/lib/uo"
 )
 
-// StaticsMulEntry describes a single static placement
-type StaticsMulEntry struct {
-	// Graphic ID of the static
-	Graphic uo.Graphic
-	// Absolute map position of the static
-	Location uo.Location
-}
-
 // StaticsMul holds the data for "statics0.mul"
 type StaticsMul struct {
 	mul     *IndexedMul
-	statics []StaticsMulEntry
+	statics []uo.Static
 }
 
 // NewStaticsMulFromFile loads "statics0.mul" and "staidx0.mul", or nil on error
-func NewStaticsMulFromFile(staidxPath, staticsPath string) *StaticsMul {
+// tiledata.mul must be loaded first and passed in so we can link static
+// definition pointers
+func NewStaticsMulFromFile(staidxPath, staticsPath string, tdmul *TileDataMul) *StaticsMul {
 	m := &StaticsMul{}
 	m.mul = NewIndexedMulFromFile(staidxPath, staticsPath)
 	if m.mul == nil {
@@ -40,14 +34,14 @@ func NewStaticsMulFromFile(staidxPath, staticsPath string) *StaticsMul {
 				if staticOfs >= len(cd) {
 					break
 				}
-				e := StaticsMulEntry{
-					Graphic: uo.Graphic(binary.LittleEndian.Uint16(cd[staticOfs+0 : staticOfs+2])),
-					Location: uo.Location{
+
+				e := uo.NewStatic(
+					uo.Location{
 						X: (int(cx) * int(uo.ChunkWidth)) + int(cd[staticOfs+2]),
 						Y: (int(cy) * int(uo.ChunkHeight)) + int(cd[staticOfs+3]),
 						Z: int(int8(cd[staticOfs+4])),
 					},
-				}
+					tdmul.staticDefinitions[binary.LittleEndian.Uint16(cd[staticOfs+0:staticOfs+2])])
 				staticOfs += 7
 				m.statics = append(m.statics, e)
 			}
@@ -57,6 +51,6 @@ func NewStaticsMulFromFile(staidxPath, staticsPath string) *StaticsMul {
 }
 
 // Statics returns the internal slice of static definitions
-func (m *StaticsMul) Statics() []StaticsMulEntry {
+func (m *StaticsMul) Statics() []uo.Static {
 	return m.statics
 }

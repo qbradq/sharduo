@@ -17,8 +17,9 @@ type MapMul struct {
 }
 
 // NewMapMulFromFile loads map0.mul from the given path. Not that this ONLY
-// works for map0.mul/map1.mul without diffs.
-func NewMapMulFromFile(fname string) *MapMul {
+// works for map0.mul/map1.mul without diffs. The tile data mul must be loaded
+// prior to this and passed in so we can perform tile linkage.
+func NewMapMulFromFile(fname string, tdmul *TileDataMul) *MapMul {
 	// Initialize map storage
 	m := &MapMul{
 		Chunks: make([]*MapMulChunk, uo.MapChunksWidth*uo.MapChunksHeight),
@@ -44,13 +45,10 @@ func NewMapMulFromFile(fname string) *MapMul {
 			sofs := 4 // Each map chunk has a 4-byte header of unknown use
 			for ty := 0; ty < uo.ChunkHeight; ty++ {
 				for tx := 0; tx < uo.ChunkWidth; tx++ {
-					graphic := uo.Graphic(binary.LittleEndian.Uint16(seg[sofs : sofs+2]))
+					tileIdx := binary.LittleEndian.Uint16(seg[sofs : sofs+2])
 					z := int(int8(seg[sofs+2]))
 					sofs += 3
-					chunk.Tiles[ty*uo.ChunkWidth+tx] = uo.Tile{
-						Graphic: graphic,
-						Z:       z,
-					}
+					chunk.Tiles[ty*uo.ChunkWidth+tx] = uo.NewTile(z, tdmul.GetTileDefinition(int(tileIdx)))
 				}
 			}
 		}

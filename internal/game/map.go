@@ -40,11 +40,7 @@ func (m *Map) LoadFromMuls(mapmul *file.MapMul, staticsmul *file.StaticsMul) {
 	}
 	// Load the statics
 	for _, static := range staticsmul.Statics() {
-		m.getChunk(static.Location).statics = append(m.getChunk(static.Location).statics,
-			Static{
-				Graphic:  static.Graphic,
-				Location: static.Location,
-			})
+		m.getChunk(static.Location).statics = append(m.getChunk(static.Location).statics, static)
 	}
 }
 
