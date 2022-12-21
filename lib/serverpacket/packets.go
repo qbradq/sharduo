@@ -500,7 +500,9 @@ func (p *OpenPaperDoll) Write(w io.Writer) {
 }
 
 // MoveSpeed sets the movement speed of the player on the client. This is a
-// psuedo-packet for General Information packet 0xBF-0x0026.
+// psuedo-packet for General Information packet 0xBF-0x0026. Note that this does
+// NOT set the walk/run/mount state of the client. This is for God mode stuff I
+// guess.
 type MoveSpeed struct {
 	MoveSpeed uo.MoveSpeed
 }

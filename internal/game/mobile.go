@@ -13,12 +13,47 @@ func init() {
 // Mobile is the interface all mobiles implement
 type Mobile interface {
 	Object
+	//
+	// NetState
+	//
+
 	// NetState returns the NetState implementation currently bound to this
 	// mobile, or nil if there is none.
 	NetState() NetState
 	// SetNetState sets the currently bound NetState. Use SetNetState(nil) to
 	// disconnect the mobile.
 	SetNetState(NetState)
+	// EquippedMobilePacket returns a serverpacket.EquippedMobile packet for
+	// this mobile.
+	EquippedMobilePacket() *serverpacket.EquippedMobile
+
+	//
+	// Stats, attributes, and skills
+	//
+
+	// Strength returns the current effective strength
+	Strength() int
+	// Dexterity returns the current effective dexterity
+	Dexterity() int
+	// Intelligence returns the current effective intelligence
+	Intelligence() int
+	// HitPoints returns the current hit points
+	HitPoints() int
+	// MaxHitPoints returns the current effective max hit points
+	MaxHitPoints() int
+	// Mana returns the current mana
+	Mana() int
+	// MaxMana returns the current effective max mana
+	MaxMana() int
+	// Stamina returns the current stamina
+	Stamina() int
+	// MaxStamina returns the current effective max stamina
+	MaxStamina() int
+
+	//
+	// AI-related values
+	//
+
 	// ViewRange returns the number of tiles this mobile can see and visually
 	// observe objects in the world. If this mobile has an attached NetState,
 	// this value can change at any time at the request of the player.
@@ -26,22 +61,29 @@ type Mobile interface {
 	// SetViewRange sets the view range of the mobile, bounding it to sane
 	// values.
 	SetViewRange(int)
+	// IsRunning returns true if the mobile is running.
+	IsRunning() bool
+	// SetRunning sets the running flag of the mobile.
+	SetRunning(bool)
+
+	//
+	// Graphics and display
+	//
+
 	// GetBody returns the animation body of the mobile.
 	Body() uo.Body
 	// IsFemale returns true if the mobile is female.
 	IsFemale() bool
 	// IsHumanBody returns true if the body value is humanoid.
 	IsHumanBody() bool
-	// IsRunning returns true if the mobile is running.
-	IsRunning() bool
-	// SetRunning sets the running flag of the mobile.
-	SetRunning(bool)
+
+	//
+	// Equipment and inventory
+	//
+
 	// Equip equips the given item in the item's layer, returns false if the
 	// equip operation failed for any reason.
 	Equip(Wearable) bool
-	// EquippedMobilePacket returns a serverpacket.EquippedMobile packet for
-	// this mobile.
-	EquippedMobilePacket() *serverpacket.EquippedMobile
 }
 
 // BaseMobile provides the base implementation for Mobile
@@ -60,8 +102,20 @@ type BaseMobile struct {
 	isRunning bool
 	// Notoriety of the mobile
 	notoriety uo.Notoriety
-	// equipment is the collection of equipment this mobile is wearing, if any
+	// The collection of equipment this mobile is wearing, if any
 	equipment *EquipmentCollection
+	// Base strength
+	baseStrength int
+	// Base dexterity
+	baseDexterity int
+	// Base intelligence
+	baseIntelligence int
+	// Current HP
+	hitPoints int
+	// Current mana
+	mana int
+	// Current stamina
+	stamina int
 }
 
 // GetTypeName implements the util.Serializeable interface.
@@ -81,6 +135,12 @@ func (m *BaseMobile) Serialize(f *util.TagFileWriter) {
 	f.WriteBool("IsFemale", m.isFemale)
 	f.WriteNumber("Body", int(m.body))
 	f.WriteNumber("Notoriety", int(m.notoriety))
+	f.WriteNumber("Strength", m.baseStrength)
+	f.WriteNumber("Dexterity", m.baseDexterity)
+	f.WriteNumber("Intelligence", m.baseIntelligence)
+	f.WriteNumber("HitPoints", m.hitPoints)
+	f.WriteNumber("Stamina", m.stamina)
+	f.WriteNumber("Mana", m.mana)
 	if m.equipment != nil {
 		m.equipment.Write("Equipment", f)
 	}
@@ -96,6 +156,12 @@ func (m *BaseMobile) Deserialize(f *util.TagFileObject) {
 	if m.body == uo.BodyHuman && m.isFemale {
 		m.body += 1
 	}
+	m.baseStrength = f.GetNumber("Strength", 10)
+	m.baseDexterity = f.GetNumber("Dexterity", 10)
+	m.baseIntelligence = f.GetNumber("Intelligence", 10)
+	m.hitPoints = f.GetNumber("HitPoints", 1)
+	m.mana = f.GetNumber("Mana", 1)
+	m.stamina = f.GetNumber("Stamina", 1)
 	m.notoriety = uo.Notoriety(f.GetNumber("Notoriety", int(uo.NotorietyInnocent)))
 }
 
@@ -135,6 +201,33 @@ func (m *BaseMobile) IsRunning() bool { return m.isRunning }
 // SetRunning implements the Mobile interface.
 func (m *BaseMobile) SetRunning(v bool) { m.isRunning = v }
 
+// Strength implements the Mobile interface.
+func (m *BaseMobile) Strength() int { return m.baseStrength }
+
+// Dexterity implements the Mobile interface.
+func (m *BaseMobile) Dexterity() int { return m.baseDexterity }
+
+// Intelligence implements the Mobile interface.
+func (m *BaseMobile) Intelligence() int { return m.baseIntelligence }
+
+// HitPoints implements the Mobile interface.
+func (m *BaseMobile) HitPoints() int { return m.hitPoints }
+
+// MaxHitPoints implements the Mobile interface.
+func (m *BaseMobile) MaxHitPoints() int { return 50 + m.Strength()/2 }
+
+// Mana implements the Mobile interface.
+func (m *BaseMobile) Mana() int { return m.mana }
+
+// MaxMana implements the Mobile interface.
+func (m *BaseMobile) MaxMana() int { return m.Intelligence() }
+
+// Stamina implements the Mobile interface.
+func (m *BaseMobile) Stamina() int { return m.stamina }
+
+// MaxStamina implements the Mobile interface.
+func (m *BaseMobile) MaxStamina() int { return m.Dexterity() }
+
 // Equip implements the Mobile interface.
 func (m *BaseMobile) Equip(w Wearable) bool {
 	if m.equipment == nil {
@@ -151,13 +244,13 @@ func (m *BaseMobile) EquippedMobilePacket() *serverpacket.EquippedMobile {
 	}
 	p := &serverpacket.EquippedMobile{
 		ID:        m.Serial(),
-		Body:      m.body,
+		Body:      m.Body(),
 		X:         m.location.X,
 		Y:         m.location.Y,
 		Z:         m.location.Z,
 		Facing:    m.facing,
-		IsRunning: m.isRunning,
-		Hue:       m.hue,
+		IsRunning: m.IsRunning(),
+		Hue:       m.Hue(),
 		Flags:     flags,
 		Notoriety: m.notoriety,
 	}

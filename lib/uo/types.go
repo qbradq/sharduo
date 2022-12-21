@@ -15,6 +15,8 @@ const (
 	MapChunksHeight   int    = MapHeight / ChunkHeight
 	MapMinZ           int    = -127
 	MapMaxZ           int    = 128
+	StatsCapDefault   int    = 225
+	MaxFollowers      int    = 5
 )
 
 // BoundViewRange bounds a view range value

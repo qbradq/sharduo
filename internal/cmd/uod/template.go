@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"strconv"
 	"strings"
 	"text/template"
 
@@ -259,7 +258,11 @@ func (m *TemplateManager) NewObject(templateName string) game.Object {
 		return nil
 	}
 	// Inject dynamic values into the template context
-	templateContext["IsFemale"] = strconv.FormatBool(world.Random().RandomBool())
+	if world.Random().RandomBool() {
+		templateContext["IsFemale"] = "true"
+	} else {
+		templateContext["IsFemale"] = ""
+	}
 	// Generate the deserialization object
 	tfo, err := t.generateTagFileObject(m, templateContext)
 	if err != nil {
