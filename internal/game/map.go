@@ -399,8 +399,8 @@ func (m *Map) UpdateViewRangeForMobile(mob Mobile, r int) {
 	mob.SetViewRange(r)
 }
 
-// GetHighestZ returns the highest Z coordinate of a solid surface at the given
-// location that has a Z altitude less than or equal to zlimit.
+// GetTopSurface returns the highest solid object at the given location that has
+// a Z altitude less than or equal to zLimit.
 func (m *Map) GetTopSurface(l uo.Location, zLimit int) uo.CommonObject {
 	var topObj uo.CommonObject
 	zLimit = uo.BoundZ(zLimit)
@@ -433,7 +433,25 @@ func (m *Map) GetTopSurface(l uo.Location, zLimit int) uo.CommonObject {
 			}
 		}
 	}
-	// TODO Check items
+	for _, item := range c.items {
+		// Only consider surface items
+		if !item.Surface() && !item.Wet() {
+			continue
+		}
+		// Only look at items at our location
+		if item.Location().X != l.X || item.Location().Y != l.Y {
+			continue
+		}
+		itemTopZ := item.Z() + item.Height()
+		if itemTopZ > topZ && itemTopZ <= zLimit {
+			if itemTopZ == zLimit {
+				return item
+			} else {
+				topZ = itemTopZ
+				topObj = item
+			}
+		}
+	}
 	return topObj
 }
 

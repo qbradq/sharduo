@@ -70,3 +70,12 @@ func (m *TileDataMul) GetTileDefinition(idx int) *uo.TileDefinition {
 	}
 	return m.tileDefinitions[idx]
 }
+
+// GetStaticDefinition returns the given static definition, or the NoDraw
+// definition
+func (m *TileDataMul) GetStaticDefinition(idx int) *uo.StaticDefinition {
+	if idx < 0 || idx >= len(m.staticDefinitions) {
+		return m.staticDefinitions[1]
+	}
+	return m.staticDefinitions[idx]
+}

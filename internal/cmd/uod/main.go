@@ -53,6 +53,11 @@ func trap(l *net.TCPListener) {
 	}()
 }
 
+var tiledatamul *file.TileDataMul
+var rcolmul *file.RadarColMul
+var mapmul *file.MapMul
+var staticsmul *file.StaticsMul
+
 // Main is the entry point for uod.
 func Main() {
 	// Load configuration
@@ -63,13 +68,13 @@ func Main() {
 
 	// Load client data files
 	log.Println("loading client files...")
-	tiledatamul := file.NewTileDataMul(path.Join(configuration.ClientFilesDirectory, "tiledata.mul"))
-	rcolmul := file.NewRadarColMulFromFile(path.Join(configuration.ClientFilesDirectory, "radarcol.mul"))
+	tiledatamul = file.NewTileDataMul(path.Join(configuration.ClientFilesDirectory, "tiledata.mul"))
+	rcolmul = file.NewRadarColMulFromFile(path.Join(configuration.ClientFilesDirectory, "radarcol.mul"))
 	if tiledatamul == nil {
 		os.Exit(1)
 	}
-	mapmul := file.NewMapMulFromFile(path.Join(configuration.ClientFilesDirectory, "map0.mul"), tiledatamul)
-	staticsmul := file.NewStaticsMulFromFile(
+	mapmul = file.NewMapMulFromFile(path.Join(configuration.ClientFilesDirectory, "map0.mul"), tiledatamul)
+	staticsmul = file.NewStaticsMulFromFile(
 		path.Join(configuration.ClientFilesDirectory, "staidx0.mul"),
 		path.Join(configuration.ClientFilesDirectory, "statics0.mul"),
 		tiledatamul)

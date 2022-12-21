@@ -11,6 +11,9 @@ type World interface {
 	Find(uo.Serial) Object
 	// Map returns the map the world is using.
 	Map() *Map
+	// GetItemDefinition returns the uo.StaticDefinition that holds the static
+	// data for a given item graphic.
+	GetItemDefinition(uo.Graphic) *uo.StaticDefinition
 }
 
 var world World
