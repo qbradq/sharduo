@@ -68,15 +68,23 @@ type CharacterLoginRequest struct {
 
 // Execute implements the WorldRequest interface
 func (r *CharacterLoginRequest) Execute() error {
+	var player game.Mobile
+	// Attempt to load the player
+	if r.NetState.account.Player() != uo.SerialMobileNil {
+		o := world.Find(r.NetState.account.Player())
+		if p, ok := o.(game.Mobile); ok {
+			player = p
+		}
+	}
+	// Create a new character if needed
+	if player == nil {
+		player = world.New(templateManager.NewObject("Player")).(game.Mobile)
+		// TODO New player setup
+	}
 	// TODO Character load
-	r.NetState.m = world.New(templateManager.NewObject("Player")).(game.Mobile)
+	r.NetState.m = player
+	r.NetState.account.SetPlayer(player.Serial())
 	r.NetState.m.SetNetState(r.NetState)
-	// TODO Remove porting to Green Acres
-	r.NetState.m.SetLocation(uo.Location{
-		X: 5250,
-		Y: 400,
-		Z: 15,
-	})
 	Broadcast("Welcome %s to Trammel Time!", r.NetState.m.DisplayName())
 
 	// Send the EnterWorld packet
@@ -86,7 +94,7 @@ func (r *CharacterLoginRequest) Execute() error {
 		X:      r.NetState.m.Location().X,
 		Y:      r.NetState.m.Location().Y,
 		Z:      r.NetState.m.Location().Z,
-		Facing: uo.DirectionSouth | uo.DirectionRunningFlag,
+		Facing: uo.DirectionSouth,
 		Width:  uo.MapWidth,
 		Height: uo.MapHeight,
 	})

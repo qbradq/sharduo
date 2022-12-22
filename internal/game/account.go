@@ -35,6 +35,9 @@ type Account struct {
 	username string
 	// Password hash
 	passwordHash string
+	// Serial of the player's permanent mobile (not the currently controlled
+	// mobile)
+	player uo.Serial
 }
 
 // GetTypeName implements the util.Serializeable interface.
@@ -52,6 +55,7 @@ func (a *Account) Serialize(f *util.TagFileWriter) {
 	a.BaseSerializeable.Serialize(f)
 	f.WriteString("Username", a.username)
 	f.WriteString("PasswordHash", a.passwordHash)
+	f.WriteHex("Player", uint32(a.player))
 }
 
 // Deserialize implements the util.Serializeable interface.
@@ -63,6 +67,7 @@ func (a *Account) Deserialize(f *util.TagFileObject) {
 		log.Println("account recovery required:", accountRecoveryString)
 	}
 	a.passwordHash = f.GetString("PasswordHash", "")
+	a.player = uo.Serial(f.GetHex("Player", uint32(uo.SerialMobileNil)))
 }
 
 // Username returns the username of the account
@@ -74,3 +79,9 @@ func (a *Account) Username() string {
 func (a *Account) ComparePasswordHash(hash string) bool {
 	return a.passwordHash == hash
 }
+
+// Player returns the player mobile serial, or uo.SerialMobileNil if none
+func (a *Account) Player() uo.Serial { return a.player }
+
+// SetPlayer sets the player mobile serial, or uo.SerialMobileNil if none
+func (a *Account) SetPlayer(s uo.Serial) { a.player = s }

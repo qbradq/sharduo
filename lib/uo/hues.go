@@ -10,20 +10,21 @@ type Hue uint16
 
 // Important hue values
 const (
-	HueDefault Hue = 0
-	HueMin     Hue = 1
-	HueBlack   Hue = 1
-	HueDyeMin  Hue = 2
-	HueDyeMax  Hue = 1001
-	HueSkinMin Hue = 1002
-	HueSkinMax Hue = 1058
-	HueMax     Hue = 3000
-	HueAlpha   Hue = 0xffff
-	HueIce1    Hue = 1152
-	HueIce2    Hue = 1153
-	HueIce3    Hue = 1154
-	HueIce4    Hue = 1151
-	HueIce5    Hue = 1150
+	HueDefault     Hue = 0
+	HueMin         Hue = 1
+	HueBlack       Hue = 1
+	HueDyeMin      Hue = 2
+	HueDyeMax      Hue = 1001
+	HueSkinMin     Hue = 1002
+	HueSkinMax     Hue = 1058
+	HueIce5        Hue = 1150
+	HueIce4        Hue = 1151
+	HueIce1        Hue = 1152
+	HueIce2        Hue = 1153
+	HueIce3        Hue = 1154
+	HueMax         Hue = 3000
+	HueAlpha       Hue = 0xffff
+	HuePartialFlag Hue = 0x8000
 )
 
 // RandomSkinHue returns a random skin hue
@@ -35,3 +36,6 @@ func RandomSkinHue(r RandomSource) Hue {
 func RandomDyeHue(r RandomSource) Hue {
 	return Hue(r.Random(int(HueDyeMin), int(HueDyeMax)))
 }
+
+// SetPartialHue returns the hue value with the partial hue flag set
+func (h Hue) SetPartialHue() Hue { return h | HuePartialFlag }

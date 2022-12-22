@@ -5,17 +5,20 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 	"text/template"
 
 	"github.com/qbradq/sharduo/data"
 	"github.com/qbradq/sharduo/internal/game"
+	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
 )
 
 // Global function map for templates
 var templateFuncMap = template.FuncMap{
 	"New":        templateNew,      // New creates a new object from the named template, adds it to the world datastores, then returns the string representation of the object's serial
+	"PartialHue": partialHue,       // Sets the partial hue flag
 	"RandomNew":  randomNew,        // RandomNew creates a new object of a template randomly selected from the named list"RandomNew"
 	"RandomBool": randomBool,       // RandomBool returns a random boolean value
 	"Random":     randomListMember, // Random returns a random string from the named list, or an empty string if the named list was not found
@@ -319,4 +322,13 @@ func randomNew(name string) string {
 		return "0"
 	}
 	return templateNew(tn)
+}
+
+func partialHue(hue string) string {
+	v, err := strconv.ParseInt(hue, 0, 32)
+	if err != nil {
+		return hue
+	}
+	h := uo.Hue(v).SetPartialHue()
+	return fmt.Sprintf("%d", h)
 }

@@ -23,11 +23,11 @@ var ErrWrongPacket = errors.New("wrong packet")
 
 // NetState manages the network state of a single connection.
 type NetState struct {
-	conn                *net.TCPConn
-	sendQueue           chan serverpacket.Packet
-	id                  string
-	m                   game.Mobile
-	lastWalkRequestTime int64
+	conn      *net.TCPConn
+	sendQueue chan serverpacket.Packet
+	id        string
+	m         game.Mobile
+	account   *game.Account
 }
 
 // NewNetState constructs a new NetState object.
@@ -134,6 +134,7 @@ func (n *NetState) Service() {
 		n.Error(fmt.Sprintf("bad login seed 0x%08X", gslp.Key), nil)
 		return
 	}
+	n.account = account
 	n.id = account.Username()
 
 	// Character list

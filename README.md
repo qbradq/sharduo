@@ -15,8 +15,8 @@ including all features required to mine ore and smelt it into ingots.
 * Map tile query
 * ~~Stats~~
 * ~~Running~~
-* Picking up and dropping items on the ground
-* Player persistance
+* Picking up and dropping items on the ground (partially implemented)
+* ~~Player persistance~~
 * Removing equipment
 * Equipping equipment
 * Using equipment
