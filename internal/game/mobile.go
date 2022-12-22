@@ -91,9 +91,15 @@ type Mobile interface {
 	// SetItemInCursor sets the item held in the mobile's cursor. Returns true
 	// if successful.
 	SetItemInCursor(Item) bool
+	// DropItemInCursor drops the item in the cursor to the ground at the
+	// mobile's feet.
+	DropItemInCursor()
 	// Equip equips the given item in the item's layer, returns false if the
 	// equip operation failed for any reason.
 	Equip(Wearable) bool
+	// Unequip unequips the given item from the item's layer. It returns false
+	// if the unequip operation failed for any reason.
+	Unequip(Wearable) bool
 }
 
 // BaseMobile provides the base implementation for Mobile
@@ -114,6 +120,8 @@ type BaseMobile struct {
 	notoriety uo.Notoriety
 	// Pointer to the item held in the cursor
 	itemInCursor Item
+	// Temporary pointer to the wearable we are trying to equip
+	toWear Wearable
 	// The collection of equipment this mobile is wearing, if any
 	equipment *EquipmentCollection
 	// Mobile flags
@@ -158,6 +166,9 @@ func (m *BaseMobile) Serialize(f *util.TagFileWriter) {
 	if m.equipment != nil {
 		m.equipment.Write("Equipment", f)
 	}
+	if m.itemInCursor != nil {
+		f.WriteHex("ItemInCursor", uint32(m.itemInCursor.Serial()))
+	}
 }
 
 // Deserialize implements the util.Serializeable interface.
@@ -182,6 +193,21 @@ func (m *BaseMobile) Deserialize(f *util.TagFileObject) {
 // OnAfterDeserialize implements the util.Serializeable interface.
 func (m *BaseMobile) OnAfterDeserialize(f *util.TagFileObject) {
 	m.equipment = NewEquipmentCollectionWith(f.GetObjectReferences("Equipment"))
+	for _, w := range m.equipment.equipment {
+		w.SetParent(m)
+	}
+	// If we had an item on the cursor at the time of the save we drop it at
+	// our feet just so we don't leak it.
+	incs := uo.Serial(f.GetHex("ItemInCursor", uint32(uo.SerialItemNil)))
+	if incs != uo.SerialItemNil {
+		o := world.Find(incs)
+		if o != nil {
+			if item, ok := o.(Item); ok {
+				m.itemInCursor = item
+				m.DropItemInCursor()
+			}
+		}
+	}
 }
 
 // NetState implements the Mobile interface.
@@ -256,19 +282,38 @@ func (m *BaseMobile) SetItemInCursor(item Item) bool {
 	if m.itemInCursor == item {
 		return true
 	}
+	if item == nil {
+		m.itemInCursor = item
+		return true
+	}
 	if m.itemInCursor != nil {
 		return false
 	}
 	m.itemInCursor = item
-	return world.Map().SetNewParent(item, m)
+	if !world.Map().SetNewParent(item, m) {
+		m.itemInCursor = nil
+		return false
+	}
+	return true
+}
+
+// DropItemInCursor drops the item in the player's cursor to their feet.
+func (m *BaseMobile) DropItemInCursor() {
+	item := m.itemInCursor
+	m.itemInCursor = nil
+	item.SetLocation(m.location)
+	item.SetParent(nil)
+	world.Map().AddObject(item)
 }
 
 // AddObject adds the object to the mobile. It returns true if successful.
 func (m *BaseMobile) AddObject(o Object) bool {
-	if item, ok := o.(Item); ok {
-		if m.itemInCursor == item {
-			return true
-		}
+	if item, ok := o.(Item); ok && m.itemInCursor == item {
+		// This is the item we are trying to put on the cursor, just accept it
+		return true
+	} else if wearable, ok := o.(Wearable); ok && wearable == m.toWear {
+		// This is the item we are trying to wear, just accept it
+		return true
 	}
 	return false
 }
@@ -276,7 +321,16 @@ func (m *BaseMobile) AddObject(o Object) bool {
 // RemoveObject removes the object from the mobile. It returns true if
 // successful.
 func (m *BaseMobile) RemoveObject(o Object) bool {
+	if m.toWear == o {
+		// This is the item we are currently trying to wear
+		return true
+	}
+	if wearable, ok := o.(Wearable); ok && m.equipment.Contains(wearable) {
+		// This item is currently equipped, try to unequip it
+		return m.equipment.Unequip(wearable)
+	}
 	if m.itemInCursor == o {
+		// This is the item currently on our cursor
 		m.itemInCursor = nil
 		return true
 	}
@@ -288,7 +342,28 @@ func (m *BaseMobile) Equip(w Wearable) bool {
 	if m.equipment == nil {
 		m.equipment = NewEquipmentCollection()
 	}
-	return m.equipment.Equip(w)
+	if !m.equipment.Equip(w) {
+		return false
+	}
+	m.toWear = w
+	if !world.Map().SetNewParent(w, m) {
+		m.toWear = nil
+		m.equipment.Unequip(w)
+		return false
+	}
+	m.toWear = nil
+	return true
+}
+
+// Unequip implements the Mobile interface.
+func (m *BaseMobile) Unequip(w Wearable) bool {
+	if m.equipment == nil {
+		m.equipment = NewEquipmentCollection()
+	}
+	if !m.equipment.Unequip(w) {
+		return false
+	}
+	return true
 }
 
 // EquippedMobilePacket implements the Mobile interface.

@@ -12,6 +12,7 @@ func init() {
 	packetFactory.Register(0x07, newLiftRequest)
 	packetFactory.Register(0x08, newDropRequest)
 	packetFactory.Register(0x09, newSingleClick)
+	packetFactory.Register(0x13, newWearItemRequest)
 	packetFactory.Register(0x34, newPlayerStatusRequest)
 	packetFactory.Register(0x5D, newCharacterLogin)
 	packetFactory.Register(0x6C, newTargetResponse)
@@ -487,5 +488,23 @@ func newDropRequest(in []byte) Packet {
 		Container: uo.Serial(GetUint32(in[9:13])),
 	}
 	p.SetSerial(0x08)
+	return p
+}
+
+// WearItemRequest is sent when the player drops an item onto a paper doll
+type WearItemRequest struct {
+	util.BaseSerialer
+	// Serial of the item to wear
+	Item uo.Serial
+	// Serial of the mobile to equip the item to
+	Wearer uo.Serial
+}
+
+func newWearItemRequest(in []byte) Packet {
+	p := &WearItemRequest{
+		Item:   uo.Serial(GetUint32(in[0:4])),
+		Wearer: uo.Serial(GetUint32(in[5:9])),
+	}
+	p.SetSerial(0x13)
 	return p
 }

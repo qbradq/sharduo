@@ -533,7 +533,7 @@ type DrawPlayer struct {
 
 // Write implements the Packet interface.
 func (p *DrawPlayer) Write(w io.Writer) {
-	PutByte(w, 0x20) // General Information packet
+	PutByte(w, 0x20) // Packet ID
 	PutUint32(w, uint32(p.ID))
 	PutUint16(w, uint16(p.Body))
 	Pad(w, 1)
@@ -544,4 +544,49 @@ func (p *DrawPlayer) Write(w io.Writer) {
 	Pad(w, 2)
 	PutByte(w, byte(p.Facing))
 	PutByte(w, byte(int8(p.Location.Z)))
+}
+
+// DropApproved is sent to the client to acknowledge a drop or equip request.
+type DropApproved struct{}
+
+// Write implements the Packet interface.
+func (p *DropApproved) Write(w io.Writer) {
+	PutByte(w, 0x29) // Packet ID
+}
+
+// WornItem is sent to clients to inform them of an item added to a mobile's
+// equipment.
+type WornItem struct {
+	// The item being worn
+	Item uo.Serial
+	// Graphic of the item
+	Graphic uo.Graphic
+	// Layer of the item
+	Layer uo.Layer
+	// Mobile wearing the item
+	Wearer uo.Serial
+	// Hue of the item
+	Hue uo.Hue
+}
+
+// Write implements the Packet interface.
+func (p *WornItem) Write(w io.Writer) {
+	PutByte(w, 0x2E) // Packet ID
+	PutUint32(w, uint32(p.Item))
+	PutUint16(w, uint16(p.Graphic))
+	Pad(w, 1)
+	PutByte(w, byte(p.Layer))
+	PutUint32(w, uint32(p.Wearer))
+	PutUint16(w, uint16(p.Hue))
+}
+
+// MoveItemReject rejects a pick-up, drop, or equip request
+type MoveItemReject struct {
+	Reason uo.MoveItemRejectReason
+}
+
+// Write implements the Packet interface.
+func (p *MoveItemReject) Write(w io.Writer) {
+	PutByte(w, 0x27) // Packet ID
+	PutByte(w, byte(p.Reason))
 }

@@ -74,3 +74,27 @@ func (c *EquipmentCollection) Equip(o Wearable) bool {
 	c.equipment[o.Layer()] = o
 	return true
 }
+
+// Unequip removes an item from the collection. Returns true if successful.
+func (c *EquipmentCollection) Unequip(o Wearable) bool {
+	if c.equipment == nil {
+		c.equipment = make(map[uo.Layer]Wearable)
+	}
+	// Only remove if the item is what is equipped in that slot
+	if equipped, ok := c.equipment[o.Layer()]; ok {
+		if equipped == o {
+			delete(c.equipment, o.Layer())
+			return true
+		}
+	}
+	return false
+}
+
+// Contains returns true if the equipment collection contains the item
+func (c *EquipmentCollection) Contains(o Wearable) bool {
+	if c.equipment == nil {
+		return false
+	}
+	_, found := c.equipment[o.Layer()]
+	return found
+}

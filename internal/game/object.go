@@ -17,6 +17,9 @@ type Object interface {
 	// Parent returns a pointer to the parent object of this object, or nil
 	// if the object is attached directly to the world
 	Parent() Object
+	// RootParent returns the top-most parent of the object who's parent is the
+	// map. If this object's parent is the map this object is returned.
+	RootParent() Object
 	// SetParent sets the parent pointer. Use nil to represent the world.
 	SetParent(Object)
 	// RemoveObject removes an object from this object. This is called when
@@ -115,43 +118,22 @@ func (o *BaseObject) Deserialize(f *util.TagFileObject) {
 // Parent implements the Object interface
 func (o *BaseObject) Parent() Object { return o.parent }
 
+// RootParent implements the Object interface
+func (o *BaseObject) RootParent() Object {
+	if o.parent == nil {
+		return o
+	}
+	topmost := o.Parent()
+	for {
+		if topmost.Parent() == nil {
+			return topmost
+		}
+		topmost = topmost.Parent()
+	}
+}
+
 // SetParent implements the Object interface
 func (o *BaseObject) SetParent(p Object) { o.parent = p }
-
-// SetNewParent implements the Object interface
-func (o *BaseObject) SetNewParent(p Object) bool {
-	oldParent := o.parent
-	if o.parent == nil {
-		if !world.Map().RemoveObject(o) {
-			return false
-		}
-	} else {
-		if !o.parent.RemoveObject(o) {
-			return false
-		}
-	}
-	o.parent = p
-	addFailed := false
-	if o.parent == nil {
-		if !world.Map().AddObject(o) {
-			addFailed = true
-		}
-	} else {
-		if !o.parent.AddObject(o) {
-			addFailed = true
-		}
-	}
-	if addFailed {
-		// Make our best effort to not leak the object
-		o.parent = oldParent
-		if oldParent == nil {
-			world.Map().AddObject(o)
-		} else {
-			oldParent.AddObject(o)
-		}
-	}
-	return true
-}
 
 // RemoveObject implements the Object interface
 func (o *BaseObject) RemoveObject(c Object) bool {

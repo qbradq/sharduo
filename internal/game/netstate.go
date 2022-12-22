@@ -9,4 +9,6 @@ type NetState interface {
 	RemoveObject(Object)
 	// SendDrawPlayer sends a DrawPlayer packet for the attached mobile if any
 	SendDrawPlayer()
+	// SendWornItem sends the WornItem packet to the given mobile
+	SendWornItem(Wearable, Mobile)
 }

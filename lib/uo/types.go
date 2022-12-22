@@ -17,6 +17,8 @@ const (
 	MapMaxZ           int    = 128
 	StatsCapDefault   int    = 225
 	MaxFollowers      int    = 5
+	MaxLiftRange      int    = 3
+	MaxDropRange      int    = 3
 )
 
 // BoundZ bounds a Z value
@@ -250,3 +252,17 @@ type Animation uint16
 
 // Light represents a light graphic
 type Light uint16
+
+// MoveItemRejectReason represents the reasons that an item move request might
+// be rejected.
+type MoveItemRejectReason byte
+
+// All known values for MoveItemRejectReason
+const (
+	MoveItemRejectReasonCannotLift         MoveItemRejectReason = 0
+	MoveItemRejectReasonOutOfRange         MoveItemRejectReason = 1
+	MoveItemRejectReasonOutOfSight         MoveItemRejectReason = 2
+	MoveItemRejectReasonBelongsToAnother   MoveItemRejectReason = 3
+	MoveItemRejectReasonAlreadyHoldingItem MoveItemRejectReason = 4
+	MoveItemRejectReasonUnspecified        MoveItemRejectReason = 5
+)

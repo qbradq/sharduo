@@ -1,8 +1,6 @@
 package uod
 
 import (
-	"log"
-
 	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/lib/clientpacket"
 	"github.com/qbradq/sharduo/lib/serverpacket"
@@ -17,6 +15,7 @@ func init() {
 	worldHandlers.Add(0x06, handleDoubleClickRequest)
 	worldHandlers.Add(0x07, handleLiftRequest)
 	worldHandlers.Add(0x08, handleDropRequest)
+	worldHandlers.Add(0x13, handleWearItemRequest)
 	worldHandlers.Add(0x6C, handleTargetResponse)
 	worldHandlers.Add(0x34, handleStatusRequest)
 	worldHandlers.Add(0xC8, handleClientViewRange)
@@ -103,40 +102,139 @@ func handleClientViewRange(n *NetState, cp clientpacket.Packet) {
 	n.Send(&serverpacket.ClientViewRange{
 		Range: byte(n.m.ViewRange()),
 	})
-	// TODO Update visible objects for the client
 }
 
 func handleLiftRequest(n *NetState, cp clientpacket.Packet) {
-	if n.m == nil || n.m.IsItemOnCursor() {
+	reject := func(reason uo.MoveItemRejectReason) {
+		n.Send(&serverpacket.MoveItemReject{
+			Reason: reason,
+		})
+	}
+
+	if n.m == nil {
+		reject(uo.MoveItemRejectReasonUnspecified)
+		return
+	}
+	if n.m.IsItemOnCursor() {
+		n.m.DropItemInCursor()
+		reject(uo.MoveItemRejectReasonAlreadyHoldingItem)
 		return
 	}
 	p := cp.(*clientpacket.LiftRequest)
 	o := world.Find(p.Item)
 	if o == nil {
+		reject(uo.MoveItemRejectReasonUnspecified)
 		return
 	}
 	item, ok := o.(game.Item)
 	if !ok {
+		reject(uo.MoveItemRejectReasonUnspecified)
 		return
 	}
-	// TODO Range check
-	n.m.SetItemInCursor(item)
+	if n.m.Location().XYDistance(item.RootParent().Location()) > uo.MaxLiftRange {
+		reject(uo.MoveItemRejectReasonOutOfRange)
+		return
+	}
+	// TODO Line of sight check
+	if !n.m.SetItemInCursor(item) {
+		reject(uo.MoveItemRejectReasonUnspecified)
+		return
+	}
+	// TODO Send drag packets to all net states in range
 }
 
 func handleDropRequest(n *NetState, cp clientpacket.Packet) {
-	if n.m == nil || !n.m.IsItemOnCursor() {
-		log.Println("drop request with no item on cursor")
+	reject := func(reason uo.MoveItemRejectReason) {
+		n.Send(&serverpacket.MoveItemReject{
+			Reason: reason,
+		})
+	}
+
+	if n.m == nil {
+		reject(uo.MoveItemRejectReasonUnspecified)
+		return
+	}
+	if !n.m.IsItemOnCursor() {
+		reject(uo.MoveItemRejectReasonUnspecified)
 		return
 	}
 	p := cp.(*clientpacket.DropRequest)
 	if p.Item != n.m.ItemInCursor().Serial() {
-		log.Println("drop request for an item that was not on the player's cursor")
+		n.m.SetItemInCursor(nil)
+		reject(uo.MoveItemRejectReasonUnspecified)
 		return
 	}
-	// TODO Range check
 	item := world.Find(p.Item)
-	item.SetLocation(uo.Location{X: p.X, Y: p.Y, Z: p.Z})
-	if !world.Map().SetNewParent(item, nil) {
-		// TODO Drop reject
+	newLocation := uo.Location{X: p.X, Y: p.Y, Z: p.Z}
+	if n.m.Location().XYDistance(newLocation) > uo.MaxDropRange {
+		n.m.DropItemInCursor()
+		reject(uo.MoveItemRejectReasonOutOfRange)
+		return
 	}
+	// TODO Line of sight check
+	item.SetLocation(newLocation)
+	if !world.Map().SetNewParent(item, nil) {
+		n.m.SetItemInCursor(nil)
+		reject(uo.MoveItemRejectReasonUnspecified)
+		return
+	} else {
+		n.m.SetItemInCursor(nil)
+		n.Send(&serverpacket.DropApproved{})
+	}
+}
+
+func handleWearItemRequest(n *NetState, cp clientpacket.Packet) {
+	reject := func(reason uo.MoveItemRejectReason) {
+		n.Send(&serverpacket.MoveItemReject{
+			Reason: reason,
+		})
+	}
+
+	if n.m == nil {
+		reject(uo.MoveItemRejectReasonUnspecified)
+		return
+	}
+	p := cp.(*clientpacket.WearItemRequest)
+	item := world.Find(p.Item)
+	wearer := world.Find(p.Wearer)
+	if item == nil || wearer == nil {
+		n.m.SetItemInCursor(nil)
+		reject(uo.MoveItemRejectReasonUnspecified)
+		return
+	}
+	if item != n.m.ItemInCursor() {
+		n.m.SetItemInCursor(nil)
+		reject(uo.MoveItemRejectReasonUnspecified)
+		return
+	}
+	wearerMobile, ok := wearer.(game.Mobile)
+	if !ok {
+		n.m.SetItemInCursor(nil)
+		reject(uo.MoveItemRejectReasonUnspecified)
+		return
+	}
+	wearable, ok := item.(game.Wearable)
+	if !ok {
+		n.m.SetItemInCursor(nil)
+		reject(uo.MoveItemRejectReasonUnspecified)
+		return
+	}
+	// TODO Check if we are allowed to equip items to this mobile
+	// This will remove the object from it's parent (the mobile's cursor) and
+	// add it to the other mobile's equipment, or not.
+	if !n.m.Equip(wearable) {
+		n.m.SetItemInCursor(nil)
+		reject(uo.MoveItemRejectReasonUnspecified)
+		return
+	} else {
+		n.Send(&serverpacket.DropApproved{})
+		// Send the WearItem packet to all netstates in range, including our own
+		for _, mob := range world.Map().GetMobilesInRange(n.m.Location(), uo.MaxViewRange) {
+			if mob.NetState() != nil && mob.Location().XYDistance(n.m.Location()) <= mob.ViewRange() {
+				mob.NetState().SendWornItem(wearable, wearerMobile)
+			}
+		}
+	}
+	n.m.SetItemInCursor(nil)
+	n.Send(&serverpacket.DropApproved{})
 }

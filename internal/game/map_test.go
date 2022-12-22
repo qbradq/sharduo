@@ -21,6 +21,8 @@ func (n *MockNetState) RemoveObject(o Object) {
 
 func (n *MockNetState) SendDrawPlayer() {}
 
+func (n *MockNetState) SendWornItem(wearable Wearable, mob Mobile) {}
+
 func (n *MockNetState) Reset() {
 	n.ItemsSeen = 0
 	n.ObjectsRemoved = 0

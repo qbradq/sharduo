@@ -17,8 +17,8 @@ including all features required to mine ore and smelt it into ingots.
 * ~~Running~~
 * Picking up and dropping items on the ground (partially implemented)
 * ~~Player persistance~~
-* Removing equipment
-* Equipping equipment
+* ~~Removing equipment~~
+* ~~Equipping equipment~~
 * Using equipment
 * Mining skill
 * Smelting
@@ -39,3 +39,4 @@ including all features required to mine ore and smelt it into ingots.
 * Pack Horses and Llamas
 * Banker NPC
 * Bank box
+* Line of sight checks

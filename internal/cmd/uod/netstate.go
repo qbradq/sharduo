@@ -283,3 +283,14 @@ func (n *NetState) SendDrawPlayer() {
 		Facing:   n.m.Facing(),
 	})
 }
+
+// SendWornItem sends the WornItem packet to the given mobile
+func (n *NetState) SendWornItem(wearable game.Wearable, mob game.Mobile) {
+	n.Send(&serverpacket.WornItem{
+		Item:    wearable.Serial(),
+		Graphic: wearable.Graphic(),
+		Layer:   wearable.Layer(),
+		Wearer:  mob.Serial(),
+		Hue:     wearable.Hue(),
+	})
+}
