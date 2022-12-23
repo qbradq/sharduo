@@ -25,11 +25,11 @@ func (n *MockNetState) Reset() {
 }
 
 // Required for interface compliance
+func (n *MockNetState) SystemMessage(fmtstr string, args ...interface{})           {}
+func (n *MockNetState) SendSpeech(from Object, fmtstr string, args ...interface{}) {}
 func (n *MockNetState) SendDrawPlayer()                                            {}
 func (n *MockNetState) SendUpdateMobile(mob Mobile)                                {}
 func (n *MockNetState) SendWornItem(wearable Wearable, mob Mobile)                 {}
-func (n *MockNetState) SystemMessage(fmtstr string, args ...interface{})           {}
-func (n *MockNetState) SendSpeech(from Object, fmtstr string, args ...interface{}) {}
 
 func makeTestObjects() (*Map, *BaseMobile) {
 	m := NewMap()

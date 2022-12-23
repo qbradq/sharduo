@@ -306,6 +306,9 @@ func (n *NetState) SendObject(o game.Object) {
 				Notoriety: notoriety,
 			}
 			mobile.MapEquipment(func(w game.Wearable) error {
+				if w.Layer() == uo.LayerBankBox {
+					return nil
+				}
 				p.Equipment = append(p.Equipment, &serverpacket.EquippedMobileItem{
 					ID:      w.Serial(),
 					Graphic: w.Graphic(),
@@ -364,12 +367,12 @@ func (n *NetState) SendDrawPlayer() {
 }
 
 // SendWornItem sends the WornItem packet to the given mobile
-func (n *NetState) SendWornItem(wearable game.Wearable, mob game.Mobile) {
+func (n *NetState) SendWornItem(wearable game.Wearable, wearer game.Mobile) {
 	n.Send(&serverpacket.WornItem{
 		Item:    wearable.Serial(),
 		Graphic: wearable.Graphic(),
 		Layer:   wearable.Layer(),
-		Wearer:  mob.Serial(),
+		Wearer:  wearer.Serial(),
 		Hue:     wearable.Hue(),
 	})
 }

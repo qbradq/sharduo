@@ -355,7 +355,23 @@ func (m *BaseMobile) RemoveObject(o Object) bool {
 	}
 	if wearable, ok := o.(Wearable); ok && m.equipment.Contains(wearable) {
 		// This item is currently equipped, try to unequip it
-		return m.equipment.Unequip(wearable)
+		success := m.equipment.Unequip(wearable)
+		if success {
+			// Send the remove item packet
+			for _, mob := range world.Map().GetNetStatesInRange(m.Location(), uo.MaxViewRange) {
+				// Don't send this packet back to ourselves
+				if mob == m {
+					continue
+				}
+				mob.NetState().RemoveObject(wearable)
+			}
+			return true
+		} else {
+			// Send the wear item packet back at ourselves to force the item
+			// back into the paper doll
+			m.NetState().SendWornItem(wearable, m)
+			return false
+		}
 	}
 	if m.itemInCursor == o {
 		// This is the item currently on our cursor
