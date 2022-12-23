@@ -327,6 +327,9 @@ func (m *BaseMobile) SetItemInCursor(item Item) bool {
 
 // DropItemInCursor drops the item in the player's cursor to their feet.
 func (m *BaseMobile) DropItemInCursor() {
+	if m.itemInCursor == nil {
+		return
+	}
 	item := m.itemInCursor
 	m.itemInCursor = nil
 	item.SetLocation(m.location)

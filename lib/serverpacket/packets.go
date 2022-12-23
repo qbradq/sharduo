@@ -629,3 +629,42 @@ func (p *UpdateMobile) Write(w io.Writer) {
 	PutByte(w, byte(p.Flags))
 	PutByte(w, byte(p.Notoriety))
 }
+
+// DragItem makes the client play an animation of the item being dragged from
+// the source to the destination.
+type DragItem struct {
+	// Graphic is the graphic of the item being moved
+	Graphic uo.Graphic
+	// Graphic offset, used for stacked graphics. This is truncated to 8-bits
+	// and must be positive.
+	GraphicOffset int
+	// Hue of the item being moved
+	Hue uo.Hue
+	// Amount in the stack
+	Amount int
+	// Source mobile serial, uo.SerialSystem for the map
+	Source uo.Serial
+	// Source position
+	SourceLocation uo.Location
+	// Destination mobile serial, uo.SerialSystem for the map
+	Destination uo.Serial
+	// Destination position
+	DestinationLocation uo.Location
+}
+
+// Write implements the Packet interface.
+func (p *DragItem) Write(w io.Writer) {
+	PutByte(w, 0x23) // Packet ID
+	PutUint16(w, uint16(p.Graphic))
+	PutByte(w, byte(p.GraphicOffset))
+	PutUint16(w, uint16(p.Hue))
+	PutUint16(w, uint16(p.Amount))
+	PutUint32(w, uint32(p.Source))
+	PutUint16(w, uint16(p.SourceLocation.X))
+	PutUint16(w, uint16(p.SourceLocation.Y))
+	PutByte(w, byte(int8(p.SourceLocation.Z)))
+	PutUint32(w, uint32(p.Destination))
+	PutUint16(w, uint16(p.DestinationLocation.X))
+	PutUint16(w, uint16(p.DestinationLocation.Y))
+	PutByte(w, byte(int8(p.DestinationLocation.Z)))
+}

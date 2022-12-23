@@ -376,3 +376,26 @@ func (n *NetState) SendWornItem(wearable game.Wearable, wearer game.Mobile) {
 		Hue:     wearable.Hue(),
 	})
 }
+
+func (n *NetState) SendDragItem(item game.Item, srcMob game.Mobile,
+	srcLoc uo.Location, destMob game.Mobile, destLoc uo.Location) {
+	if item == nil {
+		return
+	}
+	srcSerial := uo.SerialSystem
+	destSerial := uo.SerialSystem
+	if srcMob != nil {
+		srcSerial = srcMob.Serial()
+	}
+	if destMob != nil {
+		destSerial = destMob.Serial()
+	}
+	n.Send(&serverpacket.DragItem{
+		Graphic:             item.Graphic(),
+		Amount:              item.Amount(),
+		Source:              srcSerial,
+		SourceLocation:      srcLoc,
+		Destination:         destSerial,
+		DestinationLocation: destLoc,
+	})
+}

@@ -1,5 +1,7 @@
 package game
 
+import "github.com/qbradq/sharduo/lib/uo"
+
 // NetState is the interface the server client's network state object must
 // implement to be compatible with this library of game objects.
 type NetState interface {
@@ -26,4 +28,6 @@ type NetState interface {
 	SendUpdateMobile(Mobile)
 	// SendWornItem sends the WornItem packet to the given mobile
 	SendWornItem(Wearable, Mobile)
+	// SendDragItem sends a DragItem packet
+	SendDragItem(Item, Mobile, uo.Location, Mobile, uo.Location)
 }

@@ -73,7 +73,7 @@ type BaseItem struct {
 	def *uo.StaticDefinition
 	// Graphic of the item
 	graphic uo.Graphic
-	// Graphic of the item when flipped. If this is uo.ItemNone the item cannot
+	// Graphic of the item when flipped. If this is uo.GraphicNone the item cannot
 	// be flipped.
 	flippedGraphic uo.Graphic
 	// Dyable flag
@@ -93,13 +93,21 @@ func (i *BaseItem) TypeName() string {
 func (i *BaseItem) Serialize(f *util.TagFileWriter) {
 	i.BaseObject.Serialize(f)
 	f.WriteHex("Graphic", uint32(i.graphic))
+	f.WriteHex("FlippedGraphic", uint32(i.flippedGraphic))
+	f.WriteBool("Dyable", i.dyable)
+	f.WriteBool("Stackable", i.stackable)
+	f.WriteNumber("Amount", i.amount)
 }
 
 // Deserialize implements the util.Serializeable interface.
 func (i *BaseItem) Deserialize(f *util.TagFileObject) {
 	i.BaseObject.Deserialize(f)
-	i.graphic = uo.Graphic(f.GetNumber("Graphic", 0))
+	i.graphic = uo.Graphic(f.GetNumber("Graphic", int(uo.GraphicDefault)))
 	i.def = world.GetItemDefinition(i.graphic)
+	i.flippedGraphic = uo.Graphic(f.GetNumber("FlippedGraphic", int(uo.GraphicNone)))
+	i.dyable = f.GetBool("Dyable", false)
+	i.stackable = f.GetBool("Stackable", false)
+	i.amount = f.GetNumber("Amount", 1)
 }
 
 // Graphic implements the Item interface.

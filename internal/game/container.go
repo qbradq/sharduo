@@ -36,6 +36,8 @@ func (s *ContainerItem) OnAfterDeserialize(f *util.TagFileObject) {
 
 // DoubleClick implements the Object interface.
 func (c *ContainerItem) DoubleClick(from Mobile) {
+	// TODO Debug code
+
 }
 
 // Container is the interface all objects implement that can contain other

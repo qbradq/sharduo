@@ -159,6 +159,41 @@ func (m *Map) SetNewParent(o, p Object) bool {
 		} else {
 			oldParent.AddObject(o)
 		}
+		return false
+	}
+	// Figure out if we need to send drag packets
+	if p == oldParent {
+		// We don't need a drag packet if we are not changing parents. This
+		// is the case when lifting an item off the paper doll, dropping an
+		// item onto the same mobile's paper doll, and dropping an item into
+		// any container within the same mobile's inventory. This is also
+		// true of map-to-map teleports.
+		return true
+	}
+	item, ok := o.(Item)
+	if !ok {
+		// Drag packets only happen for items
+		return true
+	}
+	newLocation := item.RootParent().Location()
+	if item.RootParent().Serial().IsMobile() {
+		newLocation.Z += 18
+	}
+	oldLocation := newLocation
+	newParentMobile, _ := p.(Mobile)
+	oldParentMobile, _ := oldParent.(Mobile)
+	if oldParent != nil {
+		oldLocation = oldParent.RootParent().Location()
+		if oldParent.RootParent().Serial().IsMobile() {
+			oldLocation.Z += 18
+		}
+	} else {
+		oldLocation = item.Location()
+	}
+	r := oldLocation.XYDistance(newLocation) + uo.MaxViewRange
+	r = uo.BoundUpdateRange(r)
+	for _, mob := range m.GetNetStatesInRange(oldLocation, r) {
+		mob.NetState().SendDragItem(item, oldParentMobile, oldLocation, newParentMobile, newLocation)
 	}
 	return true
 }

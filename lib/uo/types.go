@@ -6,6 +6,7 @@ const (
 	MaxStackAmount    uint16 = 60000
 	MinViewRange      int    = 5
 	MaxViewRange      int    = 18
+	MaxUpdateRange    int    = 24
 	ChunkWidth        int    = 8
 	ChunkHeight       int    = 8
 	MapWidth          int    = 6144
@@ -37,6 +38,17 @@ func BoundViewRange(r int) int {
 		return MinViewRange
 	} else if r > MaxViewRange {
 		return MaxViewRange
+	}
+	return r
+}
+
+// BoundUpdateRange bounds an update range between MinViewRange and
+// MaxUpdateRange
+func BoundUpdateRange(r int) int {
+	if r < MinViewRange {
+		return MinViewRange
+	} else if r > MaxUpdateRange {
+		return MaxUpdateRange
 	}
 	return r
 }

@@ -160,7 +160,6 @@ func handleLiftRequest(n *NetState, cp clientpacket.Packet) {
 		reject(uo.MoveItemRejectReasonUnspecified)
 		return
 	}
-	// TODO Send drag packets to all net states in range
 }
 
 func handleDropRequest(n *NetState, cp clientpacket.Packet) {
@@ -184,7 +183,18 @@ func handleDropRequest(n *NetState, cp clientpacket.Packet) {
 		reject(uo.MoveItemRejectReasonUnspecified)
 		return
 	}
-	item := world.Find(p.Item)
+	itemObj := world.Find(p.Item)
+	if itemObj == nil {
+		n.m.SetItemInCursor(nil)
+		reject(uo.MoveItemRejectReasonUnspecified)
+		return
+	}
+	item, ok := itemObj.(game.Item)
+	if !ok {
+		n.m.SetItemInCursor(nil)
+		reject(uo.MoveItemRejectReasonUnspecified)
+		return
+	}
 	if p.Container == uo.SerialSystem {
 		// Drop to map request
 		newLocation := uo.Location{X: p.X, Y: p.Y, Z: p.Z}
@@ -202,6 +212,9 @@ func handleDropRequest(n *NetState, cp clientpacket.Packet) {
 		} else {
 			n.m.SetItemInCursor(nil)
 			n.Send(&serverpacket.DropApproved{})
+			for _, mob := range world.Map().GetNetStatesInRange(n.m.Location(), uo.MaxViewRange) {
+				mob.NetState().SendDragItem(item, n.m, n.m.Location(), nil, newLocation)
+			}
 		}
 	} else {
 		// TODO Container handling
