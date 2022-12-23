@@ -1,7 +1,6 @@
 package game
 
 import (
-	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
 )
@@ -23,9 +22,6 @@ type Mobile interface {
 	// SetNetState sets the currently bound NetState. Use SetNetState(nil) to
 	// disconnect the mobile.
 	SetNetState(NetState)
-	// EquippedMobilePacket returns a serverpacket.EquippedMobile packet for
-	// this mobile.
-	EquippedMobilePacket() *serverpacket.EquippedMobile
 
 	//
 	// Stats, attributes, and skills
@@ -65,6 +61,10 @@ type Mobile interface {
 	SetViewRange(int)
 	// IsRunning returns true if the mobile is running.
 	IsRunning() bool
+	// Facing returns the current facing of the mobile.
+	Facing() uo.Direction
+	// SetFacing sets the current facing of the mobile.
+	SetFacing(uo.Direction)
 	// SetRunning sets the running flag of the mobile.
 	SetRunning(bool)
 
@@ -100,6 +100,19 @@ type Mobile interface {
 	// Unequip unequips the given item from the item's layer. It returns false
 	// if the unequip operation failed for any reason.
 	Unequip(Wearable) bool
+	// MapEquipment executes the function for every item this mobile has
+	// equipped and returns any errors. Be careful, as this will also map over
+	// inventory backpacks and player bank boxes. Filter them by checking the
+	// wearable's layer.
+	MapEquipment(func(Wearable) error) []error
+
+	//
+	// Notoriety system
+	//
+
+	// GetNotorietyFor returns the notoriety value of the given mobile as
+	// observed from this mobile.
+	GetNotorietyFor(Mobile) uo.Notoriety
 }
 
 // BaseMobile provides the base implementation for Mobile
@@ -124,8 +137,6 @@ type BaseMobile struct {
 	toWear Wearable
 	// The collection of equipment this mobile is wearing, if any
 	equipment *EquipmentCollection
-	// Mobile flags
-	flags uo.MobileFlags
 	// Base strength
 	baseStrength int
 	// Base dexterity
@@ -181,6 +192,7 @@ func (m *BaseMobile) Deserialize(f *util.TagFileObject) {
 	if m.body == uo.BodyHuman && m.isFemale {
 		m.body += 1
 	}
+	m.notoriety = uo.Notoriety(f.GetNumber("Notoriety", int(uo.NotorietyAttackable)))
 	m.baseStrength = f.GetNumber("Strength", 10)
 	m.baseDexterity = f.GetNumber("Dexterity", 10)
 	m.baseIntelligence = f.GetNumber("Intelligence", 10)
@@ -239,10 +251,26 @@ func (m *BaseMobile) IsHumanBody() bool {
 func (m *BaseMobile) IsRunning() bool { return m.isRunning }
 
 // SetRunning implements the Mobile interface.
-func (m *BaseMobile) SetRunning(v bool) { m.isRunning = v }
+func (m *BaseMobile) SetRunning(v bool) {
+	m.isRunning = v
+}
+
+// Facing implements the Mobile interface.
+func (m *BaseMobile) Facing() uo.Direction { return m.facing }
+
+// SetFacing implements the Mobile interface.
+func (m *BaseMobile) SetFacing(f uo.Direction) {
+	m.facing = f.StripRunningFlag()
+}
 
 // MobileFlags implements the Mobile interface.
-func (m *BaseMobile) MobileFlags() uo.MobileFlags { return m.flags }
+func (m *BaseMobile) MobileFlags() uo.MobileFlags {
+	ret := uo.MobileFlagNone
+	if m.IsFemale() {
+		ret |= uo.MobileFlagFemale
+	}
+	return ret
+}
 
 // Strength implements the Mobile interface.
 func (m *BaseMobile) Strength() int { return m.baseStrength }
@@ -366,34 +394,20 @@ func (m *BaseMobile) Unequip(w Wearable) bool {
 	return true
 }
 
-// EquippedMobilePacket implements the Mobile interface.
-func (m *BaseMobile) EquippedMobilePacket() *serverpacket.EquippedMobile {
-	flags := uo.MobileFlagNone
-	if m.isFemale {
-		flags |= uo.MobileFlagFemale
+// MapEquipment implements the Mobile interface.
+func (m *BaseMobile) MapEquipment(fn func(Wearable) error) []error {
+	var ret []error
+	for _, w := range m.equipment.equipment {
+		if err := fn(w); err != nil {
+			ret = append(ret, err)
+		}
 	}
-	p := &serverpacket.EquippedMobile{
-		ID:        m.Serial(),
-		Body:      m.Body(),
-		X:         m.location.X,
-		Y:         m.location.Y,
-		Z:         m.location.Z,
-		Facing:    m.facing,
-		IsRunning: m.IsRunning(),
-		Hue:       m.Hue(),
-		Flags:     flags,
-		Notoriety: m.notoriety,
-	}
-	if m.equipment != nil {
-		m.equipment.Map(func(w Wearable) error {
-			p.Equipment = append(p.Equipment, &serverpacket.EquippedMobileItem{
-				ID:      w.Serial(),
-				Graphic: w.Graphic(),
-				Layer:   w.Layer(),
-				Hue:     w.Hue(),
-			})
-			return nil
-		})
-	}
-	return p
+	return ret
+}
+
+// GetNotorietyFor implements the Mobile interface.
+func (m *BaseMobile) GetNotorietyFor(other Mobile) uo.Notoriety {
+	// TODO Guild system
+	// TODO If this is a player's mobile return innocent
+	return m.notoriety
 }

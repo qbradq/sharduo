@@ -40,3 +40,10 @@ including all features required to mine ore and smelt it into ingots.
 * Banker NPC
 * Bank box
 * Line of sight checks
+
+## Outstanding Issues ##
+This is a list of known issues that do not need to be resolved before the next
+milestone but do need to be resolved sometime.
+
+* Proper coordinate wrapping in game.Map.getChunksInBounds()
+* Proper coordinate wrapping in uo.Location.XYDistance()

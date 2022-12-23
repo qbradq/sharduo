@@ -60,6 +60,9 @@ var staticsmul *file.StaticsMul
 
 // Main is the entry point for uod.
 func Main() {
+	// Configure logging
+	log.SetFlags(log.LstdFlags | log.Llongfile)
+
 	// Load configuration
 	configuration = newConfiguration()
 	if err := configuration.LoadConfiguration(); err != nil {

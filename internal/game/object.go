@@ -14,14 +14,27 @@ func init() {
 // Object is the interface every object in the game implements
 type Object interface {
 	util.Serializeable
+
+	//
+	// Parent / child relationships
+	//
+
 	// Parent returns a pointer to the parent object of this object, or nil
 	// if the object is attached directly to the world
 	Parent() Object
 	// RootParent returns the top-most parent of the object who's parent is the
 	// map. If this object's parent is the map this object is returned.
 	RootParent() Object
+	// HasParent returns true if the given object is this object's parent, or
+	// the parent of any other object in the parent chain.
+	HasParent(Object) bool
 	// SetParent sets the parent pointer. Use nil to represent the world.
 	SetParent(Object)
+
+	//
+	// Callbacks invoked during re-parenting
+	//
+
 	// RemoveObject removes an object from this object. This is called when
 	// changing parent objects. This function should return false if the object
 	// could not be removed.
@@ -30,6 +43,20 @@ type Object interface {
 	// parent objects. This function should return false if the object could not
 	// be added.
 	AddObject(Object) bool
+
+	//
+	// Player / client interaction callbacks
+	//
+
+	// SingleClick is called when a client single-clicks the object
+	SingleClick(Mobile)
+	// DoubleClick is called when a client double-clicks the object
+	DoubleClick(Mobile)
+
+	//
+	// Generic accessors
+	//
+
 	// Location returns the current location of the object
 	Location() uo.Location
 	// SetLocation sets the absolute location of the object without regard to
@@ -37,13 +64,18 @@ type Object interface {
 	SetLocation(uo.Location)
 	// Hue returns the hue of the item
 	Hue() uo.Hue
-	// DisplayName returns the name of the object with any articles attached
-	DisplayName() string
 	// Facing returns the direction the object is currently facing. 8-way for
 	// mobiles, 2-way for most items, and 4-way for a few items.
 	Facing() uo.Direction
 	// SetFacing sets the direction the object is currently facing.
 	SetFacing(uo.Direction)
+
+	//
+	// Complex accessors
+	//
+
+	// DisplayName returns the name of the object with any articles attached
+	DisplayName() string
 }
 
 // BaseObject is the base of all game objects and implements the Object
@@ -108,7 +140,7 @@ func (o *BaseObject) Deserialize(f *util.TagFileObject) {
 	o.name = f.GetString("Name", "unknown entity")
 	o.articleA = f.GetBool("ArticleA", false)
 	o.articleAn = f.GetBool("ArticleAn", false)
-	o.hue = uo.Hue(f.GetNumber("Hue", int(uo.HueIce1)))
+	o.hue = uo.Hue(f.GetNumber("Hue", int(uo.HueDefault)))
 	o.location.X = f.GetNumber("X", 1607)
 	o.location.Y = f.GetNumber("Y", 1595)
 	o.location.Z = f.GetNumber("Z", 13)
@@ -132,6 +164,20 @@ func (o *BaseObject) RootParent() Object {
 	}
 }
 
+// HasParent implements the Object interface
+func (o *BaseObject) HasParent(t Object) bool {
+	p := o.Parent()
+	for {
+		if p == nil {
+			return false
+		}
+		if p == t {
+			return true
+		}
+		p = p.Parent()
+	}
+}
+
 // SetParent implements the Object interface
 func (o *BaseObject) SetParent(p Object) { o.parent = p }
 
@@ -145,6 +191,19 @@ func (o *BaseObject) RemoveObject(c Object) bool {
 func (o *BaseObject) AddObject(c Object) bool {
 	// BaseObject has no child references
 	return false
+}
+
+// SingleClick implements the Object interface
+func (o *BaseObject) SingleClick(from Mobile) {
+	// Default action is to send the name as over-head text
+	if from.NetState() != nil {
+		from.NetState().SendSpeech(o, o.DisplayName())
+	}
+}
+
+// DoubleClick implements the Object interface
+func (o *BaseObject) DoubleClick(from Mobile) {
+	// No default action
 }
 
 // Location implements the Object interface

@@ -168,14 +168,9 @@ func (m *Map) SendEverything(mob Mobile) {
 	if mob.NetState() == nil {
 		return
 	}
-	// Send items
-	for _, item := range m.GetItemsInRange(mob.Location(), mob.ViewRange()) {
-		mob.NetState().SendItem(item)
+	for _, o := range m.GetObjectsInRange(mob.Location(), mob.ViewRange()) {
+		mob.NetState().SendObject(o)
 	}
-	// Send other mobiles
-	// for _, othermob := range m.GetMobilesInRange(mob.Location(), mob.ViewRange()) {
-	// 	// TODO Send mobile
-	// }
 }
 
 // RemoveEverything removes everything in range of the mobile
@@ -183,12 +178,8 @@ func (m *Map) RemoveEverything(mob Mobile) {
 	if mob.NetState() == nil {
 		return
 	}
-	// Remove items
-	for _, item := range m.GetItemsInRange(mob.Location(), mob.ViewRange()) {
-		mob.NetState().RemoveObject(item)
-	}
-	for _, otherMob := range m.GetMobilesInRange(mob.Location(), mob.ViewRange()) {
-		mob.NetState().RemoveObject(otherMob)
+	for _, o := range m.GetObjectsInRange(mob.Location(), mob.ViewRange()) {
+		mob.NetState().RemoveObject(o)
 	}
 }
 
@@ -197,7 +188,12 @@ func (m *Map) RemoveEverything(mob Mobile) {
 func (m *Map) RemoveObject(o Object) bool {
 	c := m.getChunk(o.Location())
 	c.Remove(o)
-	// TODO Tell other mobiles with net states in range about the object removal
+	// Tell other mobiles with net states in range about the object removal
+	for _, mob := range m.GetNetStatesInRange(o.Location(), uo.MaxViewRange) {
+		if mob.Location().XYDistance(o.Location()) <= mob.ViewRange() {
+			mob.NetState().RemoveObject(o)
+		}
+	}
 	// If this is a mobile with a net state we need to remove all objects
 	if mob, ok := o.(Mobile); ok && mob.NetState() != nil {
 		m.RemoveEverything(mob)
@@ -219,11 +215,7 @@ func (m *Map) AddObject(o Object) bool {
 		if mob.NetState() == nil {
 			continue
 		}
-		if item, ok := o.(Item); ok {
-			mob.NetState().SendItem(item)
-		} else if _, ok := o.(Mobile); ok {
-			// TODO Send mobile
-		}
+		mob.NetState().SendObject(o)
 	}
 	// If this is a mobile with a NetState we have to send all of the items
 	// and mobiles in range.
@@ -240,6 +232,13 @@ func (m *Map) MoveMobile(mob Mobile, dir uo.Direction) bool {
 	dir = dir.Bound().StripRunningFlag()
 	if mob.Facing() != dir {
 		mob.SetFacing(dir)
+		for _, othermob := range m.GetNetStatesInRange(mob.Location(), uo.MaxViewRange+1) {
+			// Don't send packets to ourselves
+			// if othermob == mob {
+			// 	continue
+			// }
+			othermob.NetState().SendUpdateMobile(mob)
+		}
 		return true
 	}
 	// Movement request
@@ -247,30 +246,20 @@ func (m *Map) MoveMobile(mob Mobile, dir uo.Direction) bool {
 	newLocation := mob.Location().Forward(dir).WrapAndBound(oldLocation)
 	oldChunk := m.getChunk(oldLocation)
 	newChunk := m.getChunk(newLocation)
-	items := m.GetItemsInRange(oldLocation, mob.ViewRange()+1)
-	mobs := m.GetMobilesInRange(oldLocation, mob.ViewRange()+1)
 	// If this is a mobile with an attached net state we need to check for
 	// new and old objects.
 	if mob.NetState() != nil {
-		for _, item := range items {
-			// Object used to be in range and isn't anymore, delete it
-			if oldLocation.XYDistance(item.Location()) <= mob.ViewRange() &&
-				newLocation.XYDistance(item.Location()) > mob.ViewRange() {
-				mob.NetState().RemoveObject(item)
-			} else if oldLocation.XYDistance(item.Location()) > mob.ViewRange() &&
-				newLocation.XYDistance(item.Location()) <= mob.ViewRange() {
+		for _, o := range m.GetObjectsInRange(mob.Location(), mob.ViewRange()+1) {
+			if oldLocation.XYDistance(o.Location()) <= mob.ViewRange() &&
+				newLocation.XYDistance(o.Location()) > mob.ViewRange() {
+				// Object used to be in range and isn't anymore, delete it
+				mob.NetState().RemoveObject(o)
+			} else if oldLocation.XYDistance(o.Location()) > mob.ViewRange() &&
+				newLocation.XYDistance(o.Location()) <= mob.ViewRange() {
 				// Object used to be out of range but is in range now, send information about it
-				mob.NetState().SendItem(item)
+				mob.NetState().SendObject(o)
 			}
 		}
-	}
-	// Now we need to check for attached net states that we might need to push
-	// the movement to
-	for _, othermob := range mobs {
-		if othermob == mob || othermob.NetState() == nil {
-			continue
-		}
-		// TODO Send movement to othermob
 	}
 	// Chunk updates
 	if oldChunk != newChunk {
@@ -278,6 +267,11 @@ func (m *Map) MoveMobile(mob Mobile, dir uo.Direction) bool {
 	}
 	// TODO Trigger events for moving off the tile
 	mob.SetLocation(newLocation)
+	// Now we need to check for attached net states that we might need to push
+	// the movement to
+	for _, othermob := range m.GetNetStatesInRange(mob.Location(), uo.MaxViewRange+1) {
+		othermob.NetState().SendUpdateMobile(mob)
+	}
 	// TODO Trigger events for moving onto the tile
 	if oldChunk != newChunk {
 		newChunk.Add(mob)
@@ -364,6 +358,49 @@ func (m *Map) GetMobilesInRange(l uo.Location, r int) []Mobile {
 	return ret
 }
 
+// GetNetStatesInRange returns a slice of all mobiles in range of the given
+// location with attached net states. Mobile.n / Mobile.NetState() will always
+// be non-null.
+func (m *Map) GetNetStatesInRange(l uo.Location, r int) []Mobile {
+	var ret []Mobile
+	for _, c := range m.getChunksInRange(l, r) {
+		for _, mob := range c.mobiles {
+			if mob.NetState() == nil {
+				continue
+			}
+			d := l.XYDistance(mob.Location())
+			if d > r {
+				continue
+			}
+			ret = append(ret, mob)
+		}
+	}
+	return ret
+}
+
+// GetObjectsInRange returns a slice of all objects within the given range of
+// the given location.
+func (m *Map) GetObjectsInRange(l uo.Location, r int) []Object {
+	var ret []Object
+	for _, c := range m.getChunksInRange(l, r) {
+		for _, item := range c.items {
+			d := l.XYDistance(item.Location())
+			if d > r {
+				continue
+			}
+			ret = append(ret, item)
+		}
+		for _, mob := range c.mobiles {
+			d := l.XYDistance(mob.Location())
+			if d > r {
+				continue
+			}
+			ret = append(ret, mob)
+		}
+	}
+	return ret
+}
+
 // UpdateViewRangeForMobile handles an update of the mobiles ViewRange value
 // in a way that sends the correct packets to the attached NetState, if any.
 func (m *Map) UpdateViewRangeForMobile(mob Mobile, r int) {
@@ -373,26 +410,16 @@ func (m *Map) UpdateViewRangeForMobile(mob Mobile, r int) {
 	}
 	if r < mob.ViewRange() {
 		// Look for the set of currently-visible objects that will no longer be
-		for _, item := range m.GetItemsInRange(mob.Location(), mob.ViewRange()) {
-			if mob.Location().XYDistance(item.Location()) > r {
-				mob.NetState().RemoveObject(item)
-			}
-		}
-		for _, othermob := range m.GetMobilesInRange(mob.Location(), mob.ViewRange()) {
-			if mob.Location().XYDistance(othermob.Location()) > r {
-				mob.NetState().RemoveObject(othermob)
+		for _, o := range m.GetObjectsInRange(mob.Location(), mob.ViewRange()) {
+			if mob.Location().XYDistance(o.Location()) > r {
+				mob.NetState().RemoveObject(o)
 			}
 		}
 	} else {
 		// Look for the set of currently-non-visible objects that will be
-		for _, item := range m.GetItemsInRange(mob.Location(), r) {
-			if mob.Location().XYDistance(item.Location()) > mob.ViewRange() {
-				mob.NetState().SendItem(item)
-			}
-		}
-		for _, othermob := range m.GetMobilesInRange(mob.Location(), r) {
-			if mob.Location().XYDistance(othermob.Location()) > mob.ViewRange() {
-				// TODO Send mobile
+		for _, o := range m.GetObjectsInRange(mob.Location(), r) {
+			if mob.Location().XYDistance(o.Location()) > mob.ViewRange() {
+				mob.NetState().SendObject(o)
 			}
 		}
 	}

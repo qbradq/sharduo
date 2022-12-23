@@ -481,11 +481,12 @@ type DropRequest struct {
 
 func newDropRequest(in []byte) Packet {
 	p := &DropRequest{
-		Item:      uo.Serial(GetUint32(in[0:4])),
-		X:         int(GetUint16(in[4:6])),
-		Y:         int(GetUint16(in[6:8])),
-		Z:         int(int8(in[8])),
-		Container: uo.Serial(GetUint32(in[9:13])),
+		Item: uo.Serial(GetUint32(in[0:4])),
+		X:    int(GetUint16(in[4:6])),
+		Y:    int(GetUint16(in[6:8])),
+		Z:    int(int8(in[8])),
+		// Skip one byte for the grid index
+		Container: uo.Serial(GetUint32(in[10:14])),
 	}
 	p.SetSerial(0x08)
 	return p

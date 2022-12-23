@@ -80,27 +80,33 @@ func (r *CharacterLoginRequest) Execute() error {
 	if player == nil {
 		player = world.New(templateManager.NewObject("Player")).(game.Mobile)
 		// TODO New player setup
+		world.Map().AddObject(player)
 	}
-	// TODO Character load
 	r.NetState.m = player
 	r.NetState.account.SetPlayer(player.Serial())
 	r.NetState.m.SetNetState(r.NetState)
 	Broadcast("Welcome %s to Trammel Time!", r.NetState.m.DisplayName())
 
 	// Send the EnterWorld packet
+	facing := r.NetState.m.Facing()
+	if r.NetState.m.IsRunning() {
+		facing = facing.SetRunningFlag()
+	} else {
+		facing = facing.StripRunningFlag()
+	}
 	r.NetState.Send(&serverpacket.EnterWorld{
 		Player: r.NetState.m.Serial(),
 		Body:   r.NetState.m.Body(),
 		X:      r.NetState.m.Location().X,
 		Y:      r.NetState.m.Location().Y,
 		Z:      r.NetState.m.Location().Z,
-		Facing: uo.DirectionSouth,
+		Facing: facing,
 		Width:  uo.MapWidth,
 		Height: uo.MapHeight,
 	})
 	r.NetState.Send(&serverpacket.LoginComplete{})
-	r.NetState.Send(r.NetState.m.EquippedMobilePacket())
+	world.Map().SendEverything(r.NetState.m)
+	r.NetState.SendObject(r.NetState.m)
 
-	world.Map().AddObject(r.NetState.m)
 	return nil
 }

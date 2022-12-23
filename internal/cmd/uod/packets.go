@@ -13,7 +13,6 @@ import (
 // goroutine directly to offload that work from the world goroutine. Note that
 // these functions CANNOT interact with the world memory model.
 func init() {
-	embeddedHandlers.Add(0x09, ignorePacket) // Single click
 	embeddedHandlers.Add(0x73, handleClientPing)
 	embeddedHandlers.Add(0xad, handleClientSpeech)
 	embeddedHandlers.Add(0xbd, handleClientVersion)

@@ -2,6 +2,7 @@ package util
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -95,7 +96,7 @@ func (o *TagFileObject) GetNumber(name string, def int) int {
 	if v, found := o.p[name]; found {
 		n, err := strconv.ParseInt(v, 0, 32)
 		if err != nil {
-			o.errs = append(o.errs, err)
+			o.errs = append(o.errs, fmt.Errorf("error in GetNumber %s=%s:%s", name, v, err))
 			return def
 		}
 		return int(n)
@@ -109,7 +110,7 @@ func (o *TagFileObject) GetHex(name string, def uint32) uint32 {
 	if v, found := o.p[name]; found {
 		n, err := strconv.ParseInt(v, 0, 64)
 		if err != nil {
-			o.errs = append(o.errs, err)
+			o.errs = append(o.errs, fmt.Errorf("error in GetHex %s=%s:%s", name, v, err))
 			return def
 		}
 		return uint32(n)
@@ -128,7 +129,7 @@ func (o *TagFileObject) GetBool(name string, def bool) bool {
 		var b bool
 		var err error
 		if b, err = strconv.ParseBool(v); err != nil {
-			o.errs = append(o.errs, err)
+			o.errs = append(o.errs, fmt.Errorf("error in GetBool %s=%s:%s", name, v, err))
 			return def
 		}
 		return b
@@ -142,10 +143,10 @@ func (o *TagFileObject) GetObjectReferences(name string) []uo.Serial {
 	if v, found := o.p[name]; found {
 		parts := strings.Split(v, ",")
 		ret := make([]uo.Serial, 0, len(parts))
-		for _, str := range parts {
+		for idx, str := range parts {
 			n, err := strconv.ParseInt(str, 0, 32)
 			if err != nil {
-				o.errs = append(o.errs, err)
+				o.errs = append(o.errs, fmt.Errorf("error in GetObjectReferences at index %d %s=%s:%s", idx, name, v, err))
 			} else {
 				ret = append(ret, uo.Serial(n))
 			}

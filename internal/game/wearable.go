@@ -9,11 +9,16 @@ func init() {
 	ObjectFactory.RegisterCtor(func(v any) util.Serializeable { return &BaseWearable{} })
 }
 
+// Layerer represents an item that can be layered onto an equippable mobile.
+type Layerer interface {
+	// Layer returns the layer of the object
+	Layer() uo.Layer
+}
+
 // Wearable represents an item that can be worn by a humanoid mobile
 type Wearable interface {
 	Item
-	// Layer returns the layer of the item
-	Layer() uo.Layer
+	Layerer
 }
 
 // BaseWearable provides the most common implementation of Wearable

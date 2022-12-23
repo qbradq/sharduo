@@ -57,16 +57,38 @@ func (n *NetState) Error(where string, err error) {
 }
 
 // SystemMessage sends a system message to the connected client. This is a
-// wrapper around n.Send sending a serverpacket.Speech packet.
+// wrapper around n.SendSpeech.
 func (n *NetState) SystemMessage(fmtstr string, args ...interface{}) {
+	n.SendSpeech(nil, fmtstr, args...)
+}
+
+// SendSpeech sends a speech packet to the attached client.
+func (n *NetState) SendSpeech(speaker game.Object, fmtstr string, args ...interface{}) {
+	sid := uo.SerialSystem
+	body := uo.BodySystem
+	font := uo.FontNormal
+	hue := uo.Hue(1153)
+	name := ""
+	text := fmt.Sprintf(fmtstr, args...)
+	stype := uo.SpeechTypeSystem
+	if speaker != nil {
+		sid = speaker.Serial()
+		stype = uo.SpeechTypeNormal
+		name = speaker.DisplayName()
+		if item, ok := speaker.(game.Item); ok {
+			body = uo.Body(item.Graphic())
+		} else if mob, ok := speaker.(game.Mobile); ok {
+			body = mob.Body()
+		}
+	}
 	n.Send(&serverpacket.Speech{
-		Speaker: uo.SerialSystem,
-		Body:    uo.BodySystem,
-		Font:    uo.FontNormal,
-		Hue:     1153,
-		Name:    "",
-		Text:    fmt.Sprintf(fmtstr, args...),
-		Type:    uo.SpeechTypeSystem,
+		Speaker: sid,
+		Body:    body,
+		Font:    font,
+		Hue:     hue,
+		Name:    name,
+		Text:    text,
+		Type:    stype,
 	})
 }
 
@@ -244,21 +266,78 @@ func (n *NetState) readLoop(r *clientpacket.Reader) {
 	}
 }
 
-// SendItem implements the game.NetState interface.
-func (n *NetState) SendItem(i game.Item) {
-	var layer uo.Layer
-	if w, ok := i.(game.Wearable); ok {
-		layer = w.Layer()
+// SendObject implements the game.NetState interface.
+func (n *NetState) SendObject(o game.Object) {
+	if item, ok := o.(game.Item); ok {
+		var layer uo.Layer
+		if layerer, ok := item.(game.Layerer); ok {
+			layer = layerer.Layer()
+		}
+		n.Send(&serverpacket.ObjectInfo{
+			Serial:  item.Serial(),
+			Graphic: item.Graphic(),
+			Amount:  item.Amount(),
+			X:       item.Location().X,
+			Y:       item.Location().Y,
+			Z:       item.Location().Z,
+			Layer:   layer,
+			Hue:     item.Hue(),
+		})
+	} else if mobile, ok := o.(game.Mobile); ok {
+		flags := uo.MobileFlagNone
+		if mobile.IsFemale() {
+			flags |= uo.MobileFlagFemale
+		}
+		notoriety := uo.NotorietyEnemy
+		if n.m != nil {
+			notoriety = n.m.GetNotorietyFor(mobile)
+		}
+		if mobile.IsHumanBody() {
+			p := &serverpacket.EquippedMobile{
+				ID:        mobile.Serial(),
+				Body:      mobile.Body(),
+				X:         mobile.Location().X,
+				Y:         mobile.Location().Y,
+				Z:         mobile.Location().Z,
+				Facing:    mobile.Facing(),
+				IsRunning: mobile.IsRunning(),
+				Hue:       mobile.Hue(),
+				Flags:     flags,
+				Notoriety: notoriety,
+			}
+			mobile.MapEquipment(func(w game.Wearable) error {
+				p.Equipment = append(p.Equipment, &serverpacket.EquippedMobileItem{
+					ID:      w.Serial(),
+					Graphic: w.Graphic(),
+					Layer:   w.Layer(),
+					Hue:     w.Hue(),
+				})
+				return nil
+			})
+			n.Send(p)
+		} else {
+			n.SendUpdateMobile(mobile)
+		}
+	} else {
+		log.Println("NetState.SendObject unknown object interface")
 	}
-	n.Send(&serverpacket.ObjectInfo{
-		Serial:  i.Serial(),
-		Graphic: i.Graphic(),
-		Amount:  i.Amount(),
-		X:       i.Location().X,
-		Y:       i.Location().Y,
-		Z:       i.Location().Z,
-		Layer:   layer,
-		Hue:     i.Hue(),
+}
+
+// SendUpdateMobile implements the game.NetState interface.
+func (n *NetState) SendUpdateMobile(mob game.Mobile) {
+	noto := uo.NotorietyAttackable
+	if n.m != nil {
+		noto = mob.GetNotorietyFor(n.m)
+	}
+	n.Send(&serverpacket.UpdateMobile{
+		ID:        mob.Serial(),
+		Body:      mob.Body(),
+		Location:  mob.Location(),
+		Facing:    mob.Facing(),
+		Running:   mob.IsRunning(),
+		Hue:       mob.Hue(),
+		Flags:     mob.MobileFlags(),
+		Notoriety: noto,
 	})
 }
 

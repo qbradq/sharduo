@@ -94,14 +94,14 @@ type Notoriety byte
 
 // Notoriety constants
 const (
-	NotorietyInvalid      Notoriety = 0
-	NotorietyInnocent     Notoriety = 1
-	NotorietyFriend       Notoriety = 2
-	NotorietyAttackable   Notoriety = 3
-	NotorietyCriminal     Notoriety = 4
-	NotorietyEnemy        Notoriety = 5
-	NotorietyMurderer     Notoriety = 6
-	NotorietyInvulnerable Notoriety = 7
+	NotorietyInvalid      Notoriety = 0 // Invalid value
+	NotorietyInnocent     Notoriety = 1 // Blue - not attackable
+	NotorietyFriend       Notoriety = 2 // Green - guild or faction ally, attackable
+	NotorietyAttackable   Notoriety = 3 // Gray - attackable but not criminal
+	NotorietyCriminal     Notoriety = 4 // Gray - attackable, criminal
+	NotorietyEnemy        Notoriety = 5 // Orange - guild or faction enemy
+	NotorietyMurderer     Notoriety = 6 // Red - attackable, murderer
+	NotorietyInvulnerable Notoriety = 7 // Yellow - invulnerable, vendors etc
 )
 
 // FeatureFlag represents the client features flags sent in packet 0xA9

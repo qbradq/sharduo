@@ -8,7 +8,8 @@ import (
 )
 
 // EquipmentCollection is a collection of Items associated to equipment layers.
-// The zero value of EquipmentCollection is valid for all operations.
+// The zero value of EquipmentCollection is valid for all operations. This has
+// special handling for player backpacks and bank boxes.
 type EquipmentCollection struct {
 	// Collection of currently equipped items
 	equipment map[uo.Layer]Wearable
