@@ -2,24 +2,26 @@ package uo
 
 // Random constants
 const (
-	MinStackAmount    uint16 = 1
-	MaxStackAmount    uint16 = 60000
-	MinViewRange      int    = 5
-	MaxViewRange      int    = 18
-	MaxUpdateRange    int    = 24
-	ChunkWidth        int    = 8
-	ChunkHeight       int    = 8
-	MapWidth          int    = 6144
-	MapHeight         int    = 4096
-	MapOverworldWidth int    = MapHeight
-	MapChunksWidth    int    = MapWidth / ChunkWidth
-	MapChunksHeight   int    = MapHeight / ChunkHeight
-	MapMinZ           int    = -127
-	MapMaxZ           int    = 128
-	StatsCapDefault   int    = 225
-	MaxFollowers      int    = 5
-	MaxLiftRange      int    = 3
-	MaxDropRange      int    = 3
+	MinStackAmount            uint16 = 1
+	MaxStackAmount            uint16 = 60000
+	MinViewRange              int    = 5
+	MaxViewRange              int    = 18
+	MaxUpdateRange            int    = 24
+	ChunkWidth                int    = 8
+	ChunkHeight               int    = 8
+	MapWidth                  int    = 6144
+	MapHeight                 int    = 4096
+	MapOverworldWidth         int    = MapHeight
+	MapChunksWidth            int    = MapWidth / ChunkWidth
+	MapChunksHeight           int    = MapHeight / ChunkHeight
+	MapMinZ                   int    = -127
+	MapMaxZ                   int    = 128
+	StatsCapDefault           int    = 225
+	MaxFollowers              int    = 5
+	MaxLiftRange              int    = 3
+	MaxDropRange              int    = 3
+	DefaultMaxContainerWeight int    = 512
+	DefaultMaxContainerItems  int    = 125
 )
 
 // BoundZ bounds a Z value
@@ -277,4 +279,14 @@ const (
 	MoveItemRejectReasonBelongsToAnother   MoveItemRejectReason = 3
 	MoveItemRejectReasonAlreadyHoldingItem MoveItemRejectReason = 4
 	MoveItemRejectReasonUnspecified        MoveItemRejectReason = 5
+)
+
+// Gump represents a gump graphic.
+type Gump uint16
+
+// Constant values for Gump
+const (
+	GumpNone             Gump = 0x0000
+	GumpDefault          Gump = 0x0046 // Partial skull with glowing eyes
+	GumpContainerDefault Gump = 0x03E8 // Huge chest, old login gump
 )

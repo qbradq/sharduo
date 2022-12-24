@@ -78,7 +78,7 @@ func (r *CharacterLoginRequest) Execute() error {
 	}
 	// Create a new character if needed
 	if player == nil {
-		player = world.New(templateManager.NewObject("Player")).(game.Mobile)
+		player = world.AddNewObjectToDataStores(templateManager.NewObject("Player")).(game.Mobile)
 		// TODO New player setup
 		world.Map().AddObject(player)
 	}

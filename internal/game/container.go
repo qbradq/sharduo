@@ -1,6 +1,7 @@
 package game
 
 import (
+	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
 )
 
@@ -21,28 +22,36 @@ func (o *ContainerItem) TypeName() string {
 
 // Serialize implements the util.Serializeable interface.
 func (s *ContainerItem) Serialize(f *util.TagFileWriter) {
-	// Do nothing
+	s.BaseItem.Serialize(f) // This calls BaseObject.Serialize for us
+	s.BaseContainer.Serialize(f)
 }
 
 // Deserialize implements the util.Serializeable interface.
 func (s *ContainerItem) Deserialize(f *util.TagFileObject) {
-	// Do nothing
+	s.BaseItem.Deserialize(f) // This calls BaseObject.Deserialize for us
+	s.BaseContainer.Deserialize(f)
 }
 
 // OnAfterDeserialize implements the util.Serializeable interface.
 func (s *ContainerItem) OnAfterDeserialize(f *util.TagFileObject) {
-	// Do nothing
+	s.BaseItem.OnAfterDeserialize(f) // This calls BaseObject.OnAfterDeserialize for us
+	// BaseContainer has nothing to do OnAfterDeserialize
 }
 
 // DoubleClick implements the Object interface.
 func (c *ContainerItem) DoubleClick(from Mobile) {
 	// TODO Debug code
-
+	if from.NetState() != nil {
+		from.NetState().OpenContainer(c)
+	}
 }
 
 // Container is the interface all objects implement that can contain other
 // other objects within an inventory.
 type Container interface {
+	util.Serialer
+	// GumpGraphic returns the gump graphic of the item
+	GumpGraphic() uo.Gump
 	// RemoveObject removes an object from this object. This is called when
 	// changing parent objects. This function should return false if the object
 	// could not be removed.
@@ -58,8 +67,28 @@ type Container interface {
 
 // BaseContainer implements the base implementation of the Container interface.
 type BaseContainer struct {
-	contents util.Slice[Item]
+	contents           util.Slice[Item]
+	gump               uo.Gump
+	maxContainerWeight int
+	maxContainerItems  int
 }
+
+// Serialize implements the util.Serializeable interface.
+func (c *BaseContainer) Serialize(f *util.TagFileWriter) {
+	f.WriteHex("Gump", uint32(c.gump))
+	f.WriteNumber("MaxContainerWeight", c.maxContainerWeight)
+	f.WriteNumber("MaxContainerItems", c.maxContainerItems)
+}
+
+// Deserialize implements the util.Serializeable interface.
+func (c *BaseContainer) Deserialize(f *util.TagFileObject) {
+	c.gump = uo.Gump(f.GetHex("Gump", uint32(uo.GumpNone)))
+	c.maxContainerWeight = f.GetNumber("MaxContainerWeight", uo.DefaultMaxContainerWeight)
+	c.maxContainerItems = f.GetNumber("MaxContainerItems", uo.DefaultMaxContainerItems)
+}
+
+// GumpGraphic implements the Container interface.
+func (c *BaseContainer) GumpGraphic() uo.Gump { return c.gump }
 
 // RemoveObject implements the Container interface.
 func (c *BaseContainer) RemoveObject(o Object) bool {

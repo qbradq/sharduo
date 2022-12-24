@@ -25,12 +25,13 @@ func (n *MockNetState) Reset() {
 }
 
 // Required for interface compliance
-func (n *MockNetState) SystemMessage(fmtstr string, args ...interface{})           {}
-func (n *MockNetState) SendSpeech(from Object, fmtstr string, args ...interface{}) {}
-func (n *MockNetState) SendDrawPlayer()                                            {}
-func (n *MockNetState) SendUpdateMobile(mob Mobile)                                {}
-func (n *MockNetState) SendWornItem(wearable Wearable, mob Mobile)                 {}
-func (n *MockNetState) SendDragItem(item Item, srcMob Mobile, srcLoc uo.Location, destMob Mobile, destLoc uo.Location) {
+func (n *MockNetState) SystemMessage(fmtstr string, args ...interface{})       {}
+func (n *MockNetState) Speech(from Object, fmtstr string, args ...interface{}) {}
+func (n *MockNetState) DrawPlayer()                                            {}
+func (n *MockNetState) UpdateMobile(mob Mobile)                                {}
+func (n *MockNetState) WornItem(wearable Wearable, mob Mobile)                 {}
+func (n *MockNetState) OpenContainer(c Container)                              {}
+func (n *MockNetState) DragItem(item Item, srcMob Mobile, srcLoc uo.Location, destMob Mobile, destLoc uo.Location) {
 }
 
 func makeTestObjects() (*Map, *BaseMobile) {

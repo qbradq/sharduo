@@ -281,14 +281,19 @@ func (w *World) Random() uo.RandomSource {
 	return w.rng
 }
 
-// New adds a new object to the world. It is assigned a unique serial. The
-// object is returned. As a special case this function refuses to add a nil
-// value to the game data store.
-func (w *World) New(o game.Object) game.Object {
+// AddNewObjectToDataStores adds a new object to the world data stores. It is
+// assigned a unique serial. The object is returned. As a special case this
+// function refuses to add a nil value to the game data store.
+func (w *World) AddNewObjectToDataStores(o game.Object) game.Object {
 	if o != nil {
 		w.ods.Add(o, o.SerialType())
 	}
 	return o
+}
+
+// New implements the game.World interface.
+func (w *World) New(templateName string) game.Object {
+	return w.AddNewObjectToDataStores(templateManager.NewObject(templateName))
 }
 
 // Find returns the object with the given serial, or nil if it is not found in

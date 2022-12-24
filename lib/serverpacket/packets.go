@@ -668,3 +668,18 @@ func (p *DragItem) Write(w io.Writer) {
 	PutUint16(w, uint16(p.DestinationLocation.Y))
 	PutByte(w, byte(int8(p.DestinationLocation.Z)))
 }
+
+// OpenContainerGump opens a container gump on the client.
+type OpenContainerGump struct {
+	// The ID of the Gump
+	GumpSerial uo.Serial
+	// The gump graphic
+	Gump uo.Gump
+}
+
+// Write implements the Packet interface.
+func (p *OpenContainerGump) Write(w io.Writer) {
+	PutByte(w, 0x24) // Packet ID
+	PutUint32(w, uint32(p.GumpSerial))
+	PutUint16(w, uint16(p.Gump))
+}

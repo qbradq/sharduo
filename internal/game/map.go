@@ -193,7 +193,7 @@ func (m *Map) SetNewParent(o, p Object) bool {
 	r := oldLocation.XYDistance(newLocation) + uo.MaxViewRange
 	r = uo.BoundUpdateRange(r)
 	for _, mob := range m.GetNetStatesInRange(oldLocation, r) {
-		mob.NetState().SendDragItem(item, oldParentMobile, oldLocation, newParentMobile, newLocation)
+		mob.NetState().DragItem(item, oldParentMobile, oldLocation, newParentMobile, newLocation)
 	}
 	return true
 }
@@ -245,8 +245,7 @@ func (m *Map) AddObject(o Object) bool {
 		return false
 	}
 	// Send the new object to all mobiles in range with an attached net state
-	mobs := m.GetMobilesInRange(o.Location(), uo.MaxViewRange)
-	for _, mob := range mobs {
+	for _, mob := range m.GetNetStatesInRange(o.Location(), uo.MaxViewRange) {
 		if mob.NetState() == nil {
 			continue
 		}
@@ -272,7 +271,7 @@ func (m *Map) MoveMobile(mob Mobile, dir uo.Direction) bool {
 			// if othermob == mob {
 			// 	continue
 			// }
-			othermob.NetState().SendUpdateMobile(mob)
+			othermob.NetState().UpdateMobile(mob)
 		}
 		return true
 	}
@@ -305,7 +304,7 @@ func (m *Map) MoveMobile(mob Mobile, dir uo.Direction) bool {
 	// Now we need to check for attached net states that we might need to push
 	// the movement to
 	for _, othermob := range m.GetNetStatesInRange(mob.Location(), uo.MaxViewRange+1) {
-		othermob.NetState().SendUpdateMobile(mob)
+		othermob.NetState().UpdateMobile(mob)
 	}
 	// TODO Trigger events for moving onto the tile
 	if oldChunk != newChunk {
@@ -331,7 +330,7 @@ func (m *Map) TeleportMobile(mob Mobile, l uo.Location) bool {
 		return false
 	}
 	if mob.NetState() != nil {
-		mob.NetState().SendDrawPlayer()
+		mob.NetState().DrawPlayer()
 	}
 	return true
 }

@@ -19,7 +19,9 @@ including all features required to mine ore and smelt it into ingots.
 * ~~Player persistance~~
 * ~~Removing equipment~~
 * ~~Equipping equipment~~
+* Action rate-limiting
 * Using equipment
+* Timers
 * Mining skill
 * Smelting
 * Backpack and inventory
@@ -43,6 +45,17 @@ including all features required to mine ore and smelt it into ingots.
 * Line of sight checks
 
 ## Outstanding Issues ##
+
+### Go-Live Issues ###
+This is a list of known issues that must be resolve before the server may be
+opened to outside connections.
+
+* Player movement packet throttling
+* Removal of stale NetStates in the game service goroutine
+* Removal of stale NetStates in the login service goroutine
+* Integration of the game service into a single self-managed structure
+
+### Miscellaneous Issues ###
 This is a list of known issues that do not need to be resolved before the next
 milestone but do need to be resolved sometime.
 

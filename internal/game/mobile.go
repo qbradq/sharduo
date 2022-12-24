@@ -1,6 +1,8 @@
 package game
 
 import (
+	"log"
+
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
 )
@@ -74,6 +76,9 @@ type Mobile interface {
 
 	// GetBody returns the animation body of the mobile.
 	Body() uo.Body
+	// IsPlayerCharacter returns true if this mobile is attached to a player's
+	// account.
+	IsPlayerCharacter() bool
 	// IsFemale returns true if the mobile is female.
 	IsFemale() bool
 	// IsHumanBody returns true if the body value is humanoid.
@@ -123,6 +128,8 @@ type BaseMobile struct {
 	// Current view range of the mobile. Please note that the zero value IS NOT
 	// SANE for this variable!
 	viewRange int
+	// isPlayerCharacter is true if the mobile is attached to a player's account
+	isPlayerCharacter bool
 	// isFemale is true if the mobile is female
 	isFemale bool
 	// Animation body of the object
@@ -165,6 +172,7 @@ func (o *BaseMobile) SerialType() uo.SerialType {
 func (m *BaseMobile) Serialize(f *util.TagFileWriter) {
 	m.BaseObject.Serialize(f)
 	f.WriteNumber("ViewRange", m.viewRange)
+	f.WriteBool("IsPlayerCharacter", m.isPlayerCharacter)
 	f.WriteBool("IsFemale", m.isFemale)
 	f.WriteNumber("Body", int(m.body))
 	f.WriteNumber("Notoriety", int(m.notoriety))
@@ -186,6 +194,7 @@ func (m *BaseMobile) Serialize(f *util.TagFileWriter) {
 func (m *BaseMobile) Deserialize(f *util.TagFileObject) {
 	m.BaseObject.Deserialize(f)
 	m.viewRange = f.GetNumber("ViewRange", uo.MaxViewRange)
+	m.isPlayerCharacter = f.GetBool("IsPlayerCharacter", false)
 	m.isFemale = f.GetBool("IsFemale", false)
 	m.body = uo.Body(f.GetNumber("Body", int(uo.BodyDefault)))
 	// Special case for human bodies to select between male and female models
@@ -199,7 +208,6 @@ func (m *BaseMobile) Deserialize(f *util.TagFileObject) {
 	m.hitPoints = f.GetNumber("HitPoints", 1)
 	m.mana = f.GetNumber("Mana", 1)
 	m.stamina = f.GetNumber("Stamina", 1)
-	m.notoriety = uo.Notoriety(f.GetNumber("Notoriety", int(uo.NotorietyInnocent)))
 }
 
 // OnAfterDeserialize implements the util.Serializeable interface.
@@ -207,6 +215,24 @@ func (m *BaseMobile) OnAfterDeserialize(f *util.TagFileObject) {
 	m.equipment = NewEquipmentCollectionWith(f.GetObjectReferences("Equipment"))
 	for _, w := range m.equipment.equipment {
 		w.SetParent(m)
+	}
+	// Make sure all mobiles have an inventory
+	if !m.equipment.IsLayerOccupied(uo.LayerBackpack) {
+		var w Wearable
+		if m.isPlayerCharacter {
+			w = world.New("PlayerBackpack").(Wearable)
+		} else {
+			w = world.New("NPCBackpack").(Wearable)
+		}
+		if !m.Equip(w) {
+			log.Println("failed to equip auto-generated inventory backpack")
+		}
+	}
+	// Make sure all players have a bank box
+	if m.IsPlayerCharacter() && !m.equipment.IsLayerOccupied(uo.LayerBankBox) {
+		if !m.Equip(world.New("PlayerBankBox").(Wearable)) {
+			log.Println("failed to equip auto-generated player bank box")
+		}
 	}
 	// If we had an item on the cursor at the time of the save we drop it at
 	// our feet just so we don't leak it.
@@ -238,6 +264,9 @@ func (m *BaseMobile) SetViewRange(r int) { m.viewRange = uo.BoundViewRange(r) }
 
 // Body implements the Mobile interface.
 func (m *BaseMobile) Body() uo.Body { return m.body }
+
+// IsPlayerCharacter implements the Mobile interface.
+func (m *BaseMobile) IsPlayerCharacter() bool { return m.isPlayerCharacter }
 
 // IsFemale implements the Mobile interface.
 func (m *BaseMobile) IsFemale() bool { return m.isFemale }
@@ -372,7 +401,7 @@ func (m *BaseMobile) RemoveObject(o Object) bool {
 		} else {
 			// Send the wear item packet back at ourselves to force the item
 			// back into the paper doll
-			m.NetState().SendWornItem(wearable, m)
+			m.NetState().WornItem(wearable, m)
 			return false
 		}
 	}
@@ -386,6 +415,9 @@ func (m *BaseMobile) RemoveObject(o Object) bool {
 
 // Equip implements the Mobile interface.
 func (m *BaseMobile) Equip(w Wearable) bool {
+	if w == nil {
+		return false
+	}
 	if m.equipment == nil {
 		m.equipment = NewEquipmentCollection()
 	}

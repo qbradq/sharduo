@@ -69,7 +69,7 @@ func (c *EquipmentCollection) Equip(o Wearable) bool {
 	if c.equipment == nil {
 		c.equipment = make(map[uo.Layer]Wearable)
 	}
-	if _, duplicate := c.equipment[o.Layer()]; duplicate {
+	if c.IsLayerOccupied(o.Layer()) {
 		return false
 	}
 	c.equipment[o.Layer()] = o
@@ -96,6 +96,15 @@ func (c *EquipmentCollection) Contains(o Wearable) bool {
 	if c.equipment == nil {
 		return false
 	}
-	_, found := c.equipment[o.Layer()]
+	w, found := c.equipment[o.Layer()]
+	if !found {
+		return false
+	}
+	return w == o
+}
+
+// IsLayerOccupied returns true if the named layer is already occupied
+func (c *EquipmentCollection) IsLayerOccupied(l uo.Layer) bool {
+	_, found := c.equipment[l]
 	return found
 }

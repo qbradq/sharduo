@@ -11,8 +11,8 @@ type NetState interface {
 
 	// SystemMessage sends a system message
 	SystemMessage(string, ...interface{})
-	// SendSpeech sends a speech packet
-	SendSpeech(Object, string, ...interface{})
+	// Speech sends a speech packet
+	Speech(Object, string, ...interface{})
 
 	//
 	// Item management and updates
@@ -22,12 +22,19 @@ type NetState interface {
 	SendObject(Object)
 	// RemoveObject sends a delete object packet to the client
 	RemoveObject(Object)
-	// SendDrawPlayer sends a DrawPlayer packet for the attached mobile if any
-	SendDrawPlayer()
-	// SendUpdateMobile sends an UpdateMobile packet for the given mobile
-	SendUpdateMobile(Mobile)
-	// SendWornItem sends the WornItem packet to the given mobile
-	SendWornItem(Wearable, Mobile)
-	// SendDragItem sends a DragItem packet
-	SendDragItem(Item, Mobile, uo.Location, Mobile, uo.Location)
+	// DrawPlayer sends a DrawPlayer packet for the attached mobile if any
+	DrawPlayer()
+	// UpdateMobile sends an UpdateMobile packet for the given mobile
+	UpdateMobile(Mobile)
+	// WordItem sends the WornItem packet to the given mobile
+	WornItem(Wearable, Mobile)
+	// DragItem sends a DragItem packet
+	DragItem(Item, Mobile, uo.Location, Mobile, uo.Location)
+
+	//
+	// Containers
+	//
+
+	// OpenContainer opens a container gump on the client
+	OpenContainer(Container)
 }

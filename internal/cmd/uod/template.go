@@ -300,7 +300,7 @@ func randomBool() bool {
 }
 
 func templateNew(name string) string {
-	o := world.New(templateManager.NewObject(name))
+	o := world.AddNewObjectToDataStores(templateManager.NewObject(name))
 	if o == nil {
 		return "0"
 	}

@@ -56,42 +56,6 @@ func (n *NetState) Error(where string, err error) {
 	n.Disconnect()
 }
 
-// SystemMessage sends a system message to the connected client. This is a
-// wrapper around n.SendSpeech.
-func (n *NetState) SystemMessage(fmtstr string, args ...interface{}) {
-	n.SendSpeech(nil, fmtstr, args...)
-}
-
-// SendSpeech sends a speech packet to the attached client.
-func (n *NetState) SendSpeech(speaker game.Object, fmtstr string, args ...interface{}) {
-	sid := uo.SerialSystem
-	body := uo.BodySystem
-	font := uo.FontNormal
-	hue := uo.Hue(1153)
-	name := ""
-	text := fmt.Sprintf(fmtstr, args...)
-	stype := uo.SpeechTypeSystem
-	if speaker != nil {
-		sid = speaker.Serial()
-		stype = uo.SpeechTypeNormal
-		name = speaker.DisplayName()
-		if item, ok := speaker.(game.Item); ok {
-			body = uo.Body(item.Graphic())
-		} else if mob, ok := speaker.(game.Mobile); ok {
-			body = mob.Body()
-		}
-	}
-	n.Send(&serverpacket.Speech{
-		Speaker: sid,
-		Body:    body,
-		Font:    font,
-		Hue:     hue,
-		Name:    name,
-		Text:    text,
-		Type:    stype,
-	})
-}
-
 // Send attempts to add a packet to the client's send queue and returns false if
 // the queue is full.
 func (n *NetState) Send(p serverpacket.Packet) bool {
@@ -266,6 +230,42 @@ func (n *NetState) readLoop(r *clientpacket.Reader) {
 	}
 }
 
+// SystemMessage sends a system message to the connected client. This is a
+// wrapper around n.SendSpeech.
+func (n *NetState) SystemMessage(fmtstr string, args ...interface{}) {
+	n.Speech(nil, fmtstr, args...)
+}
+
+// Speech sends a speech packet to the attached client.
+func (n *NetState) Speech(speaker game.Object, fmtstr string, args ...interface{}) {
+	sid := uo.SerialSystem
+	body := uo.BodySystem
+	font := uo.FontNormal
+	hue := uo.Hue(1153)
+	name := ""
+	text := fmt.Sprintf(fmtstr, args...)
+	stype := uo.SpeechTypeSystem
+	if speaker != nil {
+		sid = speaker.Serial()
+		stype = uo.SpeechTypeNormal
+		name = speaker.DisplayName()
+		if item, ok := speaker.(game.Item); ok {
+			body = uo.Body(item.Graphic())
+		} else if mob, ok := speaker.(game.Mobile); ok {
+			body = mob.Body()
+		}
+	}
+	n.Send(&serverpacket.Speech{
+		Speaker: sid,
+		Body:    body,
+		Font:    font,
+		Hue:     hue,
+		Name:    name,
+		Text:    text,
+		Type:    stype,
+	})
+}
+
 // SendObject implements the game.NetState interface.
 func (n *NetState) SendObject(o game.Object) {
 	if item, ok := o.(game.Item); ok {
@@ -319,15 +319,15 @@ func (n *NetState) SendObject(o game.Object) {
 			})
 			n.Send(p)
 		} else {
-			n.SendUpdateMobile(mobile)
+			n.UpdateMobile(mobile)
 		}
 	} else {
 		log.Println("NetState.SendObject unknown object interface")
 	}
 }
 
-// SendUpdateMobile implements the game.NetState interface.
-func (n *NetState) SendUpdateMobile(mob game.Mobile) {
+// UpdateMobile implements the game.NetState interface.
+func (n *NetState) UpdateMobile(mob game.Mobile) {
 	noto := uo.NotorietyAttackable
 	if n.m != nil {
 		noto = mob.GetNotorietyFor(n.m)
@@ -351,8 +351,8 @@ func (n *NetState) RemoveObject(o game.Object) {
 	})
 }
 
-// SendDrawPlayer implements the game.NetState interface.
-func (n *NetState) SendDrawPlayer() {
+// DrawPlayer implements the game.NetState interface.
+func (n *NetState) DrawPlayer() {
 	if n.m == nil {
 		return
 	}
@@ -366,8 +366,8 @@ func (n *NetState) SendDrawPlayer() {
 	})
 }
 
-// SendWornItem sends the WornItem packet to the given mobile
-func (n *NetState) SendWornItem(wearable game.Wearable, wearer game.Mobile) {
+// WornItem sends the WornItem packet to the given mobile
+func (n *NetState) WornItem(wearable game.Wearable, wearer game.Mobile) {
 	n.Send(&serverpacket.WornItem{
 		Item:    wearable.Serial(),
 		Graphic: wearable.Graphic(),
@@ -377,7 +377,8 @@ func (n *NetState) SendWornItem(wearable game.Wearable, wearer game.Mobile) {
 	})
 }
 
-func (n *NetState) SendDragItem(item game.Item, srcMob game.Mobile,
+// DragItem sends the DragItem packet to the given mobile
+func (n *NetState) DragItem(item game.Item, srcMob game.Mobile,
 	srcLoc uo.Location, destMob game.Mobile, destLoc uo.Location) {
 	if item == nil {
 		return
@@ -397,5 +398,13 @@ func (n *NetState) SendDragItem(item game.Item, srcMob game.Mobile,
 		SourceLocation:      srcLoc,
 		Destination:         destSerial,
 		DestinationLocation: destLoc,
+	})
+}
+
+// OpenContainer sends the OpenContainerGump packet to the client
+func (n *NetState) OpenContainer(c game.Container) {
+	n.Send(&serverpacket.OpenContainerGump{
+		GumpSerial: c.Serial(),
+		Gump:       uo.Gump(c.GumpGraphic()),
 	})
 }

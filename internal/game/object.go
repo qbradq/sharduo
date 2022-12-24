@@ -32,7 +32,7 @@ type Object interface {
 	SetParent(Object)
 
 	//
-	// Callbacks invoked during re-parenting
+	// Callbacks
 	//
 
 	// RemoveObject removes an object from this object. This is called when
@@ -43,6 +43,11 @@ type Object interface {
 	// parent objects. This function should return false if the object could not
 	// be added.
 	AddObject(Object) bool
+	// DropObject is called when another object is dropped onto / into this
+	// object by a mobile. A nil mobile usually means a script is generating
+	// items directly into a container. This returns false if the drop action
+	// is rejected for any reason.
+	DropObject(Object, Mobile) bool
 
 	//
 	// Player / client interaction callbacks
@@ -193,11 +198,17 @@ func (o *BaseObject) AddObject(c Object) bool {
 	return false
 }
 
+// DropObject implements the Object interface
+func (o *BaseObject) DropObject(obj Object, from Mobile) bool {
+	// This makes no sense for a base object
+	return false
+}
+
 // SingleClick implements the Object interface
 func (o *BaseObject) SingleClick(from Mobile) {
 	// Default action is to send the name as over-head text
 	if from.NetState() != nil {
-		from.NetState().SendSpeech(o, o.DisplayName())
+		from.NetState().Speech(o, o.DisplayName())
 	}
 }
 

@@ -122,7 +122,7 @@ func (c *NewCommand) Execute(n *NetState) error {
 			Y: r.Y,
 			Z: r.Z,
 		})
-		world.Map().AddObject(world.New(o))
+		world.Map().AddObject(world.AddNewObjectToDataStores(o))
 	})
 	return nil
 }
@@ -266,7 +266,7 @@ func (c *DebugCommand) Execute(n *NetState) error {
 					Y: iy,
 					Z: n.m.Location().Z,
 				})
-				world.Map().AddObject(world.New(o))
+				world.Map().AddObject(world.AddNewObjectToDataStores((o)))
 				count++
 			}
 		}

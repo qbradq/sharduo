@@ -1,6 +1,8 @@
 package uod
 
 import (
+	"log"
+
 	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/lib/clientpacket"
 	"github.com/qbradq/sharduo/lib/serverpacket"
@@ -206,18 +208,19 @@ func handleDropRequest(n *NetState, cp clientpacket.Packet) {
 		// TODO Line of sight check
 		item.SetLocation(newLocation)
 		if !world.Map().SetNewParent(item, nil) {
-			n.m.SetItemInCursor(nil)
+			n.m.DropItemInCursor()
 			reject(uo.MoveItemRejectReasonUnspecified)
 			return
 		} else {
 			n.m.SetItemInCursor(nil)
 			n.Send(&serverpacket.DropApproved{})
 			for _, mob := range world.Map().GetNetStatesInRange(n.m.Location(), uo.MaxViewRange) {
-				mob.NetState().SendDragItem(item, n.m, n.m.Location(), nil, newLocation)
+				mob.NetState().DragItem(item, n.m, n.m.Location(), nil, newLocation)
 			}
 		}
 	} else {
 		// TODO Container handling
+		log.Println(p)
 	}
 }
 
@@ -269,7 +272,7 @@ func handleWearItemRequest(n *NetState, cp clientpacket.Packet) {
 		// Send the WearItem packet to all netstates in range, including our own
 		for _, mob := range world.Map().GetMobilesInRange(n.m.Location(), uo.MaxViewRange) {
 			if mob.NetState() != nil && mob.Location().XYDistance(n.m.Location()) <= mob.ViewRange() {
-				mob.NetState().SendWornItem(wearable, wearerMobile)
+				mob.NetState().WornItem(wearable, wearerMobile)
 			}
 		}
 	}
