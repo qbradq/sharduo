@@ -418,6 +418,10 @@ func (m *BaseMobile) AddObject(o Object) bool {
 // RemoveObject removes the object from the mobile. It returns true if
 // successful.
 func (m *BaseMobile) RemoveObject(o Object) bool {
+	if o == m.toWear {
+		// This is the item we are currently trying to wear, just accept it
+		return true
+	}
 	if wearable, ok := o.(Wearable); ok && m.equipment.Contains(wearable) {
 		// This item is currently equipped, try to unequip it
 		if !m.equipment.Unequip(wearable) {
@@ -429,11 +433,22 @@ func (m *BaseMobile) RemoveObject(o Object) bool {
 		return true
 	}
 	if m.itemInCursor == o {
-		// This is the item currently on our cursor
-		m.itemInCursor = nil
+		// This is the item currently on our cursor, just accept it
 		return true
 	}
 	return false
+}
+
+// DropObject implements the Object interface
+func (m *BaseMobile) DropObject(obj Object, from Mobile) bool {
+	// TODO Access calculations
+	// Try to put the object in our backpack
+	backpack := m.equipment.GetItemInLayer(uo.LayerBackpack)
+	if backpack == nil {
+		// No backpack found, something is very wrong
+		return false
+	}
+	return world.Map().SetNewParent(obj, backpack)
 }
 
 // Equip implements the Mobile interface.
@@ -466,7 +481,7 @@ func (m *BaseMobile) Equip(w Wearable) bool {
 // Unequip implements the Mobile interface.
 func (m *BaseMobile) Unequip(w Wearable) bool {
 	if m.equipment == nil {
-		m.equipment = NewEquipmentCollection()
+		return false
 	}
 	if !m.equipment.Unequip(w) {
 		return false

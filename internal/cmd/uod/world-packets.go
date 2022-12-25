@@ -209,7 +209,7 @@ func handleDropRequest(n *NetState, cp clientpacket.Packet) {
 		if target == nil {
 			n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		}
-		newLocation := target.Location()
+		newLocation := target.RootParent().Location()
 		if n.m.Location().XYDistance(newLocation) > uo.MaxDropRange {
 			n.m.DropItemInCursor()
 			n.DropReject(uo.MoveItemRejectReasonOutOfRange)
@@ -222,6 +222,7 @@ func handleDropRequest(n *NetState, cp clientpacket.Packet) {
 		})
 		if !target.DropObject(item, n.m) {
 			n.DropReject(uo.MoveItemRejectReasonUnspecified)
+			return
 		}
 		n.m.SetItemInCursor(nil)
 		n.Send(&serverpacket.DropApproved{})

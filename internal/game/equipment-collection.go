@@ -128,3 +128,13 @@ func (c *EquipmentCollection) IsLayerOccupied(l uo.Layer) bool {
 	_, found := c.equipment[l]
 	return found
 }
+
+// GetItemInLayer returns a pointer to the item in the named layer or nil if
+// the layer is unoccupied
+func (c *EquipmentCollection) GetItemInLayer(l uo.Layer) Wearable {
+	w, ok := c.equipment[l]
+	if !ok {
+		return nil
+	}
+	return w
+}

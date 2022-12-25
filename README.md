@@ -24,8 +24,8 @@ including all features required to mine ore and smelt it into ingots.
 * Timers
 * Mining skill
 * Smelting
-* Backpack and inventory
-* Container handling
+* ~~Backpack and inventory~~
+* ~~Container handling~~
 * Spacial chat with speaking, yelling, and whispering
 
 ### Nice to Haves ###
