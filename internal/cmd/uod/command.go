@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/lib/clientpacket"
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
@@ -112,9 +113,9 @@ func (c *NewCommand) Execute(n *NetState) error {
 		return nil
 	}
 	world.SendTarget(n, uo.TargetTypeLocation, nil, func(r *clientpacket.TargetResponse, ctx interface{}) {
-		o := templateManager.NewObject(c.args[1])
+		o := world.New(c.args[1])
 		if o == nil {
-			n.SystemMessage("template %s not found", c.args[1])
+			n.SystemMessage("failed to create %s", c.args[1])
 			return
 		}
 		o.SetLocation(uo.Location{
@@ -122,7 +123,7 @@ func (c *NewCommand) Execute(n *NetState) error {
 			Y: r.Y,
 			Z: r.Z,
 		})
-		world.Map().AddObject(world.AddNewObjectToDataStores(o))
+		world.Map().SetNewParent(o, nil)
 	})
 	return nil
 }
@@ -234,12 +235,16 @@ func newDebugCommand(args CommandArgs) Command {
 // Compile implements the Command interface
 func (c *DebugCommand) Compile() error {
 	if len(c.args) < 2 {
-		return errors.New("debug command requires at least 2 arguments")
+		return errors.New("debug command requires a command name: [debug command_name")
 	}
 	switch c.args[1] {
+	case "shirtbag":
+		if len(c.args) != 2 {
+			return errors.New("debug shirtbag command requires 0 arguments")
+		}
 	case "splat":
 		if len(c.args) != 3 {
-			return errors.New("debug splat command requires 3 arguments")
+			return errors.New("debug splat command requires 1 arguments")
 		}
 	default:
 		return fmt.Errorf("unknown debug command %s", c.args[1])
@@ -249,24 +254,36 @@ func (c *DebugCommand) Compile() error {
 
 // Execute implements the Command interface
 func (c *DebugCommand) Execute(n *NetState) error {
-	if n == nil || n.m == nil {
+	if n == nil || n.m == nil || len(c.args) < 2 {
 		return nil
 	}
-	if c.args[1] == "splat" {
+	switch c.args[1] {
+	case "shirtbag":
+		backpack := world.New("Backpack").(game.Container)
+		backpack.SetLocation(n.m.Location())
+		world.m.SetNewParent(backpack, nil)
+		for i := 0; i < 125; i++ {
+			shirt := world.New("FancyShirt")
+			shirt.SetLocation(uo.RandomContainerLocation)
+			if !world.Map().SetNewParent(shirt, backpack) {
+				return errors.New("failed to add an item to the backpack")
+			}
+		}
+	case "splat":
 		start := time.Now().UnixMilli()
 		count := 0
 		for iy := n.m.Location().Y - 50; iy < n.m.Location().Y+50; iy++ {
 			for ix := n.m.Location().X - 50; ix < n.m.Location().X+50; ix++ {
-				o := templateManager.NewObject(c.args[2])
+				o := world.New(c.args[2])
 				if o == nil {
-					return fmt.Errorf("debug splat failed to find template %s", c.args[2])
+					return fmt.Errorf("debug splat failed to create object %s", c.args[2])
 				}
 				o.SetLocation(uo.Location{
 					X: ix,
 					Y: iy,
 					Z: n.m.Location().Z,
 				})
-				world.Map().AddObject(world.AddNewObjectToDataStores((o)))
+				world.Map().SetNewParent(o, nil)
 				count++
 			}
 		}

@@ -37,6 +37,11 @@ func (f *ListFileWriter) WriteLine(line string) {
 	f.w.Write([]byte(line + "\n"))
 }
 
+// WriteContinuationLine writes a line with a continuation character at the end
+func (f *ListFileWriter) WriteContinuationLine(line string) {
+	f.w.Write([]byte(line + "\\\n"))
+}
+
 // Close closes the list file
 func (f *ListFileWriter) Close() error {
 	return f.w.Close()

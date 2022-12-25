@@ -11,63 +11,31 @@ import (
 
 // TagFileWriter reads and writes tag files
 type TagFileWriter struct {
-	w    io.Writer
-	errs []error
+	ListFileWriter
 }
 
 // NewTagFileWriter returns a new TagFileWriter object ready to use for output.
-func NewTagFileWriter(w io.Writer) *TagFileWriter {
+func NewTagFileWriter(w io.WriteCloser) *TagFileWriter {
 	return &TagFileWriter{
-		w: w,
-	}
-}
-
-// handleError handles an error object.
-func (f *TagFileWriter) handleError(err error) {
-	f.errs = append(f.errs, err)
-}
-
-// Errors returns the slice of all errors encountered by this writer. A nil
-// slice indicates no errors.
-func (f *TagFileWriter) Errors() []error {
-	return f.errs
-}
-
-// WriteCommentLine writes a single comment line to the tag file.
-func (f *TagFileWriter) WriteCommentLine(comment string) {
-	if _, err := f.w.Write([]byte(fmt.Sprintf("; %s\n", comment))); err != nil {
-		f.handleError(err)
-	}
-}
-
-// WriteBlankLine writes a single blank line to the tag file.
-func (f *TagFileWriter) WriteBlankLine() {
-	if _, err := f.w.Write([]byte("\n")); err != nil {
-		f.handleError(err)
+		ListFileWriter: *NewListFileWriter(w),
 	}
 }
 
 // WriteObject writes a Serializeable to the given io.Writer.
 func (f *TagFileWriter) WriteObject(s Serializeable) {
-	if _, err := f.w.Write([]byte(fmt.Sprintf("\n[%s]\n", s.TypeName()))); err != nil {
-		f.handleError(err)
-	}
+	f.WriteLine(fmt.Sprintf("[%s]", s.TypeName()))
 	s.Serialize(f)
 	f.WriteBlankLine()
 }
 
 // WriteNumber writes a number to the io.Writer in base 10.
 func (f *TagFileWriter) WriteNumber(name string, value int) {
-	if _, err := f.w.Write([]byte(fmt.Sprintf("%s=%d\n", name, value))); err != nil {
-		f.handleError(err)
-	}
+	f.WriteLine(fmt.Sprintf("%s=%d", name, value))
 }
 
 // WriteHex writes a number to the io.Writer in base 16 without leading zeros.
 func (f *TagFileWriter) WriteHex(name string, value uint32) {
-	if _, err := f.w.Write([]byte(fmt.Sprintf("%s=0x%X\n", name, value))); err != nil {
-		f.handleError(err)
-	}
+	f.WriteLine(fmt.Sprintf("%s=0x%X", name, value))
 }
 
 // WriteString writes a string to the io.Writer. Leading and trailing
@@ -77,29 +45,25 @@ func (f *TagFileWriter) WriteString(name, value string) {
 		return
 	}
 	value = strings.TrimSpace(value)
-	if _, err := f.w.Write([]byte(fmt.Sprintf("%s=%s\n", name, value))); err != nil {
-		f.handleError(err)
-	}
+	f.WriteLine(fmt.Sprintf("%s=%s", name, value))
 }
 
 // WriteBool writes a boolean value to the io.Writer. If value is false, no
 // line will be emitted. Otherwise only the key name is emitted.
 func (f *TagFileWriter) WriteBool(name string, value bool) {
 	if value {
-		if _, err := f.w.Write([]byte(fmt.Sprintf("%s\n", name))); err != nil {
-			f.handleError(err)
-		}
+		f.WriteLine(name)
 	}
 }
 
 // WriteLocation writes a uo.Location value to the io.Writer in tag file format.
 func (f *TagFileWriter) WriteLocation(name string, l uo.Location) {
-	f.w.Write([]byte(fmt.Sprintf("%s=%d,%d,%d\n", name, l.X, l.Y, l.Z)))
+	f.WriteLine(fmt.Sprintf("%s=%d,%d,%d", name, l.X, l.Y, l.Z))
 }
 
 // WriteBounds writes a uo.Bounds value to the io.Writer in tag file format.
 func (f *TagFileWriter) WriteBounds(name string, b uo.Bounds) {
-	f.w.Write([]byte(fmt.Sprintf("%s=%d,%d,%d,%d\n", name, b.X, b.Y, b.W, b.H)))
+	f.WriteLine(fmt.Sprintf("%s=%d,%d,%d,%d", name, b.X, b.Y, b.W, b.H))
 }
 
 // ValuesAsSerials returns the values of the input map as a slice of uo.Serial
@@ -122,7 +86,8 @@ func ToSerials[T Serialer](in []T) []uo.Serial {
 	return ret
 }
 
-// WriteObjectReferences writes a slice of serial values to the io.Writer.
+// WriteObjectReferences writes a slice of serial values to the io.Writer. This
+// uses line continuations in the tag file to avoid overrunning scanner buffers.
 func (f *TagFileWriter) WriteObjectReferences(name string, ss []uo.Serial) {
 	// Empty slices are omitted, the default value for an object reference list
 	// is a nil slice.
@@ -132,22 +97,20 @@ func (f *TagFileWriter) WriteObjectReferences(name string, ss []uo.Serial) {
 
 	// Build the property string
 	b := strings.Builder{}
-	if _, err := b.WriteString(name); err != nil {
-		panic(err)
-	}
-	if _, err := b.WriteRune('='); err != nil {
-		panic(err)
-	}
+	b.WriteString(name)
+	b.WriteRune('=')
 	for idx, s := range ss {
-		if idx == 0 {
-			b.WriteString(s.String())
-		} else {
-			b.Write([]byte(","))
-			b.WriteString(s.String())
+		// Write the separator if needed
+		if idx != 0 {
+			// Write a line continuation every eight serial
+			if idx%8 == 0 {
+				b.Write([]byte(",\\\n"))
+			} else {
+				b.WriteRune(',')
+			}
 		}
+		// Write the serial value
+		b.WriteString(s.String())
 	}
-	b.Write([]byte("\n"))
-
-	// Write the property string to the tag file
-	f.w.Write([]byte(b.String()))
+	f.WriteLine(b.String())
 }

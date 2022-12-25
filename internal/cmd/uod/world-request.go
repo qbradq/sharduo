@@ -78,9 +78,9 @@ func (r *CharacterLoginRequest) Execute() error {
 	}
 	// Create a new character if needed
 	if player == nil {
-		player = world.AddNewObjectToDataStores(templateManager.NewObject("Player")).(game.Mobile)
+		player = world.New("Player").(game.Mobile)
 		// TODO New player setup
-		world.Map().AddObject(player)
+		world.Map().SetNewParent(player, nil)
 	}
 	r.NetState.m = player
 	r.NetState.account.SetPlayer(player.Serial())

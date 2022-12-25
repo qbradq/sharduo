@@ -162,6 +162,10 @@ func (m *Map) SetNewParent(o, p Object) bool {
 		return false
 	}
 	// Figure out if we need to send drag packets
+	if _, ok := oldParent.(*VoidObject); ok {
+		// If the item was coming to the Void it doesn't need a drag packet
+		return true
+	}
 	if p == oldParent {
 		// We don't need a drag packet if we are not changing parents. This
 		// is the case when lifting an item off the paper doll, dropping an

@@ -1,6 +1,10 @@
 package game
 
-import "github.com/qbradq/sharduo/lib/util"
+import (
+	"fmt"
+
+	"github.com/qbradq/sharduo/lib/util"
+)
 
 func init() {
 	ObjectFactory.RegisterCtor(func(v any) util.Serializeable { return &WearableContainer{} })
@@ -34,6 +38,17 @@ func (s *WearableContainer) Deserialize(f *util.TagFileObject) {
 func (s *WearableContainer) OnAfterDeserialize(f *util.TagFileObject) {
 	s.BaseWearable.OnAfterDeserialize(f) // This calls BaseObject.OnAfterDeserialize for us
 	s.BaseContainer.OnAfterDeserialize(f)
+}
+
+// SingleClick implements the Object interface
+func (c *WearableContainer) SingleClick(from Mobile) {
+	// Default action is to send the name as over-head text
+	if from.NetState() != nil {
+		str := fmt.Sprintf("%s\n%d/%d items, %d/%d stones", c.DisplayName(),
+			c.ItemCount(), c.maxContainerItems,
+			c.contentWeight, c.maxContainerWeight)
+		from.NetState().Speech(c, str)
+	}
 }
 
 // Doubleclick implements the object interface.

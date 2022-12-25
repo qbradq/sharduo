@@ -250,10 +250,10 @@ func (m *TemplateManager) resolveInheritance() []error {
 	return errs
 }
 
-// NewObject creates a new object with the given template name, or nil if the
+// newObject creates a new object with the given template name, or nil if the
 // template was not found, there was an error executing the template, or there
 // was an error deserializing the object.
-func (m *TemplateManager) NewObject(templateName string) game.Object {
+func (m *TemplateManager) newObject(templateName string) game.Object {
 	// Find the template
 	t, found := m.templates.Get(templateName)
 	if !found {
@@ -300,7 +300,7 @@ func randomBool() bool {
 }
 
 func templateNew(name string) string {
-	o := world.AddNewObjectToDataStores(templateManager.NewObject(name))
+	o := world.New(name)
 	if o == nil {
 		return "0"
 	}

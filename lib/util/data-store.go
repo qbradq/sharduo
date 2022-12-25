@@ -100,14 +100,15 @@ func (s *DataStore[K]) OnAfterDeserialize() []error {
 }
 
 // Write writes the contents to the writer
-func (p *DataStore[K]) Write(w io.Writer) []error {
+func (p *DataStore[K]) Write(w io.WriteCloser) []error {
 	tfw := NewTagFileWriter(w)
-	tfw.WriteCommentLine(p.name)
+	tfw.WriteComment(p.name)
 	tfw.WriteBlankLine()
 	for _, o := range p.objects {
 		tfw.WriteObject(o)
 		tfw.WriteBlankLine()
 	}
-	tfw.WriteCommentLine("end of file")
-	return tfw.Errors()
+	tfw.WriteComment("end of file")
+	tfw.Close()
+	return nil
 }

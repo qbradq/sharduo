@@ -1,6 +1,10 @@
 package game
 
-import "github.com/qbradq/sharduo/lib/util"
+import (
+	"fmt"
+
+	"github.com/qbradq/sharduo/lib/util"
+)
 
 func init() {
 	ObjectFactory.RegisterCtor(func(v any) util.Serializeable { return &ContainerItem{} })
@@ -30,9 +34,20 @@ func (s *ContainerItem) Deserialize(f *util.TagFileObject) {
 }
 
 // OnAfterDeserialize implements the util.Serializeable interface.
-func (s *ContainerItem) OnAfterDeserialize(f *util.TagFileObject) {
-	s.BaseItem.OnAfterDeserialize(f) // This calls BaseObject.OnAfterDeserialize for us
-	// BaseContainer has nothing to do OnAfterDeserialize
+func (c *ContainerItem) OnAfterDeserialize(f *util.TagFileObject) {
+	c.BaseItem.OnAfterDeserialize(f) // This calls BaseObject.OnAfterDeserialize for us
+	c.BaseContainer.OnAfterDeserialize(f)
+}
+
+// SingleClick implements the Object interface
+func (c *ContainerItem) SingleClick(from Mobile) {
+	// Default action is to send the name as over-head text
+	if from.NetState() != nil {
+		str := fmt.Sprintf("%s\n%d/%d items, %d/%d stones", c.DisplayName(),
+			c.ItemCount(), c.maxContainerItems,
+			c.contentWeight, c.maxContainerWeight)
+		from.NetState().Speech(c, str)
+	}
 }
 
 // Doubleclick implements the object interface.

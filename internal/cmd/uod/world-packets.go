@@ -221,6 +221,7 @@ func handleDropRequest(n *NetState, cp clientpacket.Packet) {
 			Y: p.Y,
 		})
 		if !target.DropObject(item, n.m) {
+			n.m.SetItemInCursor(nil)
 			n.DropReject(uo.MoveItemRejectReasonUnspecified)
 			return
 		}

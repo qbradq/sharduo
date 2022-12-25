@@ -1,6 +1,8 @@
 package game
 
 import (
+	"log"
+
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
 )
@@ -63,6 +65,7 @@ func (c *BaseContainer) Serialize(f *util.TagFileWriter) {
 	f.WriteNumber("MaxContainerWeight", c.maxContainerWeight)
 	f.WriteNumber("MaxContainerItems", c.maxContainerItems)
 	f.WriteBounds("Bounds", c.bounds)
+	f.WriteObjectReferences("Contents", util.ToSerials(c.contents))
 }
 
 // Deserialize implements the util.Serializeable interface.
@@ -70,16 +73,22 @@ func (c *BaseContainer) Deserialize(f *util.TagFileObject) {
 	c.gump = uo.Gump(f.GetHex("Gump", uint32(0x003C)))
 	c.maxContainerWeight = f.GetNumber("MaxContainerWeight", uo.DefaultMaxContainerWeight)
 	c.maxContainerItems = f.GetNumber("MaxContainerItems", uo.DefaultMaxContainerItems)
-	c.bounds = f.GetBounds("Bounds", uo.Bounds{
-		X: 44,
-		Y: 65,
-		W: 142,
-		H: 94,
-	})
+	c.bounds = f.GetBounds("Bounds", uo.Bounds{X: 44, Y: 65, W: 142, H: 94})
 }
 
 // OnAfterDeserialize implements the util.Serializeable interface.
 func (c *BaseContainer) OnAfterDeserialize(t *util.TagFileObject) {
+	for _, serial := range t.GetObjectReferences("Contents") {
+		o := world.Find(serial)
+		if o == nil {
+			log.Printf("failed to link object 0x%X into container", serial)
+		}
+		item, ok := o.(Item)
+		if !ok {
+			log.Printf("failed to link object 0x%X into container, it is not an item", serial)
+		}
+		c.contents = c.contents.Append(item)
+	}
 	c.RecalculateContentWeight()
 }
 
@@ -131,7 +140,11 @@ func (c *BaseContainer) AddObject(o Object) bool {
 		// TODO Send cliloc message 1080016
 		return false
 	}
-	// TODO Max items check
+	// Max items check
+	if c.maxContainerItems > 0 && len(c.contents)+1 > c.maxContainerItems {
+		// TODO Send cliloc message 1080017
+		return false
+	}
 	// Location bounding
 	l := item.Location()
 	if l.X == uo.RandomX {

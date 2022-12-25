@@ -55,9 +55,9 @@ func (f *ListFileReader) StartReading(r io.Reader) {
 	f.sawEOF = false
 }
 
-// readNextLine returns the next line of the file and no error, or io.EOF when
-// there are no more lines. Other errors may be returned as well.
-func (f *ListFileReader) readNextLine() (string, error) {
+// readNextLineRaw returns the next line of the file and no error, or io.EOF
+// when there are no more lines. Other errors may be returned as well.
+func (f *ListFileReader) readNextLineRaw() (string, error) {
 	if f.sawEOF {
 		return "", io.EOF
 	}
@@ -71,6 +71,30 @@ func (f *ListFileReader) readNextLine() (string, error) {
 		return "", io.EOF
 	}
 	return strings.TrimSpace(f.scanner.Text()), nil
+}
+
+// readNextLine returns the next line in the file, or an error as in
+// readNextLineRaw. This function handles blank lines, comment lines, and line
+// continuations.
+func (f *ListFileReader) readNextLine() (string, error) {
+	ret := ""
+	for {
+		line, err := f.readNextLineRaw()
+		if err != nil {
+			return ret, err
+		}
+		// Ignore empty and comment lines, event if we are in the middle of a
+		// line continuation.
+		if len(line) == 0 || f.isCommentLine(line) {
+			continue
+		}
+		// Handle line continuations
+		if line[len(line)-1] == '\\' {
+			ret += line[:len(line)-1]
+			continue
+		}
+		return ret + line, nil
+	}
 }
 
 // StreamNextSegmentHeader continues reading the list file until the next non-
@@ -92,9 +116,6 @@ func (f *ListFileReader) StreamNextSegmentHeader() string {
 		if err != nil {
 			return ""
 		}
-		if len(line) == 0 || f.isCommentLine(line) {
-			continue
-		}
 		if f.isSegmentLine(line) {
 			return f.extractSegmentName(line)
 		}
@@ -115,9 +136,6 @@ func (f *ListFileReader) StreamNextEntry() string {
 		line, err = f.readNextLine()
 		if err != nil {
 			return ""
-		}
-		if len(line) == 0 || f.isCommentLine(line) {
-			continue
 		}
 		if f.isSegmentLine(line) {
 			f.nextSegmentName = f.extractSegmentName(line)
