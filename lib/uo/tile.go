@@ -3,8 +3,8 @@ package uo
 // CommonObject represents an object that can be queried for it's item graphic,
 // it's permanent Z location, and tile flags.
 type CommonObject interface {
-	// Graphic returns the item graphic of the object
-	Graphic() Graphic
+	// BaseGraphic returns the item graphic of the object
+	BaseGraphic() Graphic
 	// Z returns the permanent Z location of the object
 	Z() int
 	// Flag accessors
@@ -83,8 +83,8 @@ func (t Tile) Ignore() bool {
 		(t.def.Graphic >= GraphicNoDrawStart && t.def.Graphic <= GraphicNoDrawEnd)
 }
 
-// Graphic returns the graphic of the tile
-func (t Tile) Graphic() Graphic {
+// BaseGraphic returns the graphic of the tile
+func (t Tile) BaseGraphic() Graphic {
 	return t.def.Graphic
 }
 

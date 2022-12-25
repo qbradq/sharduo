@@ -40,8 +40,8 @@ func NewStatic(l Location, def *StaticDefinition) Static {
 	}
 }
 
-// Graphic returns the graphic of the static
-func (s Static) Graphic() Graphic {
+// BaseGraphic returns the graphic of the static
+func (s Static) BaseGraphic() Graphic {
 	return s.def.Graphic
 }
 

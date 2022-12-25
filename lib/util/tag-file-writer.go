@@ -92,6 +92,16 @@ func (f *TagFileWriter) WriteBool(name string, value bool) {
 	}
 }
 
+// WriteLocation writes a uo.Location value to the io.Writer in tag file format.
+func (f *TagFileWriter) WriteLocation(name string, l uo.Location) {
+	f.w.Write([]byte(fmt.Sprintf("%s=%d,%d,%d\n", name, l.X, l.Y, l.Z)))
+}
+
+// WriteBounds writes a uo.Bounds value to the io.Writer in tag file format.
+func (f *TagFileWriter) WriteBounds(name string, b uo.Bounds) {
+	f.w.Write([]byte(fmt.Sprintf("%s=%d,%d,%d,%d\n", name, b.X, b.Y, b.W, b.H)))
+}
+
 // ValuesAsSerials returns the values of the input map as a slice of uo.Serial
 // values.
 func ValuesAsSerials[K comparable, T Serialer](in map[K]T) []uo.Serial {

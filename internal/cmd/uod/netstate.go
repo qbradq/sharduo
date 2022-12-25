@@ -250,7 +250,7 @@ func (n *NetState) Speech(speaker game.Object, fmtstr string, args ...interface{
 		stype = uo.SpeechTypeNormal
 		name = speaker.DisplayName()
 		if item, ok := speaker.(game.Item); ok {
-			body = uo.Body(item.Graphic())
+			body = uo.Body(item.BaseGraphic())
 		} else if mob, ok := speaker.(game.Mobile); ok {
 			body = mob.Body()
 		}
@@ -274,14 +274,15 @@ func (n *NetState) SendObject(o game.Object) {
 			layer = layerer.Layer()
 		}
 		n.Send(&serverpacket.ObjectInfo{
-			Serial:  item.Serial(),
-			Graphic: item.Graphic(),
-			Amount:  item.Amount(),
-			X:       item.Location().X,
-			Y:       item.Location().Y,
-			Z:       item.Location().Z,
-			Layer:   layer,
-			Hue:     item.Hue(),
+			Serial:           item.Serial(),
+			Graphic:          item.BaseGraphic(),
+			GraphicIncrement: item.GraphicOffset(),
+			Amount:           item.Amount(),
+			X:                item.Location().X,
+			Y:                item.Location().Y,
+			Z:                item.Location().Z,
+			Layer:            layer,
+			Hue:              item.Hue(),
 		})
 	} else if mobile, ok := o.(game.Mobile); ok {
 		flags := uo.MobileFlagNone
@@ -311,7 +312,7 @@ func (n *NetState) SendObject(o game.Object) {
 				}
 				p.Equipment = append(p.Equipment, &serverpacket.EquippedMobileItem{
 					ID:      w.Serial(),
-					Graphic: w.Graphic(),
+					Graphic: w.BaseGraphic(),
 					Layer:   w.Layer(),
 					Hue:     w.Hue(),
 				})
@@ -370,10 +371,17 @@ func (n *NetState) DrawPlayer() {
 func (n *NetState) WornItem(wearable game.Wearable, wearer game.Mobile) {
 	n.Send(&serverpacket.WornItem{
 		Item:    wearable.Serial(),
-		Graphic: wearable.Graphic(),
+		Graphic: wearable.BaseGraphic(),
 		Layer:   wearable.Layer(),
 		Wearer:  wearer.Serial(),
 		Hue:     wearable.Hue(),
+	})
+}
+
+// DropReject sends a move reject packet
+func (n *NetState) DropReject(reason uo.MoveItemRejectReason) {
+	n.Send(&serverpacket.MoveItemReject{
+		Reason: reason,
 	})
 }
 
@@ -392,7 +400,8 @@ func (n *NetState) DragItem(item game.Item, srcMob game.Mobile,
 		destSerial = destMob.Serial()
 	}
 	n.Send(&serverpacket.DragItem{
-		Graphic:             item.Graphic(),
+		Graphic:             item.BaseGraphic(),
+		GraphicOffset:       item.GraphicOffset(),
 		Amount:              item.Amount(),
 		Source:              srcSerial,
 		SourceLocation:      srcLoc,
@@ -406,5 +415,51 @@ func (n *NetState) OpenContainer(c game.Container) {
 	n.Send(&serverpacket.OpenContainerGump{
 		GumpSerial: c.Serial(),
 		Gump:       uo.Gump(c.GumpGraphic()),
+	})
+	if c.ItemCount() > 0 {
+		p := &serverpacket.Contents{}
+		c.MapContents(func(item game.Item) error {
+			p.Items = append(p.Items, &serverpacket.ContentsItem{
+				Serial:        item.Serial(),
+				Graphic:       item.BaseGraphic(),
+				GraphicOffset: item.GraphicOffset(),
+				Amount:        item.Amount(),
+				X:             item.Location().X,
+				Y:             item.Location().Y,
+				Container:     c.Serial(),
+				Hue:           item.Hue(),
+			})
+			return nil
+		})
+		n.Send(p)
+	}
+}
+
+// AddItemToContainer adds an item to a container gump on the client
+func (n *NetState) AddItemToContainer(c game.Container, item game.Item) {
+	n.Send(&serverpacket.AddItemToContainer{
+		Item:          item.Serial(),
+		Graphic:       item.BaseGraphic(),
+		GraphicOffset: item.GraphicOffset(),
+		Amount:        item.Amount(),
+		X:             item.Location().X,
+		Y:             item.Location().Y,
+		Container:     c.Serial(),
+		Hue:           item.Hue(),
+	})
+}
+
+// RemoveItemFromContainer removes an item from a container on the client
+func (n *NetState) RemoveItemFromContainer(c game.Container, item game.Item) {
+	n.Send(&serverpacket.DeleteObject{
+		Serial: item.Serial(),
+	})
+}
+
+// CloseGump closes the named gump on the client
+func (n *NetState) CloseGump(gump uo.Serial) {
+	n.Send(&serverpacket.CloseGump{
+		Gump:   gump,
+		Button: 0,
 	})
 }

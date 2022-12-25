@@ -12,8 +12,11 @@ func init() {
 // Item is the interface that all non-static items implement.
 type Item interface {
 	Object
-	// Graphic returns the graphic of the item
-	Graphic() uo.Graphic
+	// BaseGraphic returns the graphic of the item
+	BaseGraphic() uo.Graphic
+	// GraphicOffset returns the current graphic offset of the item, this will
+	// range 0-255 inclusive.
+	GraphicOffset() int
 	// Dyable returns true if the item's hue can be changed by the player
 	Dyable() bool
 	// Flippable returns true if the item can be flipped / turned
@@ -76,6 +79,8 @@ type BaseItem struct {
 	// Graphic of the item when flipped. If this is uo.GraphicNone the item cannot
 	// be flipped.
 	flippedGraphic uo.Graphic
+	// Flipped is true if the item is currently flipped.
+	flipped bool
 	// Dyable flag
 	dyable bool
 	// Stackable flag
@@ -94,6 +99,7 @@ func (i *BaseItem) Serialize(f *util.TagFileWriter) {
 	i.BaseObject.Serialize(f)
 	f.WriteHex("Graphic", uint32(i.graphic))
 	f.WriteHex("FlippedGraphic", uint32(i.flippedGraphic))
+	f.WriteBool("Flipped", i.flipped)
 	f.WriteBool("Dyable", i.dyable)
 	f.WriteBool("Stackable", i.stackable)
 	f.WriteNumber("Amount", i.amount)
@@ -105,13 +111,19 @@ func (i *BaseItem) Deserialize(f *util.TagFileObject) {
 	i.graphic = uo.Graphic(f.GetNumber("Graphic", int(uo.GraphicDefault)))
 	i.def = world.GetItemDefinition(i.graphic)
 	i.flippedGraphic = uo.Graphic(f.GetNumber("FlippedGraphic", int(uo.GraphicNone)))
+	i.flipped = f.GetBool("Flipped", false)
 	i.dyable = f.GetBool("Dyable", false)
 	i.stackable = f.GetBool("Stackable", false)
 	i.amount = f.GetNumber("Amount", 1)
 }
 
-// Graphic implements the Item interface.
-func (i *BaseItem) Graphic() uo.Graphic { return i.graphic }
+// BaseGraphic implements the Item interface.
+func (i *BaseItem) BaseGraphic() uo.Graphic { return i.graphic }
+
+// GraphicOffset implements the Item interface.
+func (i *BaseItem) GraphicOffset() int {
+	return 0
+}
 
 // Dyable implements the Item interface.
 func (i *BaseItem) Dyable() bool { return i.dyable }
@@ -127,6 +139,11 @@ func (i *BaseItem) Amount() int { return i.amount }
 
 // Height implements the Item interface.
 func (i *BaseItem) Height() int { return i.def.Height }
+
+// Weight implements the Object interface
+func (i *BaseItem) Weight() int {
+	return i.def.Weight * i.Amount()
+}
 
 // Z returns the permanent Z location of the tile
 func (i *BaseItem) Z() int {

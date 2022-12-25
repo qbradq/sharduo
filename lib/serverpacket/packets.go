@@ -682,4 +682,99 @@ func (p *OpenContainerGump) Write(w io.Writer) {
 	PutByte(w, 0x24) // Packet ID
 	PutUint32(w, uint32(p.GumpSerial))
 	PutUint16(w, uint16(p.Gump))
+	PutUint16(w, uint16(0x007D)) // No idea what this does but it's required > 7.0.9.x
+}
+
+// AddItemToContainer adds an item to an already-open container gump.
+type AddItemToContainer struct {
+	// The ID of the item being added to the container
+	Item uo.Serial
+	// Graphic of the item being added to the container
+	Graphic uo.Graphic
+	// Graphic offset of the item
+	GraphicOffset int
+	// Stack amount, truncated to 0-0xFFFF inclusive
+	Amount int
+	// X coordinate of the item in the container, 0xFFFF means random
+	X int
+	// Y coordinate of the item in the container, 0xFFFF means random
+	Y int
+	// The ID of the container and container gump to add this item to
+	Container uo.Serial
+	// Hue of the item
+	Hue uo.Hue
+}
+
+// Write implements the Packet interface.
+func (p *AddItemToContainer) Write(w io.Writer) {
+	PutByte(w, 0x25) // Packet ID
+	PutUint32(w, uint32(p.Item))
+	PutUint16(w, uint16(p.Graphic))
+	PutByte(w, byte(p.GraphicOffset))
+	PutUint16(w, uint16(p.Amount))
+	PutUint16(w, uint16(p.X))
+	PutUint16(w, uint16(p.Y))
+	Pad(w, 1) // Grid index
+	PutUint32(w, uint32(p.Container))
+	PutUint16(w, uint16(p.Hue))
+}
+
+// ContentsItem represents one item in a Contents packet.
+type ContentsItem struct {
+	// Serial of the item
+	Serial uo.Serial
+	// Item graphic
+	Graphic uo.Graphic
+	// Item graphic offset, this gets truncated between 0-255 inclusive
+	GraphicOffset int
+	// Stack amount
+	Amount int
+	// X location of the item in the container
+	X int
+	// Y location of the item in the container
+	Y int
+	// Serial of the container to add the item to
+	Container uo.Serial
+	// Hue of the item
+	Hue uo.Hue
+}
+
+// Contents sends the contents of a container to the client.
+type Contents struct {
+	Items []*ContentsItem
+}
+
+// Write implements the Packet interface.
+func (p *Contents) Write(w io.Writer) {
+	PutByte(w, 0x3C)                        // Packet ID
+	PutUint16(w, uint16(5+len(p.Items)*20)) // Packet length
+	PutUint16(w, uint16(len(p.Items)))
+	for _, item := range p.Items {
+		PutUint32(w, uint32(item.Serial))
+		PutUint16(w, uint16(item.Graphic))
+		PutByte(w, byte(item.GraphicOffset))
+		PutUint16(w, uint16(item.Amount))
+		PutUint16(w, uint16(item.X))
+		PutUint16(w, uint16(item.Y))
+		Pad(w, 1) // Grid index
+		PutUint32(w, uint32(item.Container))
+		PutUint16(w, uint16(item.Hue))
+	}
+}
+
+// CloseGump sends a force gump close BF subcommand to forcefully close a gump
+// on the client.
+type CloseGump struct {
+	// Serial of the gump to close
+	Gump uo.Serial
+	// Button response for the gump response packet, use 0 for close gump
+	Button int
+}
+
+// Write implements the Packet interface.
+func (p *CloseGump) Write(w io.Writer) {
+	PutByte(w, 0xBF)             // General information packet ID
+	PutUint16(w, uint16(0x0004)) // Close gump subcommand
+	PutUint32(w, uint32(p.Gump))
+	PutUint32(w, uint32(p.Button))
 }

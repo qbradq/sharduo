@@ -30,7 +30,11 @@ func (n *MockNetState) Speech(from Object, fmtstr string, args ...interface{}) {
 func (n *MockNetState) DrawPlayer()                                            {}
 func (n *MockNetState) UpdateMobile(mob Mobile)                                {}
 func (n *MockNetState) WornItem(wearable Wearable, mob Mobile)                 {}
+func (n *MockNetState) DropReject(reason uo.MoveItemRejectReason)              {}
 func (n *MockNetState) OpenContainer(c Container)                              {}
+func (n *MockNetState) AddItemToContainer(c Container, item Item)              {}
+func (n *MockNetState) RemoveItemFromContainer(c Container, item Item)         {}
+func (n *MockNetState) CloseGump(gump uo.Serial)                               {}
 func (n *MockNetState) DragItem(item Item, srcMob Mobile, srcLoc uo.Location, destMob Mobile, destLoc uo.Location) {
 }
 

@@ -54,6 +54,7 @@ opened to outside connections.
 * Removal of stale NetStates in the game service goroutine
 * Removal of stale NetStates in the login service goroutine
 * Integration of the game service into a single self-managed structure
+* Restrict command usage to access levels
 
 ### Miscellaneous Issues ###
 This is a list of known issues that do not need to be resolved before the next

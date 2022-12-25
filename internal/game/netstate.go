@@ -30,6 +30,8 @@ type NetState interface {
 	WornItem(Wearable, Mobile)
 	// DragItem sends a DragItem packet
 	DragItem(Item, Mobile, uo.Location, Mobile, uo.Location)
+	// DropReject sends the MoveItemReject packet with the given reason code
+	DropReject(uo.MoveItemRejectReason)
 
 	//
 	// Containers
@@ -37,4 +39,15 @@ type NetState interface {
 
 	// OpenContainer opens a container gump on the client
 	OpenContainer(Container)
+	// AddItemToContainer adds an item to a container gump on the client
+	AddItemToContainer(Container, Item)
+	// RemoveItemFromContainer removes an item from a container on the client
+	RemoveItemFromContainer(Container, Item)
+
+	//
+	// Gumps
+	//
+
+	// CloseGump closes the named gump on the client
+	CloseGump(gump uo.Serial)
 }

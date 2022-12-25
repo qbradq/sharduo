@@ -81,6 +81,12 @@ type Object interface {
 
 	// DisplayName returns the name of the object with any articles attached
 	DisplayName() string
+	// Weight returns the total weight of the object. For an item, this is the
+	// base weight of the item times the amount. For container items this is the
+	// base weight of the item plus the weight of the contents. For mobiles this
+	// is the total weight of all equipment including containers, but excluding
+	// the bank box if any.
+	Weight() int
 }
 
 // BaseObject is the base of all game objects and implements the Object
@@ -127,9 +133,7 @@ func (o *BaseObject) Serialize(f *util.TagFileWriter) {
 	f.WriteBool("ArticleA", o.articleA)
 	f.WriteBool("ArticleAn", o.articleAn)
 	f.WriteNumber("Hue", int(o.hue))
-	f.WriteNumber("X", o.location.X)
-	f.WriteNumber("Y", o.location.Y)
-	f.WriteNumber("Z", o.location.Z)
+	f.WriteLocation("Location", o.location)
 	f.WriteNumber("Facing", int(o.facing))
 }
 
@@ -146,9 +150,11 @@ func (o *BaseObject) Deserialize(f *util.TagFileObject) {
 	o.articleA = f.GetBool("ArticleA", false)
 	o.articleAn = f.GetBool("ArticleAn", false)
 	o.hue = uo.Hue(f.GetNumber("Hue", int(uo.HueDefault)))
-	o.location.X = f.GetNumber("X", 1607)
-	o.location.Y = f.GetNumber("Y", 1595)
-	o.location.Z = f.GetNumber("Z", 13)
+	o.location = f.GetLocation("Location", uo.Location{
+		X: 1324,
+		Y: 1624,
+		Z: 55,
+	})
 	o.facing = uo.Direction(f.GetNumber("Facing", int(uo.DirectionSouth)))
 }
 
@@ -237,6 +243,12 @@ func (o *BaseObject) DisplayName() string {
 		return "an " + o.name
 	}
 	return o.name
+}
+
+// Weight implements the Object interface
+func (o *BaseObject) Weight() int {
+	// This makes no sense for base objects
+	return 0
 }
 
 // Facing implements the Object interface

@@ -54,12 +54,10 @@ func trap(l *net.TCPListener) {
 }
 
 var tiledatamul *file.TileDataMul
-var rcolmul *file.RadarColMul
-var mapmul *file.MapMul
-var staticsmul *file.StaticsMul
 
-// Main is the entry point for uod.
-func Main() {
+// Initialize takes care of all of the memory-intensive initialization stuff
+// so the main routine can let go of all the memory.
+func Initialize() {
 	// Configure logging
 	log.SetFlags(log.LstdFlags | log.Llongfile)
 
@@ -72,33 +70,36 @@ func Main() {
 	// Load client data files
 	log.Println("loading client files...")
 	tiledatamul = file.NewTileDataMul(path.Join(configuration.ClientFilesDirectory, "tiledata.mul"))
-	rcolmul = file.NewRadarColMulFromFile(path.Join(configuration.ClientFilesDirectory, "radarcol.mul"))
 	if tiledatamul == nil {
 		os.Exit(1)
 	}
-	mapmul = file.NewMapMulFromFile(path.Join(configuration.ClientFilesDirectory, "map0.mul"), tiledatamul)
-	staticsmul = file.NewStaticsMulFromFile(
+	mapmul := file.NewMapMulFromFile(path.Join(configuration.ClientFilesDirectory, "map0.mul"), tiledatamul)
+	staticsmul := file.NewStaticsMulFromFile(
 		path.Join(configuration.ClientFilesDirectory, "staidx0.mul"),
 		path.Join(configuration.ClientFilesDirectory, "statics0.mul"),
 		tiledatamul)
-	if rcolmul == nil || mapmul == nil || staticsmul == nil {
+	if tiledatamul == nil || mapmul == nil || staticsmul == nil {
 		os.Exit(1)
 	}
 
 	if configuration.GenerateDebugMaps {
 		log.Println("generating debug map...")
+		rcolmul := file.NewRadarColMulFromFile(path.Join(configuration.ClientFilesDirectory, "radarcol.mul"))
+		if rcolmul == nil {
+			os.Exit(2)
+		}
 		rcols := rcolmul.Colors()
 		mapimg := image.NewRGBA(image.Rect(0, 0, uo.MapWidth, uo.MapHeight))
 		// Lay down the tiles
 		for iy := 0; iy < uo.MapHeight; iy++ {
 			for ix := 0; ix < uo.MapWidth; ix++ {
 				t := mapmul.GetTile(ix, iy)
-				mapimg.Set(ix, iy, rcols[t.Graphic()])
+				mapimg.Set(ix, iy, rcols[t.BaseGraphic()])
 			}
 		}
 		// Add statics
 		for _, static := range staticsmul.Statics() {
-			mapimg.Set(static.Location.X, static.Location.Y, rcols[static.Graphic()+0x4000])
+			mapimg.Set(static.Location.X, static.Location.Y, rcols[static.BaseGraphic()+0x4000])
 		}
 		// Write out the map
 		mapimgf, err := os.Create("debug-map.png")
@@ -138,6 +139,11 @@ func Main() {
 			os.Exit(1)
 		}
 	}
+}
+
+// Main is the entry point for uod.
+func Main() {
+	Initialize()
 
 	// Start the goroutines
 	go world.Process()

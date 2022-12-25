@@ -34,3 +34,10 @@ func (s Slice[T]) Remove(v T) Slice[T] {
 func (s Slice[T]) Contains(v T) bool {
 	return s.IndexOf(v) >= 0
 }
+
+// Copy returns a copy of the slice
+func (s Slice[T]) Copy() Slice[T] {
+	r := make([]T, len(s))
+	copy(r, s)
+	return r
+}

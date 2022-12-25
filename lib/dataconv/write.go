@@ -3,6 +3,7 @@ package dataconv
 import (
 	"encoding/binary"
 	"io"
+	"unicode/utf16"
 )
 
 // Writes a boolean value
@@ -59,4 +60,15 @@ func PutUint32(w io.Writer, v uint32) {
 	var b [4]byte
 	binary.BigEndian.PutUint32(b[:], v)
 	w.Write(b[:])
+}
+
+func PutUTF16String(w io.Writer, s string) {
+	var zeroBuf [2]byte
+	var buf [2]byte
+	utf := utf16.Encode([]rune(s))
+	for _, r := range utf {
+		binary.LittleEndian.PutUint16(buf[:], r)
+		w.Write(buf[:])
+	}
+	w.Write(zeroBuf[:])
 }

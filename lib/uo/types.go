@@ -20,8 +20,11 @@ const (
 	MaxFollowers              int    = 5
 	MaxLiftRange              int    = 3
 	MaxDropRange              int    = 3
+	MaxContainerViewRange     int    = 3
 	DefaultMaxContainerWeight int    = 512
 	DefaultMaxContainerItems  int    = 125
+	RandomX                   int    = 0xFFFF
+	RandomY                   int    = 0xFFFF
 )
 
 // BoundZ bounds a Z value

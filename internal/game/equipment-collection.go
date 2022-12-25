@@ -13,6 +13,9 @@ import (
 type EquipmentCollection struct {
 	// Collection of currently equipped items
 	equipment map[uo.Layer]Wearable
+	// Current total weight of the equipment collection, including the total
+	// weight of the backpack, but excluding the weight of the bank box if any.
+	weight int
 }
 
 // NewEquipmentCollection creates a new, empty EquipmentCollection and returns
@@ -44,6 +47,7 @@ func NewEquipmentCollectionWith(ids []uo.Serial) *EquipmentCollection {
 		}
 		c.equipment[w.Layer()] = w
 	}
+	c.recalculateStats()
 	return c
 }
 
@@ -90,6 +94,22 @@ func (c *EquipmentCollection) Unequip(o Wearable) bool {
 	}
 	return false
 }
+
+// recalculateStats recalculates all stats for the equipment collection
+func (c *EquipmentCollection) recalculateStats() {
+	c.weight = 0
+	for _, w := range c.equipment {
+		// Ignore the bank box
+		if w.Layer() == uo.LayerBankBox {
+			continue
+		}
+		c.weight += w.Weight()
+	}
+}
+
+// Weight returns the total weight of all equipped items, including the weight
+// of the contents of any worn containers excluding the bank box.
+func (c *EquipmentCollection) Weight() int { return c.weight }
 
 // Contains returns true if the equipment collection contains the item
 func (c *EquipmentCollection) Contains(o Wearable) bool {

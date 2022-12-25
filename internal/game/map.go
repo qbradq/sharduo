@@ -267,12 +267,9 @@ func (m *Map) MoveMobile(mob Mobile, dir uo.Direction) bool {
 	if mob.Facing() != dir {
 		mob.SetFacing(dir)
 		for _, othermob := range m.GetNetStatesInRange(mob.Location(), uo.MaxViewRange+1) {
-			// Don't send packets to ourselves
-			// if othermob == mob {
-			// 	continue
-			// }
 			othermob.NetState().UpdateMobile(mob)
 		}
+		mob.AfterMove()
 		return true
 	}
 	// Movement request
@@ -310,6 +307,7 @@ func (m *Map) MoveMobile(mob Mobile, dir uo.Direction) bool {
 	if oldChunk != newChunk {
 		newChunk.Add(mob)
 	}
+	mob.AfterMove()
 	return true
 }
 

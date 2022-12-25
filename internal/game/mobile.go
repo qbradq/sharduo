@@ -14,6 +14,8 @@ func init() {
 // Mobile is the interface all mobiles implement
 type Mobile interface {
 	Object
+	ContainerObserver
+
 	//
 	// NetState
 	//
@@ -118,13 +120,33 @@ type Mobile interface {
 	// GetNotorietyFor returns the notoriety value of the given mobile as
 	// observed from this mobile.
 	GetNotorietyFor(Mobile) uo.Notoriety
+
+	//
+	// Callbacks
+	//
+
+	// AfterMove is called by Map.MoveMobile after the mobile has arrived at its
+	// new location.
+	AfterMove()
 }
 
 // BaseMobile provides the base implementation for Mobile
 type BaseMobile struct {
 	BaseObject
+
+	//
+	// Network
+	//
+
 	// Attached NetState implementation
 	n NetState
+	// Collection of all the containers we are currently observing
+	observedContainers util.Slice[Container]
+
+	//
+	// AI values and such
+	//
+
 	// Current view range of the mobile. Please note that the zero value IS NOT
 	// SANE for this variable!
 	viewRange int
@@ -138,12 +160,27 @@ type BaseMobile struct {
 	isRunning bool
 	// Notoriety of the mobile
 	notoriety uo.Notoriety
+
+	//
+	// User interface stuff
+	//
+
 	// Pointer to the item held in the cursor
 	itemInCursor Item
 	// Temporary pointer to the wearable we are trying to equip
 	toWear Wearable
+
+	//
+	// Equipment and inventory
+	//
+
 	// The collection of equipment this mobile is wearing, if any
 	equipment *EquipmentCollection
+
+	//
+	// Stats and attributes
+	//
+
 	// Base strength
 	baseStrength int
 	// Base dexterity
@@ -381,29 +418,15 @@ func (m *BaseMobile) AddObject(o Object) bool {
 // RemoveObject removes the object from the mobile. It returns true if
 // successful.
 func (m *BaseMobile) RemoveObject(o Object) bool {
-	if m.toWear == o {
-		// This is the item we are currently trying to wear
-		return true
-	}
 	if wearable, ok := o.(Wearable); ok && m.equipment.Contains(wearable) {
 		// This item is currently equipped, try to unequip it
-		success := m.equipment.Unequip(wearable)
-		if success {
-			// Send the remove item packet
-			for _, mob := range world.Map().GetNetStatesInRange(m.Location(), uo.MaxViewRange) {
-				// Don't send this packet back to ourselves
-				if mob == m {
-					continue
-				}
-				mob.NetState().RemoveObject(wearable)
-			}
-			return true
-		} else {
+		if !m.equipment.Unequip(wearable) {
 			// Send the wear item packet back at ourselves to force the item
 			// back into the paper doll
 			m.NetState().WornItem(wearable, m)
 			return false
 		}
+		return true
 	}
 	if m.itemInCursor == o {
 		// This is the item currently on our cursor
@@ -431,6 +454,12 @@ func (m *BaseMobile) Equip(w Wearable) bool {
 		return false
 	}
 	m.toWear = nil
+	// Send the WearItem packet to all netstates in range, including our own
+	for _, mob := range world.Map().GetNetStatesInRange(m.Location(), uo.MaxViewRange) {
+		if mob.Location().XYDistance(m.Location()) <= mob.ViewRange() {
+			mob.NetState().WornItem(w, m)
+		}
+	}
 	return true
 }
 
@@ -441,6 +470,10 @@ func (m *BaseMobile) Unequip(w Wearable) bool {
 	}
 	if !m.equipment.Unequip(w) {
 		return false
+	}
+	// Send the remove item packet to everyone including ourselves
+	for _, mob := range world.Map().GetNetStatesInRange(m.Location(), uo.MaxViewRange) {
+		mob.NetState().RemoveObject(w)
 	}
 	return true
 }
@@ -461,4 +494,52 @@ func (m *BaseMobile) GetNotorietyFor(other Mobile) uo.Notoriety {
 	// TODO Guild system
 	// TODO If this is a player's mobile return innocent
 	return m.notoriety
+}
+
+// Weight implements the Object interface
+func (m *BaseMobile) Weight() int {
+	return m.equipment.Weight()
+}
+
+// ContainerOpen implements the ContainerObserver interface.
+func (m *BaseMobile) ContainerOpen(c Container) {
+	if m.n != nil {
+		m.n.OpenContainer(c)
+		if !m.observedContainers.Contains(c) {
+			m.observedContainers = m.observedContainers.Append(c)
+		}
+	}
+}
+
+// ContainerClose implements the ContainerObserver interface.
+func (m *BaseMobile) ContainerClose(c Container) {
+	if m.NetState() != nil {
+		m.NetState().CloseGump(c.Serial())
+	}
+	m.observedContainers = m.observedContainers.Remove(c)
+}
+
+// ContainerOpen implements the ContainerObserver interface.
+func (m *BaseMobile) ContainerItemAdded(c Container, item Item) {
+	if m.n != nil {
+		m.n.AddItemToContainer(c, item)
+	}
+}
+
+// ContainerOpen implements the ContainerObserver interface.
+func (m *BaseMobile) ContainerItemRemoved(c Container, item Item) {
+	if m.n != nil {
+		m.n.RemoveItemFromContainer(c, item)
+	}
+}
+
+// AfterMove implements the Mobile interface.
+func (m *BaseMobile) AfterMove() {
+	// Check for containers that we need to close
+	for _, container := range m.observedContainers.Copy() {
+		if m.location.XYDistance(container.Location()) > uo.MaxContainerViewRange {
+			container.RemoveObserver(m)
+			m.n.CloseGump(container.Serial())
+		}
+	}
 }

@@ -20,6 +20,8 @@ type World interface {
 	// GetItemDefinition returns the uo.StaticDefinition that holds the static
 	// data for a given item graphic.
 	GetItemDefinition(uo.Graphic) *uo.StaticDefinition
+	// Random returns the uo.RandomSource for the world.
+	Random() uo.RandomSource
 }
 
 var world World

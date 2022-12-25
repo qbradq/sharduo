@@ -1,8 +1,6 @@
 package uod
 
 import (
-	"log"
-
 	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/lib/clientpacket"
 	"github.com/qbradq/sharduo/lib/serverpacket"
@@ -127,74 +125,62 @@ func handleClientViewRange(n *NetState, cp clientpacket.Packet) {
 }
 
 func handleLiftRequest(n *NetState, cp clientpacket.Packet) {
-	reject := func(reason uo.MoveItemRejectReason) {
-		n.Send(&serverpacket.MoveItemReject{
-			Reason: reason,
-		})
-	}
-
 	if n.m == nil {
-		reject(uo.MoveItemRejectReasonUnspecified)
+		n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		return
 	}
 	if n.m.IsItemOnCursor() {
 		n.m.DropItemInCursor()
-		reject(uo.MoveItemRejectReasonAlreadyHoldingItem)
+		n.DropReject(uo.MoveItemRejectReasonAlreadyHoldingItem)
 		return
 	}
 	p := cp.(*clientpacket.LiftRequest)
 	o := world.Find(p.Item)
 	if o == nil {
-		reject(uo.MoveItemRejectReasonUnspecified)
+		n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		return
 	}
 	item, ok := o.(game.Item)
 	if !ok {
-		reject(uo.MoveItemRejectReasonUnspecified)
+		n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		return
 	}
 	if n.m.Location().XYDistance(item.RootParent().Location()) > uo.MaxLiftRange {
-		reject(uo.MoveItemRejectReasonOutOfRange)
+		n.DropReject(uo.MoveItemRejectReasonOutOfRange)
 		return
 	}
 	// TODO Line of sight check
 	if !n.m.SetItemInCursor(item) {
-		reject(uo.MoveItemRejectReasonUnspecified)
+		n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		return
 	}
 }
 
 func handleDropRequest(n *NetState, cp clientpacket.Packet) {
-	reject := func(reason uo.MoveItemRejectReason) {
-		n.Send(&serverpacket.MoveItemReject{
-			Reason: reason,
-		})
-	}
-
 	if n.m == nil {
-		reject(uo.MoveItemRejectReasonUnspecified)
+		n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		return
 	}
 	if !n.m.IsItemOnCursor() {
-		reject(uo.MoveItemRejectReasonUnspecified)
+		n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		return
 	}
 	p := cp.(*clientpacket.DropRequest)
 	if p.Item != n.m.ItemInCursor().Serial() {
 		n.m.SetItemInCursor(nil)
-		reject(uo.MoveItemRejectReasonUnspecified)
+		n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		return
 	}
 	itemObj := world.Find(p.Item)
 	if itemObj == nil {
 		n.m.SetItemInCursor(nil)
-		reject(uo.MoveItemRejectReasonUnspecified)
+		n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		return
 	}
 	item, ok := itemObj.(game.Item)
 	if !ok {
 		n.m.SetItemInCursor(nil)
-		reject(uo.MoveItemRejectReasonUnspecified)
+		n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		return
 	}
 	if p.Container == uo.SerialSystem {
@@ -202,14 +188,14 @@ func handleDropRequest(n *NetState, cp clientpacket.Packet) {
 		newLocation := uo.Location{X: p.X, Y: p.Y, Z: p.Z}
 		if n.m.Location().XYDistance(newLocation) > uo.MaxDropRange {
 			n.m.DropItemInCursor()
-			reject(uo.MoveItemRejectReasonOutOfRange)
+			n.DropReject(uo.MoveItemRejectReasonOutOfRange)
 			return
 		}
 		// TODO Line of sight check
 		item.SetLocation(newLocation)
 		if !world.Map().SetNewParent(item, nil) {
 			n.m.DropItemInCursor()
-			reject(uo.MoveItemRejectReasonUnspecified)
+			n.DropReject(uo.MoveItemRejectReasonUnspecified)
 			return
 		} else {
 			n.m.SetItemInCursor(nil)
@@ -219,20 +205,35 @@ func handleDropRequest(n *NetState, cp clientpacket.Packet) {
 			}
 		}
 	} else {
-		// TODO Container handling
-		log.Println(p)
+		target := world.Find(p.Container)
+		if target == nil {
+			n.DropReject(uo.MoveItemRejectReasonUnspecified)
+		}
+		newLocation := target.Location()
+		if n.m.Location().XYDistance(newLocation) > uo.MaxDropRange {
+			n.m.DropItemInCursor()
+			n.DropReject(uo.MoveItemRejectReasonOutOfRange)
+			return
+		}
+		// TODO Line of sight check
+		item.SetLocation(uo.Location{
+			X: p.X,
+			Y: p.Y,
+		})
+		if !target.DropObject(item, n.m) {
+			n.DropReject(uo.MoveItemRejectReasonUnspecified)
+		}
+		n.m.SetItemInCursor(nil)
+		n.Send(&serverpacket.DropApproved{})
+		for _, mob := range world.Map().GetNetStatesInRange(n.m.Location(), uo.MaxViewRange) {
+			mob.NetState().DragItem(item, n.m, n.m.Location(), nil, newLocation)
+		}
 	}
 }
 
 func handleWearItemRequest(n *NetState, cp clientpacket.Packet) {
-	reject := func(reason uo.MoveItemRejectReason) {
-		n.Send(&serverpacket.MoveItemReject{
-			Reason: reason,
-		})
-	}
-
 	if n.m == nil {
-		reject(uo.MoveItemRejectReasonUnspecified)
+		n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		return
 	}
 	p := cp.(*clientpacket.WearItemRequest)
@@ -240,24 +241,18 @@ func handleWearItemRequest(n *NetState, cp clientpacket.Packet) {
 	wearer := world.Find(p.Wearer)
 	if item == nil || wearer == nil {
 		n.m.SetItemInCursor(nil)
-		reject(uo.MoveItemRejectReasonUnspecified)
+		n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		return
 	}
 	if item != n.m.ItemInCursor() {
 		n.m.SetItemInCursor(nil)
-		reject(uo.MoveItemRejectReasonUnspecified)
-		return
-	}
-	wearerMobile, ok := wearer.(game.Mobile)
-	if !ok {
-		n.m.SetItemInCursor(nil)
-		reject(uo.MoveItemRejectReasonUnspecified)
+		n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		return
 	}
 	wearable, ok := item.(game.Wearable)
 	if !ok {
 		n.m.SetItemInCursor(nil)
-		reject(uo.MoveItemRejectReasonUnspecified)
+		n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		return
 	}
 	// TODO Check if we are allowed to equip items to this mobile
@@ -265,16 +260,10 @@ func handleWearItemRequest(n *NetState, cp clientpacket.Packet) {
 	// add it to the other mobile's equipment, or not.
 	if !n.m.Equip(wearable) {
 		n.m.SetItemInCursor(nil)
-		reject(uo.MoveItemRejectReasonUnspecified)
+		n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		return
 	} else {
 		n.Send(&serverpacket.DropApproved{})
-		// Send the WearItem packet to all netstates in range, including our own
-		for _, mob := range world.Map().GetMobilesInRange(n.m.Location(), uo.MaxViewRange) {
-			if mob.NetState() != nil && mob.Location().XYDistance(n.m.Location()) <= mob.ViewRange() {
-				mob.NetState().WornItem(wearable, wearerMobile)
-			}
-		}
 	}
 	n.m.SetItemInCursor(nil)
 	n.Send(&serverpacket.DropApproved{})

@@ -155,3 +155,83 @@ func (o *TagFileObject) GetObjectReferences(name string) []uo.Serial {
 	}
 	return nil
 }
+
+// GetLocation returns a uo.Location value. The default value is returned if the
+// named tag is not found.
+func (o *TagFileObject) GetLocation(name string, def uo.Location) uo.Location {
+	if v, found := o.p[name]; found {
+		parts := strings.Split(v, ",")
+		if len(parts) != 3 {
+			o.errs = append(o.errs, fmt.Errorf("GetLocation(%s) did not find three values", name))
+			return def
+		}
+		hasErrors := false
+		var l uo.Location
+		v, err := strconv.ParseInt(parts[0], 0, 32)
+		if err != nil {
+			o.errs = append(o.errs, err)
+			hasErrors = true
+		}
+		l.X = int(v)
+		v, err = strconv.ParseInt(parts[1], 0, 32)
+		if err != nil {
+			o.errs = append(o.errs, err)
+			hasErrors = true
+		}
+		l.Y = int(v)
+		v, err = strconv.ParseInt(parts[2], 0, 32)
+		if err != nil {
+			o.errs = append(o.errs, err)
+			hasErrors = true
+		}
+		l.Z = int(v)
+		if hasErrors {
+			return def
+		}
+		return l
+	}
+	return def
+}
+
+// GetBounds returns a uo.Bounds value. The default value is returned if the
+// named tag is not found.
+func (o *TagFileObject) GetBounds(name string, def uo.Bounds) uo.Bounds {
+	if v, found := o.p[name]; found {
+		parts := strings.Split(v, ",")
+		if len(parts) != 4 {
+			o.errs = append(o.errs, fmt.Errorf("GetBounds(%s) did not find four values", name))
+			return def
+		}
+		hasErrors := false
+		var b uo.Bounds
+		v, err := strconv.ParseInt(parts[0], 0, 32)
+		if err != nil {
+			o.errs = append(o.errs, err)
+			hasErrors = true
+		}
+		b.X = int(v)
+		v, err = strconv.ParseInt(parts[1], 0, 32)
+		if err != nil {
+			o.errs = append(o.errs, err)
+			hasErrors = true
+		}
+		b.Y = int(v)
+		v, err = strconv.ParseInt(parts[2], 0, 32)
+		if err != nil {
+			o.errs = append(o.errs, err)
+			hasErrors = true
+		}
+		b.W = int(v)
+		v, err = strconv.ParseInt(parts[3], 0, 32)
+		if err != nil {
+			o.errs = append(o.errs, err)
+			hasErrors = true
+		}
+		b.H = int(v)
+		if hasErrors {
+			return def
+		}
+		return b
+	}
+	return def
+}
