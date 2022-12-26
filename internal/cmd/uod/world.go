@@ -184,6 +184,12 @@ func (w *World) Load() error {
 		log.Fatalf("found %d errors while running deserialization hooks", len(errs))
 	}
 
+	// Call RecalculateStats for every object in the object data store
+	w.ods.Map(func(o game.Object) error {
+		o.RecalculateStats()
+		return nil
+	})
+
 	// Rebuild accounts index
 	w.ads.Map(func(a *game.Account) error {
 		w.aidx[a.Username()] = a.Serial()

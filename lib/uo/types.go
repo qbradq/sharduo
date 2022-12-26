@@ -21,7 +21,7 @@ const (
 	MaxLiftRange              int    = 3
 	MaxDropRange              int    = 3
 	MaxContainerViewRange     int    = 3
-	DefaultMaxContainerWeight int    = 512
+	DefaultMaxContainerWeight int    = 400
 	DefaultMaxContainerItems  int    = 125
 	RandomX                   int    = 0xFFFF
 	RandomY                   int    = 0xFFFF

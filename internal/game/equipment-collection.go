@@ -107,8 +107,8 @@ func (c *EquipmentCollection) recalculateStats() {
 	}
 }
 
-// Weight returns the total weight of all equipped items, including the weight
-// of the contents of any worn containers excluding the bank box.
+// Weight returns the total weight of all equipped items excluding the bank box
+// and the contents of containers.
 func (c *EquipmentCollection) Weight() int { return c.weight }
 
 // Contains returns true if the equipment collection contains the item

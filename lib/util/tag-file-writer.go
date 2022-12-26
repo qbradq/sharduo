@@ -33,6 +33,11 @@ func (f *TagFileWriter) WriteNumber(name string, value int) {
 	f.WriteLine(fmt.Sprintf("%s=%d", name, value))
 }
 
+// WriteFloat writes a float to the io.Writer in base 10.
+func (f *TagFileWriter) WriteFloat(name string, value float32) {
+	f.WriteLine(fmt.Sprintf("%s=%f", name, value))
+}
+
 // WriteHex writes a number to the io.Writer in base 16 without leading zeros.
 func (f *TagFileWriter) WriteHex(name string, value uint32) {
 	f.WriteLine(fmt.Sprintf("%s=0x%X", name, value))

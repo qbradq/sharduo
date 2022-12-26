@@ -27,6 +27,7 @@ including all features required to mine ore and smelt it into ingots.
 * ~~Backpack and inventory~~
 * ~~Container handling~~
 * Spacial chat with speaking, yelling, and whispering
+* Mobile weight limit
 
 ### Nice to Haves ###
 * Gold

@@ -3,6 +3,7 @@ package game
 import (
 	"fmt"
 
+	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
 )
 
@@ -63,9 +64,12 @@ func (c *WearableContainer) DoubleClick(from Mobile) {
 }
 
 // DropObject implements the Object interface.
-func (c *WearableContainer) DropObject(o Object, from Mobile) bool {
-	// TODO Access calculations
-	return world.Map().SetNewParent(o, c)
+func (c *WearableContainer) DropObject(o Object, l uo.Location, from Mobile) bool {
+	if item, ok := o.(Item); ok {
+		item.SetDropLocation(l)
+		return world.Map().SetNewParent(o, c)
+	}
+	return false
 }
 
 // RemoveObject implements the Container interface.

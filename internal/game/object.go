@@ -35,6 +35,9 @@ type Object interface {
 	// Callbacks
 	//
 
+	// RecalculateStats is called after an object has been deserialized and
+	// should be used to recalculate dynamic attributes.
+	RecalculateStats()
 	// RemoveObject removes an object from this object. This is called when
 	// changing parent objects. This function should return false if the object
 	// could not be removed.
@@ -47,7 +50,7 @@ type Object interface {
 	// object by a mobile. A nil mobile usually means a script is generating
 	// items directly into a container. This returns false if the drop action
 	// is rejected for any reason.
-	DropObject(Object, Mobile) bool
+	DropObject(Object, uo.Location, Mobile) bool
 
 	//
 	// Player / client interaction callbacks
@@ -192,6 +195,9 @@ func (o *BaseObject) HasParent(t Object) bool {
 // SetParent implements the Object interface
 func (o *BaseObject) SetParent(p Object) { o.parent = p }
 
+// RecalculateStats implements the Object interface
+func (o *BaseObject) RecalculateStats() {}
+
 // RemoveObject implements the Object interface
 func (o *BaseObject) RemoveObject(c Object) bool {
 	// BaseObject has no child references
@@ -205,7 +211,7 @@ func (o *BaseObject) AddObject(c Object) bool {
 }
 
 // DropObject implements the Object interface
-func (o *BaseObject) DropObject(obj Object, from Mobile) bool {
+func (o *BaseObject) DropObject(obj Object, l uo.Location, from Mobile) bool {
 	// This makes no sense for a base object
 	return false
 }

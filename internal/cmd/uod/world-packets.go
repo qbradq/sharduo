@@ -216,15 +216,18 @@ func handleDropRequest(n *NetState, cp clientpacket.Packet) {
 			return
 		}
 		// TODO Line of sight check
-		item.SetLocation(uo.Location{
+		dropTarget := uo.Location{
 			X: p.X,
 			Y: p.Y,
-		})
-		if !target.DropObject(item, n.m) {
+		}
+		item.SetIsBeingDropped(true)
+		if !target.DropObject(item, dropTarget, n.m) {
+			item.SetIsBeingDropped(false)
 			n.m.SetItemInCursor(nil)
 			n.DropReject(uo.MoveItemRejectReasonUnspecified)
 			return
 		}
+		item.SetIsBeingDropped(false)
 		n.m.SetItemInCursor(nil)
 		n.Send(&serverpacket.DropApproved{})
 		for _, mob := range world.Map().GetNetStatesInRange(n.m.Location(), uo.MaxViewRange) {

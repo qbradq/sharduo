@@ -292,7 +292,12 @@ func (m *TemplateManager) newObject(templateName string) game.Object {
 		log.Println(err)
 	}
 
-	return s.(game.Object)
+	if o, ok := s.(game.Object); ok {
+		o.RecalculateStats()
+		return o
+	}
+
+	return nil
 }
 
 func randomBool() bool {

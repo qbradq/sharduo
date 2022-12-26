@@ -29,6 +29,15 @@ type Item interface {
 	Height() int
 	// Z returns the permanent Z location of the object
 	Z() int
+	// DropLocation returns the requested drop location of an item
+	DropLocation() uo.Location
+	// SetDropLocation sets the requested drop location of an item
+	SetDropLocation(uo.Location)
+	// IsBeingDropped returns true if this item is being dropped onto the ground
+	// or into another object.
+	IsBeingDropped() bool
+	// SetIsBeingDropped sets the IsBeingDropped flag
+	SetIsBeingDropped(bool)
 	// Flag accessors
 	Background() bool
 	Weapon() bool
@@ -83,10 +92,21 @@ type BaseItem struct {
 	flipped bool
 	// Dyable flag
 	dyable bool
+	// Base weight of the item
+	weight float32
 	// Stackable flag
 	stackable bool
 	// Stack amount
 	amount int
+
+	//
+	// Non-persistent values
+	//
+
+	// Drop request location
+	dropLocation uo.Location
+	// IsBeingDropped flag
+	isBeingDropped bool
 }
 
 // TypeName implements the util.Serializeable interface.
@@ -101,6 +121,7 @@ func (i *BaseItem) Serialize(f *util.TagFileWriter) {
 	f.WriteHex("FlippedGraphic", uint32(i.flippedGraphic))
 	f.WriteBool("Flipped", i.flipped)
 	f.WriteBool("Dyable", i.dyable)
+	f.WriteFloat("Weight", i.weight)
 	f.WriteBool("Stackable", i.stackable)
 	f.WriteNumber("Amount", i.amount)
 }
@@ -113,6 +134,7 @@ func (i *BaseItem) Deserialize(f *util.TagFileObject) {
 	i.flippedGraphic = uo.Graphic(f.GetNumber("FlippedGraphic", int(uo.GraphicNone)))
 	i.flipped = f.GetBool("Flipped", false)
 	i.dyable = f.GetBool("Dyable", false)
+	i.weight = f.GetFloat("Weight", 255.0)
 	i.stackable = f.GetBool("Stackable", false)
 	i.amount = f.GetNumber("Amount", 1)
 }
@@ -142,13 +164,25 @@ func (i *BaseItem) Height() int { return i.def.Height }
 
 // Weight implements the Object interface
 func (i *BaseItem) Weight() int {
-	return i.def.Weight * i.Amount()
+	return int(i.weight * float32(i.amount))
 }
 
 // Z returns the permanent Z location of the tile
 func (i *BaseItem) Z() int {
 	return uo.BoundZ(i.location.Z)
 }
+
+// DropLocation implements the Item interface
+func (i *BaseItem) DropLocation() uo.Location { return i.dropLocation }
+
+// SetDropLocation implements the Item interface
+func (i *BaseItem) SetDropLocation(l uo.Location) { i.dropLocation = l }
+
+// IsBeingDropped returns true if this item is being dropped onto the ground
+func (i *BaseItem) IsBeingDropped() bool { return i.isBeingDropped }
+
+// SetIsBeingDropped sets the IsBeingDropped flag
+func (i *BaseItem) SetIsBeingDropped(v bool) { i.isBeingDropped = v }
 
 // Flag accessors
 func (i *BaseItem) Background() bool   { return i.def.TileFlags&uo.TileFlagsBackground != 0 }

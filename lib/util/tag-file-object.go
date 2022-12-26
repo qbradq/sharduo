@@ -104,6 +104,20 @@ func (o *TagFileObject) GetNumber(name string, def int) int {
 	return def
 }
 
+// GetFloat returns the named property as a float32 or the default if not
+// found. This function may add errors to the internal error slice.
+func (o *TagFileObject) GetFloat(name string, def float32) float32 {
+	if v, found := o.p[name]; found {
+		f, err := strconv.ParseFloat(v, 32)
+		if err != nil {
+			o.errs = append(o.errs, fmt.Errorf("error in GetFloat %s=%s:%s", name, v, err))
+			return def
+		}
+		return float32(f)
+	}
+	return def
+}
+
 // GetHex returns the named property as an unsigned number or the default if not
 // found. This function may add errors to the internal error slice.
 func (o *TagFileObject) GetHex(name string, def uint32) uint32 {

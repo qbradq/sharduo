@@ -30,9 +30,6 @@ type Container interface {
 	ContentWeight() int
 	// ItemCount returns the total number of items within the container.
 	ItemCount() int
-	// RecalculateContentWeight refreshes the content weight cache, and calls
-	// itself recursively for child containers
-	RecalculateContentWeight()
 	// MapContents executes the function over every item in the container and
 	// returns the accumulated non-nil errors.
 	MapContents(fn func(Item) error) []error
@@ -53,6 +50,8 @@ type BaseContainer struct {
 	maxContainerItems int
 	// Cache of the current weight of all the items in the container
 	contentWeight int
+	// Cache of the number of items in the container and all sub containers
+	contentItems int
 	// All of the observers of the container
 	observers util.Slice[ContainerObserver]
 	// Bounds of the container
@@ -89,18 +88,19 @@ func (c *BaseContainer) OnAfterDeserialize(t *util.TagFileObject) {
 		}
 		c.contents = c.contents.Append(item)
 	}
-	c.RecalculateContentWeight()
 }
 
-// RecalculateContentWeight refreshes BaseContainer.contentWeight, and calls
-// itself recursively for child containers
-func (c *BaseContainer) RecalculateContentWeight() {
+// RecalculateStats implements the Object interface
+func (c *BaseContainer) RecalculateStats() {
 	c.contentWeight = 0
+	c.contentItems = len(c.contents)
 	for _, item := range c.contents {
-		if container, ok := item.(Container); ok {
-			container.RecalculateContentWeight()
-		}
 		c.contentWeight += item.Weight()
+		if container, ok := item.(Container); ok {
+			container.RecalculateStats()
+			c.contentItems += container.ItemCount()
+			c.contentWeight += container.ContentWeight()
+		}
 	}
 }
 
@@ -121,6 +121,11 @@ func (c *BaseContainer) RemoveObject(o Object) bool {
 		return false
 	}
 	c.contentWeight -= item.Weight()
+	c.contentItems--
+	if container, ok := item.(Container); ok {
+		c.contentWeight += container.ContentWeight()
+		c.contentItems -= container.ItemCount()
+	}
 	return true
 }
 
@@ -135,18 +140,24 @@ func (c *BaseContainer) AddObject(o Object) bool {
 	if c.contents.IndexOf(item) >= 0 {
 		return false
 	}
+	addedItems := 1
+	addedWeight := item.Weight()
+	if container, ok := item.(Container); ok {
+		addedItems += container.ItemCount()
+		addedWeight += container.ContentWeight()
+	}
 	// Container weight check
-	if c.maxContainerWeight > 0 && c.ContentWeight()+item.Weight() > c.maxContainerWeight {
+	if c.maxContainerWeight > 0 && c.ContentWeight()+addedWeight > c.maxContainerWeight {
 		// TODO Send cliloc message 1080016
 		return false
 	}
 	// Max items check
-	if c.maxContainerItems > 0 && len(c.contents)+1 > c.maxContainerItems {
+	if c.maxContainerItems > 0 && c.contentItems+addedItems > c.maxContainerItems {
 		// TODO Send cliloc message 1080017
 		return false
 	}
 	// Location bounding
-	l := item.Location()
+	l := item.DropLocation()
 	if l.X == uo.RandomX {
 		l.X = world.Random().Random(c.bounds.X, c.bounds.X+c.bounds.W-1)
 	}
@@ -165,10 +176,11 @@ func (c *BaseContainer) AddObject(o Object) bool {
 	if l.Y >= c.bounds.Y+c.bounds.H {
 		l.Y = c.bounds.Y + c.bounds.H - 1
 	}
-	item.SetLocation(l)
 	// Add the item to our contents
 	c.contents = c.contents.Append(item)
-	c.contentWeight += item.Weight()
+	c.contentWeight += addedWeight
+	c.contentItems += addedItems
+	item.SetLocation(l)
 	return true
 }
 
@@ -196,7 +208,7 @@ func (c *BaseContainer) Contains(o Object) bool {
 func (c *BaseContainer) ContentWeight() int { return c.contentWeight }
 
 // ItemCount implements the Container interface.
-func (c *BaseContainer) ItemCount() int { return len(c.contents) }
+func (c *BaseContainer) ItemCount() int { return c.contentItems }
 
 // MapContents implements the Container interface.
 func (c *BaseContainer) MapContents(fn func(Item) error) []error {

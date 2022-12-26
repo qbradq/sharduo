@@ -403,6 +403,11 @@ func (m *BaseMobile) DropItemInCursor() {
 	world.Map().AddObject(item)
 }
 
+// RecalculateStats implements the Object interface.
+func (m *BaseMobile) RecalculateStats() {
+	m.equipment.recalculateStats()
+}
+
 // AddObject adds the object to the mobile. It returns true if successful.
 func (m *BaseMobile) AddObject(o Object) bool {
 	if item, ok := o.(Item); ok && m.itemInCursor == item {
@@ -418,6 +423,12 @@ func (m *BaseMobile) AddObject(o Object) bool {
 // RemoveObject removes the object from the mobile. It returns true if
 // successful.
 func (m *BaseMobile) RemoveObject(o Object) bool {
+	if item, ok := o.(Item); ok {
+		if item.IsBeingDropped() {
+			// This is the item we are trying to drop, just accept it
+			return true
+		}
+	}
 	if o == m.toWear {
 		// This is the item we are currently trying to wear, just accept it
 		return true
@@ -440,7 +451,7 @@ func (m *BaseMobile) RemoveObject(o Object) bool {
 }
 
 // DropObject implements the Object interface
-func (m *BaseMobile) DropObject(obj Object, from Mobile) bool {
+func (m *BaseMobile) DropObject(obj Object, l uo.Location, from Mobile) bool {
 	// TODO Access calculations
 	// Try to put the object in our backpack
 	backpack := m.equipment.GetItemInLayer(uo.LayerBackpack)
@@ -448,7 +459,11 @@ func (m *BaseMobile) DropObject(obj Object, from Mobile) bool {
 		// No backpack found, something is very wrong
 		return false
 	}
-	return world.Map().SetNewParent(obj, backpack)
+	if item, ok := obj.(Item); ok {
+		item.SetDropLocation(l)
+		return backpack.DropObject(item, l, from)
+	}
+	return false
 }
 
 // Equip implements the Mobile interface.
@@ -513,7 +528,19 @@ func (m *BaseMobile) GetNotorietyFor(other Mobile) uo.Notoriety {
 
 // Weight implements the Object interface
 func (m *BaseMobile) Weight() int {
-	return m.equipment.Weight()
+	ret := m.equipment.Weight()
+	if w := m.equipment.GetItemInLayer(uo.LayerBackpack); w != nil {
+		if backpack, ok := w.(Container); ok {
+			ret += backpack.ContentWeight()
+		}
+	}
+	if m.itemInCursor != nil {
+		ret += m.itemInCursor.Weight()
+		if container, ok := m.itemInCursor.(Container); ok {
+			ret += container.ContentWeight()
+		}
+	}
+	return ret
 }
 
 // ContainerOpen implements the ContainerObserver interface.
