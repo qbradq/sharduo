@@ -410,9 +410,14 @@ func (m *BaseMobile) RecalculateStats() {
 
 // AddObject adds the object to the mobile. It returns true if successful.
 func (m *BaseMobile) AddObject(o Object) bool {
-	if item, ok := o.(Item); ok && m.itemInCursor == item {
-		// This is the item we are trying to put on the cursor, just accept it
-		return true
+	if item, ok := o.(Item); ok {
+		if item.IsBeingDropped() {
+			// This is the item we were trying to drop from our cursor
+		}
+		if m.itemInCursor == item {
+			// This is the item we are trying to put on the cursor, just accept it
+			return true
+		}
 	} else if wearable, ok := o.(Wearable); ok && wearable == m.toWear {
 		// This is the item we are trying to wear, just accept it
 		return true
