@@ -169,12 +169,7 @@ type BaseMobile struct {
 	// User interface stuff
 	//
 
-	// Pointer to the item held in the cursor
-	itemInCursor Item
-	// Temporary pointer to the wearable we are trying to equip
-	toWear Wearable
-	// The item we are attempting to drop
-	toDrop Object
+	cursor *Cursor
 
 	//
 	// Equipment and inventory
@@ -228,13 +223,14 @@ func (m *BaseMobile) Serialize(f *util.TagFileWriter) {
 	if m.equipment != nil {
 		m.equipment.Write("Equipment", f)
 	}
-	if m.itemInCursor != nil {
-		f.WriteHex("ItemInCursor", uint32(m.itemInCursor.Serial()))
+	if m.cursor.Occupied() {
+		f.WriteHex("ItemInCursor", uint32(m.cursor.Item().Serial()))
 	}
 }
 
 // Deserialize implements the util.Serializeable interface.
 func (m *BaseMobile) Deserialize(f *util.TagFileObject) {
+	m.cursor = &Cursor{}
 	m.BaseObject.Deserialize(f)
 	m.viewRange = f.GetNumber("ViewRange", uo.MaxViewRange)
 	m.isPlayerCharacter = f.GetBool("IsPlayerCharacter", false)
@@ -284,7 +280,7 @@ func (m *BaseMobile) OnAfterDeserialize(f *util.TagFileObject) {
 		o := world.Find(incs)
 		if o != nil {
 			if item, ok := o.(Item); ok {
-				m.itemInCursor = item
+				m.cursor.PickUp(item)
 				m.DropItemInCursor()
 			}
 		}
@@ -371,29 +367,17 @@ func (m *BaseMobile) Stamina() int { return m.stamina }
 // MaxStamina implements the Mobile interface.
 func (m *BaseMobile) MaxStamina() int { return m.Dexterity() }
 
-func (m *BaseMobile) ItemInCursor() Item { return m.itemInCursor }
+func (m *BaseMobile) ItemInCursor() Item { return m.cursor.Item() }
 
 // Returns true if the mobile's cursor has an item on it.
-func (m *BaseMobile) IsItemOnCursor() bool { return m.itemInCursor != nil }
+func (m *BaseMobile) IsItemOnCursor() bool { return m.cursor.Occupied() }
 
 // SetItemInCursor sets the item held in the mobile's cursor. It returns true
 // if successful.
 func (m *BaseMobile) SetItemInCursor(item Item) bool {
-	m.toWear = nil
-	m.toDrop = nil
-	if m.itemInCursor == item {
-		return true
-	}
-	if item == nil {
-		m.itemInCursor = nil
-		return true
-	}
-	if m.itemInCursor != nil {
-		return false
-	}
-	m.itemInCursor = item
+	return m.cursor.PickUp(item)
 	if !world.Map().SetNewParent(item, m) {
-		m.itemInCursor = nil
+		m.cursor.PickUp(nil)
 		return false
 	}
 	return true
@@ -401,11 +385,11 @@ func (m *BaseMobile) SetItemInCursor(item Item) bool {
 
 // DropItemInCursor drops the item in the player's cursor to their feet.
 func (m *BaseMobile) DropItemInCursor() {
-	if m.itemInCursor == nil {
+	item := m.cursor.Item()
+	if item == nil {
 		return
 	}
-	item := m.itemInCursor
-	m.itemInCursor = nil
+	m.cursor.PickUp(nil)
 	item.SetLocation(m.location)
 	item.SetParent(nil)
 	world.Map().AddObject(item)
@@ -418,6 +402,13 @@ func (m *BaseMobile) RecalculateStats() {
 
 // AddObject adds the object to the mobile. It returns true if successful.
 func (m *BaseMobile) AddObject(o Object) bool {
+	if o == nil {
+		return true
+	}
+	if m.cursor.State == CursorStatePickUp {
+		m.cursor.PickUp(o)
+		return true
+	}
 	if m.toDrop == o && m.itemInCursor == o {
 		// This is the item we were trying to drop. This means that whatever
 		// we were trying to drop it into refused, so now we need to try to
