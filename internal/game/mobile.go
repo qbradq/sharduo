@@ -112,6 +112,10 @@ type Mobile interface {
 	// inventory backpacks and player bank boxes. Filter them by checking the
 	// wearable's layer.
 	MapEquipment(func(Wearable) error) []error
+	// DropToBackpack is a helper function that places items within a mobile's
+	// backpack. If the second argument is true, the item will be placed without
+	// regard to weight and item caps. Returns true if successful.
+	DropToBackpack(Object, bool) bool
 
 	//
 	// Notoriety system
@@ -169,6 +173,8 @@ type BaseMobile struct {
 	itemInCursor Item
 	// Temporary pointer to the wearable we are trying to equip
 	toWear Wearable
+	// The item we are attempting to drop
+	toDrop Object
 
 	//
 	// Equipment and inventory
@@ -373,11 +379,13 @@ func (m *BaseMobile) IsItemOnCursor() bool { return m.itemInCursor != nil }
 // SetItemInCursor sets the item held in the mobile's cursor. It returns true
 // if successful.
 func (m *BaseMobile) SetItemInCursor(item Item) bool {
+	m.toWear = nil
+	m.toDrop = nil
 	if m.itemInCursor == item {
 		return true
 	}
 	if item == nil {
-		m.itemInCursor = item
+		m.itemInCursor = nil
 		return true
 	}
 	if m.itemInCursor != nil {
@@ -410,37 +418,71 @@ func (m *BaseMobile) RecalculateStats() {
 
 // AddObject adds the object to the mobile. It returns true if successful.
 func (m *BaseMobile) AddObject(o Object) bool {
-	if item, ok := o.(Item); ok {
-		if item.IsBeingDropped() {
-			// This is the item we were trying to drop from our cursor
-		}
-		if m.itemInCursor == item {
-			// This is the item we are trying to put on the cursor, just accept it
+	if m.toDrop == o && m.itemInCursor == o {
+		// This is the item we were trying to drop. This means that whatever
+		// we were trying to drop it into refused, so now we need to try to
+		// send it back to the previous parent.
+		oldParent := o.PreviousParent()
+		o.SetParent(oldParent)
+		m.toDrop = nil
+		if w, ok := o.(Wearable); ok && oldParent == m {
+			// Something got sent back to the cursor that was equipped to us.
+			m.toWear = w
+			// Fall-through to the equipment handling section. Kinda hacky.
+		} else if oldParent == nil {
+			// Needs to be returned to the map
+			world.Map().ForceAddObject(o)
 			return true
+		} else {
+			if container, ok := oldParent.(Container); ok {
+				// Needs to be returned to a container
+				container.ForceAddObject(o)
+				return true
+			}
+			// We should never reach this
+			return false
 		}
-	} else if wearable, ok := o.(Wearable); ok && wearable == m.toWear {
-		// This is the item we are trying to wear, just accept it
+	}
+	if m.toWear == o {
+		// This is the item we are trying to wear
+		m.toWear = nil
+		w, ok := o.(Wearable)
+		if !ok {
+			return false
+		}
+		if m.equipment == nil {
+			m.equipment = NewEquipmentCollection()
+		}
+		if !m.equipment.Equip(w) {
+			return false
+		}
+		// Send the WearItem packet to all netstates in range, including our own
+		for _, mob := range world.Map().GetNetStatesInRange(m.Location(), uo.MaxViewRange) {
+			if mob.Location().XYDistance(m.Location()) <= mob.ViewRange() {
+				mob.NetState().WornItem(w, m)
+			}
+		}
 		return true
 	}
+	if m.itemInCursor == o {
+		// This is the item we are trying to put on the cursor
+		m.toDrop = o
+		return true
+	}
+	// Don't know what to do with object
 	return false
 }
 
 // RemoveObject removes the object from the mobile. It returns true if
 // successful.
 func (m *BaseMobile) RemoveObject(o Object) bool {
-	if item, ok := o.(Item); ok {
-		if item.IsBeingDropped() {
-			// This is the item we are trying to drop, just accept it
-			return true
-		}
-	}
-	if o == m.toWear {
-		// This is the item we are currently trying to wear, just accept it
+	if o == nil {
 		return true
 	}
 	if wearable, ok := o.(Wearable); ok && m.equipment.Contains(wearable) {
 		// This item is currently equipped, try to unequip it
 		if !m.equipment.Unequip(wearable) {
+			m.SetItemInCursor(nil)
 			// Send the wear item packet back at ourselves to force the item
 			// back into the paper doll
 			m.NetState().WornItem(wearable, m)
@@ -448,10 +490,11 @@ func (m *BaseMobile) RemoveObject(o Object) bool {
 		}
 		return true
 	}
-	if m.itemInCursor == o {
-		// This is the item currently on our cursor, just accept it
+	if m.toDrop == o || m.toWear == o || m.itemInCursor == o {
+		// This is the item we are dropping or trying to manipulate
 		return true
 	}
+	// We don't own this object, reject the remove request
 	return false
 }
 
@@ -471,31 +514,32 @@ func (m *BaseMobile) DropObject(obj Object, l uo.Location, from Mobile) bool {
 	return false
 }
 
+// DropToBackpack implements the Mobile interface.
+func (m *BaseMobile) DropToBackpack(o Object, force bool) bool {
+	item, ok := o.(Item)
+	if !ok {
+		// Something is very wrong
+		return false
+	}
+	backpack, ok := m.equipment.GetItemInLayer(uo.LayerBackpack).(Container)
+	if !ok {
+		// Something is very wrong
+		return false
+	}
+	if !force {
+		return backpack.AddObject(item)
+	}
+	backpack.ForceAddObject(o)
+	return true
+}
+
 // Equip implements the Mobile interface.
 func (m *BaseMobile) Equip(w Wearable) bool {
 	if w == nil {
 		return false
 	}
-	if m.equipment == nil {
-		m.equipment = NewEquipmentCollection()
-	}
-	if !m.equipment.Equip(w) {
-		return false
-	}
 	m.toWear = w
-	if !world.Map().SetNewParent(w, m) {
-		m.toWear = nil
-		m.equipment.Unequip(w)
-		return false
-	}
-	m.toWear = nil
-	// Send the WearItem packet to all netstates in range, including our own
-	for _, mob := range world.Map().GetNetStatesInRange(m.Location(), uo.MaxViewRange) {
-		if mob.Location().XYDistance(m.Location()) <= mob.ViewRange() {
-			mob.NetState().WornItem(w, m)
-		}
-	}
-	return true
+	return m.AddObject(w)
 }
 
 // Unequip implements the Mobile interface.

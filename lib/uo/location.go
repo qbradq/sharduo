@@ -54,11 +54,36 @@ func (l Location) WrapToDungeonServer() Location {
 // map dimensions relative to a reference point. UpdateAndBound will handle map
 // wrapping as appropriate based on the reference location.
 func (l Location) WrapAndBound(ref Location) Location {
+	ref = ref.Bound()
 	if ref.X < MapOverworldWidth {
 		return l.WrapToOverworld()
 	} else {
 		return l.WrapToDungeonServer()
 	}
+}
+
+// Bound bounds the spacial portion of the location to the absolute dimensions
+// of the map.
+func (l Location) Bound() Location {
+	for l.X < 0 {
+		l.X += MapWidth
+	}
+	for l.X > MapWidth {
+		l.X -= MapWidth
+	}
+	for l.Y < 0 {
+		l.Y += MapHeight
+	}
+	for l.Y >= MapHeight {
+		l.Y -= MapHeight
+	}
+	if l.Z < MapMinZ {
+		l.Z = MapMinZ
+	}
+	if l.Z > MapMaxZ {
+		l.Z = MapMaxZ
+	}
+	return l
 }
 
 // XYDistance returns the maximum distance from l to d along either the X or Y

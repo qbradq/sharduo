@@ -243,11 +243,15 @@ func (m *Map) RemoveObject(o Object) bool {
 // AddObject adds an object to the map sending all proper updates. It returns
 // false only if the object could not fit on the map.
 func (m *Map) AddObject(o Object) bool {
-	c := m.getChunk(o.Location())
 	// TODO Make sure there is enough room
-	if !c.Add(o) {
-		return false
-	}
+	m.ForceAddObject(o)
+	return true
+}
+
+// ForceAddObject places the object on the map without regard to any blockers.
+func (m *Map) ForceAddObject(o Object) {
+	c := m.getChunk(o.Location().Bound())
+	c.Add(o)
 	// Send the new object to all mobiles in range with an attached net state
 	for _, mob := range m.GetNetStatesInRange(o.Location(), uo.MaxViewRange) {
 		if mob.NetState() == nil {
@@ -260,7 +264,6 @@ func (m *Map) AddObject(o Object) bool {
 	if mob, ok := o.(Mobile); ok && mob.NetState() != nil {
 		m.SendEverything(mob)
 	}
-	return true
 }
 
 // MoveMobile moves a mobile in the given direction. Returns true if the

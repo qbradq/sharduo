@@ -207,6 +207,7 @@ func handleDropRequest(n *NetState, cp clientpacket.Packet) {
 	} else {
 		target := world.Find(p.Container)
 		if target == nil {
+			n.m.DropItemInCursor()
 			n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		}
 		newLocation := target.RootParent().Location()
@@ -220,14 +221,11 @@ func handleDropRequest(n *NetState, cp clientpacket.Packet) {
 			X: p.X,
 			Y: p.Y,
 		}
-		item.SetIsBeingDropped(true)
 		if !target.DropObject(item, dropTarget, n.m) {
-			item.SetIsBeingDropped(false)
 			n.m.SetItemInCursor(nil)
 			n.DropReject(uo.MoveItemRejectReasonUnspecified)
 			return
 		}
-		item.SetIsBeingDropped(false)
 		n.m.SetItemInCursor(nil)
 		n.Send(&serverpacket.DropApproved{})
 		for _, mob := range world.Map().GetNetStatesInRange(n.m.Location(), uo.MaxViewRange) {
@@ -250,7 +248,7 @@ func handleWearItemRequest(n *NetState, cp clientpacket.Packet) {
 		return
 	}
 	if item != n.m.ItemInCursor() {
-		n.m.SetItemInCursor(nil)
+		n.m.DropItemInCursor()
 		n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		return
 	}

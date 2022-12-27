@@ -13,14 +13,10 @@ type Container interface {
 	Item
 	// GumpGraphic returns the gump graphic of the item
 	GumpGraphic() uo.Gump
-	// RemoveObject removes an object from this object. This is called when
-	// changing parent objects. This function should return false if the object
-	// could not be removed.
-	RemoveObject(Object) bool
-	// AddObject adds an object to this object. This is called when changing
-	// parent objects. This function should return false if the object could not
-	// be added.
-	AddObject(Object) bool
+	// ForceAddObject adds an object to this container without regard to item
+	// or weight caps. This will fail of the object does not implement the Item
+	// interface.
+	ForceAddObject(Object)
 	// Contains returns true if the object is a direct child of this container,
 	// or any child containers.
 	Contains(Object) bool
@@ -107,7 +103,7 @@ func (c *BaseContainer) RecalculateStats() {
 // GumpGraphic implements the Container interface.
 func (c *BaseContainer) GumpGraphic() uo.Gump { return c.gump }
 
-// RemoveObject implements the Container interface.
+// RemoveObject implements the Object interface.
 func (c *BaseContainer) RemoveObject(o Object) bool {
 	// Only items go into containers
 	item, ok := o.(Item)
@@ -129,7 +125,7 @@ func (c *BaseContainer) RemoveObject(o Object) bool {
 	return true
 }
 
-// AddObject implements the Container interface.
+// AddObject implements the Object interface.
 func (c *BaseContainer) AddObject(o Object) bool {
 	// Only items go into containers
 	item, ok := o.(Item)
@@ -137,14 +133,13 @@ func (c *BaseContainer) AddObject(o Object) bool {
 		return false
 	}
 	// Something is very wrong
-	if c.contents.IndexOf(item) >= 0 {
+	if c.contents.Contains(item) {
 		return false
 	}
 	addedItems := 1
 	addedWeight := item.Weight()
 	if container, ok := item.(Container); ok {
 		addedItems += container.ItemCount()
-		addedWeight += container.ContentWeight()
 	}
 	// Container weight check
 	if c.maxContainerWeight > 0 && c.ContentWeight()+addedWeight > c.maxContainerWeight {
@@ -155,6 +150,24 @@ func (c *BaseContainer) AddObject(o Object) bool {
 	if c.maxContainerItems > 0 && c.contentItems+addedItems > c.maxContainerItems {
 		// TODO Send cliloc message 1080017
 		return false
+	}
+	c.ForceAddObject(o)
+	return true
+}
+
+// ForceAddObject implements the Container interface.
+func (c *BaseContainer) ForceAddObject(o Object) {
+	item, ok := o.(Item)
+	if !ok {
+		return
+	}
+	if c.contents.Contains(item) {
+		return
+	}
+	addedItems := 1
+	addedWeight := item.Weight()
+	if container, ok := item.(Container); ok {
+		addedItems += container.ItemCount()
 	}
 	// Location bounding
 	l := item.DropLocation()
@@ -181,7 +194,6 @@ func (c *BaseContainer) AddObject(o Object) bool {
 	c.contentWeight += addedWeight
 	c.contentItems += addedItems
 	item.SetLocation(l)
-	return true
 }
 
 // Contains implements the Container interface.

@@ -33,11 +33,6 @@ type Item interface {
 	DropLocation() uo.Location
 	// SetDropLocation sets the requested drop location of an item
 	SetDropLocation(uo.Location)
-	// IsBeingDropped returns true if this item is being dropped onto the ground
-	// or into another object.
-	IsBeingDropped() bool
-	// SetIsBeingDropped sets the IsBeingDropped flag
-	SetIsBeingDropped(bool)
 	// Flag accessors
 	Background() bool
 	Weapon() bool
@@ -105,8 +100,6 @@ type BaseItem struct {
 
 	// Drop request location
 	dropLocation uo.Location
-	// IsBeingDropped flag
-	isBeingDropped bool
 }
 
 // TypeName implements the util.Serializeable interface.
@@ -177,12 +170,6 @@ func (i *BaseItem) DropLocation() uo.Location { return i.dropLocation }
 
 // SetDropLocation implements the Item interface
 func (i *BaseItem) SetDropLocation(l uo.Location) { i.dropLocation = l }
-
-// IsBeingDropped returns true if this item is being dropped onto the ground
-func (i *BaseItem) IsBeingDropped() bool { return i.isBeingDropped }
-
-// SetIsBeingDropped sets the IsBeingDropped flag
-func (i *BaseItem) SetIsBeingDropped(v bool) { i.isBeingDropped = v }
 
 // Flag accessors
 func (i *BaseItem) Background() bool   { return i.def.TileFlags&uo.TileFlagsBackground != 0 }
