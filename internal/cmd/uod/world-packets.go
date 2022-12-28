@@ -49,7 +49,7 @@ func handleStatusRequest(n *NetState, cp clientpacket.Packet) {
 			MaxMana:        n.m.MaxMana(),
 			Gold:           0,
 			ArmorRating:    0,
-			Weight:         0,
+			Weight:         n.m.Weight(),
 			StatsCap:       uo.StatsCapDefault,
 			Followers:      0,
 			MaxFollowers:   uo.MaxFollowers,

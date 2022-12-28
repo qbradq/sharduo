@@ -527,6 +527,9 @@ func (m *BaseMobile) RemoveObject(o Object) bool {
 // DropObject implements the Object interface
 func (m *BaseMobile) DropObject(obj Object, l uo.Location, from Mobile) bool {
 	// TODO Access calculations
+	if from != m {
+		return false
+	}
 	// Try to put the object in our backpack
 	backpack := m.equipment.GetItemInLayer(uo.LayerBackpack)
 	if backpack == nil {

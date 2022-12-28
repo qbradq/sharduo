@@ -101,8 +101,8 @@ func newNewCommand(args CommandArgs) Command {
 
 // Compile implements the Command interface
 func (c *NewCommand) Compile() error {
-	if len(c.args) != 2 {
-		return fmt.Errorf("new command requires exactly 2 arguments, got %d", len(c.args))
+	if len(c.args) < 2 || len(c.args) > 3 {
+		return fmt.Errorf("new command requires 2 or 3 arguments, got %d", len(c.args))
 	}
 	return nil
 }
@@ -123,6 +123,18 @@ func (c *NewCommand) Execute(n *NetState) error {
 			Y: r.Y,
 			Z: r.Z,
 		})
+		if len(c.args) == 3 {
+			item, ok := o.(game.Item)
+			if !ok {
+				n.SystemMessage("amount specified for non-item %s", c.args[1])
+				return
+			}
+			v, err := strconv.ParseInt(c.args[2], 0, 32)
+			if err != nil {
+				n.SystemMessage(err.Error())
+			}
+			item.SetAmount(int(v))
+		}
 		world.Map().SetNewParent(o, nil)
 	})
 	return nil

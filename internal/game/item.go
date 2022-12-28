@@ -25,6 +25,9 @@ type Item interface {
 	Stackable() bool
 	// Amount of the stack
 	Amount() int
+	// SetAmount sets the amount of the stack. If this is out of range it will
+	// be bounded to a sane value
+	SetAmount(int)
 	// Height returns the height of the item
 	Height() int
 	// Z returns the permanent Z location of the object
@@ -151,6 +154,17 @@ func (i *BaseItem) Stackable() bool { return i.stackable }
 
 // Amount implements the Item interface.
 func (i *BaseItem) Amount() int { return i.amount }
+
+// SetAmount implements the Item interface.
+func (i *BaseItem) SetAmount(n int) {
+	if n < 1 {
+		i.amount = 1
+	} else if n > int(uo.MaxStackAmount) {
+		i.amount = int(uo.MaxStackAmount)
+	} else {
+		i.amount = n
+	}
+}
 
 // Height implements the Item interface.
 func (i *BaseItem) Height() int { return i.def.Height }

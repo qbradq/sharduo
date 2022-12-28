@@ -28,6 +28,9 @@ including all features required to mine ore and smelt it into ingots.
 * ~~Container handling~~
 * Spacial chat with speaking, yelling, and whispering
 * Mobile weight limit
+* Stat updates
+* Skill updates
+* Splitting stacks
 
 ### Nice to Haves ###
 * Gold
@@ -44,6 +47,8 @@ including all features required to mine ore and smelt it into ingots.
 * Banker NPC
 * Bank box
 * Line of sight checks
+* Paper Dolls for others
+* Item durability
 
 ## Outstanding Issues ##
 
