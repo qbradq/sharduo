@@ -101,6 +101,9 @@ type Mobile interface {
 	// DropItemInCursor drops the item in the cursor to the ground at the
 	// mobile's feet.
 	DropItemInCursor()
+	// RequestCursorState is uses to set the cursor state to either
+	// CursorStateDrop or CursorStateEquip. All other values will be ignored.
+	RequestCursorState(CursorState)
 	// Equip equips the given item in the item's layer, returns false if the
 	// equip operation failed for any reason.
 	Equip(Wearable) bool
@@ -375,12 +378,25 @@ func (m *BaseMobile) IsItemOnCursor() bool { return m.cursor.Occupied() }
 // SetItemInCursor sets the item held in the mobile's cursor. It returns true
 // if successful.
 func (m *BaseMobile) SetItemInCursor(item Item) bool {
-	return m.cursor.PickUp(item)
+	if item == nil {
+		return m.cursor.PickUp(nil)
+	}
+	if !m.cursor.PickUp(item) {
+		m.cursor.PickUp(nil)
+		return false
+	}
 	if !world.Map().SetNewParent(item, m) {
 		m.cursor.PickUp(nil)
 		return false
 	}
 	return true
+}
+
+// RequestCursorState implements the Mobile interface.
+func (m *BaseMobile) RequestCursorState(s CursorState) {
+	if s == CursorStateDrop || s == CursorStateEquip {
+		m.cursor.State = s
+	}
 }
 
 // DropItemInCursor drops the item in the player's cursor to their feet.
@@ -400,43 +416,55 @@ func (m *BaseMobile) RecalculateStats() {
 	m.equipment.recalculateStats()
 }
 
+// PickUp attempts to pick up the object. Returns true if successful.
+func (m *BaseMobile) PickUp(o Object) bool {
+	return m.cursor.PickUp(o) && world.Map().SetNewParent(o, m)
+}
+
+// ForceAddObject implements the Object interface.
+func (m *BaseMobile) ForceAddObject(obj Object) {
+	if obj == nil {
+		return
+	}
+	obj.SetParent(m)
+	if wearable, ok := obj.(Wearable); ok {
+		// Try to equip the item legit
+		if m.equipment.Equip(wearable) {
+			return
+		}
+		// If we get here we couldn't equip the item. Fall-through and force-
+		// drop to the backpack instead.
+	}
+	// Try to force the object into the backpack
+	if item, ok := obj.(Item); ok {
+		if backpackObj := m.equipment.GetItemInLayer(uo.LayerBackpack); backpackObj != nil {
+			if backpack, ok := backpackObj.(Container); ok {
+				backpack.ForceAddObject(item)
+				return
+			}
+		}
+	}
+	// All other objects get plopped to the ground at the mobile's feet
+	// This shouldn't ever happen
+	obj.SetLocation(m.location)
+	world.Map().ForceAddObject(obj)
+}
+
 // AddObject adds the object to the mobile. It returns true if successful.
 func (m *BaseMobile) AddObject(o Object) bool {
 	if o == nil {
 		return true
 	}
 	if m.cursor.State == CursorStatePickUp {
-		m.cursor.PickUp(o)
+		// This is the object we are currently picking up, accept it
 		return true
 	}
-	if m.toDrop == o && m.itemInCursor == o {
-		// This is the item we were trying to drop. This means that whatever
-		// we were trying to drop it into refused, so now we need to try to
-		// send it back to the previous parent.
-		oldParent := o.PreviousParent()
-		o.SetParent(oldParent)
-		m.toDrop = nil
-		if w, ok := o.(Wearable); ok && oldParent == m {
-			// Something got sent back to the cursor that was equipped to us.
-			m.toWear = w
-			// Fall-through to the equipment handling section. Kinda hacky.
-		} else if oldParent == nil {
-			// Needs to be returned to the map
-			world.Map().ForceAddObject(o)
-			return true
-		} else {
-			if container, ok := oldParent.(Container); ok {
-				// Needs to be returned to a container
-				container.ForceAddObject(o)
-				return true
-			}
-			// We should never reach this
-			return false
-		}
+	if m.cursor.State == CursorStateReturn {
+		// We are trying to get this object back to its original parent
+		m.cursor.Return()
 	}
-	if m.toWear == o {
+	if m.cursor.State == CursorStateEquip {
 		// This is the item we are trying to wear
-		m.toWear = nil
 		w, ok := o.(Wearable)
 		if !ok {
 			return false
@@ -455,12 +483,14 @@ func (m *BaseMobile) AddObject(o Object) bool {
 		}
 		return true
 	}
-	if m.itemInCursor == o {
-		// This is the item we are trying to put on the cursor
-		m.toDrop = o
+	if m.cursor.State == CursorStateDrop {
+		// This is the item we are trying to drop that got sent back to our
+		// cursor.
+		m.cursor.Return()
 		return true
 	}
-	// Don't know what to do with object
+	// Should never get here
+	log.Println("SHOULD NOT GET HERE")
 	return false
 }
 
@@ -470,10 +500,15 @@ func (m *BaseMobile) RemoveObject(o Object) bool {
 	if o == nil {
 		return true
 	}
+	item, ok := o.(Item)
+	if !ok {
+		// We don't own non-item objects
+		return false
+	}
 	if wearable, ok := o.(Wearable); ok && m.equipment.Contains(wearable) {
-		// This item is currently equipped, try to unequip it
+		// We are trying to remove equipment, try to unequip it
 		if !m.equipment.Unequip(wearable) {
-			m.SetItemInCursor(nil)
+			m.cursor.State = CursorStateReturn
 			// Send the wear item packet back at ourselves to force the item
 			// back into the paper doll
 			m.NetState().WornItem(wearable, m)
@@ -481,8 +516,8 @@ func (m *BaseMobile) RemoveObject(o Object) bool {
 		}
 		return true
 	}
-	if m.toDrop == o || m.toWear == o || m.itemInCursor == o {
-		// This is the item we are dropping or trying to manipulate
+	if m.cursor.item == item {
+		// We are just removing what was on the cursor
 		return true
 	}
 	// We don't own this object, reject the remove request
@@ -529,7 +564,7 @@ func (m *BaseMobile) Equip(w Wearable) bool {
 	if w == nil {
 		return false
 	}
-	m.toWear = w
+
 	return m.AddObject(w)
 }
 
@@ -574,11 +609,8 @@ func (m *BaseMobile) Weight() int {
 			ret += backpack.ContentWeight()
 		}
 	}
-	if m.itemInCursor != nil {
-		ret += m.itemInCursor.Weight()
-		if container, ok := m.itemInCursor.(Container); ok {
-			ret += container.ContentWeight()
-		}
+	if item := m.cursor.Item(); item != nil {
+		ret += item.Weight()
 	}
 	return ret
 }

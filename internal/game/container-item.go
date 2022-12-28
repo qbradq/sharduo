@@ -87,6 +87,12 @@ func (c *ContainerItem) RemoveObject(o Object) bool {
 	return true
 }
 
+// ForceAddObject implements the Object interface.
+func (c *ContainerItem) ForceAddObject(o Object) {
+	o.SetParent(c)
+	c.BaseContainer.ForceAddObject(o)
+}
+
 // AddObject implements the Container interface.
 func (c *ContainerItem) AddObject(o Object) bool {
 	if !c.BaseContainer.AddObject(o) {

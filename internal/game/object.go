@@ -46,6 +46,8 @@ type Object interface {
 	// parent objects. This function should return false if the object could not
 	// be added.
 	AddObject(Object) bool
+	// ForceAddObject is like AddObject but should not fail for any reason.
+	ForceAddObject(Object)
 	// DropObject is called when another object is dropped onto / into this
 	// object by a mobile. A nil mobile usually means a script is generating
 	// items directly into a container. This returns false if the drop action
@@ -208,6 +210,13 @@ func (o *BaseObject) RemoveObject(c Object) bool {
 func (o *BaseObject) AddObject(c Object) bool {
 	// BaseObject has no child references
 	return false
+}
+
+// ForceAddObject implements the Object interface. PLEASE NOTE that a call to
+// BaseObject.ForceAddObject() will leak the object!
+func (o *BaseObject) ForceAddObject(obj Object) {
+	// BaseObject has no child references
+	return
 }
 
 // DropObject implements the Object interface

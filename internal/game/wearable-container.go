@@ -72,6 +72,12 @@ func (c *WearableContainer) DropObject(o Object, l uo.Location, from Mobile) boo
 	return false
 }
 
+// ForceAddObject implements the Object interface.
+func (c *WearableContainer) ForceAddObject(o Object) {
+	o.SetParent(c)
+	c.BaseContainer.ForceAddObject(o)
+}
+
 // RemoveObject implements the Container interface.
 func (c *WearableContainer) RemoveObject(o Object) bool {
 	if !c.BaseContainer.RemoveObject(o) {

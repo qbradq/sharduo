@@ -9,7 +9,8 @@ const (
 	CursorStateNormal CursorState = 0
 	CursorStatePickUp CursorState = 1
 	CursorStateDrop   CursorState = 2
-	CursorStateWear   CursorState = 3
+	CursorStateEquip  CursorState = 3
+	CursorStateReturn CursorState = 4
 )
 
 // Cursor represents a mobile's cursor
@@ -28,15 +29,14 @@ func (c *Cursor) Occupied() bool { return c.item != nil }
 // PickUp attempts to pick up the object. Returns true if successful.
 func (c *Cursor) PickUp(o Object) bool {
 	if o == nil {
+		c.State = CursorStateNormal
 		c.item = nil
 		c.previousParent = nil
 		return true
 	}
+	c.State = CursorStatePickUp
 	if c.item != nil {
-		if c.item == o {
-			return true
-		}
-		return false
+		return c.item == o
 	}
 	item, ok := o.(Item)
 	if !ok {
@@ -44,6 +44,43 @@ func (c *Cursor) PickUp(o Object) bool {
 	}
 	c.previousParent = item.Parent()
 	c.item = item
+	return true
+}
+
+// Return attempts to send the item on the cursor back to it's previous parent.
+func (c *Cursor) Return() {
+	oldParent := c.previousParent
+	item := c.item
+	c.previousParent = nil
+	c.item = nil
+	if oldParent == nil {
+		world.Map().ForceAddObject(item)
+	} else {
+		oldParent.ForceAddObject(item)
+	}
+}
+
+// Drop attempts to drop the item on the cursor onto the target and returns true
+// if successful.
+func (c *Cursor) Drop(target Object) bool {
+	c.State = CursorStateDrop
+	if !world.Map().SetNewParent(c.item, target) {
+		c.State = CursorStateReturn
+		return false
+	}
+	c.State = CursorStateNormal
+	return true
+}
+
+// Wear attempts to wear the item on the cursor onto the target and returns true
+// if successful.
+func (c *Cursor) Wear(target Object) bool {
+	c.State = CursorStateEquip
+	if !world.Map().SetNewParent(c.item, target) {
+		c.State = CursorStateReturn
+		return false
+	}
+	c.State = CursorStateNormal
 	return true
 }
 

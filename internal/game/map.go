@@ -250,6 +250,10 @@ func (m *Map) AddObject(o Object) bool {
 
 // ForceAddObject places the object on the map without regard to any blockers.
 func (m *Map) ForceAddObject(o Object) {
+	if o == nil {
+		return
+	}
+	o.SetParent(nil)
 	c := m.getChunk(o.Location().Bound())
 	c.Add(o)
 	// Send the new object to all mobiles in range with an attached net state

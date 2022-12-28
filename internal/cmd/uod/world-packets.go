@@ -183,6 +183,7 @@ func handleDropRequest(n *NetState, cp clientpacket.Packet) {
 		n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		return
 	}
+	n.m.RequestCursorState(game.CursorStateDrop)
 	if p.Container == uo.SerialSystem {
 		// Drop to map request
 		newLocation := uo.Location{X: p.X, Y: p.Y, Z: p.Z}
@@ -243,7 +244,7 @@ func handleWearItemRequest(n *NetState, cp clientpacket.Packet) {
 	item := world.Find(p.Item)
 	wearer := world.Find(p.Wearer)
 	if item == nil || wearer == nil {
-		n.m.SetItemInCursor(nil)
+		n.m.DropItemInCursor()
 		n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		return
 	}
@@ -254,13 +255,14 @@ func handleWearItemRequest(n *NetState, cp clientpacket.Packet) {
 	}
 	wearable, ok := item.(game.Wearable)
 	if !ok {
-		n.m.SetItemInCursor(nil)
+		n.m.DropItemInCursor()
 		n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		return
 	}
 	// TODO Check if we are allowed to equip items to this mobile
 	// This will remove the object from it's parent (the mobile's cursor) and
 	// add it to the other mobile's equipment, or not.
+	n.m.RequestCursorState(game.CursorStateEquip)
 	if !n.m.Equip(wearable) {
 		n.m.SetItemInCursor(nil)
 		n.DropReject(uo.MoveItemRejectReasonUnspecified)
