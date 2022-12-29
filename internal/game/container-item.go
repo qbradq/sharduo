@@ -109,6 +109,6 @@ func (c *ContainerItem) AddObject(o Object) bool {
 }
 
 // Weight implements the Object interface.
-func (c *ContainerItem) Weight() int {
+func (c *ContainerItem) Weight() float32 {
 	return c.BaseItem.Weight() + c.ContentWeight()
 }

@@ -49,7 +49,7 @@ func handleStatusRequest(n *NetState, cp clientpacket.Packet) {
 			MaxMana:        n.m.MaxMana(),
 			Gold:           0,
 			ArmorRating:    0,
-			Weight:         n.m.Weight(),
+			Weight:         int(n.m.Weight()),
 			StatsCap:       uo.StatsCapDefault,
 			Followers:      0,
 			MaxFollowers:   uo.MaxFollowers,
@@ -150,7 +150,8 @@ func handleLiftRequest(n *NetState, cp clientpacket.Packet) {
 		return
 	}
 	// TODO Line of sight check
-	if !n.m.SetItemInCursor(item) {
+	toLift := item.Split(p.Amount)
+	if !n.m.SetItemInCursor(toLift) {
 		n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		return
 	}

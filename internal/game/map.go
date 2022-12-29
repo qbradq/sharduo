@@ -225,18 +225,7 @@ func (m *Map) RemoveEverything(mob Mobile) {
 // RemoveObject removes the object from the map. It always returns true, even if
 // the object was not on the map to begin with.
 func (m *Map) RemoveObject(o Object) bool {
-	c := m.getChunk(o.Location())
-	c.Remove(o)
-	// Tell other mobiles with net states in range about the object removal
-	for _, mob := range m.GetNetStatesInRange(o.Location(), uo.MaxViewRange) {
-		if mob.Location().XYDistance(o.Location()) <= mob.ViewRange() {
-			mob.NetState().RemoveObject(o)
-		}
-	}
-	// If this is a mobile with a net state we need to remove all objects
-	if mob, ok := o.(Mobile); ok && mob.NetState() != nil {
-		m.RemoveEverything(mob)
-	}
+	m.ForceRemoveObject(o)
 	return true
 }
 
@@ -267,6 +256,22 @@ func (m *Map) ForceAddObject(o Object) {
 	// and mobiles in range.
 	if mob, ok := o.(Mobile); ok && mob.NetState() != nil {
 		m.SendEverything(mob)
+	}
+}
+
+// ForceRemoveObject removes the object from the map and always succeeds.
+func (m *Map) ForceRemoveObject(o Object) {
+	c := m.getChunk(o.Location())
+	c.Remove(o)
+	// Tell other mobiles with net states in range about the object removal
+	for _, mob := range m.GetNetStatesInRange(o.Location(), uo.MaxViewRange) {
+		if mob.Location().XYDistance(o.Location()) <= mob.ViewRange() {
+			mob.NetState().RemoveObject(o)
+		}
+	}
+	// If this is a mobile with a net state we need to remove all objects
+	if mob, ok := o.(Mobile); ok && mob.NetState() != nil {
+		m.RemoveEverything(mob)
 	}
 }
 

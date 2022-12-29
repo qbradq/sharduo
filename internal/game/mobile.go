@@ -421,33 +421,59 @@ func (m *BaseMobile) PickUp(o Object) bool {
 	return m.cursor.PickUp(o) && world.Map().SetNewParent(o, m)
 }
 
-// ForceAddObject implements the Object interface.
-func (m *BaseMobile) ForceAddObject(obj Object) {
+// doAddObject adds the object to us - forcefully if requested.
+func (m *BaseMobile) doAddObject(obj Object, force bool) bool {
 	if obj == nil {
-		return
+		return false
 	}
 	obj.SetParent(m)
 	if wearable, ok := obj.(Wearable); ok {
 		// Try to equip the item legit
 		if m.equipment.Equip(wearable) {
-			return
+			// Send the WearItem packet to all net states in range, including
+			// our own
+			for _, mob := range world.Map().GetNetStatesInRange(m.Location(), uo.MaxViewRange) {
+				if mob.Location().XYDistance(m.Location()) <= mob.ViewRange() {
+					mob.NetState().WornItem(wearable, m)
+				}
+			}
+			return true
 		}
-		// If we get here we couldn't equip the item. Fall-through and force-
-		// drop to the backpack instead.
+		// If we get here we couldn't equip the item. Fall-through and drop to
+		// the backpack instead.
 	}
 	// Try to force the object into the backpack
-	if item, ok := obj.(Item); ok {
-		if backpackObj := m.equipment.GetItemInLayer(uo.LayerBackpack); backpackObj != nil {
-			if backpack, ok := backpackObj.(Container); ok {
-				backpack.ForceAddObject(item)
-				return
-			}
-		}
+	item, ok := obj.(Item)
+	if !ok {
+		log.Println("SHOULD NOT GET HERE")
+		return false
+	}
+	backpackObj := m.equipment.GetItemInLayer(uo.LayerBackpack)
+	if backpackObj == nil {
+		log.Println("SHOULD NOT GET HERE")
+		return false
+	}
+	backpack := backpackObj.(Container)
+	if backpack == nil {
+		log.Println("SHOULD NOT GET HERE")
+		return false
+	}
+	if force {
+		backpack.ForceAddObject(item)
+	} else {
+		return backpack.AddObject(item)
 	}
 	// All other objects get plopped to the ground at the mobile's feet
 	// This shouldn't ever happen
 	obj.SetLocation(m.location)
 	world.Map().ForceAddObject(obj)
+	log.Println("SHOULD NOT GET HERE")
+	return false
+}
+
+// ForceAddObject implements the Object interface.
+func (m *BaseMobile) ForceAddObject(obj Object) {
+	m.doAddObject(obj, true)
 }
 
 // AddObject adds the object to the mobile. It returns true if successful.
@@ -455,6 +481,11 @@ func (m *BaseMobile) AddObject(o Object) bool {
 	if o == nil {
 		return true
 	}
+	// Handle items coming in from other sources
+	if m.cursor.item != o {
+		return m.doAddObject(o, false)
+	}
+	// Handle item on cursor
 	if m.cursor.State == CursorStatePickUp {
 		// This is the object we are currently picking up, accept it
 		return true
@@ -605,7 +636,7 @@ func (m *BaseMobile) GetNotorietyFor(other Mobile) uo.Notoriety {
 }
 
 // Weight implements the Object interface
-func (m *BaseMobile) Weight() int {
+func (m *BaseMobile) Weight() float32 {
 	ret := m.equipment.Weight()
 	if w := m.equipment.GetItemInLayer(uo.LayerBackpack); w != nil {
 		if backpack, ok := w.(Container); ok {

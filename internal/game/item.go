@@ -1,6 +1,8 @@
 package game
 
 import (
+	"log"
+
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
 )
@@ -28,6 +30,21 @@ type Item interface {
 	// SetAmount sets the amount of the stack. If this is out of range it will
 	// be bounded to a sane value
 	SetAmount(int)
+	// Split splits off a number of the items in the stack and returns a new
+	// copy of the item with that amount. The amount of this item is adjusted
+	// accordingly. If the amount is less than one nil is returned. If the
+	// amount is greater than or equal to the number of items in this stack,
+	// this item is returned an a new one is not created. For non-stackable
+	// items this will always return this item. New objects created by this
+	// function have their parent set as this item upon return.
+	Split(int) Item
+	// Combine adds the stack count of the given item to this item, then
+	// destroys the given item. Returns false on failure. Failure can happen
+	// if this item does not support stacking - see Stackable() - the items are
+	// not from the same template object, or the combined amounts would be
+	// greater than uo.MaxStackAmount. If this function returns true the other
+	// object has been totally removed from the world and data stores.
+	Combine(Item) bool
 	// Height returns the height of the item
 	Height() int
 	// Z returns the permanent Z location of the object
@@ -166,12 +183,61 @@ func (i *BaseItem) SetAmount(n int) {
 	}
 }
 
+// Split implements the Item interface.
+func (i *BaseItem) Split(n int) Item {
+	// Sanity checking
+	if !i.stackable {
+		return i
+	}
+	// Bounds checking
+	if n < 1 {
+		return nil
+	}
+	if n >= i.amount {
+		return i
+	}
+	// Create the new item
+	ni := world.New(i.templateName)
+	if ni == nil {
+		log.Println("error: Item.Split() failed to create duplicate item")
+		return nil
+	}
+	item, ok := ni.(Item)
+	if !ok {
+		return nil
+	}
+	// Update stack amounts
+	i.amount -= n
+	i.weight -= float32(item.Weight())
+	item.SetAmount(n)
+
+	return item
+}
+
+// Combine implements the Item interface.
+func (i *BaseItem) Combine(other Item) bool {
+	// Sanity checking
+	if !i.stackable {
+		return false
+	}
+	if i.templateName != other.TemplateName() {
+		return false
+	}
+	if i.amount+other.Amount() > int(uo.MaxStackAmount) {
+		return false
+	}
+	// Update stack amounts
+	i.amount += other.Amount()
+	world.Remove(other)
+	return true
+}
+
 // Height implements the Item interface.
 func (i *BaseItem) Height() int { return i.def.Height }
 
 // Weight implements the Object interface
-func (i *BaseItem) Weight() int {
-	return int(i.weight * float32(i.amount))
+func (i *BaseItem) Weight() float32 {
+	return i.weight * float32(i.amount)
 }
 
 // Z returns the permanent Z location of the tile

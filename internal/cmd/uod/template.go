@@ -57,11 +57,8 @@ func NewTemplate(tfo *util.TagFileObject, tm *TemplateManager) (*ObjectTemplate,
 	errs := tfo.Map(func(name, value string) error {
 		if name == "TemplateName" {
 			t.templateName = value
-			return nil
-		}
-		if name == "BaseTemplate" {
+		} else if name == "BaseTemplate" {
 			t.baseTemplateName = value
-			return nil
 		}
 		if !strings.Contains(value, "{{") {
 			t.properties[name] = value

@@ -71,8 +71,7 @@ func (s *DataStore[K]) InvalidateCache() {
 
 // Deserialize executes the Deserialize method on every object in the data store
 // in a non-deterministic order. This should be called after every data store
-// has been loaded with a Read call. As a side effect this function calls
-// InvalidateCache to free memory that is no longer needed.
+// has been loaded with a Read call.
 func (s *DataStore[K]) Deserialize() []error {
 	var errs []error
 	for k, o := range s.objects {
@@ -90,8 +89,16 @@ func (s *DataStore[K]) Deserialize() []error {
 // needed.
 func (s *DataStore[K]) OnAfterDeserialize() []error {
 	var errs []error
+	objs := make(map[uo.Serial]Serializeable, len(s.objects))
 	for k, o := range s.objects {
+		objs[k] = o
+	}
+	for k, o := range objs {
 		tfo := s.tfoPool[k]
+		if tfo == nil {
+			errs = append(errs, fmt.Errorf("object %s cached TFO not found during DataStore.OnAfterDeserialize()", o.Serial().String()))
+			continue
+		}
 		o.OnAfterDeserialize(tfo)
 		errs = append(errs, tfo.Errors()...)
 	}

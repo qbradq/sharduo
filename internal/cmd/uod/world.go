@@ -313,6 +313,18 @@ func (w *World) Find(id uo.Serial) game.Object {
 	return w.ods.Get(id)
 }
 
+// Remove implements the game.World interface.
+func (w *World) Remove(o game.Object) {
+	p := o.Parent()
+	if p == nil {
+		w.m.ForceRemoveObject(o)
+	} else {
+		p.ForceRemoveObject(o)
+	}
+	o.SetParent(game.TheVoid)
+	w.ods.Remove(o)
+}
+
 // AuthenticateAccount attempts to authenticate an account by username and
 // password hash. If no account exists for that username, a new one will be
 // created for the user. If an account is found but the password hashes do not

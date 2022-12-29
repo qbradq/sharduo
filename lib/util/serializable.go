@@ -38,9 +38,11 @@ type Serializeable interface {
 	SerialType() uo.SerialType
 	// Writes the object to a tag file.
 	Serialize(*TagFileWriter)
-	// Deserializes the object from a tag file object.
+	// Deserializes the object from a tag file object. DO NOT CREATE new game
+	// objects during deserialization!
 	Deserialize(*TagFileObject)
 	// Called on all objects after Deserialize has been called on all objects.
+	// It is safe to create game objects in this function.
 	OnAfterDeserialize(*TagFileObject)
 }
 

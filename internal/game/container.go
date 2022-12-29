@@ -23,7 +23,7 @@ type Container interface {
 	// ContentWeight returns the total weight of all contained items excluding
 	// the weight of the container itself. Use game.Item.Weight to get the
 	// weight of the container without the contents.
-	ContentWeight() int
+	ContentWeight() float32
 	// ItemCount returns the total number of items within the container.
 	ItemCount() int
 	// MapContents executes the function over every item in the container and
@@ -41,11 +41,11 @@ type BaseContainer struct {
 	// Gump image to show for the container background
 	gump uo.Gump
 	// Max weight this container can hold
-	maxContainerWeight int
+	maxContainerWeight float32
 	// Max items this container can hold
 	maxContainerItems int
 	// Cache of the current weight of all the items in the container
-	contentWeight int
+	contentWeight float32
 	// Cache of the number of items in the container and all sub containers
 	contentItems int
 	// All of the observers of the container
@@ -57,7 +57,7 @@ type BaseContainer struct {
 // Serialize implements the util.Serializeable interface.
 func (c *BaseContainer) Serialize(f *util.TagFileWriter) {
 	f.WriteHex("Gump", uint32(c.gump))
-	f.WriteNumber("MaxContainerWeight", c.maxContainerWeight)
+	f.WriteFloat("MaxContainerWeight", c.maxContainerWeight)
 	f.WriteNumber("MaxContainerItems", c.maxContainerItems)
 	f.WriteBounds("Bounds", c.bounds)
 	f.WriteObjectReferences("Contents", util.ToSerials(c.contents))
@@ -66,7 +66,7 @@ func (c *BaseContainer) Serialize(f *util.TagFileWriter) {
 // Deserialize implements the util.Serializeable interface.
 func (c *BaseContainer) Deserialize(f *util.TagFileObject) {
 	c.gump = uo.Gump(f.GetHex("Gump", uint32(0x003C)))
-	c.maxContainerWeight = f.GetNumber("MaxContainerWeight", uo.DefaultMaxContainerWeight)
+	c.maxContainerWeight = f.GetFloat("MaxContainerWeight", float32(uo.DefaultMaxContainerWeight))
 	c.maxContainerItems = f.GetNumber("MaxContainerItems", uo.DefaultMaxContainerItems)
 	c.bounds = f.GetBounds("Bounds", uo.Bounds{X: 44, Y: 65, W: 142, H: 94})
 }
@@ -142,7 +142,7 @@ func (c *BaseContainer) AddObject(o Object) bool {
 		addedItems += container.ItemCount()
 	}
 	// Container weight check
-	if c.maxContainerWeight > 0 && c.ContentWeight()+addedWeight > c.maxContainerWeight {
+	if c.maxContainerWeight > 0 && c.contentWeight+addedWeight > c.maxContainerWeight {
 		// TODO Send cliloc message 1080016
 		return false
 	}
@@ -217,7 +217,7 @@ func (c *BaseContainer) Contains(o Object) bool {
 }
 
 // ContentWeight implements the Container interface.
-func (c *BaseContainer) ContentWeight() int { return c.contentWeight }
+func (c *BaseContainer) ContentWeight() float32 { return c.contentWeight }
 
 // ItemCount implements the Container interface.
 func (c *BaseContainer) ItemCount() int { return c.contentItems }

@@ -129,6 +129,10 @@ func (c *NewCommand) Execute(n *NetState) error {
 				n.SystemMessage("amount specified for non-item %s", c.args[1])
 				return
 			}
+			if !item.Stackable() {
+				n.SystemMessage("amount specified for non-stackable item %s", c.args[1])
+				return
+			}
 			v, err := strconv.ParseInt(c.args[2], 0, 32)
 			if err != nil {
 				n.SystemMessage(err.Error())

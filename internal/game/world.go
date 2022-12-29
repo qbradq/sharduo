@@ -15,6 +15,9 @@ type World interface {
 	New(string) Object
 	// Find returns a pointer to the object with the given ID or nil
 	Find(uo.Serial) Object
+	// Remove removes the given object from the world, removing it from the
+	// current parent forcefully and deleting it from the data stores.
+	Remove(Object)
 	// Map returns the map the world is using.
 	Map() *Map
 	// GetItemDefinition returns the uo.StaticDefinition that holds the static

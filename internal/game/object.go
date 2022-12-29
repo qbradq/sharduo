@@ -1,6 +1,8 @@
 package game
 
 import (
+	"log"
+
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
 )
@@ -30,6 +32,8 @@ type Object interface {
 	HasParent(Object) bool
 	// SetParent sets the parent pointer. Use nil to represent the world.
 	SetParent(Object)
+	// TemplateName returns the name of the template used to create this object.
+	TemplateName() string
 
 	//
 	// Callbacks
@@ -48,6 +52,9 @@ type Object interface {
 	AddObject(Object) bool
 	// ForceAddObject is like AddObject but should not fail for any reason.
 	ForceAddObject(Object)
+	// ForceRemoveObject is like RemoveObject but should not fail for any
+	// reason.
+	ForceRemoveObject(Object)
 	// DropObject is called when another object is dropped onto / into this
 	// object by a mobile. A nil mobile usually means a script is generating
 	// items directly into a container. This returns false if the drop action
@@ -91,7 +98,7 @@ type Object interface {
 	// base weight of the item plus the weight of the contents. For mobiles this
 	// is the total weight of all equipment including containers, but excluding
 	// the bank box if any.
-	Weight() int
+	Weight() float32
 }
 
 // BaseObject is the base of all game objects and implements the Object
@@ -100,6 +107,8 @@ type BaseObject struct {
 	util.BaseSerializeable
 	// Parent object
 	parent Object
+	// Name of the template this object was constructed from
+	templateName string
 	// Display name of the object
 	name string
 	// If true, the article "a" is used to refer to the object. If no article
@@ -129,6 +138,7 @@ func (o *BaseObject) SerialType() uo.SerialType {
 // Serialize implements the util.Serializeable interface.
 func (o *BaseObject) Serialize(f *util.TagFileWriter) {
 	o.BaseSerializeable.Serialize(f)
+	f.WriteString("TemplateName", o.templateName)
 	if o.parent != nil {
 		f.WriteHex("Parent", uint32(o.parent.Serial()))
 	} else {
@@ -145,6 +155,11 @@ func (o *BaseObject) Serialize(f *util.TagFileWriter) {
 // Deserialize implements the util.Serializeable interface.
 func (o *BaseObject) Deserialize(f *util.TagFileObject) {
 	o.BaseSerializeable.Deserialize(f)
+	o.templateName = f.GetString("TemplateName", "")
+	if o.templateName == "" {
+		// Something is very wrong
+		log.Printf("warning: object 0x%08X has no TemplateName property", o.Serial())
+	}
 	ps := uo.Serial(f.GetHex("Parent", uint32(uo.SerialSystem)))
 	if ps == uo.SerialSystem {
 		o.parent = nil
@@ -197,6 +212,9 @@ func (o *BaseObject) HasParent(t Object) bool {
 // SetParent implements the Object interface
 func (o *BaseObject) SetParent(p Object) { o.parent = p }
 
+// TemplateName implements the Object interface
+func (o *BaseObject) TemplateName() string { return o.templateName }
+
 // RecalculateStats implements the Object interface
 func (o *BaseObject) RecalculateStats() {}
 
@@ -216,7 +234,12 @@ func (o *BaseObject) AddObject(c Object) bool {
 // BaseObject.ForceAddObject() will leak the object!
 func (o *BaseObject) ForceAddObject(obj Object) {
 	// BaseObject has no child references
-	return
+}
+
+// ForceRemoveObject implements the Object interface. PLEASE NOTE that a call to
+// BaseObject.ForceRemoveObject() will leak the object!
+func (o *BaseObject) ForceRemoveObject(obj Object) {
+	// BaseObject has no child references
 }
 
 // DropObject implements the Object interface
@@ -261,7 +284,7 @@ func (o *BaseObject) DisplayName() string {
 }
 
 // Weight implements the Object interface
-func (o *BaseObject) Weight() int {
+func (o *BaseObject) Weight() float32 {
 	// This makes no sense for base objects
 	return 0
 }

@@ -109,6 +109,6 @@ func (c *WearableContainer) AddObject(o Object) bool {
 }
 
 // Weight implements the Object interface.
-func (c *WearableContainer) Weight() int {
+func (c *WearableContainer) Weight() float32 {
 	return c.BaseItem.Weight() + c.ContentWeight()
 }
