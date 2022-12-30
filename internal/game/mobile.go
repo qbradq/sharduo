@@ -547,12 +547,9 @@ func (m *BaseMobile) RemoveObject(o Object) bool {
 		}
 		return true
 	}
-	if m.cursor.item == item {
-		// We are just removing what was on the cursor
-		return true
-	}
-	// We don't own this object, reject the remove request
-	return false
+	// If we are removing the cursor item we return true, otherwise we do not
+	// own the object and return false.
+	return m.cursor.item.Serial() == item.Serial()
 }
 
 // DropObject implements the Object interface
