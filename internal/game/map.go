@@ -166,7 +166,11 @@ func (m *Map) SetNewParent(o, p Object) bool {
 		// If the item was coming to the Void it doesn't need a drag packet
 		return true
 	}
-	if p == oldParent {
+	if p == nil && oldParent == nil {
+		// No drag packets if this is map-to-map.
+		return true
+	}
+	if p != nil && oldParent != nil && p.Serial() == oldParent.Serial() {
 		// We don't need a drag packet if we are not changing parents. This
 		// is the case when lifting an item off the paper doll, dropping an
 		// item onto the same mobile's paper doll, and dropping an item into

@@ -36,7 +36,7 @@ func (c *Cursor) PickUp(o Object) bool {
 	}
 	c.State = CursorStatePickUp
 	if c.item != nil {
-		return c.item == o
+		return c.item.Serial() == o.Serial()
 	}
 	item, ok := o.(Item)
 	if !ok {

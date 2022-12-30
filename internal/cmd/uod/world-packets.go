@@ -249,7 +249,7 @@ func handleWearItemRequest(n *NetState, cp clientpacket.Packet) {
 		n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		return
 	}
-	if item != n.m.ItemInCursor() {
+	if item.Serial() != n.m.ItemInCursor().Serial() {
 		n.m.DropItemInCursor()
 		n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		return

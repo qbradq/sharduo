@@ -46,7 +46,7 @@ func (c *ContainerItem) SingleClick(from Mobile) {
 	if from.NetState() != nil {
 		str := fmt.Sprintf("%s\n%d/%d items, %d/%d stones", c.DisplayName(),
 			c.ItemCount(), c.maxContainerItems,
-			c.contentWeight, c.maxContainerWeight)
+			int(c.contentWeight), int(c.maxContainerWeight))
 		from.NetState().Speech(c, str)
 	}
 }

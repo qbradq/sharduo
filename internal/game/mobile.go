@@ -482,7 +482,7 @@ func (m *BaseMobile) AddObject(o Object) bool {
 		return true
 	}
 	// Handle items coming in from other sources
-	if m.cursor.item != o {
+	if m.cursor.item == nil || m.cursor.item.Serial() != o.Serial() {
 		return m.doAddObject(o, false)
 	}
 	// Handle item on cursor
@@ -555,7 +555,7 @@ func (m *BaseMobile) RemoveObject(o Object) bool {
 // DropObject implements the Object interface
 func (m *BaseMobile) DropObject(obj Object, l uo.Location, from Mobile) bool {
 	// TODO Access calculations
-	if from != m {
+	if from.Serial() != m.Serial() {
 		return false
 	}
 	// Try to put the object in our backpack

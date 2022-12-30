@@ -86,7 +86,7 @@ func (c *EquipmentCollection) Unequip(o Wearable) bool {
 	}
 	// Only remove if the item is what is equipped in that slot
 	if equipped, ok := c.equipment[o.Layer()]; ok {
-		if equipped == o {
+		if equipped.Serial() == o.Serial() {
 			delete(c.equipment, o.Layer())
 			return true
 		}
@@ -119,7 +119,7 @@ func (c *EquipmentCollection) Contains(o Wearable) bool {
 	if !found {
 		return false
 	}
-	return w == o
+	return w.Serial() == o.Serial()
 }
 
 // IsLayerOccupied returns true if the named layer is already occupied

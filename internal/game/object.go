@@ -202,7 +202,7 @@ func (o *BaseObject) HasParent(t Object) bool {
 		if p == nil {
 			return false
 		}
-		if p == t {
+		if p.Serial() == t.Serial() {
 			return true
 		}
 		p = p.Parent()

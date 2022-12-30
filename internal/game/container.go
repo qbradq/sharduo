@@ -134,6 +134,7 @@ func (c *BaseContainer) AddObject(o Object) bool {
 	}
 	// Something is very wrong
 	if c.contents.Contains(item) {
+		item.SetDropLocation(o.Location())
 		return false
 	}
 	addedItems := 1
@@ -144,11 +145,13 @@ func (c *BaseContainer) AddObject(o Object) bool {
 	// Container weight check
 	if c.maxContainerWeight > 0 && c.contentWeight+addedWeight > c.maxContainerWeight {
 		// TODO Send cliloc message 1080016
+		item.SetDropLocation(o.Location())
 		return false
 	}
 	// Max items check
 	if c.maxContainerItems > 0 && c.contentItems+addedItems > c.maxContainerItems {
 		// TODO Send cliloc message 1080017
+		item.SetDropLocation(o.Location())
 		return false
 	}
 	c.ForceAddObject(o)
@@ -204,7 +207,7 @@ func (c *BaseContainer) Contains(o Object) bool {
 		return false
 	}
 	for _, item := range c.contents {
-		if item == otherItem {
+		if item.Serial() == otherItem.Serial() {
 			return true
 		}
 		if container, ok := item.(Container); ok {

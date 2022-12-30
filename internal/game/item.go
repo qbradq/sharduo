@@ -208,7 +208,6 @@ func (i *BaseItem) Split(n int) Item {
 	}
 	// Update stack amounts
 	i.amount -= n
-	i.weight -= float32(item.Weight())
 	item.SetAmount(n)
 
 	return item
