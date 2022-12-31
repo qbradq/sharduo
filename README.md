@@ -68,3 +68,26 @@ milestone but do need to be resolved sometime.
 
 * Proper coordinate wrapping in game.Map.getChunksInBounds()
 * Proper coordinate wrapping in uo.Location.XYDistance()
+
+# Shard Administration Advice #
+The ShardUO software and the creative content within were developed to host a
+single service called Trammel Time. Using this codebase to create a different
+service will require changes to configuration files, data files, and source
+code at minimum. To create a service with different - read standard - rules will
+also require extensive modification to the internal/game package, several
+portions of the internal/cmd/uod package, and many constant updates in the
+lib/uo package. To create a service that supports current Broadsword server
+content would require nearly a complete re-write.
+
+This repository is licensed under the AGPLv3 or later (see LICENSE). This
+license requires that any modification to this source code be made available to
+the public under the same license terms. This goes into effect the moment you
+distribute a binary of the program in any form to anyone through any means or
+you make a service based on this source code available for connection on any
+network reachable by third-parties regardless if anyone connected. I chose this
+license because I want to share knowledge and appreciation of Ultima Online
+service during the late 90's and early 20's. I welcome anyone who would use this
+repository or its associated services who share that appreciation.
+
+That said below are some things I have learned about administrating this shard.
+

@@ -18,6 +18,10 @@ type World interface {
 	// Remove removes the given object from the world, removing it from the
 	// current parent forcefully and deleting it from the data stores.
 	Remove(Object)
+	// Update adds the object to the world's list of objects that we need to
+	// send update packets for. It is safe to update the same object rapidly in
+	// succession. No duplicate packets will be sent.
+	Update(Object)
 	// Map returns the map the world is using.
 	Map() *Map
 	// GetItemDefinition returns the uo.StaticDefinition that holds the static

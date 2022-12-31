@@ -45,6 +45,10 @@ type World struct {
 	savePath string
 	// TargetManager for the world
 	tm *TargetManager
+	// Collection of all objects that need to be updated
+	updateList map[game.Object]struct{}
+	// Current time in the Sossarian universe in seconds
+	time uo.Time
 }
 
 // NewWorld creates a new, empty world
@@ -55,9 +59,11 @@ func NewWorld(savePath string, rng uo.RandomSource) *World {
 		aidx:         make(map[string]uo.Serial),
 		ods:          util.NewDataStore[game.Object]("objects", rng, game.ObjectFactory),
 		rng:          rng,
-		requestQueue: make(chan WorldRequest, 1024),
+		requestQueue: make(chan WorldRequest, 1024*16),
 		savePath:     savePath,
 		tm:           NewTargetManager(rng),
+		updateList:   make(map[game.Object]struct{}),
+		time:         uo.TimeEpoch,
 	}
 }
 
@@ -369,12 +375,40 @@ func (w *World) AuthenticateLoginSession(username, passwordHash string, id uo.Se
 // Process is the goroutine that services the command queue and is the only
 // goroutine allowed to interact with the contents of the world.
 func (w *World) Process() {
-	for r := range w.requestQueue {
-		if err := r.Execute(); err != nil {
-			if r.GetNetState() != nil {
-				r.GetNetState().SystemMessage(err.Error())
+	var done bool
+	ticker := time.NewTicker(time.Second / time.Duration(uo.DurationSecond))
+	for !done {
+		select {
+		case t := <-ticker.C:
+			// The ticker has a higher priority than packets. This should ensure
+			// that the game service cannot be overwhelmed with packets and not
+			// be able to do cleanup tasks.
+			// TODO detect dropped ticks
+			// Time handling
+			w.time++
+			// TODO timer handling
+			// Update objects
+			for o := range w.updateList {
+				for _, m := range w.m.GetNetStatesInRange(o.Location(), uo.MaxViewRange) {
+					m.NetState().SendObject(o)
+				}
 			}
-			log.Println(err)
+			log.Println("TICK:", t)
+		case r := <-w.requestQueue:
+			// TODO Graceful shutdown signal (outside this struct)
+			// Handle graceful shutdown
+			if r == nil {
+				ticker.Stop()
+				done = true
+				break
+			}
+			// If we are not trying to handle a tick we process packets.
+			if err := r.Execute(); err != nil {
+				if r.GetNetState() != nil {
+					r.GetNetState().SystemMessage(err.Error())
+				}
+				log.Println(err)
+			}
 		}
 	}
 }
@@ -388,4 +422,9 @@ func (w *World) Map() *game.Map {
 // for a given item graphic.
 func (w *World) GetItemDefinition(g uo.Graphic) *uo.StaticDefinition {
 	return tiledatamul.GetStaticDefinition(int(g))
+}
+
+// Update implements the game.World interface.
+func (w *World) Update(o game.Object) {
+	w.updateList[o] = struct{}{}
 }

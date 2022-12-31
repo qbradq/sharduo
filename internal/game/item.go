@@ -209,7 +209,7 @@ func (i *BaseItem) Split(n int) Item {
 	// Update stack amounts
 	i.amount -= n
 	item.SetAmount(n)
-
+	world.Update(i)
 	return item
 }
 
@@ -228,6 +228,7 @@ func (i *BaseItem) Combine(other Item) bool {
 	// Update stack amounts
 	i.amount += other.Amount()
 	world.Remove(other)
+	world.Update(i)
 	return true
 }
 
