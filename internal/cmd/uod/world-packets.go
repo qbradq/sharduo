@@ -167,23 +167,9 @@ func handleDropRequest(n *NetState, cp clientpacket.Packet) {
 		return
 	}
 	p := cp.(*clientpacket.DropRequest)
-	if p.Item != n.m.ItemInCursor().Serial() {
-		n.m.SetItemInCursor(nil)
-		n.DropReject(uo.MoveItemRejectReasonUnspecified)
-		return
-	}
-	itemObj := world.Find(p.Item)
-	if itemObj == nil {
-		n.m.SetItemInCursor(nil)
-		n.DropReject(uo.MoveItemRejectReasonUnspecified)
-		return
-	}
-	item, ok := itemObj.(game.Item)
-	if !ok {
-		n.m.SetItemInCursor(nil)
-		n.DropReject(uo.MoveItemRejectReasonUnspecified)
-		return
-	}
+	// Do not trust the serial coming from the client, only drop what we are
+	// holding.
+	item := n.m.ItemInCursor()
 	n.m.RequestCursorState(game.CursorStateDrop)
 	if p.Container == uo.SerialSystem {
 		// Drop to map request

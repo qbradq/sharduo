@@ -232,6 +232,15 @@ func (i *BaseItem) Combine(other Item) bool {
 	return true
 }
 
+// DropObject implements the Object interface.
+func (i *BaseItem) DropObject(obj Object, l uo.Location, from Mobile) bool {
+	item, ok := obj.(Item)
+	if !ok {
+		return false
+	}
+	return i.Combine(item)
+}
+
 // Height implements the Item interface.
 func (i *BaseItem) Height() int { return i.def.Height }
 

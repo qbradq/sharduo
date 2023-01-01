@@ -49,21 +49,24 @@ type World struct {
 	updateList map[game.Object]struct{}
 	// Current time in the Sossarian universe in seconds
 	time uo.Time
+	// Current time on the server
+	wallClockTime time.Time
 }
 
 // NewWorld creates a new, empty world
 func NewWorld(savePath string, rng uo.RandomSource) *World {
 	return &World{
-		m:            game.NewMap(),
-		ads:          util.NewDataStore[*game.Account]("accounts", rng, game.ObjectFactory),
-		aidx:         make(map[string]uo.Serial),
-		ods:          util.NewDataStore[game.Object]("objects", rng, game.ObjectFactory),
-		rng:          rng,
-		requestQueue: make(chan WorldRequest, 1024*16),
-		savePath:     savePath,
-		tm:           NewTargetManager(rng),
-		updateList:   make(map[game.Object]struct{}),
-		time:         uo.TimeEpoch,
+		m:             game.NewMap(),
+		ads:           util.NewDataStore[*game.Account]("accounts", rng, game.ObjectFactory),
+		aidx:          make(map[string]uo.Serial),
+		ods:           util.NewDataStore[game.Object]("objects", rng, game.ObjectFactory),
+		rng:           rng,
+		requestQueue:  make(chan WorldRequest, 1024*16),
+		savePath:      savePath,
+		tm:            NewTargetManager(rng),
+		updateList:    make(map[game.Object]struct{}),
+		time:          uo.TimeEpoch,
+		wallClockTime: time.Now(),
 	}
 }
 
@@ -372,6 +375,12 @@ func (w *World) AuthenticateLoginSession(username, passwordHash string, id uo.Se
 	return a
 }
 
+// Time implements the game.World interface.
+func (w *World) Time() uo.Time { return w.time }
+
+// ServerTime implements the game.World interface.
+func (w *World) ServerTime() time.Time { return w.wallClockTime }
+
 // Process is the goroutine that services the command queue and is the only
 // goroutine allowed to interact with the contents of the world.
 func (w *World) Process() {
@@ -386,6 +395,7 @@ func (w *World) Process() {
 			// TODO detect dropped ticks
 			// Time handling
 			w.time++
+			w.wallClockTime = t
 			// TODO timer handling
 			// Update objects
 			for o := range w.updateList {
@@ -393,7 +403,9 @@ func (w *World) Process() {
 					m.NetState().SendObject(o)
 				}
 			}
-			log.Println("TICK:", t)
+			for o := range w.updateList {
+				delete(w.updateList, o)
+			}
 		case r := <-w.requestQueue:
 			// TODO Graceful shutdown signal (outside this struct)
 			// Handle graceful shutdown

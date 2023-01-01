@@ -1,6 +1,8 @@
 package game
 
 import (
+	"time"
+
 	"github.com/qbradq/sharduo/lib/uo"
 )
 
@@ -29,6 +31,13 @@ type World interface {
 	GetItemDefinition(uo.Graphic) *uo.StaticDefinition
 	// Random returns the uo.RandomSource for the world.
 	Random() uo.RandomSource
+	// Time returns the current time in the Sossarian universe. This is what
+	// timers use to avoid complications with DST, save lag, rollbacks, and
+	// downtime.
+	Time() uo.Time
+	// ServerTime returns the current wall-clock time of the server. This is
+	// updated once per tick.
+	ServerTime() time.Time
 }
 
 var world World
