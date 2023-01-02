@@ -18,10 +18,6 @@ type Container interface {
 	Item
 	// GumpGraphic returns the gump graphic of the item
 	GumpGraphic() uo.Gump
-	// ForceAddObject adds an object to this container without regard to item
-	// or weight caps. This will fail of the object does not implement the Item
-	// interface.
-	ForceAddObject(Object)
 	// Contains returns true if the object is a direct child of this container,
 	// or any child containers.
 	Contains(Object) bool
@@ -223,6 +219,10 @@ func (c *BaseContainer) AddObject(o Object) bool {
 
 // ForceAddObject implements the Container interface.
 func (c *BaseContainer) ForceAddObject(o Object) {
+	if o == nil {
+		return
+	}
+	o.SetParent(c)
 	item, ok := o.(Item)
 	if !ok {
 		return
@@ -307,7 +307,6 @@ func (c *BaseContainer) AdjustWeightAndCount(w float32, n int) {
 	if container, ok := c.parent.(Container); ok {
 		container.AdjustWeightAndCount(w, n)
 	}
-	world.Update(c)
 }
 
 // MapContents implements the Container interface.

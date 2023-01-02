@@ -47,30 +47,32 @@ func (c *Cursor) PickUp(o Object) bool {
 	return true
 }
 
-// Return attempts to send the item on the cursor back to it's previous parent.
+// Return send the item on the cursor back to it's previous parent.
 func (c *Cursor) Return() {
 	oldParent := c.previousParent
 	item := c.item
 	c.previousParent = nil
 	c.item = nil
+	// Old parent was the map, just send it back
 	if oldParent == nil {
 		world.Map().ForceAddObject(item)
-	} else {
-		if itemParent, ok := oldParent.(Item); ok {
-			if itemParent.Combine(item) {
-				return
-			}
-			// Else we need to try to force the item into the parent of the old
-			// parent
-			if oldParent.Parent() == nil {
-				world.Map().ForceAddObject(item)
-			} else {
-				oldParent.Parent().ForceAddObject(item)
-			}
+		return
+	}
+	// Old parent was a stack of items that we might be able to combine with
+	if oldItemParent, ok := oldParent.(Item); ok && oldItemParent.CanCombineWith(item) {
+		if oldItemParent.Combine(item) {
+			// Combine successful
 			return
 		}
-		oldParent.ForceAddObject(item)
+		// Force the item back into the stack's parent
+		if oldParent.Parent() == nil {
+			world.Map().ForceAddObject(item)
+		} else {
+			oldParent.Parent().ForceAddObject(item)
+		}
+		return
 	}
+	oldParent.ForceAddObject(item)
 }
 
 // Drop attempts to drop the item on the cursor onto the target and returns true

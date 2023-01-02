@@ -47,6 +47,9 @@ type Item interface {
 	// greater than uo.MaxStackAmount. If this function returns true this item
 	// has been totally removed from the world and data stores.
 	Combine(Item) bool
+	// CanCombineWith returns true if the given item can be combined with this
+	// one. This function does not consider max stack count.
+	CanCombineWith(Item) bool
 	// Height returns the height of the item
 	Height() int
 	// Z returns the permanent Z location of the object
@@ -222,7 +225,6 @@ func (i *BaseItem) Split(n int) Item {
 	} else {
 		i.parent.ForceAddObject(item)
 	}
-	item.SetParent(i.parent)
 	i.parent = item
 	// Update parents if needed
 	if container, ok := i.parent.(Container); ok {
@@ -233,11 +235,7 @@ func (i *BaseItem) Split(n int) Item {
 
 // Combine implements the Item interface.
 func (i *BaseItem) Combine(other Item) bool {
-	// Sanity checking
-	if !i.stackable {
-		return false
-	}
-	if i.templateName != other.TemplateName() {
+	if !i.CanCombineWith(other) {
 		return false
 	}
 	if i.amount+other.Amount() > int(uo.MaxStackAmount) {
@@ -253,6 +251,17 @@ func (i *BaseItem) Combine(other Item) bool {
 		i.parent.ForceAddObject(other)
 	}
 	world.Remove(i)
+	return true
+}
+
+// CanCombineWith implements the Item interface.
+func (i *BaseItem) CanCombineWith(item Item) bool {
+	if !i.stackable {
+		return false
+	}
+	if i.templateName != item.TemplateName() {
+		return false
+	}
 	return true
 }
 

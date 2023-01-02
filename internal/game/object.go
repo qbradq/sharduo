@@ -233,6 +233,7 @@ func (o *BaseObject) AddObject(c Object) bool {
 // ForceAddObject implements the Object interface. PLEASE NOTE that a call to
 // BaseObject.ForceAddObject() will leak the object!
 func (o *BaseObject) ForceAddObject(obj Object) {
+	obj.SetParent(o)
 	// BaseObject has no child references
 }
 

@@ -140,7 +140,6 @@ func (m *Map) SetNewParent(o, p Object) bool {
 			return false
 		}
 	}
-	o.SetParent(p)
 	addFailed := false
 	if p == nil {
 		if !world.Map().AddObject(o) {
@@ -152,12 +151,11 @@ func (m *Map) SetNewParent(o, p Object) bool {
 		}
 	}
 	if addFailed {
-		// Make our best effort to not leak the object
-		o.SetParent(oldParent)
+		// Don't leak the object
 		if oldParent == nil {
-			world.Map().AddObject(o)
+			world.Map().ForceAddObject(o)
 		} else {
-			oldParent.AddObject(o)
+			oldParent.ForceAddObject(o)
 		}
 		return false
 	}
@@ -256,7 +254,6 @@ func (m *Map) ForceAddObject(o Object) {
 	// If this is a mobile with a NetState we have to send all of the items
 	// and mobiles in range.
 	if mob, ok := o.(Mobile); ok && mob.NetState() != nil {
-		m.RemoveEverything(mob)
 		m.SendEverything(mob)
 	}
 }

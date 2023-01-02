@@ -417,47 +417,21 @@ func (m *BaseMobile) doAddObject(obj Object, force bool) bool {
 	if obj == nil {
 		return force
 	}
-	// Try to force the object into the backpack
-	item, ok := obj.(Item)
-	if !ok {
-		log.Println("SHOULD NOT GET HERE")
-		return false
-	}
-	backpackObj := m.equipment.GetItemInLayer(uo.LayerBackpack)
-	if backpackObj == nil {
-		log.Println("SHOULD NOT GET HERE")
-		return false
-	}
-	backpack := backpackObj.(Container)
-	if backpack == nil {
-		log.Println("SHOULD NOT GET HERE")
-		return false
-	}
-	if force {
-		backpack.ForceAddObject(item)
-		return true
-	} else {
-		return backpack.AddObject(item)
-	}
-}
-
-// ForceAddObject implements the Object interface.
-func (m *BaseMobile) ForceAddObject(obj Object) {
-	m.doAddObject(obj, true)
-}
-
-// AddObject adds the object to the mobile. It returns true if successful.
-func (m *BaseMobile) AddObject(o Object) bool {
-	if o == nil {
-		return true
-	}
 	// Handle items coming in from other sources
-	if m.cursor.item == nil || m.cursor.item.Serial() != o.Serial() {
-		return m.doAddObject(o, false)
+	if m.cursor.item == nil || m.cursor.item.Serial() != obj.Serial() {
+		// Try to equip the item
+		if wearable, ok := obj.(Wearable); ok {
+			if m.doEquip(wearable, force) {
+				return true
+			}
+		}
+		// Try to force the object into the backpack
+		return m.DropToBackpack(obj, force)
 	}
 	// Handle item on cursor
 	if m.cursor.State == CursorStatePickUp {
 		// This is the object we are currently picking up, accept it
+		obj.SetParent(m)
 		return true
 	}
 	if m.cursor.State == CursorStateReturn {
@@ -465,7 +439,7 @@ func (m *BaseMobile) AddObject(o Object) bool {
 		m.cursor.Return()
 	}
 	if m.cursor.State == CursorStateEquip {
-		w, ok := o.(Wearable)
+		w, ok := obj.(Wearable)
 		if !ok {
 			return false
 		}
@@ -480,6 +454,16 @@ func (m *BaseMobile) AddObject(o Object) bool {
 	// Should never get here
 	log.Println("SHOULD NOT GET HERE")
 	return false
+}
+
+// ForceAddObject implements the Object interface.
+func (m *BaseMobile) ForceAddObject(obj Object) {
+	m.doAddObject(obj, true)
+}
+
+// AddObject adds the object to the mobile. It returns true if successful.
+func (m *BaseMobile) AddObject(o Object) bool {
+	return m.doAddObject(o, false)
 }
 
 // doRemove removes the object from the mobile, forcefully if requested.
@@ -538,12 +522,29 @@ func (m *BaseMobile) DropToBackpack(o Object, force bool) bool {
 	item, ok := o.(Item)
 	if !ok {
 		// Something is very wrong
-		return false
+		if force {
+			log.Printf("error: Mobile.DropToBackpack(force) leaked object %s because it was not an item", o.Serial().String())
+			world.Remove(o)
+		}
+		return force
 	}
-	backpack, ok := m.equipment.GetItemInLayer(uo.LayerBackpack).(Container)
+	backpackObj := m.equipment.GetItemInLayer(uo.LayerBackpack)
+	if backpackObj == nil {
+		// Something is very wrong
+		if force {
+			log.Printf("error: Mobile.DropToBackpack(force) leaked object %s because the backpack was not found", o.Serial().String())
+			world.Remove(o)
+		}
+		return force
+	}
+	backpack, ok := backpackObj.(Container)
 	if !ok {
 		// Something is very wrong
-		return false
+		if force {
+			log.Printf("error: Mobile.DropToBackpack(force) leaked object %s because the backpack was not a container", o.Serial().String())
+			world.Remove(o)
+		}
+		return force
 	}
 	if !force {
 		return backpack.AddObject(item)
@@ -562,13 +563,17 @@ func (m *BaseMobile) doEquip(w Wearable, force bool) bool {
 	}
 	existing := m.equipment.GetItemInLayer(w.Layer())
 	if force {
+		w.SetParent(m)
 		m.equipment.equipment[w.Layer()] = w
 		if existing != nil {
 			log.Printf("error: leaked object %s during force-equip", existing.Serial().String())
+			existing.SetParent(TheVoid)
+			world.Remove(existing)
 		}
 	} else if !m.equipment.Equip(w) {
-		return force
+		return false
 	}
+	w.SetParent(m)
 	// Send the WearItem packet to all netstates in range, including our own
 	for _, mob := range world.Map().GetNetStatesInRange(m.Location(), uo.MaxViewRange) {
 		if mob.Location().XYDistance(m.Location()) <= mob.ViewRange() {
