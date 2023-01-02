@@ -112,3 +112,13 @@ func (c *ContainerItem) AddObject(o Object) bool {
 func (c *ContainerItem) Weight() float32 {
 	return c.BaseItem.Weight() + c.ContentWeight()
 }
+
+// AdjustWeightAndCount implements the Container interface.
+func (c *ContainerItem) AdjustWeightAndCount(w float32, n int) {
+	c.contentWeight += w
+	c.contentItems += n
+	if container, ok := c.parent.(Container); ok {
+		container.AdjustWeightAndCount(w, n)
+	}
+	world.Update(c)
+}

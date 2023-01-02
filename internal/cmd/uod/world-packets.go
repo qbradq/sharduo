@@ -150,10 +150,23 @@ func handleLiftRequest(n *NetState, cp clientpacket.Packet) {
 		return
 	}
 	// TODO Line of sight check
-	toLift := item.Split(p.Amount)
-	if !n.m.SetItemInCursor(toLift) {
-		n.DropReject(uo.MoveItemRejectReasonUnspecified)
+	oldParent := item.Parent()
+	leftBehind := item.Split(p.Amount)
+	if leftBehind == nil {
+		if !n.m.SetItemInCursor(item) {
+			n.DropReject(uo.MoveItemRejectReasonUnspecified)
+		}
 		return
+	} else {
+		if !n.m.SetItemInCursor(item) {
+			n.DropReject(uo.MoveItemRejectReasonUnspecified)
+			return
+		}
+		if oldParent == nil {
+			world.Map().ForceAddObject(leftBehind)
+		} else {
+			oldParent.ForceAddObject(leftBehind)
+		}
 	}
 }
 

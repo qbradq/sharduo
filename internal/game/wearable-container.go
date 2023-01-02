@@ -112,3 +112,13 @@ func (c *WearableContainer) AddObject(o Object) bool {
 func (c *WearableContainer) Weight() float32 {
 	return c.BaseItem.Weight() + c.ContentWeight()
 }
+
+// AdjustWeightAndCount implements the Container interface.
+func (c *WearableContainer) AdjustWeightAndCount(w float32, n int) {
+	c.contentWeight += w
+	c.contentItems += n
+	if container, ok := c.parent.(Container); ok {
+		container.AdjustWeightAndCount(w, n)
+	}
+	world.Update(c)
+}

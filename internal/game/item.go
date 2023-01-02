@@ -30,13 +30,13 @@ type Item interface {
 	// SetAmount sets the amount of the stack. If this is out of range it will
 	// be bounded to a sane value
 	SetAmount(int)
-	// Split splits off a number of the items in the stack and returns a new
-	// copy of the item with that amount. The amount of this item is adjusted
-	// accordingly. If the amount is less than one nil is returned. If the
-	// amount is greater than or equal to the number of items in this stack,
-	// this item is returned an a new one is not created. For non-stackable
-	// items this will always return this item. New objects created by this
-	// function have their parent set as this item upon return.
+	// Split splits off a number of items from a stack. nil is returned if
+	// n < 1 || n >= item.Amount(). nil is also returned for all non-stackable
+	// items. In the event of an error during duplication the error will be
+	// logged and nil will be returned. Otherwise a new duplicate item is
+	// created with the remaining amount and returned. The parent of this new
+	// item will be set to the parent of this item, and the parent of this item
+	// will be set to the new item.
 	Split(int) Item
 	// Combine adds the stack count of the given item to this item, then
 	// destroys the given item. Returns false on failure. Failure can happen
@@ -185,16 +185,9 @@ func (i *BaseItem) SetAmount(n int) {
 
 // Split implements the Item interface.
 func (i *BaseItem) Split(n int) Item {
-	// Sanity checking
-	if !i.stackable {
-		return i
-	}
-	// Bounds checking
-	if n < 1 {
+	// No new item required in these cases
+	if !i.stackable || n < 1 || n >= i.amount {
 		return nil
-	}
-	if n >= i.amount {
-		return i
 	}
 	// Create the new item
 	ni := world.New(i.templateName)
@@ -204,12 +197,20 @@ func (i *BaseItem) Split(n int) Item {
 	}
 	item, ok := ni.(Item)
 	if !ok {
+		log.Println("error: Item.Split() duplicate object was not an item")
 		return nil
 	}
-	// Update stack amounts
-	i.amount -= n
-	item.SetAmount(n)
-	world.Update(i)
+	// Update parents if needed
+	if container, ok := i.parent.(Container); ok {
+		container.AdjustWeightAndCount(i.weight*float32(-n), -n)
+	}
+	// Setup new item
+	item.SetAmount(i.amount - n)
+	i.amount = n
+	item.SetLocation(i.location)
+	item.SetDropLocation(i.location)
+	item.SetParent(i.parent)
+	i.parent = item
 	return item
 }
 

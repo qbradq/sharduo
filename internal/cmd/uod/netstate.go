@@ -273,17 +273,32 @@ func (n *NetState) SendObject(o game.Object) {
 		if layerer, ok := item.(game.Layerer); ok {
 			layer = layerer.Layer()
 		}
-		n.Send(&serverpacket.ObjectInfo{
-			Serial:           item.Serial(),
-			Graphic:          item.BaseGraphic(),
-			GraphicIncrement: item.GraphicOffset(),
-			Amount:           item.Amount(),
-			X:                item.Location().X,
-			Y:                item.Location().Y,
-			Z:                item.Location().Z,
-			Layer:            layer,
-			Hue:              item.Hue(),
-		})
+		if container, ok := item.Parent().(game.Container); ok {
+			// Item in container
+			n.Send(&serverpacket.AddItemToContainer{
+				Item:          item.Serial(),
+				Graphic:       item.BaseGraphic(),
+				GraphicOffset: item.GraphicOffset(),
+				Amount:        item.Amount(),
+				X:             item.Location().X,
+				Y:             item.Location().Y,
+				Container:     container.Serial(),
+				Hue:           item.Hue(),
+			})
+		} else {
+			// Item on ground
+			n.Send(&serverpacket.ObjectInfo{
+				Serial:           item.Serial(),
+				Graphic:          item.BaseGraphic(),
+				GraphicIncrement: item.GraphicOffset(),
+				Amount:           item.Amount(),
+				X:                item.Location().X,
+				Y:                item.Location().Y,
+				Z:                item.Location().Z,
+				Layer:            layer,
+				Hue:              item.Hue(),
+			})
+		}
 	} else if mobile, ok := o.(game.Mobile); ok {
 		flags := uo.MobileFlagNone
 		if mobile.IsFemale() {

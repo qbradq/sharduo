@@ -32,6 +32,9 @@ type Container interface {
 	// RemoveObserver removes an observer from this container's list of
 	// containers.
 	RemoveObserver(o ContainerObserver)
+	// AdjustWeightAndCount adds to the cached total weight and item count of
+	// the container.
+	AdjustWeightAndCount(float32, int)
 }
 
 // BaseContainer implements the base implementation of the Container interface.
@@ -103,26 +106,37 @@ func (c *BaseContainer) RecalculateStats() {
 // GumpGraphic implements the Container interface.
 func (c *BaseContainer) GumpGraphic() uo.Gump { return c.gump }
 
-// RemoveObject implements the Object interface.
-func (c *BaseContainer) RemoveObject(o Object) bool {
+// doRemove removes an object forcefully if requested
+func (c *BaseContainer) doRemove(o Object, force bool) bool {
 	// Only items go into containers
 	item, ok := o.(Item)
 	if !ok {
-		return false
+		return force
 	}
 	// This avoids a duplicate call to IndexOf
 	oldLength := len(c.contents)
 	c.contents = c.contents.Remove(item)
 	if len(c.contents) == oldLength {
-		return false
+		return force
 	}
 	c.contentWeight -= item.Weight()
 	c.contentItems--
 	if container, ok := item.(Container); ok {
-		c.contentWeight += container.ContentWeight()
 		c.contentItems -= container.ItemCount()
 	}
+
 	return true
+
+}
+
+// RemoveObject implements the Object interface.
+func (c *BaseContainer) RemoveObject(o Object) bool {
+	return c.doRemove(o, false)
+}
+
+// ForceRemoveObject implements the Object interface.
+func (c *BaseContainer) ForceRemoveObject(o Object) {
+	c.doRemove(o, true)
 }
 
 // AddObject implements the Object interface.

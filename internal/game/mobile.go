@@ -525,16 +525,15 @@ func (m *BaseMobile) AddObject(o Object) bool {
 	return false
 }
 
-// RemoveObject removes the object from the mobile. It returns true if
-// successful.
-func (m *BaseMobile) RemoveObject(o Object) bool {
+// doRemove removes the object from the mobile, forcefully if requested.
+func (m *BaseMobile) doRemove(o Object, force bool) bool {
 	if o == nil {
 		return true
 	}
 	item, ok := o.(Item)
 	if !ok {
 		// We don't own non-item objects
-		return false
+		return force
 	}
 	if wearable, ok := o.(Wearable); ok && m.equipment.Contains(wearable) {
 		// We are trying to remove equipment, try to unequip it
@@ -550,6 +549,12 @@ func (m *BaseMobile) RemoveObject(o Object) bool {
 	// If we are removing the cursor item we return true, otherwise we do not
 	// own the object and return false.
 	return m.cursor.item.Serial() == item.Serial()
+
+}
+
+// RemoveObject removes the object from the mobile. It returns true if
+// successful.
+func (m *BaseMobile) RemoveObject(o Object) bool {
 }
 
 // DropObject implements the Object interface

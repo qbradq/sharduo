@@ -221,7 +221,7 @@ func (o *BaseObject) RecalculateStats() {}
 // RemoveObject implements the Object interface
 func (o *BaseObject) RemoveObject(c Object) bool {
 	// BaseObject has no child references
-	return false
+	return true
 }
 
 // AddObject implements the Object interface
