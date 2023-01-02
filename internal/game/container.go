@@ -230,13 +230,25 @@ func (c *BaseContainer) ForceAddObject(o Object) {
 	if c.contents.Contains(item) {
 		return
 	}
+	// Determine if we should try to auto-stack the item
+	l := item.DropLocation()
+	if item.Stackable() && l.X == uo.RandomX && l.Y == uo.RandomY {
+		weightDelta := item.Weight()
+		for _, i := range c.contents {
+			if i.CanCombineWith(item) && i.Combine(item) {
+				c.AdjustWeightAndCount(weightDelta, 0)
+				return
+			}
+		}
+		// Never successfully combined with a stack, continue to normal
+		// placement.
+	}
 	addedItems := 1
 	addedWeight := item.Weight()
 	if container, ok := item.(Container); ok {
 		addedItems += container.ItemCount()
 	}
 	// Location bounding
-	l := item.DropLocation()
 	if l.X == uo.RandomX {
 		l.X = world.Random().Random(c.bounds.X, c.bounds.X+c.bounds.W-1)
 	}
