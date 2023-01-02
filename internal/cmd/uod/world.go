@@ -326,9 +326,16 @@ func (w *World) Find(id uo.Serial) game.Object {
 func (w *World) Remove(o game.Object) {
 	p := o.Parent()
 	if p == nil {
+		for _, m := range w.m.GetNetStatesInRange(o.Location(), uo.MaxViewRange) {
+			m.NetState().RemoveObject(o)
+		}
 		w.m.ForceRemoveObject(o)
 	} else {
-		p.ForceRemoveObject(o)
+		if container, ok := o.(game.Container); ok {
+			container.ForceRemoveObject(o)
+		} else {
+			p.ForceRemoveObject(o)
+		}
 	}
 	o.SetParent(game.TheVoid)
 	w.ods.Remove(o)

@@ -406,6 +406,9 @@ func (n *NetState) DragItem(item game.Item, srcMob game.Mobile,
 	if item == nil {
 		return
 	}
+	if srcLoc.X == destLoc.X && srcLoc.Y == destLoc.Y && srcLoc.Z == destLoc.Z {
+		return
+	}
 	srcSerial := uo.SerialSystem
 	destSerial := uo.SerialSystem
 	if srcMob != nil {
@@ -413,6 +416,9 @@ func (n *NetState) DragItem(item game.Item, srcMob game.Mobile,
 	}
 	if destMob != nil {
 		destSerial = destMob.Serial()
+	}
+	if srcSerial != uo.SerialSystem && srcSerial == destSerial {
+		return
 	}
 	n.Send(&serverpacket.DragItem{
 		Graphic:             item.BaseGraphic(),

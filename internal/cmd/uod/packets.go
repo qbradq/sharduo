@@ -29,10 +29,6 @@ type PacketContext struct {
 
 var embeddedHandlers = util.NewRegistry[uo.Serial, func(*PacketContext)]("client-packets")
 
-func ignorePacket(c *PacketContext) {
-	// Do nothing
-}
-
 func handleClientPing(c *PacketContext) {
 	p := c.Packet.(*clientpacket.Ping)
 	c.NetState.Send(&serverpacket.Ping{

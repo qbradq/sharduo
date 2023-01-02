@@ -150,23 +150,9 @@ func handleLiftRequest(n *NetState, cp clientpacket.Packet) {
 		return
 	}
 	// TODO Line of sight check
-	oldParent := item.Parent()
-	leftBehind := item.Split(p.Amount)
-	if leftBehind == nil {
-		if !n.m.SetItemInCursor(item) {
-			n.DropReject(uo.MoveItemRejectReasonUnspecified)
-		}
-		return
-	} else {
-		if !n.m.SetItemInCursor(item) {
-			n.DropReject(uo.MoveItemRejectReasonUnspecified)
-			return
-		}
-		if oldParent == nil {
-			world.Map().ForceAddObject(leftBehind)
-		} else {
-			oldParent.ForceAddObject(leftBehind)
-		}
+	item.Split(p.Amount)
+	if !n.m.PickUp(item) {
+		n.DropReject(uo.MoveItemRejectReasonUnspecified)
 	}
 }
 
@@ -199,7 +185,7 @@ func handleDropRequest(n *NetState, cp clientpacket.Packet) {
 			n.DropReject(uo.MoveItemRejectReasonUnspecified)
 			return
 		} else {
-			n.m.SetItemInCursor(nil)
+			n.m.PickUp(nil)
 			n.Send(&serverpacket.DropApproved{})
 			for _, mob := range world.Map().GetNetStatesInRange(n.m.Location(), uo.MaxViewRange) {
 				mob.NetState().DragItem(item, n.m, n.m.Location(), nil, newLocation)
@@ -223,11 +209,11 @@ func handleDropRequest(n *NetState, cp clientpacket.Packet) {
 			Y: p.Y,
 		}
 		if !target.DropObject(item, dropTarget, n.m) {
-			n.m.SetItemInCursor(nil)
+			n.m.PickUp(nil)
 			n.DropReject(uo.MoveItemRejectReasonUnspecified)
 			return
 		}
-		n.m.SetItemInCursor(nil)
+		n.m.PickUp(nil)
 		n.Send(&serverpacket.DropApproved{})
 		for _, mob := range world.Map().GetNetStatesInRange(n.m.Location(), uo.MaxViewRange) {
 			mob.NetState().DragItem(item, n.m, n.m.Location(), nil, newLocation)
@@ -264,12 +250,12 @@ func handleWearItemRequest(n *NetState, cp clientpacket.Packet) {
 	// add it to the other mobile's equipment, or not.
 	n.m.RequestCursorState(game.CursorStateEquip)
 	if !n.m.Equip(wearable) {
-		n.m.SetItemInCursor(nil)
+		n.m.PickUp(nil)
 		n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		return
 	} else {
 		n.Send(&serverpacket.DropApproved{})
 	}
-	n.m.SetItemInCursor(nil)
+	n.m.PickUp(nil)
 	n.Send(&serverpacket.DropApproved{})
 }

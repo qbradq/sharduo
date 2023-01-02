@@ -56,6 +56,19 @@ func (c *Cursor) Return() {
 	if oldParent == nil {
 		world.Map().ForceAddObject(item)
 	} else {
+		if itemParent, ok := oldParent.(Item); ok {
+			if itemParent.Combine(item) {
+				return
+			}
+			// Else we need to try to force the item into the parent of the old
+			// parent
+			if oldParent.Parent() == nil {
+				world.Map().ForceAddObject(item)
+			} else {
+				oldParent.Parent().ForceAddObject(item)
+			}
+			return
+		}
 		oldParent.ForceAddObject(item)
 	}
 }

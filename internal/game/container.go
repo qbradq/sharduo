@@ -1,11 +1,16 @@
 package game
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
 )
+
+func init() {
+	ObjectFactory.RegisterCtor(func(v any) util.Serializeable { return &BaseContainer{} })
+}
 
 // Container is the interface all objects implement that can contain other
 // other objects within an inventory.
@@ -39,6 +44,7 @@ type Container interface {
 
 // BaseContainer implements the base implementation of the Container interface.
 type BaseContainer struct {
+	BaseItem
 	// Contents of the container
 	contents util.Slice[Item]
 	// Gump image to show for the container background
@@ -57,8 +63,14 @@ type BaseContainer struct {
 	bounds uo.Bounds
 }
 
+// TypeName implements the util.Serializeable interface.
+func (o *BaseContainer) TypeName() string {
+	return "BaseContainer"
+}
+
 // Serialize implements the util.Serializeable interface.
 func (c *BaseContainer) Serialize(f *util.TagFileWriter) {
+	c.BaseItem.Serialize(f)
 	f.WriteHex("Gump", uint32(c.gump))
 	f.WriteFloat("MaxContainerWeight", c.maxContainerWeight)
 	f.WriteNumber("MaxContainerItems", c.maxContainerItems)
@@ -68,6 +80,7 @@ func (c *BaseContainer) Serialize(f *util.TagFileWriter) {
 
 // Deserialize implements the util.Serializeable interface.
 func (c *BaseContainer) Deserialize(f *util.TagFileObject) {
+	c.BaseItem.Deserialize(f)
 	c.gump = uo.Gump(f.GetHex("Gump", uint32(0x003C)))
 	c.maxContainerWeight = f.GetFloat("MaxContainerWeight", float32(uo.DefaultMaxContainerWeight))
 	c.maxContainerItems = f.GetNumber("MaxContainerItems", uo.DefaultMaxContainerItems)
@@ -76,6 +89,7 @@ func (c *BaseContainer) Deserialize(f *util.TagFileObject) {
 
 // OnAfterDeserialize implements the util.Serializeable interface.
 func (c *BaseContainer) OnAfterDeserialize(t *util.TagFileObject) {
+	c.BaseItem.OnAfterDeserialize(t)
 	for _, serial := range t.GetObjectReferences("Contents") {
 		o := world.Find(serial)
 		if o == nil {
@@ -106,6 +120,39 @@ func (c *BaseContainer) RecalculateStats() {
 // GumpGraphic implements the Container interface.
 func (c *BaseContainer) GumpGraphic() uo.Gump { return c.gump }
 
+// SingleClick implements the Object interface
+func (c *BaseContainer) SingleClick(from Mobile) {
+	// Default action is to send the name as over-head text
+	if from.NetState() != nil {
+		// TODO send cliloc 1050044
+		str := fmt.Sprintf("%s\n%d/%d items, %d/%d stones", c.DisplayName(),
+			c.ItemCount(), c.maxContainerItems,
+			int(c.contentWeight), int(c.maxContainerWeight))
+		from.NetState().Speech(c, str)
+	}
+}
+
+// Doubleclick implements the object interface.
+func (c *BaseContainer) DoubleClick(from Mobile) {
+	// TODO access calculations
+	if from.NetState() != nil {
+		if c.observers.IndexOf(from) < 0 {
+			c.observers = c.observers.Append(from)
+		}
+		from.NetState().OpenContainer(c)
+	}
+}
+
+// DropObject implements the Object interface.
+func (c *BaseContainer) DropObject(o Object, l uo.Location, from Mobile) bool {
+	// TODO Access calculations
+	if item, ok := o.(Item); ok {
+		item.SetDropLocation(l)
+		return world.Map().SetNewParent(o, c)
+	}
+	return false
+}
+
 // doRemove removes an object forcefully if requested
 func (c *BaseContainer) doRemove(o Object, force bool) bool {
 	// Only items go into containers
@@ -119,14 +166,16 @@ func (c *BaseContainer) doRemove(o Object, force bool) bool {
 	if len(c.contents) == oldLength {
 		return force
 	}
-	c.contentWeight -= item.Weight()
-	c.contentItems--
-	if container, ok := item.(Container); ok {
-		c.contentItems -= container.ItemCount()
+	itemsRemoved := 1
+	if container, ok := o.(Container); ok {
+		itemsRemoved += container.ItemCount()
 	}
-
+	c.AdjustWeightAndCount(-item.Weight(), -itemsRemoved)
+	// Broadcast the item removal
+	for _, observer := range c.observers {
+		observer.ContainerItemRemoved(c, item)
+	}
 	return true
-
 }
 
 // RemoveObject implements the Object interface.
@@ -207,10 +256,17 @@ func (c *BaseContainer) ForceAddObject(o Object) {
 		l.Y = c.bounds.Y + c.bounds.H - 1
 	}
 	// Add the item to our contents
+	item.SetLocation(l)
 	c.contents = c.contents.Append(item)
 	c.contentWeight += addedWeight
 	c.contentItems += addedItems
-	item.SetLocation(l)
+	if container, ok := c.parent.(Container); ok {
+		container.AdjustWeightAndCount(addedWeight, addedItems)
+	}
+	// Let all the observers know about the new item
+	for _, observer := range c.observers {
+		observer.ContainerItemAdded(c, item)
+	}
 }
 
 // Contains implements the Container interface.
@@ -238,6 +294,21 @@ func (c *BaseContainer) ContentWeight() float32 { return c.contentWeight }
 
 // ItemCount implements the Container interface.
 func (c *BaseContainer) ItemCount() int { return c.contentItems }
+
+// Weight implements the Object interface.
+func (c *BaseContainer) Weight() float32 {
+	return c.BaseItem.Weight() + c.ContentWeight()
+}
+
+// AdjustWeightAndCount implements the Container interface.
+func (c *BaseContainer) AdjustWeightAndCount(w float32, n int) {
+	c.contentWeight += w
+	c.contentItems += n
+	if container, ok := c.parent.(Container); ok {
+		container.AdjustWeightAndCount(w, n)
+	}
+	world.Update(c)
+}
 
 // MapContents implements the Container interface.
 func (c *BaseContainer) MapContents(fn func(Item) error) []error {

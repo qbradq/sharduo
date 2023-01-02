@@ -70,23 +70,28 @@ func Initialize() {
 	// Load client data files
 	log.Println("loading client files...")
 	tiledatamul = file.NewTileDataMul(path.Join(configuration.ClientFilesDirectory, "tiledata.mul"))
-	if tiledatamul == nil {
-		os.Exit(1)
-	}
 	mapmul := file.NewMapMulFromFile(path.Join(configuration.ClientFilesDirectory, "map0.mul"), tiledatamul)
 	staticsmul := file.NewStaticsMulFromFile(
 		path.Join(configuration.ClientFilesDirectory, "staidx0.mul"),
 		path.Join(configuration.ClientFilesDirectory, "statics0.mul"),
 		tiledatamul)
 	if tiledatamul == nil || mapmul == nil || staticsmul == nil {
-		os.Exit(1)
+		if tiledatamul == nil {
+			log.Fatal("failed to load tiledata.mul")
+		}
+		if mapmul == nil {
+			log.Fatal("failed to load map0.mul")
+		}
+		if staticsmul == nil {
+			log.Fatal("failed to load statics0.mul")
+		}
 	}
 
 	if configuration.GenerateDebugMaps {
 		log.Println("generating debug map...")
 		rcolmul := file.NewRadarColMulFromFile(path.Join(configuration.ClientFilesDirectory, "radarcol.mul"))
 		if rcolmul == nil {
-			os.Exit(2)
+			log.Fatal("failed to load radarcol.mul")
 		}
 		rcols := rcolmul.Colors()
 		mapimg := image.NewRGBA(image.Rect(0, 0, uo.MapWidth, uo.MapHeight))
@@ -135,8 +140,7 @@ func Initialize() {
 		if errors.Is(err, os.ErrNotExist) {
 			log.Println("warning: no save files found")
 		} else {
-			log.Println("error while trying to load data stores from main goroutine", err)
-			os.Exit(1)
+			log.Fatal("error while trying to load data stores from main goroutine", err)
 		}
 	}
 }
@@ -163,8 +167,7 @@ func Main() {
 		c, err := l.AcceptTCP()
 		if err != nil {
 			if err := world.Save(); err != nil {
-				log.Println("error while trying to save data stores from main goroutine", err)
-				os.Exit(1)
+				log.Fatal("error while trying to save data stores from main goroutine", err)
 			}
 			if errors.Is(err, io.EOF) {
 				break

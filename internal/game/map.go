@@ -251,14 +251,12 @@ func (m *Map) ForceAddObject(o Object) {
 	c.Add(o)
 	// Send the new object to all mobiles in range with an attached net state
 	for _, mob := range m.GetNetStatesInRange(o.Location(), uo.MaxViewRange) {
-		if mob.NetState() == nil {
-			continue
-		}
 		mob.NetState().SendObject(o)
 	}
 	// If this is a mobile with a NetState we have to send all of the items
 	// and mobiles in range.
 	if mob, ok := o.(Mobile); ok && mob.NetState() != nil {
+		m.RemoveEverything(mob)
 		m.SendEverything(mob)
 	}
 }

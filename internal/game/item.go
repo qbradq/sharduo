@@ -34,16 +34,18 @@ type Item interface {
 	// n < 1 || n >= item.Amount(). nil is also returned for all non-stackable
 	// items. In the event of an error during duplication the error will be
 	// logged and nil will be returned. Otherwise a new duplicate item is
-	// created with the remaining amount and returned. The parent of this new
-	// item will be set to the parent of this item, and the parent of this item
-	// will be set to the new item.
+	// created with the remaining amount. This item is removed from its parent.
+	// If this remove operation fails this function returns nil. The new
+	// object is then force-added to the old parent in the same location.
+	// The parent of this item is then set to the new item. If nil is returned
+	// this item's amount and parent has not changed.
 	Split(int) Item
-	// Combine adds the stack count of the given item to this item, then
-	// destroys the given item. Returns false on failure. Failure can happen
-	// if this item does not support stacking - see Stackable() - the items are
+	// Combine adds the amount of this item to the amount of the other item,
+	// then replaces itself with that other item. Returns false on failure.
+	// Failure can happen if this item does not support stacking, the items are
 	// not from the same template object, or the combined amounts would be
-	// greater than uo.MaxStackAmount. If this function returns true the other
-	// object has been totally removed from the world and data stores.
+	// greater than uo.MaxStackAmount. If this function returns true this item
+	// has been totally removed from the world and data stores.
 	Combine(Item) bool
 	// Height returns the height of the item
 	Height() int
@@ -200,17 +202,32 @@ func (i *BaseItem) Split(n int) Item {
 		log.Println("error: Item.Split() duplicate object was not an item")
 		return nil
 	}
+	// Remove this item from its parent
+	failed := false
+	if i.parent == nil {
+		failed = !world.Map().RemoveObject(i)
+	} else {
+		failed = !i.parent.RemoveObject(i)
+	}
+	if failed {
+		return nil
+	}
+	item.SetAmount(i.amount - n)
+	i.amount = n
+	// Force the remainder back where we came from
+	item.SetLocation(i.location)
+	item.SetDropLocation(i.location)
+	if i.parent == nil {
+		world.Map().ForceAddObject(item)
+	} else {
+		i.parent.ForceAddObject(item)
+	}
+	item.SetParent(i.parent)
+	i.parent = item
 	// Update parents if needed
 	if container, ok := i.parent.(Container); ok {
 		container.AdjustWeightAndCount(i.weight*float32(-n), -n)
 	}
-	// Setup new item
-	item.SetAmount(i.amount - n)
-	i.amount = n
-	item.SetLocation(i.location)
-	item.SetDropLocation(i.location)
-	item.SetParent(i.parent)
-	i.parent = item
 	return item
 }
 
@@ -227,9 +244,15 @@ func (i *BaseItem) Combine(other Item) bool {
 		return false
 	}
 	// Update stack amounts
-	i.amount += other.Amount()
-	world.Remove(other)
-	world.Update(i)
+	other.SetAmount(other.Amount() + i.amount)
+	other.SetLocation(i.location)
+	other.SetDropLocation(i.location)
+	if i.parent == nil {
+		world.Map().ForceAddObject(other)
+	} else {
+		i.parent.ForceAddObject(other)
+	}
+	world.Remove(i)
 	return true
 }
 
