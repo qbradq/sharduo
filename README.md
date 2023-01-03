@@ -28,12 +28,12 @@ including all features required to mine ore and smelt it into ingots.
 * ~~Container handling~~
 * Spacial chat with speaking, yelling, and whispering
 * Mobile weight limit
-* Stat updates
+* ~~Stat updates~~
 * Skill updates
 * ~~Stackable items~~
 
 ### Nice to Haves ###
-* Gold
+* ~~Gold~~
 * NPC Vendors
 * Stable Master NPC
 * Smelter NPC

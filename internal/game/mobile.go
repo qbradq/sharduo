@@ -53,6 +53,8 @@ type Mobile interface {
 	MaxStamina() int
 	// Gold returns the amount of gold within the mobile's backpack
 	Gold() int
+	// AdjustGold adds n to the total amount of gold on the mobile
+	AdjustGold(int)
 
 	//
 	// AI-related values
@@ -389,9 +391,13 @@ func (m *BaseMobile) MaxStamina() int { return m.Dexterity() }
 // Gold implements the Mobile interface.
 func (m *BaseMobile) Gold() int { return m.gold }
 
+// AdjustGold implements the Mobile interface.
+func (m *BaseMobile) AdjustGold(n int) { m.gold += n }
+
+// ItemInCursor implements the Mobile interface.
 func (m *BaseMobile) ItemInCursor() Item { return m.cursor.Item() }
 
-// Returns true if the mobile's cursor has an item on it.
+// IsItemInCursor implements the Mobile interface.
 func (m *BaseMobile) IsItemOnCursor() bool { return m.cursor.Occupied() }
 
 // RequestCursorState implements the Mobile interface.
@@ -417,6 +423,31 @@ func (m *BaseMobile) DropItemInCursor() {
 // RecalculateStats implements the Object interface.
 func (m *BaseMobile) RecalculateStats() {
 	m.equipment.recalculateStats()
+	// Update gold amount
+	backpackObj := m.equipment.GetItemInLayer(uo.LayerBackpack)
+	if backpackObj == nil {
+		log.Printf("error: mobile %s has no backpack", m.Serial().String())
+		return
+	}
+	backpack, ok := backpackObj.(Container)
+	if !ok {
+		log.Printf("error: mobile %s backpack was not a container", m.Serial().String())
+		return
+	}
+
+	m.gold = 0
+	var fn func(Container)
+	fn = func(c Container) {
+		c.MapContents(func(item Item) error {
+			if container, ok := item.(Container); ok {
+				fn(container)
+			} else if item.TemplateName() == "GoldCoin" {
+				m.gold += item.Amount()
+			}
+			return nil
+		})
+	}
+	fn(backpack)
 }
 
 // PickUp attempts to pick up the object. Returns true if successful.

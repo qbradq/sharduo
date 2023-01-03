@@ -171,6 +171,10 @@ func (c *BaseContainer) doRemove(o Object, force bool) bool {
 	for _, observer := range c.observers {
 		observer.ContainerItemRemoved(c, item)
 	}
+	// Gold calculations
+	if mobile, ok := c.RootParent().(Mobile); ok && item.TemplateName() == "GoldCoin" {
+		mobile.AdjustGold(-item.Amount())
+	}
 	return true
 }
 
@@ -233,10 +237,8 @@ func (c *BaseContainer) ForceAddObject(o Object) {
 	// Determine if we should try to auto-stack the item
 	l := item.DropLocation()
 	if item.Stackable() && l.X == uo.RandomX && l.Y == uo.RandomY {
-		weightDelta := item.Weight()
 		for _, i := range c.contents {
 			if i.CanCombineWith(item) && i.Combine(item) {
-				c.AdjustWeightAndCount(weightDelta, 0)
 				return
 			}
 		}
@@ -274,6 +276,10 @@ func (c *BaseContainer) ForceAddObject(o Object) {
 	// Let all the observers know about the new item
 	for _, observer := range c.observers {
 		observer.ContainerItemAdded(c, item)
+	}
+	// Gold calculations
+	if mobile, ok := c.RootParent().(Mobile); ok && item.TemplateName() == "GoldCoin" {
+		mobile.AdjustGold(item.Amount())
 	}
 }
 

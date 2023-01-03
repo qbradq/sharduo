@@ -357,7 +357,7 @@ func (n *NetState) updateMobile(mobile game.Mobile) {
 		MaxStamina:     mobile.MaxStamina(),
 		Mana:           mobile.Mana(),
 		MaxMana:        mobile.MaxMana(),
-		Gold:           0,
+		Gold:           mobile.Gold(),
 		ArmorRating:    0,
 		Weight:         int(mobile.Weight()),
 		StatsCap:       uo.StatsCapDefault,

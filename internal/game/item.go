@@ -269,10 +269,13 @@ func (i *BaseItem) Combine(other Item) bool {
 	other.SetAmount(other.Amount() + i.amount)
 	other.SetLocation(i.location)
 	other.SetDropLocation(i.location)
-	if i.parent == nil {
+	iparent := i.parent
+	if iparent == nil {
+		world.Map().ForceRemoveObject(i)
 		world.Map().ForceAddObject(other)
 	} else {
-		i.parent.ForceAddObject(other)
+		iparent.ForceRemoveObject(i)
+		iparent.ForceAddObject(other)
 	}
 	world.Remove(i)
 	return true
