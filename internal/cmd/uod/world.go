@@ -407,7 +407,7 @@ func (w *World) Process() {
 			// Update objects
 			for o := range w.updateList {
 				for _, m := range w.m.GetNetStatesInRange(o.Location(), uo.MaxViewRange) {
-					m.NetState().SendObject(o)
+					m.NetState().UpdateObject(o)
 				}
 			}
 			for o := range w.updateList {

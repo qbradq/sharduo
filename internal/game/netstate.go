@@ -24,8 +24,11 @@ type NetState interface {
 	RemoveObject(Object)
 	// DrawPlayer sends a DrawPlayer packet for the attached mobile if any
 	DrawPlayer()
-	// UpdateMobile sends an UpdateMobile packet for the given mobile
-	UpdateMobile(Mobile)
+	// UpdateObject sends packets to update the stats of an object
+	UpdateObject(Object)
+	// MoveMobile sends an MoveMobile packet for the given mobile
+	MoveMobile(Mobile)
+	// UpdateMobile sends a
 	// WordItem sends the WornItem packet to the given mobile
 	WornItem(Wearable, Mobile)
 	// DragItem sends a DragItem packet

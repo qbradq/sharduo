@@ -2,6 +2,7 @@ package game
 
 import (
 	"log"
+	"strconv"
 
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
@@ -118,6 +119,8 @@ type BaseItem struct {
 	stackable bool
 	// Stack amount
 	amount int
+	// Name when there is more than one in the stack
+	plural string
 
 	//
 	// Non-persistent values
@@ -142,6 +145,7 @@ func (i *BaseItem) Serialize(f *util.TagFileWriter) {
 	f.WriteFloat("Weight", i.weight)
 	f.WriteBool("Stackable", i.stackable)
 	f.WriteNumber("Amount", i.amount)
+	f.WriteString("Plural", i.plural)
 }
 
 // Deserialize implements the util.Serializeable interface.
@@ -155,6 +159,7 @@ func (i *BaseItem) Deserialize(f *util.TagFileObject) {
 	i.weight = f.GetFloat("Weight", 255.0)
 	i.stackable = f.GetBool("Stackable", false)
 	i.amount = f.GetNumber("Amount", 1)
+	i.plural = f.GetString("Plural", "")
 }
 
 // BaseGraphic implements the Item interface.
@@ -185,6 +190,25 @@ func (i *BaseItem) SetAmount(n int) {
 		i.amount = int(uo.MaxStackAmount)
 	} else {
 		i.amount = n
+	}
+}
+
+// DisplayName implements the Object interface.
+func (i *BaseItem) DisplayName() string {
+	if i.amount > 1 {
+		if i.plural != "" {
+			return strconv.Itoa(i.amount) + " " + i.plural
+		}
+		return strconv.Itoa(i.amount) + " " + i.name
+	}
+	return i.BaseObject.DisplayName()
+}
+
+// SingleClick implements the Object interface
+func (o *BaseItem) SingleClick(from Mobile) {
+	// Default action is to send the name as over-head text
+	if from.NetState() != nil {
+		from.NetState().Speech(o, o.DisplayName())
 	}
 }
 

@@ -282,7 +282,7 @@ func (m *Map) MoveMobile(mob Mobile, dir uo.Direction) bool {
 	if mob.Facing() != dir {
 		mob.SetFacing(dir)
 		for _, othermob := range m.GetNetStatesInRange(mob.Location(), uo.MaxViewRange+1) {
-			othermob.NetState().UpdateMobile(mob)
+			othermob.NetState().MoveMobile(mob)
 		}
 		mob.AfterMove()
 		return true
@@ -316,7 +316,7 @@ func (m *Map) MoveMobile(mob Mobile, dir uo.Direction) bool {
 	// Now we need to check for attached net states that we might need to push
 	// the movement to
 	for _, othermob := range m.GetNetStatesInRange(mob.Location(), uo.MaxViewRange+1) {
-		othermob.NetState().UpdateMobile(mob)
+		othermob.NetState().MoveMobile(mob)
 	}
 	// TODO Trigger events for moving onto the tile
 	if oldChunk != newChunk {

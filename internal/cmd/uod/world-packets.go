@@ -33,27 +33,7 @@ func handleStatusRequest(n *NetState, cp clientpacket.Packet) {
 	p := cp.(*clientpacket.PlayerStatusRequest)
 	switch p.StatusRequestType {
 	case uo.StatusRequestTypeBasic:
-		n.Send(&serverpacket.StatusBarInfo{
-			Mobile:         n.m.Serial(),
-			Name:           n.m.DisplayName(),
-			Female:         n.m.IsFemale(),
-			HP:             n.m.HitPoints(),
-			MaxHP:          n.m.MaxHitPoints(),
-			NameChangeFlag: false,
-			Strength:       n.m.Strength(),
-			Dexterity:      n.m.Dexterity(),
-			Intelligence:   n.m.Intelligence(),
-			Stamina:        n.m.Stamina(),
-			MaxStamina:     n.m.MaxStamina(),
-			Mana:           n.m.Mana(),
-			MaxMana:        n.m.MaxMana(),
-			Gold:           0,
-			ArmorRating:    0,
-			Weight:         int(n.m.Weight()),
-			StatsCap:       uo.StatsCapDefault,
-			Followers:      0,
-			MaxFollowers:   uo.MaxFollowers,
-		})
+		n.UpdateObject(n.m)
 	case uo.StatusRequestTypeSkills:
 		// TODO Respond to skills request
 	}

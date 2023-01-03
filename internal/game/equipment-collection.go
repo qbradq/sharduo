@@ -76,18 +76,20 @@ func (c *EquipmentCollection) Equip(o Wearable) bool {
 		return false
 	}
 	c.equipment[o.Layer()] = o
+	c.weight += o.Weight()
 	return true
 }
 
 // Unequip removes an item from the collection. Returns true if successful.
 func (c *EquipmentCollection) Unequip(o Wearable) bool {
 	if c.equipment == nil {
-		c.equipment = make(map[uo.Layer]Wearable)
+		return false
 	}
 	// Only remove if the item is what is equipped in that slot
 	if equipped, ok := c.equipment[o.Layer()]; ok {
 		if equipped.Serial() == o.Serial() {
 			delete(c.equipment, o.Layer())
+			c.weight -= equipped.Weight()
 			return true
 		}
 	}

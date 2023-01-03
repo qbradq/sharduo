@@ -28,7 +28,8 @@ func (n *MockNetState) Reset() {
 func (n *MockNetState) SystemMessage(fmtstr string, args ...interface{})       {}
 func (n *MockNetState) Speech(from Object, fmtstr string, args ...interface{}) {}
 func (n *MockNetState) DrawPlayer()                                            {}
-func (n *MockNetState) UpdateMobile(mob Mobile)                                {}
+func (n *MockNetState) MoveMobile(mob Mobile)                                  {}
+func (n *MockNetState) UpdateObject(Object)                                    {}
 func (n *MockNetState) WornItem(wearable Wearable, mob Mobile)                 {}
 func (n *MockNetState) DropReject(reason uo.MoveItemRejectReason)              {}
 func (n *MockNetState) OpenContainer(c Container)                              {}

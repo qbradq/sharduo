@@ -438,15 +438,11 @@ func (p *ObjectInfo) Write(w io.Writer) {
 	PutUint16(w, uint16(n))
 	PutUint16(w, uint16(n))
 	// Location
-	PutUint16(w, uint16(p.X))
-	PutUint16(w, uint16(p.Y))
+	PutUint16(w, uint16(p.X&0x7FFF))
+	PutUint16(w, uint16(p.Y&0x3FFF))
 	PutByte(w, byte(int8(p.Z)))
 	// Facing
-	if p.IsMulti {
-		PutByte(w, 0)
-	} else {
-		PutByte(w, byte(p.Facing))
-	}
+	PutByte(w, 0)
 	// Hue
 	if p.IsMulti {
 		PutUint16(w, 0)
@@ -591,8 +587,8 @@ func (p *MoveItemReject) Write(w io.Writer) {
 	PutByte(w, byte(p.Reason))
 }
 
-// UpdateMobile updates an existing mobile on the client side
-type UpdateMobile struct {
+// MoveMobile moves an existing mobile on the client side
+type MoveMobile struct {
 	// Serial of the mobile to update
 	ID uo.Serial
 	// Body of the mobile
@@ -612,7 +608,7 @@ type UpdateMobile struct {
 }
 
 // Write implements the Packet interface.
-func (p *UpdateMobile) Write(w io.Writer) {
+func (p *MoveMobile) Write(w io.Writer) {
 	PutByte(w, 0x77) // Packet ID
 	PutUint32(w, uint32(p.ID))
 	PutUint16(w, uint16(p.Body))

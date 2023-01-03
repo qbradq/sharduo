@@ -270,11 +270,7 @@ func (c *BaseContainer) ForceAddObject(o Object) {
 	// Add the item to our contents
 	item.SetLocation(l)
 	c.contents = c.contents.Append(item)
-	c.contentWeight += addedWeight
-	c.contentItems += addedItems
-	if container, ok := c.parent.(Container); ok {
-		container.AdjustWeightAndCount(addedWeight, addedItems)
-	}
+	c.AdjustWeightAndCount(addedWeight, addedItems)
 	// Let all the observers know about the new item
 	for _, observer := range c.observers {
 		observer.ContainerItemAdded(c, item)
@@ -317,7 +313,15 @@ func (c *BaseContainer) AdjustWeightAndCount(w float32, n int) {
 	c.contentWeight += w
 	c.contentItems += n
 	if container, ok := c.parent.(Container); ok {
+		// We are a sub-container, propagate the adjustment up
 		container.AdjustWeightAndCount(w, n)
+	} else if mobile, ok := c.parent.(Mobile); ok {
+		if mobile.IsItemOnCursor() && mobile.ItemInCursor().Serial() == c.Serial() {
+			// We are being held by a mobile's cursor, don't need to do anything
+			return
+		}
+		// We are a mobile's backpack, send the weight adjustment up
+		mobile.AdjustWeight(w)
 	}
 }
 

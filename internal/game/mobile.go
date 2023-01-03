@@ -51,6 +51,8 @@ type Mobile interface {
 	Stamina() int
 	// MaxStamina returns the current effective max stamina
 	MaxStamina() int
+	// Gold returns the amount of gold within the mobile's backpack
+	Gold() int
 
 	//
 	// AI-related values
@@ -124,6 +126,8 @@ type Mobile interface {
 	// backpack. If the second argument is true, the item will be placed without
 	// regard to weight and item caps. Returns true if successful.
 	DropToBackpack(Object, bool) bool
+	// AdjustWeight adds n to this mobile's equipment collection's weight cache.
+	AdjustWeight(float32)
 
 	//
 	// Notoriety system
@@ -202,6 +206,13 @@ type BaseMobile struct {
 	mana int
 	// Current stamina
 	stamina int
+
+	//
+	// Cache values
+	//
+
+	// Total amount of gold in backpack, excludes bank box and cursor
+	gold int
 }
 
 // GetTypeName implements the util.Serializeable interface.
@@ -375,6 +386,9 @@ func (m *BaseMobile) Stamina() int { return m.stamina }
 // MaxStamina implements the Mobile interface.
 func (m *BaseMobile) MaxStamina() int { return m.Dexterity() }
 
+// Gold implements the Mobile interface.
+func (m *BaseMobile) Gold() int { return m.gold }
+
 func (m *BaseMobile) ItemInCursor() Item { return m.cursor.Item() }
 
 // Returns true if the mobile's cursor has an item on it.
@@ -397,6 +411,7 @@ func (m *BaseMobile) DropItemInCursor() {
 	item.SetLocation(m.location)
 	item.SetParent(nil)
 	world.Map().AddObject(item)
+	world.Update(m)
 }
 
 // RecalculateStats implements the Object interface.
@@ -407,9 +422,27 @@ func (m *BaseMobile) RecalculateStats() {
 // PickUp attempts to pick up the object. Returns true if successful.
 func (m *BaseMobile) PickUp(o Object) bool {
 	if o == nil {
-		return m.cursor.PickUp(o)
+		if m.cursor.item == nil {
+			return true
+		}
+		if m.cursor.PickUp(o) {
+			world.Update(m)
+			return true
+		}
+		return false
 	}
-	return m.cursor.PickUp(o) && world.Map().SetNewParent(o, m)
+	if m.cursor.item == nil || m.cursor.item.Serial() != o.Serial() {
+		if !m.cursor.PickUp(o) {
+			return false
+		}
+		if !world.Map().SetNewParent(o, m) {
+			m.cursor.PickUp(nil)
+			return false
+		}
+		world.Update(m)
+		return true
+	}
+	return false
 }
 
 // doAddObject adds the object to us - forcefully if requested.
@@ -561,17 +594,12 @@ func (m *BaseMobile) doEquip(w Wearable, force bool) bool {
 	if m.equipment == nil {
 		m.equipment = NewEquipmentCollection()
 	}
-	existing := m.equipment.GetItemInLayer(w.Layer())
-	if force {
-		w.SetParent(m)
-		m.equipment.equipment[w.Layer()] = w
-		if existing != nil {
-			log.Printf("error: leaked object %s during force-equip", existing.Serial().String())
-			existing.SetParent(TheVoid)
-			world.Remove(existing)
+	if !m.equipment.Equip(w) {
+		if force {
+			log.Printf("error: leaked object %s during force-equip", w.Serial().String())
+			w.SetParent(TheVoid)
+			world.Remove(w)
 		}
-	} else if !m.equipment.Equip(w) {
-		return false
 	}
 	w.SetParent(m)
 	// Send the WearItem packet to all netstates in range, including our own
@@ -580,6 +608,7 @@ func (m *BaseMobile) doEquip(w Wearable, force bool) bool {
 			mob.NetState().WornItem(w, m)
 		}
 	}
+	world.Update(m)
 	return true
 }
 
@@ -595,18 +624,21 @@ func (m *BaseMobile) ForceEquip(w Wearable) {
 
 // doUnequip unequips the wearable forcefully if requested
 func (m *BaseMobile) doUnequip(w Wearable, force bool) bool {
-	if m.equipment == nil {
+	if m.equipment == nil || w == nil {
 		return force
 	}
-	if force {
-		delete(m.equipment.equipment, w.Layer())
-	} else if !m.equipment.Unequip(w) {
-		return false
+	worn := m.equipment.GetItemInLayer(w.Layer())
+	if worn == nil || worn.Serial() != w.Serial() {
+		return force
+	}
+	if !m.equipment.Unequip(w) {
+		return force
 	}
 	// Send the remove item packet to everyone including ourselves
 	for _, mob := range world.Map().GetNetStatesInRange(m.Location(), uo.MaxViewRange) {
 		mob.NetState().RemoveObject(w)
 	}
+	world.Update(m)
 	return true
 }
 
@@ -638,16 +670,19 @@ func (m *BaseMobile) GetNotorietyFor(other Mobile) uo.Notoriety {
 	return m.notoriety
 }
 
+// AdjustWeight implements the Object interface
+func (m *BaseMobile) AdjustWeight(n float32) {
+	if m.equipment != nil {
+		m.equipment.weight += n
+	}
+	world.Update(m)
+}
+
 // Weight implements the Object interface
 func (m *BaseMobile) Weight() float32 {
 	ret := m.equipment.Weight()
-	if w := m.equipment.GetItemInLayer(uo.LayerBackpack); w != nil {
-		if backpack, ok := w.(Container); ok {
-			ret += backpack.ContentWeight()
-		}
-	}
-	if item := m.cursor.Item(); item != nil {
-		ret += item.Weight()
+	if m.cursor.item != nil {
+		ret += m.cursor.item.Weight()
 	}
 	return ret
 }

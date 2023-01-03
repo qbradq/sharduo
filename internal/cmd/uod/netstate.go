@@ -266,89 +266,135 @@ func (n *NetState) Speech(speaker game.Object, fmtstr string, args ...interface{
 	})
 }
 
-// SendObject implements the game.NetState interface.
-func (n *NetState) SendObject(o game.Object) {
-	if item, ok := o.(game.Item); ok {
-		var layer uo.Layer
-		if layerer, ok := item.(game.Layerer); ok {
-			layer = layerer.Layer()
-		}
-		if container, ok := item.Parent().(game.Container); ok {
-			// Item in container
-			n.Send(&serverpacket.AddItemToContainer{
-				Item:          item.Serial(),
-				Graphic:       item.BaseGraphic(),
-				GraphicOffset: item.GraphicOffset(),
-				Amount:        item.Amount(),
-				X:             item.Location().X,
-				Y:             item.Location().Y,
-				Container:     container.Serial(),
-				Hue:           item.Hue(),
-			})
-		} else {
-			// Item on ground
-			n.Send(&serverpacket.ObjectInfo{
-				Serial:           item.Serial(),
-				Graphic:          item.BaseGraphic(),
-				GraphicIncrement: item.GraphicOffset(),
-				Amount:           item.Amount(),
-				X:                item.Location().X,
-				Y:                item.Location().Y,
-				Z:                item.Location().Z,
-				Layer:            layer,
-				Hue:              item.Hue(),
-			})
-		}
-	} else if mobile, ok := o.(game.Mobile); ok {
-		flags := uo.MobileFlagNone
-		if mobile.IsFemale() {
-			flags |= uo.MobileFlagFemale
-		}
-		notoriety := uo.NotorietyEnemy
-		if n.m != nil {
-			notoriety = n.m.GetNotorietyFor(mobile)
-		}
-		if mobile.IsHumanBody() {
-			p := &serverpacket.EquippedMobile{
-				ID:        mobile.Serial(),
-				Body:      mobile.Body(),
-				X:         mobile.Location().X,
-				Y:         mobile.Location().Y,
-				Z:         mobile.Location().Z,
-				Facing:    mobile.Facing(),
-				IsRunning: mobile.IsRunning(),
-				Hue:       mobile.Hue(),
-				Flags:     flags,
-				Notoriety: notoriety,
-			}
-			mobile.MapEquipment(func(w game.Wearable) error {
-				if w.Layer() == uo.LayerBankBox {
-					return nil
-				}
-				p.Equipment = append(p.Equipment, &serverpacket.EquippedMobileItem{
-					ID:      w.Serial(),
-					Graphic: w.BaseGraphic(),
-					Layer:   w.Layer(),
-					Hue:     w.Hue(),
-				})
-				return nil
-			})
-			n.Send(p)
-		} else {
-			n.UpdateMobile(mobile)
-		}
+// itemInfo sends ObjectInfo or AddItemToContainer packets for the item
+func (n *NetState) itemInfo(item game.Item) {
+	var layer uo.Layer
+	if layerer, ok := item.(game.Layerer); ok {
+		layer = layerer.Layer()
+	}
+	if container, ok := item.Parent().(game.Container); ok {
+		// Item in container
+		n.Send(&serverpacket.AddItemToContainer{
+			Item:          item.Serial(),
+			Graphic:       item.BaseGraphic(),
+			GraphicOffset: item.GraphicOffset(),
+			Amount:        item.Amount(),
+			X:             item.Location().X,
+			Y:             item.Location().Y,
+			Container:     container.Serial(),
+			Hue:           item.Hue(),
+		})
 	} else {
-		log.Println("NetState.SendObject unknown object interface")
+		// Item on ground
+		n.Send(&serverpacket.ObjectInfo{
+			Serial:           item.Serial(),
+			Graphic:          item.BaseGraphic(),
+			GraphicIncrement: item.GraphicOffset(),
+			Amount:           item.Amount(),
+			X:                item.Location().X,
+			Y:                item.Location().Y,
+			Z:                item.Location().Z,
+			Layer:            layer,
+			Hue:              item.Hue(),
+		})
 	}
 }
 
-// UpdateMobile implements the game.NetState interface.
-func (n *NetState) UpdateMobile(mob game.Mobile) {
+// sendMobile sends packets to send a mobile to the client.
+func (n *NetState) sendMobile(mobile game.Mobile) {
+	flags := uo.MobileFlagNone
+	if mobile.IsFemale() {
+		flags |= uo.MobileFlagFemale
+	}
+	notoriety := uo.NotorietyEnemy
+	if n.m != nil {
+		notoriety = n.m.GetNotorietyFor(mobile)
+	}
+	if mobile.IsHumanBody() {
+		p := &serverpacket.EquippedMobile{
+			ID:        mobile.Serial(),
+			Body:      mobile.Body(),
+			X:         mobile.Location().X,
+			Y:         mobile.Location().Y,
+			Z:         mobile.Location().Z,
+			Facing:    mobile.Facing(),
+			IsRunning: mobile.IsRunning(),
+			Hue:       mobile.Hue(),
+			Flags:     flags,
+			Notoriety: notoriety,
+		}
+		mobile.MapEquipment(func(w game.Wearable) error {
+			if w.Layer() == uo.LayerBankBox {
+				return nil
+			}
+			p.Equipment = append(p.Equipment, &serverpacket.EquippedMobileItem{
+				ID:      w.Serial(),
+				Graphic: w.BaseGraphic(),
+				Layer:   w.Layer(),
+				Hue:     w.Hue(),
+			})
+			return nil
+		})
+		n.Send(p)
+	} else {
+		n.MoveMobile(mobile)
+	}
+}
+
+// updateMobile sends a StatusBarInfo packet for the mobile.
+func (n *NetState) updateMobile(mobile game.Mobile) {
+	n.Send(&serverpacket.StatusBarInfo{
+		Mobile:         mobile.Serial(),
+		Name:           mobile.DisplayName(),
+		Female:         mobile.IsFemale(),
+		HP:             mobile.HitPoints(),
+		MaxHP:          mobile.MaxHitPoints(),
+		NameChangeFlag: false,
+		Strength:       mobile.Strength(),
+		Dexterity:      mobile.Dexterity(),
+		Intelligence:   mobile.Intelligence(),
+		Stamina:        mobile.Stamina(),
+		MaxStamina:     mobile.MaxStamina(),
+		Mana:           mobile.Mana(),
+		MaxMana:        mobile.MaxMana(),
+		Gold:           0,
+		ArmorRating:    0,
+		Weight:         int(mobile.Weight()),
+		StatsCap:       uo.StatsCapDefault,
+		Followers:      0,
+		MaxFollowers:   uo.MaxFollowers,
+	})
+}
+
+// UpdateObject implements the game.NetState interface.
+func (n *NetState) UpdateObject(o game.Object) {
+	if item, ok := o.(game.Item); ok {
+		n.itemInfo(item)
+	} else if mobile, ok := o.(game.Mobile); ok {
+		n.updateMobile(mobile)
+	} else {
+		log.Printf("error: NetState.SendObject(%s) unknown object interface", o.Serial())
+	}
+}
+
+// SendObject implements the game.NetState interface.
+func (n *NetState) SendObject(o game.Object) {
+	if item, ok := o.(game.Item); ok {
+		n.itemInfo(item)
+	} else if mobile, ok := o.(game.Mobile); ok {
+		n.sendMobile(mobile)
+	} else {
+		log.Printf("error: NetState.SendObject(%s) unknown object interface", o.Serial())
+	}
+}
+
+// MoveMobile implements the game.NetState interface.
+func (n *NetState) MoveMobile(mob game.Mobile) {
 	noto := uo.NotorietyAttackable
 	if n.m != nil {
 		noto = mob.GetNotorietyFor(n.m)
 	}
-	n.Send(&serverpacket.UpdateMobile{
+	n.Send(&serverpacket.MoveMobile{
 		ID:        mob.Serial(),
 		Body:      mob.Body(),
 		Location:  mob.Location(),
