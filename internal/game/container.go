@@ -30,6 +30,8 @@ type Container interface {
 	// MapContents executes the function over every item in the container and
 	// returns the accumulated non-nil errors.
 	MapContents(fn func(Item) error) []error
+	// Open is called by mobiles to open the container.
+	Open(Mobile)
 	// RemoveObserver removes an observer from this container's list of
 	// containers.
 	RemoveObserver(o ContainerObserver)
@@ -128,15 +130,20 @@ func (c *BaseContainer) SingleClick(from Mobile) {
 	}
 }
 
+// Open implements the object interface.
+func (c *BaseContainer) Open(m Mobile) {
+	// TODO access calculations
+	if m.NetState() != nil {
+		if c.observers.IndexOf(m) < 0 {
+			c.observers = c.observers.Append(m)
+		}
+		m.NetState().OpenContainer(c)
+	}
+}
+
 // Doubleclick implements the object interface.
 func (c *BaseContainer) DoubleClick(from Mobile) {
-	// TODO access calculations
-	if from.NetState() != nil {
-		if c.observers.IndexOf(from) < 0 {
-			c.observers = c.observers.Append(from)
-		}
-		from.NetState().OpenContainer(c)
-	}
+	c.Open(from)
 }
 
 // DropObject implements the Object interface.
@@ -172,8 +179,10 @@ func (c *BaseContainer) doRemove(o Object, force bool) bool {
 		observer.ContainerItemRemoved(c, item)
 	}
 	// Gold calculations
-	if mobile, ok := c.RootParent().(Mobile); ok && item.TemplateName() == "GoldCoin" {
-		mobile.AdjustGold(-item.Amount())
+	if c.TemplateName() != "PlayerBankBox" && item.TemplateName() == "GoldCoin" {
+		if mobile, ok := c.RootParent().(Mobile); ok {
+			mobile.AdjustGold(-item.Amount())
+		}
 	}
 	return true
 }
@@ -278,8 +287,10 @@ func (c *BaseContainer) ForceAddObject(o Object) {
 		observer.ContainerItemAdded(c, item)
 	}
 	// Gold calculations
-	if mobile, ok := c.RootParent().(Mobile); ok && item.TemplateName() == "GoldCoin" {
-		mobile.AdjustGold(item.Amount())
+	if c.TemplateName() != "PlayerBankBox" && item.TemplateName() == "GoldCoin" {
+		if mobile, ok := c.RootParent().(Mobile); ok {
+			mobile.AdjustGold(item.Amount())
+		}
 	}
 }
 
@@ -318,6 +329,10 @@ func (c *BaseContainer) Weight() float32 {
 func (c *BaseContainer) AdjustWeightAndCount(w float32, n int) {
 	c.contentWeight += w
 	c.contentItems += n
+	if c.templateName == "PlayerBankBox" {
+		// We are a mobile's bank box, don't propagate up
+		return
+	}
 	if container, ok := c.parent.(Container); ok {
 		// We are a sub-container, propagate the adjustment up
 		container.AdjustWeightAndCount(w, n)
@@ -326,7 +341,7 @@ func (c *BaseContainer) AdjustWeightAndCount(w float32, n int) {
 			// We are being held by a mobile's cursor, don't need to do anything
 			return
 		}
-		// We are a mobile's backpack, send the weight adjustment up
+		// We are a mobile's backpack, s-end the weight adjustment up
 		mobile.AdjustWeight(w)
 	}
 }

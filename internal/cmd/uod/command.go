@@ -16,6 +16,7 @@ import (
 )
 
 func init() {
+	commandFactory.Add("bank", newBankCommand)
 	commandFactory.Add("debug", newDebugCommand)
 	commandFactory.Add("location", newLocationCommand)
 	commandFactory.Add("new", newNewCommand)
@@ -306,5 +307,55 @@ func (c *DebugCommand) Execute(n *NetState) error {
 		end := time.Now().UnixMilli()
 		n.SystemMessage("generated %d items in %d milliseconds\n", count, end-start)
 	}
+	return nil
+}
+
+// BankCommand opens a mobile's bank box if it exists
+type BankCommand struct {
+	BaseCommand
+}
+
+// newBankCommand constructs a new BankCommand
+func newBankCommand(args CommandArgs) Command {
+	return &BankCommand{
+		BaseCommand: BaseCommand{
+			args: args,
+		},
+	}
+}
+
+// Compile implements the Command interface
+func (c *BankCommand) Compile() error {
+	return nil
+}
+
+// Execute implements the Command interface
+func (c *BankCommand) Execute(n *NetState) error {
+	if n == nil {
+		return nil
+	}
+	world.SendTarget(n, uo.TargetTypeObject, nil, func(r *clientpacket.TargetResponse, ctx interface{}) {
+		o := world.Find(r.TargetObject)
+		if o == nil {
+			n.SystemMessage("object %s not found", r.TargetObject)
+			return
+		}
+		m, ok := o.(game.Mobile)
+		if !ok {
+			n.SystemMessage("object %s not a mobile", r.TargetObject)
+			return
+		}
+		bw := m.EquipmentInSlot(uo.LayerBankBox)
+		if bw == nil {
+			n.SystemMessage("mobile %s does not have a bank box", r.TargetObject)
+			return
+		}
+		box, ok := bw.(game.Container)
+		if !ok {
+			n.SystemMessage("mobile %s bank box was not a container", r.TargetObject)
+			return
+		}
+		box.Open(n.m)
+	})
 	return nil
 }

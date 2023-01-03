@@ -30,6 +30,8 @@ including all features required to mine ore and smelt it into ingots.
 * Mobile weight limit
 * ~~Stat updates~~
 * Skill updates
+* Skill gains
+* Stat gains
 * ~~Stackable items~~
 
 ### Nice to Haves ###

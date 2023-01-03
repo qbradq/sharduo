@@ -324,9 +324,6 @@ func (n *NetState) sendMobile(mobile game.Mobile) {
 			Notoriety: notoriety,
 		}
 		mobile.MapEquipment(func(w game.Wearable) error {
-			if w.Layer() == uo.LayerBankBox {
-				return nil
-			}
 			p.Equipment = append(p.Equipment, &serverpacket.EquippedMobileItem{
 				ID:      w.Serial(),
 				Graphic: w.BaseGraphic(),

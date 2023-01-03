@@ -119,6 +119,8 @@ type Mobile interface {
 	Unequip(Wearable) bool
 	// ForceUnequip forcefully unequips the given item.
 	ForceUnequip(Wearable)
+	// EquipmentInSlot returns the item equipped in the named slot or nil.
+	EquipmentInSlot(uo.Layer) Wearable
 	// MapEquipment executes the function for every item this mobile has
 	// equipped and returns any errors. Be careful, as this will also map over
 	// inventory backpacks and player bank boxes. Filter them by checking the
@@ -681,6 +683,14 @@ func (m *BaseMobile) Unequip(w Wearable) bool {
 // ForceUnequip implements the Mobile interface.
 func (m *BaseMobile) ForceUnequip(w Wearable) {
 	m.doUnequip(w, true)
+}
+
+// EquipmentInSlot implements the Mobile interface.
+func (m *BaseMobile) EquipmentInSlot(l uo.Layer) Wearable {
+	if m.equipment == nil {
+		return nil
+	}
+	return m.equipment.GetItemInLayer(l)
 }
 
 // MapEquipment implements the Mobile interface.
