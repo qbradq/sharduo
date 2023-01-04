@@ -17,8 +17,8 @@ func init() {
 	worldHandlers.Add(0x08, handleDropRequest)
 	worldHandlers.Add(0x09, handleSingleClickRequest)
 	worldHandlers.Add(0x13, handleWearItemRequest)
-	worldHandlers.Add(0x6C, handleTargetResponse)
 	worldHandlers.Add(0x34, handleStatusRequest)
+	worldHandlers.Add(0x6C, handleTargetResponse)
 	worldHandlers.Add(0xC8, handleClientViewRange)
 }
 
@@ -51,7 +51,11 @@ func handleWalkRequest(n *NetState, cp clientpacket.Packet) {
 			Notoriety: uo.NotorietyInnocent,
 		})
 	} else {
-		// TODO reject movement packet
+		n.Send(&serverpacket.MoveReject{
+			Sequence: byte(p.Sequence),
+			Location: n.m.Location(),
+			Facing:   n.m.Facing(),
+		})
 	}
 }
 

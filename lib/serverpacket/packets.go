@@ -775,3 +775,23 @@ func (p *CloseGump) Write(w io.Writer) {
 	PutUint32(w, uint32(p.Gump))
 	PutUint32(w, uint32(p.Button))
 }
+
+// MoveReject sends a movement rejection packet to the client.
+type MoveReject struct {
+	// Sequence number of the movement request rejected
+	Sequence byte
+	// Location of the mobile after the rejection
+	Location uo.Location
+	// Facing of the mobile
+	Facing uo.Direction
+}
+
+// Write implements the Packet interface.
+func (p *MoveReject) Write(w io.Writer) {
+	PutByte(w, 0x21) // General information packet ID
+	PutByte(w, p.Sequence)
+	PutUint16(w, uint16(p.Location.X))
+	PutUint16(w, uint16(p.Location.Y))
+	PutByte(w, byte(p.Facing))
+	PutByte(w, byte(int8(p.Location.Z)))
+}
