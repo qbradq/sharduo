@@ -476,6 +476,14 @@ func (n *NetState) DragItem(item game.Item, srcMob game.Mobile,
 	})
 }
 
+// CloseGump closes the named gump on the client
+func (n *NetState) CloseGump(gump uo.Serial) {
+	n.Send(&serverpacket.CloseGump{
+		Gump:   gump,
+		Button: 0,
+	})
+}
+
 // ContainerOpen implements the game.ContainerObserver interface
 func (n *NetState) ContainerOpen(c game.Container) {
 	n.observedContainers[c] = struct{}{}
@@ -505,7 +513,7 @@ func (n *NetState) ContainerOpen(c game.Container) {
 // ContainerClose implements the game.ContainerObserver interface
 func (n *NetState) ContainerClose(c game.Container) {
 	// Ignore containers that aren't being observed
-	if _, found := n.observedContainers[c]; !found {
+	if !n.ContainerIsObserving(c) {
 		return
 	}
 	// Close this container
@@ -580,7 +588,6 @@ func (n *NetState) ContainerRangeCheck() {
 					// This is the top-level container
 					if thisc.Serial() == bbobj.Serial() {
 						// The bank box or a child of it, close instantly
-						// TODO Maybe keep this open for staff
 						n.ContainerClose(c)
 					}
 					// Otherwise this is the backpack or a child of it, leave
@@ -600,10 +607,8 @@ func (n *NetState) ContainerRangeCheck() {
 	}
 }
 
-// CloseGump closes the named gump on the client
-func (n *NetState) CloseGump(gump uo.Serial) {
-	n.Send(&serverpacket.CloseGump{
-		Gump:   gump,
-		Button: 0,
-	})
+// ContainerIsObserving implements the game.ContainerObserver interface
+func (n *NetState) ContainerIsObserving(c game.Container) bool {
+	_, found := n.observedContainers[c]
+	return found
 }

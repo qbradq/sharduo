@@ -18,4 +18,7 @@ type ContainerObserver interface {
 	// ContainerRangeCheck asks the observer to close all out-of-range
 	// containers.
 	ContainerRangeCheck()
+	// ContainerIsObserving returns true if the given container is being
+	// observed by the observer.
+	ContainerIsObserving(Container) bool
 }

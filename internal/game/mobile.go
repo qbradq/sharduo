@@ -131,6 +131,14 @@ type Mobile interface {
 	DropToBackpack(Object, bool) bool
 	// AdjustWeight adds n to this mobile's equipment collection's weight cache.
 	AdjustWeight(float32)
+	// InBank returns true if the given item is within this mobile's bank box.
+	InBank(Object) bool
+	// InBackpack returns true if the given item is within this mobile's
+	// backpack.
+	InBackpack(Object) bool
+	// BankBoxOpen returns true if the mobile is currently observing its bank
+	// box.
+	BankBoxOpen() bool
 
 	//
 	// Notoriety system
@@ -731,4 +739,93 @@ func (m *BaseMobile) AfterMove() {
 	if m.NetState() != nil {
 		m.NetState().ContainerRangeCheck()
 	}
+}
+
+// InBank implements the Mobile interface.
+func (m *BaseMobile) InBank(o Object) bool {
+	if !m.isPlayerCharacter {
+		// Non-player-characters do not have bank boxes
+		return false
+	}
+	root := o.RootParent()
+	if root == nil || o.RootParent().Serial() != m.Serial() {
+		// Object is a child of the map or another mobile
+		return false
+	}
+	bbobj := m.EquipmentInSlot(uo.LayerBankBox)
+	if bbobj == nil {
+		// Something is very wrong
+		log.Printf("error: player mobile %s does not have a bank box", m.Serial().String())
+		return false
+	}
+	// Inspect the parent chain to see if the bank box is anywhere in the chain
+	thiso := o
+	thisp := thiso.Parent()
+	if thisp == nil {
+		// This is directly on the map
+		return false
+	}
+	for {
+		if thisp.Serial() == o.Serial() {
+			// Hit the top-level object without a match
+			return false
+		}
+		if thisp.Serial() == bbobj.Serial() {
+			// Hit our own bank box
+			return true
+		}
+		thiso = thisp
+		thisp = thiso.Parent()
+	}
+}
+
+// InBackpack implements the Mobile interface.
+func (m *BaseMobile) InBackpack(o Object) bool {
+	root := o.RootParent()
+	if root == nil || o.RootParent().Serial() != m.Serial() {
+		// Object is a child of the map or another mobile
+		return false
+	}
+	bpobj := m.EquipmentInSlot(uo.LayerBackpack)
+	if bpobj == nil {
+		// Something is very wrong
+		log.Printf("error: mobile %s does not have a backpack", m.Serial().String())
+		return false
+	}
+	// Inspect the parent chain to see if the backpack is anywhere in the chain
+	thiso := o
+	thisp := thiso.Parent()
+	for {
+		if thisp.Serial() == o.Serial() {
+			// Hit the top-level object without a match
+			return false
+		} else if thisp.Serial() == bpobj.Serial() {
+			// Hit our own bank box
+			return true
+		}
+		thiso = thisp
+		thisp = thiso.Parent()
+	}
+}
+
+// BankBoxOpen implements the Mobile interface.
+func (m *BaseMobile) BankBoxOpen() bool {
+	if m.NetState() == nil || !m.isPlayerCharacter {
+		// Non-player-characters do not have bank boxes
+		// If there is no attached net state there can't be any observed
+		// containers
+		return false
+	}
+	bbobj := m.EquipmentInSlot(uo.LayerBankBox)
+	if bbobj == nil {
+		// Something is very wrong
+		log.Printf("error: player mobile %s does not have a bank box", m.Serial().String())
+		return false
+	}
+	if container, ok := bbobj.(Container); ok {
+		return m.NetState().ContainerIsObserving(container)
+	}
+	// Something is very wrong
+	log.Printf("error: player mobile %s bank box is not a container", m.Serial().String())
+	return false
 }

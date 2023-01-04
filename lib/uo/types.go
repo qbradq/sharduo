@@ -18,6 +18,7 @@ const (
 	MapMaxZ                   int    = 128
 	StatsCapDefault           int    = 225
 	MaxFollowers              int    = 5
+	MaxUseRange               int    = 3
 	MaxLiftRange              int    = 3
 	MaxDropRange              int    = 3
 	MaxContainerViewRange     int    = 3

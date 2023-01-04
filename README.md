@@ -63,6 +63,7 @@ opened to outside connections.
 * Removal of stale NetStates in the login service goroutine
 * Integration of the game service into a single self-managed structure
 * Restrict command usage to access levels
+* Do not allow items within the bank box to be used unless the bank box is open
 
 ### Miscellaneous Issues ###
 This is a list of known issues that do not need to be resolved before the next

@@ -61,10 +61,20 @@ func handleSingleClickRequest(n *NetState, cp clientpacket.Packet) {
 	}
 	p := cp.(*clientpacket.SingleClick)
 	o := world.Find(p.ID)
-	if o != nil {
-		// TODO Line of sight check
-		o.SingleClick(n.m)
+	if o == nil {
+		return
 	}
+	// Only allow single-clicks of objects within containers if we are currently
+	// observing that container.
+	op := o.Parent()
+	if op != nil {
+		if container, ok := op.(game.Container); ok {
+			if !n.ContainerIsObserving(container) {
+				return
+			}
+		}
+	}
+	o.SingleClick(n.m)
 }
 
 func handleDoubleClickRequest(n *NetState, cp clientpacket.Packet) {
@@ -87,7 +97,15 @@ func handleDoubleClickRequest(n *NetState, cp clientpacket.Packet) {
 		if o == nil {
 			return
 		}
-		// TODO Range check
+		// Make sure we are not trying to access an item within a closed bank
+		// box.
+		if n.m.InBank(o) && !n.m.BankBoxOpen() {
+			return
+		}
+		targetLocation := o.RootParent().Location()
+		if n.m.Location().XYDistance(targetLocation) > uo.MaxUseRange {
+			return
+		}
 		// TODO Line of sight check
 		o.DoubleClick(n.m)
 	}
@@ -128,6 +146,16 @@ func handleLiftRequest(n *NetState, cp clientpacket.Packet) {
 	if n.m.Location().XYDistance(item.RootParent().Location()) > uo.MaxLiftRange {
 		n.DropReject(uo.MoveItemRejectReasonOutOfRange)
 		return
+	}
+	// Make sure we are not trying to lift an object that's in a cointainer we
+	// are not observing.
+	thisp := o.Parent()
+	if thisp != nil {
+		if container, ok := thisp.(game.Container); ok {
+			if !n.ContainerIsObserving(container) {
+				return
+			}
+		}
 	}
 	// TODO Line of sight check
 	item.Split(p.Amount)
@@ -182,6 +210,16 @@ func handleDropRequest(n *NetState, cp clientpacket.Packet) {
 			n.m.DropItemInCursor()
 			n.DropReject(uo.MoveItemRejectReasonOutOfRange)
 			return
+		}
+		// Make sure we are not trying to drop onto an object that's in a
+		// container that we do not have open
+		tp := target.Parent()
+		if tp != nil {
+			if container, ok := tp.(game.Container); ok {
+				if !n.ContainerIsObserving(container) {
+					return
+				}
+			}
 		}
 		// TODO Line of sight check
 		dropTarget := uo.Location{
