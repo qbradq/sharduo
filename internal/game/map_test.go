@@ -37,7 +37,7 @@ func (n *MockNetState) ContainerClose(c Container)                             {
 func (n *MockNetState) ContainerItemAdded(c Container, item Item)              {}
 func (n *MockNetState) ContainerItemRemoved(c Container, item Item)            {}
 func (n *MockNetState) ContainerRangeCheck()                                   {}
-func (n *MockNetState) ContainerIsObserving(c Container) bool                  { return false }
+func (n *MockNetState) ContainerIsObserving(o Object) bool                     { return false }
 func (n *MockNetState) CloseGump(gump uo.Serial)                               {}
 func (n *MockNetState) DragItem(item Item, srcMob Mobile, srcLoc uo.Location, destMob Mobile, destLoc uo.Location) {
 }

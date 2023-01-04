@@ -132,6 +132,9 @@ func (c *BaseContainer) SingleClick(from Mobile) {
 
 // Open implements the object interface.
 func (c *BaseContainer) Open(m Mobile) {
+	if m.NetState() == nil {
+		return
+	}
 	observer, ok := m.NetState().(ContainerObserver)
 	if !ok {
 		return

@@ -64,16 +64,6 @@ func handleSingleClickRequest(n *NetState, cp clientpacket.Packet) {
 	if o == nil {
 		return
 	}
-	// Only allow single-clicks of objects within containers if we are currently
-	// observing that container.
-	op := o.Parent()
-	if op != nil {
-		if container, ok := op.(game.Container); ok {
-			if !n.ContainerIsObserving(container) {
-				return
-			}
-		}
-	}
 	o.SingleClick(n.m)
 }
 
@@ -152,6 +142,7 @@ func handleLiftRequest(n *NetState, cp clientpacket.Packet) {
 	thisp := o.Parent()
 	if thisp != nil {
 		if container, ok := thisp.(game.Container); ok {
+			// Only consider objects within a container
 			if !n.ContainerIsObserving(container) {
 				return
 			}
@@ -216,6 +207,7 @@ func handleDropRequest(n *NetState, cp clientpacket.Packet) {
 		tp := target.Parent()
 		if tp != nil {
 			if container, ok := tp.(game.Container); ok {
+				// Only consider objects within a container
 				if !n.ContainerIsObserving(container) {
 					return
 				}
@@ -264,8 +256,6 @@ func handleWearItemRequest(n *NetState, cp clientpacket.Packet) {
 		return
 	}
 	// TODO Check if we are allowed to equip items to this mobile
-	// This will remove the object from it's parent (the mobile's cursor) and
-	// add it to the other mobile's equipment, or not.
 	n.m.RequestCursorState(game.CursorStateEquip)
 	if !n.m.Equip(wearable) {
 		n.m.PickUp(nil)

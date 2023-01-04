@@ -761,12 +761,8 @@ func (m *BaseMobile) InBank(o Object) bool {
 	// Inspect the parent chain to see if the bank box is anywhere in the chain
 	thiso := o
 	thisp := thiso.Parent()
-	if thisp == nil {
-		// This is directly on the map
-		return false
-	}
 	for {
-		if thisp.Serial() == o.Serial() {
+		if thisp == nil {
 			// Hit the top-level object without a match
 			return false
 		}
@@ -796,7 +792,7 @@ func (m *BaseMobile) InBackpack(o Object) bool {
 	thiso := o
 	thisp := thiso.Parent()
 	for {
-		if thisp.Serial() == o.Serial() {
+		if thisp == nil {
 			// Hit the top-level object without a match
 			return false
 		} else if thisp.Serial() == bpobj.Serial() {
@@ -822,10 +818,5 @@ func (m *BaseMobile) BankBoxOpen() bool {
 		log.Printf("error: player mobile %s does not have a bank box", m.Serial().String())
 		return false
 	}
-	if container, ok := bbobj.(Container); ok {
-		return m.NetState().ContainerIsObserving(container)
-	}
-	// Something is very wrong
-	log.Printf("error: player mobile %s bank box is not a container", m.Serial().String())
-	return false
+	return m.NetState().ContainerIsObserving(bbobj)
 }

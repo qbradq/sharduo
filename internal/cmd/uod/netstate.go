@@ -28,7 +28,7 @@ type NetState struct {
 	id                 string
 	m                  game.Mobile
 	account            *game.Account
-	observedContainers map[game.Container]struct{}
+	observedContainers map[uo.Serial]game.Container
 }
 
 // NewNetState constructs a new NetState object.
@@ -38,7 +38,7 @@ func NewNetState(conn *net.TCPConn) *NetState {
 		conn:               conn,
 		sendQueue:          make(chan serverpacket.Packet, 1024*16),
 		id:                 uuid.String(),
-		observedContainers: make(map[game.Container]struct{}),
+		observedContainers: make(map[uo.Serial]game.Container),
 	}
 }
 
@@ -486,7 +486,10 @@ func (n *NetState) CloseGump(gump uo.Serial) {
 
 // ContainerOpen implements the game.ContainerObserver interface
 func (n *NetState) ContainerOpen(c game.Container) {
-	n.observedContainers[c] = struct{}{}
+	if c == nil {
+		return
+	}
+	n.observedContainers[c.Serial()] = c
 	n.Send(&serverpacket.OpenContainerGump{
 		GumpSerial: c.Serial(),
 		Gump:       uo.Gump(c.GumpGraphic()),
@@ -517,7 +520,7 @@ func (n *NetState) ContainerClose(c game.Container) {
 		return
 	}
 	// Close this container
-	delete(n.observedContainers, c)
+	delete(n.observedContainers, c.Serial())
 	n.CloseGump(c.Serial())
 	c.RemoveObserver(n)
 	// Close all child containers
@@ -559,7 +562,7 @@ func (n *NetState) ContainerRangeCheck() {
 	// NetState.observedContainers
 	var toObserve = make([]game.Container, len(n.observedContainers))
 	idx := 0
-	for c := range n.observedContainers {
+	for _, c := range n.observedContainers {
 		toObserve[idx] = c
 		idx++
 	}
@@ -608,7 +611,7 @@ func (n *NetState) ContainerRangeCheck() {
 }
 
 // ContainerIsObserving implements the game.ContainerObserver interface
-func (n *NetState) ContainerIsObserving(c game.Container) bool {
-	_, found := n.observedContainers[c]
+func (n *NetState) ContainerIsObserving(o game.Object) bool {
+	_, found := n.observedContainers[o.Serial()]
 	return found
 }

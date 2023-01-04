@@ -20,5 +20,5 @@ type ContainerObserver interface {
 	ContainerRangeCheck()
 	// ContainerIsObserving returns true if the given container is being
 	// observed by the observer.
-	ContainerIsObserving(Container) bool
+	ContainerIsObserving(Object) bool
 }

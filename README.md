@@ -71,6 +71,8 @@ milestone but do need to be resolved sometime.
 
 * Proper coordinate wrapping in game.Map.getChunksInBounds()
 * Proper coordinate wrapping in uo.Location.XYDistance()
+* Reduce redundancy in save files... somehow
+* Improve client file load time
 
 # Shard Administration Advice #
 The ShardUO software and the creative content within were developed to host a
