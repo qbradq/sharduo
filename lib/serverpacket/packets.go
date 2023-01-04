@@ -770,6 +770,7 @@ type CloseGump struct {
 // Write implements the Packet interface.
 func (p *CloseGump) Write(w io.Writer) {
 	PutByte(w, 0xBF)             // General information packet ID
+	PutUint16(w, uint16(13))     // Length
 	PutUint16(w, uint16(0x0004)) // Close gump subcommand
 	PutUint32(w, uint32(p.Gump))
 	PutUint32(w, uint32(p.Button))

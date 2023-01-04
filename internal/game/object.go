@@ -184,15 +184,17 @@ func (o *BaseObject) Parent() Object { return o.parent }
 // RootParent implements the Object interface
 func (o *BaseObject) RootParent() Object {
 	if o.parent == nil {
-		var obj Object = o
-		return obj
+		// This is hacky and prooves I still don't fully understand Go
+		// interfaces
+		return world.Find(o.Serial())
 	}
-	topmost := o.Parent()
+	topmost := o.parent
 	for {
-		if topmost.Parent() == nil {
+		p := topmost.Parent()
+		if p == nil {
 			return topmost
 		}
-		topmost = topmost.Parent()
+		topmost = p
 	}
 }
 
