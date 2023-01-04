@@ -23,20 +23,22 @@ var ErrWrongPacket = errors.New("wrong packet")
 
 // NetState manages the network state of a single connection.
 type NetState struct {
-	conn      *net.TCPConn
-	sendQueue chan serverpacket.Packet
-	id        string
-	m         game.Mobile
-	account   *game.Account
+	conn               *net.TCPConn
+	sendQueue          chan serverpacket.Packet
+	id                 string
+	m                  game.Mobile
+	account            *game.Account
+	observedContainers map[game.Container]struct{}
 }
 
 // NewNetState constructs a new NetState object.
 func NewNetState(conn *net.TCPConn) *NetState {
 	uuid, _ := uuid.NewRandom()
 	return &NetState{
-		conn:      conn,
-		sendQueue: make(chan serverpacket.Packet, 1024*16),
-		id:        uuid.String(),
+		conn:               conn,
+		sendQueue:          make(chan serverpacket.Packet, 1024*16),
+		id:                 uuid.String(),
+		observedContainers: make(map[game.Container]struct{}),
 	}
 }
 
@@ -167,7 +169,7 @@ func (n *NetState) SendService() {
 				return
 			}
 		default:
-			if pw.Size() > 0 {
+			if pw.Buffered() > 0 {
 				if err := pw.Flush(); err != nil {
 					n.Error("sending packet", err)
 					return
@@ -474,8 +476,9 @@ func (n *NetState) DragItem(item game.Item, srcMob game.Mobile,
 	})
 }
 
-// OpenContainer sends the OpenContainerGump packet to the client
-func (n *NetState) OpenContainer(c game.Container) {
+// ContainerOpen implements the game.ContainerObserver interface
+func (n *NetState) ContainerOpen(c game.Container) {
+	n.observedContainers[c] = struct{}{}
 	n.Send(&serverpacket.OpenContainerGump{
 		GumpSerial: c.Serial(),
 		Gump:       uo.Gump(c.GumpGraphic()),
@@ -499,8 +502,27 @@ func (n *NetState) OpenContainer(c game.Container) {
 	}
 }
 
-// AddItemToContainer adds an item to a container gump on the client
-func (n *NetState) AddItemToContainer(c game.Container, item game.Item) {
+// ContainerClose implements the game.ContainerObserver interface
+func (n *NetState) ContainerClose(c game.Container) {
+	// Ignore containers that aren't being observed
+	if _, found := n.observedContainers[c]; !found {
+		return
+	}
+	// Close this container
+	delete(n.observedContainers, c)
+	n.CloseGump(c.Serial())
+	c.RemoveObserver(n)
+	// Close all child containers
+	c.MapContents(func(item game.Item) error {
+		if c, ok := item.(game.Container); ok {
+			n.ContainerClose(c)
+		}
+		return nil
+	})
+}
+
+// ContainerItemAdded implements the game.ContainerObserver interface
+func (n *NetState) ContainerItemAdded(c game.Container, item game.Item) {
 	n.Send(&serverpacket.AddItemToContainer{
 		Item:          item.Serial(),
 		Graphic:       item.BaseGraphic(),
@@ -513,11 +535,69 @@ func (n *NetState) AddItemToContainer(c game.Container, item game.Item) {
 	})
 }
 
-// RemoveItemFromContainer removes an item from a container on the client
-func (n *NetState) RemoveItemFromContainer(c game.Container, item game.Item) {
+// ContainerItemRemoved implements the game.ContainerObserver interface
+func (n *NetState) ContainerItemRemoved(c game.Container, item game.Item) {
 	n.Send(&serverpacket.DeleteObject{
 		Serial: item.Serial(),
 	})
+}
+
+// ContainerRangeCheck implements the game.ContainerObserver interface
+func (n *NetState) ContainerRangeCheck() {
+	if len(n.observedContainers) == 0 || n.m == nil {
+		return
+	}
+	// Make a copy of the map contents so NetState.ContainerClose can modify
+	// NetState.observedContainers
+	var toObserve = make([]game.Container, len(n.observedContainers))
+	idx := 0
+	for c := range n.observedContainers {
+		toObserve[idx] = c
+		idx++
+	}
+	// Observe all containers
+	for _, c := range toObserve {
+		root := c.RootParent()
+		if _, ok := root.(game.Container); ok {
+			// Container is somewhere on the map
+			// TODO Line of sight check, this one might be costly and unnecessary
+			// Range check
+			if n.m.Location().XYDistance(root.Location()) > uo.MaxContainerViewRange {
+				n.ContainerClose(c)
+			}
+		} else if m, ok := root.(game.Mobile); ok {
+			// This is part of the mobile's inventory, so either inside the bank
+			// box or the backpack. We always close the bank box and it's every time we
+			// move and we never close the backpack.
+			bbobj := m.EquipmentInSlot(uo.LayerBankBox)
+			if bbobj == nil {
+				continue
+			}
+			thisc := c
+			thisp := c.Parent()
+			for {
+				if _, ok := thisp.(game.Mobile); ok {
+					// This is the top-level container
+					if thisc.Serial() == bbobj.Serial() {
+						// The bank box or a child of it, close instantly
+						// TODO Maybe keep this open for staff
+						n.ContainerClose(c)
+					}
+					// Otherwise this is the backpack or a child of it, leave
+					// open.
+					break
+				} else if container, ok := thisp.(game.Container); ok {
+					// This is a sub-container, inspect the parent.
+					thisc = container
+					thisp = thisc.Parent()
+				} else {
+					// Something is very wrong.
+					log.Printf("error: object %s has a non-container in it's parent chain", c.Serial().String())
+					break
+				}
+			}
+		}
+	}
 }
 
 // CloseGump closes the named gump on the client

@@ -5,6 +5,8 @@ import "github.com/qbradq/sharduo/lib/uo"
 // NetState is the interface the server client's network state object must
 // implement to be compatible with this library of game objects.
 type NetState interface {
+	ContainerObserver
+
 	//
 	// Speech and messaging
 	//
@@ -35,17 +37,6 @@ type NetState interface {
 	DragItem(Item, Mobile, uo.Location, Mobile, uo.Location)
 	// DropReject sends the MoveItemReject packet with the given reason code
 	DropReject(uo.MoveItemRejectReason)
-
-	//
-	// Containers
-	//
-
-	// OpenContainer opens a container gump on the client
-	OpenContainer(Container)
-	// AddItemToContainer adds an item to a container gump on the client
-	AddItemToContainer(Container, Item)
-	// RemoveItemFromContainer removes an item from a container on the client
-	RemoveItemFromContainer(Container, Item)
 
 	//
 	// Gumps

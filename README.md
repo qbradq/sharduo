@@ -47,7 +47,7 @@ including all features required to mine ore and smelt it into ingots.
 * Horses and Llamas
 * Pack Horses and Llamas
 * Banker NPC
-* Bank box
+* ~~Bank box~~
 * Line of sight checks
 * Paper Dolls for others
 * Item durability
@@ -55,7 +55,7 @@ including all features required to mine ore and smelt it into ingots.
 ## Outstanding Issues ##
 
 ### Go-Live Issues ###
-This is a list of known issues that must be resolve before the server may be
+This is a list of known issues that must be resolved before the server may be
 opened to outside connections.
 
 * Player movement packet throttling
@@ -87,7 +87,7 @@ the public under the same license terms. This goes into effect the moment you
 distribute a binary of the program in any form to anyone through any means or
 you make a service based on this source code available for connection on any
 network reachable by third-parties regardless if anyone connected. I chose this
-license because I want to share knowledge and appreciation of Ultima Online
+license because I want to share knowledge and appreciation of the Ultima Online
 service during the late 90's and early 20's. I welcome anyone who would use this
 repository or its associated services who share that appreciation.
 

@@ -56,7 +56,7 @@ type BaseContainer struct {
 	// Cache of the number of items in the container and all sub containers
 	contentItems int
 	// All of the observers of the container
-	observers util.Slice[ContainerObserver]
+	observers map[ContainerObserver]struct{}
 	// Bounds of the container
 	bounds uo.Bounds
 }
@@ -132,13 +132,16 @@ func (c *BaseContainer) SingleClick(from Mobile) {
 
 // Open implements the object interface.
 func (c *BaseContainer) Open(m Mobile) {
-	// TODO access calculations
-	if m.NetState() != nil {
-		if c.observers.IndexOf(m) < 0 {
-			c.observers = c.observers.Append(m)
-		}
-		m.NetState().OpenContainer(c)
+	observer, ok := m.NetState().(ContainerObserver)
+	if !ok {
+		return
 	}
+	// TODO access calculations
+	if c.observers == nil {
+		c.observers = make(map[ContainerObserver]struct{})
+	}
+	c.observers[observer] = struct{}{}
+	observer.ContainerOpen(c)
 }
 
 // Doubleclick implements the object interface.
@@ -175,7 +178,7 @@ func (c *BaseContainer) doRemove(o Object, force bool) bool {
 	}
 	c.AdjustWeightAndCount(-item.Weight(), -itemsRemoved)
 	// Broadcast the item removal
-	for _, observer := range c.observers {
+	for observer := range c.observers {
 		observer.ContainerItemRemoved(c, item)
 	}
 	// Gold calculations
@@ -283,7 +286,7 @@ func (c *BaseContainer) ForceAddObject(o Object) {
 	c.contents = c.contents.Append(item)
 	c.AdjustWeightAndCount(addedWeight, addedItems)
 	// Let all the observers know about the new item
-	for _, observer := range c.observers {
+	for observer := range c.observers {
 		observer.ContainerItemAdded(c, item)
 	}
 	// Gold calculations
@@ -359,5 +362,10 @@ func (c *BaseContainer) MapContents(fn func(Item) error) []error {
 
 // RemoveObserver implements the Container interface.
 func (c *BaseContainer) RemoveObserver(o ContainerObserver) {
-	c.observers = c.observers.Remove(o)
+	if c.observers != nil {
+		delete(c.observers, o)
+		if len(c.observers) == 0 {
+			c.observers = nil
+		}
+	}
 }

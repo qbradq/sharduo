@@ -14,7 +14,6 @@ func init() {
 // Mobile is the interface all mobiles implement
 type Mobile interface {
 	Object
-	ContainerObserver
 
 	//
 	// NetState
@@ -160,8 +159,6 @@ type BaseMobile struct {
 
 	// Attached NetState implementation
 	n NetState
-	// Collection of all the containers we are currently observing
-	observedContainers util.Slice[Container]
 
 	//
 	// AI values and such
@@ -728,45 +725,10 @@ func (m *BaseMobile) Weight() float32 {
 	return ret
 }
 
-// ContainerOpen implements the ContainerObserver interface.
-func (m *BaseMobile) ContainerOpen(c Container) {
-	if m.n != nil {
-		m.n.OpenContainer(c)
-		if !m.observedContainers.Contains(c) {
-			m.observedContainers = m.observedContainers.Append(c)
-		}
-	}
-}
-
-// ContainerClose implements the ContainerObserver interface.
-func (m *BaseMobile) ContainerClose(c Container) {
-	if m.NetState() != nil {
-		m.NetState().CloseGump(c.Serial())
-	}
-	m.observedContainers = m.observedContainers.Remove(c)
-}
-
-// ContainerOpen implements the ContainerObserver interface.
-func (m *BaseMobile) ContainerItemAdded(c Container, item Item) {
-	if m.n != nil {
-		m.n.AddItemToContainer(c, item)
-	}
-}
-
-// ContainerOpen implements the ContainerObserver interface.
-func (m *BaseMobile) ContainerItemRemoved(c Container, item Item) {
-	if m.n != nil {
-		m.n.RemoveItemFromContainer(c, item)
-	}
-}
-
 // AfterMove implements the Mobile interface.
 func (m *BaseMobile) AfterMove() {
 	// Check for containers that we need to close
-	for _, container := range m.observedContainers.Copy() {
-		if m.location.XYDistance(container.Location()) > uo.MaxContainerViewRange {
-			container.RemoveObserver(m)
-			m.n.CloseGump(container.Serial())
-		}
+	if m.NetState() != nil {
+		m.NetState().ContainerRangeCheck()
 	}
 }

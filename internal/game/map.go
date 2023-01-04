@@ -284,7 +284,6 @@ func (m *Map) MoveMobile(mob Mobile, dir uo.Direction) bool {
 		for _, othermob := range m.GetNetStatesInRange(mob.Location(), uo.MaxViewRange+1) {
 			othermob.NetState().MoveMobile(mob)
 		}
-		mob.AfterMove()
 		return true
 	}
 	// Movement request

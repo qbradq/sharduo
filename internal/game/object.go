@@ -184,7 +184,8 @@ func (o *BaseObject) Parent() Object { return o.parent }
 // RootParent implements the Object interface
 func (o *BaseObject) RootParent() Object {
 	if o.parent == nil {
-		return o
+		var obj Object = o
+		return obj
 	}
 	topmost := o.Parent()
 	for {

@@ -32,9 +32,11 @@ func (n *MockNetState) MoveMobile(mob Mobile)                                  {
 func (n *MockNetState) UpdateObject(Object)                                    {}
 func (n *MockNetState) WornItem(wearable Wearable, mob Mobile)                 {}
 func (n *MockNetState) DropReject(reason uo.MoveItemRejectReason)              {}
-func (n *MockNetState) OpenContainer(c Container)                              {}
-func (n *MockNetState) AddItemToContainer(c Container, item Item)              {}
-func (n *MockNetState) RemoveItemFromContainer(c Container, item Item)         {}
+func (n *MockNetState) ContainerOpen(c Container)                              {}
+func (n *MockNetState) ContainerClose(c Container)                             {}
+func (n *MockNetState) ContainerItemAdded(c Container, item Item)              {}
+func (n *MockNetState) ContainerItemRemoved(c Container, item Item)            {}
+func (n *MockNetState) ContainerRangeCheck()                                   {}
 func (n *MockNetState) CloseGump(gump uo.Serial)                               {}
 func (n *MockNetState) DragItem(item Item, srcMob Mobile, srcLoc uo.Location, destMob Mobile, destLoc uo.Location) {
 }
