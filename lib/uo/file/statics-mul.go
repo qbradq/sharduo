@@ -41,7 +41,7 @@ func NewStaticsMulFromFile(staidxPath, staticsPath string, tdmul *TileDataMul) *
 						Y: (int(cy) * int(uo.ChunkHeight)) + int(cd[staticOfs+3]),
 						Z: int(int8(cd[staticOfs+4])),
 					},
-					tdmul.staticDefinitions[binary.LittleEndian.Uint16(cd[staticOfs+0:staticOfs+2])])
+					&tdmul.staticDefinitions[binary.LittleEndian.Uint16(cd[staticOfs+0:staticOfs+2])])
 				staticOfs += 7
 				m.statics = append(m.statics, e)
 			}

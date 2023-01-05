@@ -13,7 +13,7 @@ type MapMulChunk struct {
 
 // MapMul represents the Map0.mul file
 type MapMul struct {
-	Chunks []*MapMulChunk
+	Chunks []MapMulChunk
 }
 
 // NewMapMulFromFile loads map0.mul from the given path. Not that this ONLY
@@ -22,10 +22,10 @@ type MapMul struct {
 func NewMapMulFromFile(fname string, tdmul *TileDataMul) *MapMul {
 	// Initialize map storage
 	m := &MapMul{
-		Chunks: make([]*MapMulChunk, uo.MapChunksWidth*uo.MapChunksHeight),
+		Chunks: make([]MapMulChunk, uo.MapChunksWidth*uo.MapChunksHeight),
 	}
 	for i := range m.Chunks {
-		m.Chunks[i] = &MapMulChunk{
+		m.Chunks[i] = MapMulChunk{
 			Tiles: make([]uo.Tile, uo.ChunkWidth*uo.ChunkHeight),
 		}
 	}
@@ -58,9 +58,10 @@ func NewMapMulFromFile(fname string, tdmul *TileDataMul) *MapMul {
 
 // GetChunk returns a pointer to the given MapMulChunk, or nil if the
 // chunk coordinates are out of bounds.
-func (m *MapMul) GetChunk(x, y int) *MapMulChunk {
+func (m *MapMul) GetChunk(x, y int) MapMulChunk {
+	var zero MapMulChunk
 	if x < 0 || x >= uo.MapChunksWidth || y < 0 || y >= uo.MapChunksHeight {
-		return nil
+		return zero
 	}
 	return m.Chunks[y*uo.MapChunksWidth+x]
 }

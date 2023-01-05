@@ -163,6 +163,7 @@ func Main() {
 	}
 	log.Printf("game server listening at %s:%d\n", configuration.GameServerAddress, configuration.GameServerPort)
 	trap(l)
+
 	for {
 		c, err := l.AcceptTCP()
 		if err != nil {

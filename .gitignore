@@ -16,6 +16,7 @@ sharduo.exe
 debug
 .vscode/
 
+# Log files
 *.log
 
 # Debug files
@@ -29,3 +30,6 @@ client/
 
 # Machine-specific configuration file
 /configuration.ini
+
+# Profiling files
+*.pprof
