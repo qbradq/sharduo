@@ -140,7 +140,11 @@ func (c *NewCommand) Execute(n *NetState) error {
 			}
 			item.SetAmount(int(v))
 		}
-		world.Map().SetNewParent(o, nil)
+		// Try to add the object to the map legit, but if that fails just force
+		// it so we don't leak it.
+		if !world.Map().AddObject(o) {
+			world.Map().ForceAddObject(o)
+		}
 	})
 	return nil
 }

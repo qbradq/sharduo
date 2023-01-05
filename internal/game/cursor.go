@@ -1,5 +1,7 @@
 package game
 
+import "github.com/qbradq/sharduo/lib/uo"
+
 // CursorState represents the current state of the client's cursor from the
 // player's point of view. Not that this does not account for targeting cursors.
 type CursorState int
@@ -21,6 +23,8 @@ type Cursor struct {
 	item Item
 	// Previous parent of the object on the cursor before we picked it up
 	previousParent Object
+	// Previous location of the object
+	previousLocation uo.Location
 }
 
 // Occupied returns true if there is already an item on the cursor
@@ -29,6 +33,7 @@ func (c *Cursor) Occupied() bool { return c.item != nil }
 // PickUp attempts to pick up the object. Returns true if successful.
 func (c *Cursor) PickUp(o Object) bool {
 	if o == nil {
+		c.previousLocation = uo.Location{}
 		c.State = CursorStateNormal
 		c.item = nil
 		c.previousParent = nil
@@ -44,18 +49,24 @@ func (c *Cursor) PickUp(o Object) bool {
 	}
 	c.previousParent = item.Parent()
 	c.item = item
+	c.previousLocation = item.Location()
 	return true
 }
 
 // Return send the item on the cursor back to it's previous parent.
 func (c *Cursor) Return() {
+	oldLocation := c.previousLocation
 	oldParent := c.previousParent
 	item := c.item
+	c.previousLocation = uo.Location{}
 	c.previousParent = nil
 	c.item = nil
+	item.SetLocation(oldLocation)
 	// Old parent was the map, just send it back
 	if oldParent == nil {
-		world.Map().ForceAddObject(item)
+		if !world.Map().AddObject(item) {
+			world.Map().ForceAddObject(item)
+		}
 		return
 	}
 	// Old parent was a stack of items that we might be able to combine with
@@ -64,15 +75,21 @@ func (c *Cursor) Return() {
 			// Combine successful
 			return
 		}
-		// Force the item back into the stack's parent
+		// But the item back into the stack's parent
 		if oldParent.Parent() == nil {
-			world.Map().ForceAddObject(item)
+			if !world.Map().AddObject(item) {
+				world.Map().ForceAddObject(item)
+			}
 		} else {
-			oldParent.Parent().ForceAddObject(item)
+			if !oldParent.Parent().AddObject(item) {
+				oldParent.Parent().ForceAddObject(item)
+			}
 		}
 		return
 	}
-	oldParent.ForceAddObject(item)
+	if !oldParent.Parent().AddObject(item) {
+		oldParent.Parent().ForceAddObject(item)
+	}
 }
 
 // Drop attempts to drop the item on the cursor onto the target and returns true

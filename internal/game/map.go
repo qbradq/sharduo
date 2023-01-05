@@ -225,9 +225,18 @@ func (m *Map) RemoveEverything(mob Mobile) {
 }
 
 // RemoveObject removes the object from the map. It always returns true, even if
-// the object was not on the map to begin with.
+// the object was not on the map to begin with. If the object removed was an
+// item any other items that were resting on this one will be plopped downward.
 func (m *Map) RemoveObject(o Object) bool {
+	var l uo.Location
+	item, ok := o.(Item)
+	if ok {
+		l = item.Location()
+	}
 	m.ForceRemoveObject(o)
+	if ok {
+		m.plopItems(l, item.Height())
+	}
 	return true
 }
 
@@ -264,7 +273,7 @@ func (m *Map) ForceAddObject(o Object) {
 
 // ForceRemoveObject removes the object from the map and always succeeds.
 func (m *Map) ForceRemoveObject(o Object) {
-	c := m.getChunk(o.Location())
+	c := m.getChunk(o.Location().Bound())
 	c.Remove(o)
 	// Tell other mobiles with net states in range about the object removal
 	for _, mob := range m.GetNetStatesInRange(o.Location(), uo.MaxViewRange) {
@@ -589,6 +598,12 @@ func (m *Map) GetAverageTerrainZ(l uo.Location) int {
 // object's Z position might be altered on success, but not always. The object
 // is never altered on failure.
 //
+// NOTES
+//
+//	This function enforces the uo.MaxItemStackHeight restriction. If the total
+//	height of items at the location would be greater than this limit this
+//	function will fail.
+//
 // Explanation
 //  1. Determine the floor altitude considering the tile matrix and statics.
 //  2. Determine the ceiling altitude considering the tile matrix and statics.
@@ -643,6 +658,10 @@ func (m *Map) plop(toPlop Item) bool {
 	if ceiling-floor < toPlop.Height() {
 		return false
 	}
+	// Limit item stack height to the max
+	if ceiling-floor > uo.MaxItemStackHeight {
+		ceiling = floor + uo.MaxItemStackHeight
+	}
 	// Process items to adjust floor and ceiling values
 	for _, item := range c.items {
 		// Only look at items at our location
@@ -650,11 +669,12 @@ func (m *Map) plop(toPlop Item) bool {
 			continue
 		}
 		itemTopZ := item.Z() + item.Height()
-		if itemTopZ > floor && item.Z() <= ceiling {
+		if itemTopZ > floor && itemTopZ <= ceiling {
 			// The item is between the static floor and the current ceiling so
 			// consider it a possible floor
 			floor = itemTopZ
-		} else if item.Z() < ceiling && item.Z() > floor {
+		}
+		if item.Z() < ceiling && item.Z() > floor {
 			// This item is above us so consider it a possible ceiling
 			ceiling = item.Z()
 		} // Else the item is outside the current gap
@@ -668,4 +688,62 @@ func (m *Map) plop(toPlop Item) bool {
 	l.Z = floor
 	toPlop.SetLocation(l)
 	return true
+}
+
+// plopItems adjusts the Z position of every object in the location above the Z
+// position and below the ceiling. This has the effect of letting all these
+// items fall by the given amount.
+//
+// NOTES
+//
+//	As a side-effect this function calls world.Update on each item modified.
+//
+// Explanation
+//  1. Determine the ceiling altitude considering the tile matrix and statics.
+//  2. Process all items in the location:
+//     a. If the item's Z position is under the ceiling apply the offset.
+//     b. Make sure no item's Z position is set lower than the static floor.
+func (m *Map) plopItems(l uo.Location, drop int) {
+	ceiling := uo.MapMaxZ
+	floor := l.Z
+	c := m.getChunk(l)
+	// Consider the tile matrix
+	t := c.GetTile(l.X%uo.ChunkWidth, l.Y%uo.ChunkHeight)
+	if !t.Ignore() {
+		avgZ := m.GetAverageTerrainZ(l)
+		if avgZ > floor {
+			// Location is below the ground
+			ceiling = avgZ
+		} // Else the location is already on the ground or above it
+	}
+	// Process statics to find the static ceiling
+	for _, static := range c.statics {
+		// Ignore statics that are not at the location
+		if static.Location.X != l.X || static.Location.Y != l.Y {
+			continue
+		}
+		// Only select surfaces
+		if !static.Surface() && !static.Wet() {
+			continue
+		}
+		if static.Z() < ceiling && static.Z() >= floor {
+			ceiling = static.Z()
+		}
+	}
+	// Process items to adjust Z position
+	for _, item := range c.items {
+		// Only look at items at our location
+		if item.Location().X != l.X || item.Location().Y != l.Y {
+			continue
+		}
+		if item.Z() > floor && item.Z() < ceiling {
+			il := item.Location()
+			il.Z -= drop
+			if il.Z < floor {
+				il.Z = floor
+			}
+			item.SetLocation(il)
+			world.Update(item)
+		}
+	}
 }
