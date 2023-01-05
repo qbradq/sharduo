@@ -231,10 +231,14 @@ func (m *Map) RemoveObject(o Object) bool {
 	return true
 }
 
-// AddObject adds an object to the map sending all proper updates. It returns
-// false only if the object could not fit on the map.
+// AddObject adds an object to the map sending all proper updates. If the object
+// is an item it will be stacked on top of any other items at the location. It
+// returns false only if the object is an item and could not fit on the map.
 func (m *Map) AddObject(o Object) bool {
 	// TODO Make sure there is enough room
+	if item, ok := o.(Item); ok && !m.plop(item) {
+		return false
+	}
 	m.ForceAddObject(o)
 	return true
 }
@@ -492,6 +496,10 @@ func (m *Map) GetTopSurface(l uo.Location, zLimit int) uo.CommonObject {
 		// items underground.
 	}
 	for _, static := range c.statics {
+		// Ignore statics that are not at the location
+		if static.Location.X != l.X || static.Location.Y != l.Y {
+			continue
+		}
 		// Only select surfaces
 		if !static.Surface() && !static.Wet() {
 			continue
@@ -507,12 +515,12 @@ func (m *Map) GetTopSurface(l uo.Location, zLimit int) uo.CommonObject {
 		}
 	}
 	for _, item := range c.items {
-		// Only consider surface items
-		if !item.Surface() && !item.Wet() {
+		// Ignore items that are not at the location
+		if item.Location().X != l.X || item.Location().Y != l.Y {
 			continue
 		}
-		// Only look at items at our location
-		if item.Location().X != l.X || item.Location().Y != l.Y {
+		// Only consider surface items
+		if !item.Surface() && !item.Wet() {
 			continue
 		}
 		itemTopZ := item.Z() + item.Height()
@@ -573,4 +581,93 @@ func (m *Map) GetAverageTerrainZ(l uo.Location) int {
 		ret--
 	}
 	return ret / 2
+}
+
+// plop attempts to adjust the Z position of the object such that it fits on the
+// map, sits above any other objects already at the location, and does not poke
+// through a floor or ceiling of some kind. It returns true on success. The
+// object's Z position might be altered on success, but not always. The object
+// is never altered on failure.
+//
+// Explanation
+//  1. Determine the floor altitude considering the tile matrix and statics.
+//  2. Determine the ceiling altitude considering the tile matrix and statics.
+//  3. If the gap between the floor and ceiling is less than the object
+//     height the object is untouched and we return false.
+//  4. Collect a z-sorted list of all the items at the location that are between
+//     the floor height (inclusive) and the ceiling height (exclusive).
+//  5. Process the list of items:
+//     A. If we are out of items return true.
+//     B. If the Z position of this item is higher than the current floor value:
+//     a. If the gap between the current floor and the Z position of the item is
+//     less than the object height the object is untouched and we return
+//     false.
+//     b. Else the item fits, update the Z position and return true.
+//     C. Add the height of the object to the current floor value and loop.
+func (m *Map) plop(toPlop Item) bool {
+	l := toPlop.Location()
+	ceiling := uo.MapMaxZ
+	floor := l.Z
+	c := m.getChunk(l)
+	// Consider the tile matrix
+	t := c.GetTile(l.X%uo.ChunkWidth, l.Y%uo.ChunkHeight)
+	if !t.Ignore() {
+		avgZ := m.GetAverageTerrainZ(l)
+		if avgZ < floor {
+			// Object is above the ground
+			floor = avgZ
+		} else if avgZ > floor {
+			// Object is below the ground
+			ceiling = avgZ
+		} // Else the object is already on the ground
+	} else {
+		// This is a cave entrance or other ignorable tile, so we'll need to
+		// select the static surface below the object
+		floor = uo.MapMinZ
+	}
+	// Process statics to find the static floor and ceiling
+	for _, static := range c.statics {
+		// Ignore statics that are not at the location
+		if static.Location.X != l.X || static.Location.Y != l.Y {
+			continue
+		}
+		// Only select surfaces
+		if !static.Surface() && !static.Wet() {
+			continue
+		}
+		staticTopZ := static.Z() + static.Height()
+		if staticTopZ > floor && staticTopZ < l.Z {
+			// This static is between the tile matrix and the object's starting
+			// location so consider it a possible floor
+			floor = staticTopZ
+		}
+		if static.Z() < ceiling {
+			// This static is above us so consider it a possible ceiling
+			ceiling = static.Z()
+		}
+	}
+	// See if there is enough room to begin with
+	if ceiling-floor < toPlop.Height() {
+		return false
+	}
+	// Collect a list of all items at the location and z-sort them
+	for _, item := range c.items {
+		// Only consider surface items
+		if !item.Surface() && !item.Wet() {
+			continue
+		}
+		// Only look at items at our location
+		if item.Location().X != l.X || item.Location().Y != l.Y {
+			continue
+		}
+		itemTopZ := item.Z() + item.Height()
+		if itemTopZ > topZ && itemTopZ <= zLimit {
+			if itemTopZ == zLimit {
+				return item
+			} else {
+				topZ = itemTopZ
+				topObj = item
+			}
+		}
+	}
 }
