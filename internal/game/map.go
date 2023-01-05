@@ -363,13 +363,23 @@ func (m *Map) TeleportMobile(mob Mobile, l uo.Location) bool {
 // getChunksInBounds returns a slice of all the chunks within a given bounds.
 func (m *Map) getChunksInBounds(b uo.Bounds) []*chunk {
 	var ret []*chunk
+	tl := uo.Location{
+		X: b.X,
+		Y: b.Y,
+	}
 	scx := b.X / uo.ChunkWidth
 	scy := b.Y / uo.ChunkHeight
 	ecx := (b.X + b.W - 1) / uo.ChunkWidth
 	ecy := (b.Y + b.H - 1) / uo.ChunkHeight
 	for cy := scy; cy <= ecy; cy++ {
 		for cx := scx; cx <= ecx; cx++ {
-			ret = append(ret, m.chunks[cy*uo.MapChunksWidth+cx])
+			l := uo.Location{
+				X: cx * uo.ChunkWidth,
+				Y: cy * uo.ChunkHeight,
+			}.WrapAndBound(tl)
+			ccx := l.X / uo.ChunkWidth
+			ccy := l.Y / uo.ChunkHeight
+			ret = append(ret, m.chunks[ccy*uo.MapChunksWidth+ccx])
 		}
 	}
 	return ret

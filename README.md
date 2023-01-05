@@ -15,7 +15,7 @@ including all features required to mine ore and smelt it into ingots.
 * Map tile query
 * ~~Stats~~
 * ~~Running~~
-* Picking up and dropping items on the ground (partially implemented)
+* ~~Picking up and dropping items on the ground~~
 * ~~Player persistance~~
 * ~~Removing equipment~~
 * ~~Equipping equipment~~
@@ -64,15 +64,16 @@ opened to outside connections.
 * Integration of the game service into a single self-managed structure
 * Restrict command usage to access levels
 * ~~Do not allow items within the bank box to be used unless the bank box is open~~
+* ~~Proper coordinate wrapping in game.Map.getChunksInBounds()~~
 
 ### Miscellaneous Issues ###
 This is a list of known issues that do not need to be resolved before the next
 milestone but do need to be resolved sometime.
 
-* Proper coordinate wrapping in game.Map.getChunksInBounds()
-* Proper coordinate wrapping in uo.Location.XYDistance()
 * Reduce redundancy in save files... somehow
 * Improve client file load time
+* Proper coordinate wrapping in uo.Location.XYDistance()
+* Wrapped overworld
 
 # Shard Administration Advice #
 The ShardUO software and the creative content within were developed to host a
