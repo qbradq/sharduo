@@ -1,5 +1,7 @@
 package game
 
+var eventHandlerGetter func(string) func(Object, Object)
+
 // RootParent returns the top-most parent of the object who's parent is the map.
 // If this object's parent is the map this object is returned.
 func RootParent(o Object) Object {
@@ -21,4 +23,10 @@ func DynamicDispatch(which string, receiver, source Object) {
 	if fn != nil {
 		fn(receiver, source)
 	}
+}
+
+// SetEventHandlerGetter sets the function used to get event handler functions
+// by name.
+func SetEventHandlerGetter(fn func(string) func(Object, Object)) {
+	eventHandlerGetter = fn
 }

@@ -15,6 +15,7 @@ import (
 	"syscall"
 
 	"github.com/qbradq/sharduo/internal/game"
+	"github.com/qbradq/sharduo/internal/game/events"
 	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/uo/file"
@@ -119,6 +120,11 @@ func Initialize() {
 
 	// RNG initialization
 	rng := util.NewRNG()
+
+	// Event system initialization
+	game.SetEventHandlerGetter(func(which string) func(game.Object, game.Object) {
+		return events.GetEventHandler(which)
+	})
 
 	// Load object templates
 	templateManager = NewTemplateManager("templates")

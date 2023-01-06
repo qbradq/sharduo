@@ -147,11 +147,6 @@ func (c *BaseContainer) Open(m Mobile) {
 	observer.ContainerOpen(c)
 }
 
-// Doubleclick implements the object interface.
-func (c *BaseContainer) DoubleClick(from Mobile) {
-	c.Open(from)
-}
-
 // DropObject implements the Object interface.
 func (c *BaseContainer) DropObject(o Object, l uo.Location, from Mobile) bool {
 	// TODO Access calculations

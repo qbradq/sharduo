@@ -67,8 +67,6 @@ type Object interface {
 	DropObject(Object, uo.Location, Mobile) bool
 	// SingleClick is called when a client single-clicks the object
 	SingleClick(Mobile)
-	// DoubleClick is called when a client double-clicks the object
-	DoubleClick(Mobile)
 
 	//
 	// Generic accessors
@@ -157,6 +155,7 @@ func (o *BaseObject) Serialize(f *util.TagFileWriter) {
 // Deserialize implements the util.Serializeable interface.
 func (o *BaseObject) Deserialize(f *util.TagFileObject) {
 	o.BaseSerializeable.Deserialize(f)
+	// Owned properties
 	o.templateName = f.GetString("TemplateName", "")
 	if o.templateName == "" {
 		// Something is very wrong
@@ -178,6 +177,8 @@ func (o *BaseObject) Deserialize(f *util.TagFileObject) {
 		Z: 55,
 	})
 	o.facing = uo.Direction(f.GetNumber("Facing", int(uo.DirectionSouth)))
+	// Events
+	o.deserializeEvent("OnDoubleClick", f)
 }
 
 // Parent implements the Object interface
@@ -246,11 +247,6 @@ func (o *BaseObject) SingleClick(from Mobile) {
 	}
 }
 
-// DoubleClick implements the Object interface
-func (o *BaseObject) DoubleClick(from Mobile) {
-	// No default action
-}
-
 // Location implements the Object interface
 func (o *BaseObject) Location() uo.Location { return o.location }
 
@@ -287,8 +283,31 @@ func (o *BaseObject) SetFacing(f uo.Direction) {
 	o.facing = f.Bound()
 }
 
+// deserializeEvent attempts to deserialize the named event handler
+func (o *BaseObject) deserializeEvent(which string, tfo *util.TagFileObject) {
+	eventName := tfo.GetString(which, "")
+	if eventName == "" {
+		return
+	}
+	eventHandler := eventHandlerGetter(eventName)
+	if eventHandler == nil {
+		log.Printf("warning: object %s referenced unknown event handler %s", o.Serial().String(), eventName)
+	}
+	o.LinkEvent(which, eventHandler)
+}
+
 // LinkEvent implements the Object interface
 func (o *BaseObject) LinkEvent(which string, fn func(Object, Object)) {
+	if which == "" {
+		return
+	}
+	if fn == nil {
+		if o.ddfn == nil {
+			return
+		}
+		delete(o.ddfn, which)
+		return
+	}
 	if o.ddfn == nil {
 		o.ddfn = make(map[string]func(Object, Object))
 	}

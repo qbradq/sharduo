@@ -102,7 +102,7 @@ func handleDoubleClickRequest(n *NetState, cp clientpacket.Packet) {
 		return
 	}
 	// TODO Line of sight check
-	o.DoubleClick(n.m)
+	game.DynamicDispatch("OnDoubleClick", o, n.m)
 }
 
 func handleClientViewRange(n *NetState, cp clientpacket.Packet) {
