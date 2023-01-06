@@ -27,7 +27,7 @@ including all features required to mine ore and smelt it into ingots.
 * ~~Backpack and inventory~~
 * ~~Container handling~~
 * Spacial chat with speaking, yelling, and whispering
-* Mobile weight limit
+* Mobile weight limit and stamina
 * ~~Stat updates~~
 * Skill updates
 * Skill gains
@@ -47,7 +47,7 @@ including all features required to mine ore and smelt it into ingots.
 * Horses and Llamas
 * Pack Horses and Llamas
 * Banker NPC
-* ~~Bank box~~
+* ~~Bank box~~q
 * Line of sight checks
 * Paper Dolls for others
 * Item durability

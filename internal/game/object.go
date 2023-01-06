@@ -230,14 +230,15 @@ func (o *BaseObject) RemoveObject(c Object) bool {
 // AddObject implements the Object interface
 func (o *BaseObject) AddObject(c Object) bool {
 	// BaseObject has no child references
+	o.SetParent(c)
 	return false
 }
 
 // ForceAddObject implements the Object interface. PLEASE NOTE that a call to
 // BaseObject.ForceAddObject() will leak the object!
 func (o *BaseObject) ForceAddObject(obj Object) {
-	obj.SetParent(o)
 	// BaseObject has no child references
+	obj.SetParent(o)
 }
 
 // ForceRemoveObject implements the Object interface. PLEASE NOTE that a call to
