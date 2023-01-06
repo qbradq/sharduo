@@ -186,7 +186,7 @@ func (c *BaseContainer) doRemove(o Object, force bool) bool {
 	}
 	// Gold calculations
 	if c.TemplateName() != "PlayerBankBox" && item.TemplateName() == "GoldCoin" {
-		if mobile, ok := c.RootParent().(Mobile); ok {
+		if mobile, ok := RootParent(c).(Mobile); ok {
 			mobile.AdjustGold(-item.Amount())
 		}
 	}
@@ -294,7 +294,7 @@ func (c *BaseContainer) ForceAddObject(o Object) {
 	}
 	// Gold calculations
 	if c.TemplateName() != "PlayerBankBox" && item.TemplateName() == "GoldCoin" {
-		if mobile, ok := c.RootParent().(Mobile); ok {
+		if mobile, ok := RootParent(c).(Mobile); ok {
 			mobile.AdjustGold(item.Amount())
 		}
 	}

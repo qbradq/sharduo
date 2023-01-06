@@ -44,4 +44,6 @@ type NetState interface {
 
 	// CloseGump closes the named gump on the client
 	CloseGump(gump uo.Serial)
+	// OpenPaperDoll opens the paper doll of the given mobile
+	OpenPaperDoll(m Mobile)
 }

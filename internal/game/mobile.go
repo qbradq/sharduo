@@ -301,12 +301,6 @@ func (m *BaseMobile) OnAfterDeserialize(f *util.TagFileObject) {
 			log.Println("failed to equip auto-generated player bank box")
 		}
 	}
-	// TODO Debug
-	if m.IsPlayerCharacter() {
-		if !m.Equip(world.New("HorseMountItem").(Wearable)) {
-			log.Println("failed to equip auto-generated player mount item")
-		}
-	}
 	// If we had an item on the cursor at the time of the save we drop it at
 	// our feet just so we don't leak it.
 	incs := uo.Serial(f.GetHex("ItemInCursor", uint32(uo.SerialItemNil)))
@@ -749,12 +743,15 @@ func (m *BaseMobile) AfterMove() {
 
 // InBank implements the Mobile interface.
 func (m *BaseMobile) InBank(o Object) bool {
+	if o == nil {
+		return false
+	}
 	if !m.isPlayerCharacter {
 		// Non-player-characters do not have bank boxes
 		return false
 	}
-	root := o.RootParent()
-	if root == nil || o.RootParent().Serial() != m.Serial() {
+	root := RootParent(o)
+	if root == nil || root.Serial() != m.Serial() {
 		// Object is a child of the map or another mobile
 		return false
 	}
@@ -783,8 +780,8 @@ func (m *BaseMobile) InBank(o Object) bool {
 
 // InBackpack implements the Mobile interface.
 func (m *BaseMobile) InBackpack(o Object) bool {
-	root := o.RootParent()
-	if root == nil || o.RootParent().Serial() != m.Serial() {
+	root := RootParent(o)
+	if root == nil || root.Serial() != m.Serial() {
 		// Object is a child of the map or another mobile
 		return false
 	}

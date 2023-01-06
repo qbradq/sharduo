@@ -21,12 +21,17 @@ type BaseSerialer struct {
 
 // Serial implements the Serializeable interface
 func (s *BaseSerialer) Serial() uo.Serial {
+	if s == nil {
+		return uo.SerialZero
+	}
 	return s.serial
 }
 
 // SetSerial implements the Serializeable interface
 func (s *BaseSerialer) SetSerial(serial uo.Serial) {
-	s.serial = serial
+	if s != nil {
+		s.serial = serial
+	}
 }
 
 // Serializeable is the interface all serializeable objects implement.

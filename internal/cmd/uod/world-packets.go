@@ -76,33 +76,33 @@ func handleDoubleClickRequest(n *NetState, cp clientpacket.Packet) {
 		return
 	}
 	p := cp.(*clientpacket.DoubleClick)
-	if p.IsSelf || p.ID == n.m.Serial() {
-		// This is a double-click on the player's mobile. Ignore the rest of
-		// the serial and directly access the mobile. NEVER trust a random
-		// serial from the client :)
-		n.Send(&serverpacket.OpenPaperDoll{
-			Serial:    n.m.Serial(),
-			Text:      n.m.DisplayName(),
-			WarMode:   false,
-			Alterable: true,
-		})
-	} else {
-		o := world.Find(p.ID)
-		if o == nil {
-			return
-		}
-		// Make sure we are not trying to access an item within a closed bank
-		// box.
-		if n.m.InBank(o) && !n.m.BankBoxOpen() {
-			return
-		}
-		targetLocation := o.RootParent().Location()
-		if n.m.Location().XYDistance(targetLocation) > uo.MaxUseRange {
-			return
-		}
-		// TODO Line of sight check
-		o.DoubleClick(n.m)
+	o := world.Find(p.ID.StripSelfFlag())
+	if o == nil {
+		return
 	}
+	// If this is a mobile we can skip a lot of checks
+	if o.Serial().IsMobile() {
+		// Range check just to make sure the player can actually see this thing
+		// on-screen
+		targetLocation := game.RootParent(o).Location()
+		if n.m.Location().XYDistance(targetLocation) > n.m.ViewRange() {
+			return
+		}
+		game.DynamicDispatch("OnDoubleClick", o, n.m)
+		return
+	}
+	// Make sure we are not trying to access an item within a closed bank
+	// box.
+	if n.m.InBank(o) && !n.m.BankBoxOpen() {
+		return
+	}
+	// Range check
+	targetLocation := game.RootParent(o).Location()
+	if n.m.Location().XYDistance(targetLocation) > uo.MaxUseRange {
+		return
+	}
+	// TODO Line of sight check
+	o.DoubleClick(n.m)
 }
 
 func handleClientViewRange(n *NetState, cp clientpacket.Packet) {
@@ -137,7 +137,7 @@ func handleLiftRequest(n *NetState, cp clientpacket.Packet) {
 		n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		return
 	}
-	if n.m.Location().XYDistance(item.RootParent().Location()) > uo.MaxLiftRange {
+	if n.m.Location().XYDistance(game.RootParent(item).Location()) > uo.MaxLiftRange {
 		n.DropReject(uo.MoveItemRejectReasonOutOfRange)
 		return
 	}
@@ -200,7 +200,7 @@ func handleDropRequest(n *NetState, cp clientpacket.Packet) {
 			n.m.DropItemInCursor()
 			n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		}
-		newLocation := target.RootParent().Location()
+		newLocation := game.RootParent(target).Location()
 		if n.m.Location().XYDistance(newLocation) > uo.MaxDropRange {
 			n.m.DropItemInCursor()
 			n.DropReject(uo.MoveItemRejectReasonOutOfRange)

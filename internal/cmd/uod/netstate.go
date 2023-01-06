@@ -304,10 +304,6 @@ func (n *NetState) itemInfo(item game.Item) {
 
 // sendMobile sends packets to send a mobile to the client.
 func (n *NetState) sendMobile(mobile game.Mobile) {
-	flags := uo.MobileFlagNone
-	if mobile.IsFemale() {
-		flags |= uo.MobileFlagFemale
-	}
 	notoriety := uo.NotorietyEnemy
 	if n.m != nil {
 		notoriety = n.m.GetNotorietyFor(mobile)
@@ -322,7 +318,7 @@ func (n *NetState) sendMobile(mobile game.Mobile) {
 			Facing:    mobile.Facing(),
 			IsRunning: mobile.IsRunning(),
 			Hue:       mobile.Hue(),
-			Flags:     flags,
+			Flags:     mobile.MobileFlags(),
 			Notoriety: notoriety,
 		}
 		mobile.MapEquipment(func(w game.Wearable) error {
@@ -568,7 +564,7 @@ func (n *NetState) ContainerRangeCheck() {
 	}
 	// Observe all containers
 	for _, c := range toObserve {
-		root := c.RootParent()
+		root := game.RootParent(c)
 		if _, ok := root.(game.Container); ok {
 			// Container is somewhere on the map
 			// TODO Line of sight check, this one might be costly and unnecessary
@@ -614,4 +610,28 @@ func (n *NetState) ContainerRangeCheck() {
 func (n *NetState) ContainerIsObserving(o game.Object) bool {
 	_, found := n.observedContainers[o.Serial()]
 	return found
+}
+
+// OpenPaperDoll implements the game.NetState interface
+func (n *NetState) OpenPaperDoll(m game.Mobile) {
+	if m == nil {
+		return
+	}
+	if n.m != nil && n.m.Serial() == m.Serial() {
+		// Player is opening thier own paper doll
+		n.Send(&serverpacket.OpenPaperDoll{
+			Serial:    m.Serial(),
+			Text:      m.DisplayName(),
+			WarMode:   false,
+			Alterable: true,
+		})
+	} else {
+		// Player is opening someone else's paper doll
+		n.Send(&serverpacket.OpenPaperDoll{
+			Serial:    m.Serial(),
+			Text:      m.DisplayName(),
+			WarMode:   false,
+			Alterable: false,
+		})
+	}
 }

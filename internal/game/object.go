@@ -17,6 +17,9 @@ func init() {
 type Object interface {
 	util.Serializeable
 
+	// List of all events supported by basic Objects
+	// OnDoubleClick....................Player double-clicks on object
+
 	//
 	// Parent / child relationships
 	//
@@ -24,9 +27,6 @@ type Object interface {
 	// Parent returns a pointer to the parent object of this object, or nil
 	// if the object is attached directly to the world
 	Parent() Object
-	// RootParent returns the top-most parent of the object who's parent is the
-	// map. If this object's parent is the map this object is returned.
-	RootParent() Object
 	// HasParent returns true if the given object is this object's parent, or
 	// the parent of any other object in the parent chain.
 	HasParent(Object) bool
@@ -39,6 +39,11 @@ type Object interface {
 	// Callbacks
 	//
 
+	// LinkEvent links the named function to this object. Use the global
+	// function DynamicDispatch to execute these functions.
+	LinkEvent(string, func(Object, Object))
+	// GetEventHandler returns the named link function or nil.
+	GetEventHandler(string) func(Object, Object)
 	// RecalculateStats is called after an object has been deserialized and
 	// should be used to recalculate dynamic attributes.
 	RecalculateStats()
@@ -60,11 +65,6 @@ type Object interface {
 	// items directly into a container. This returns false if the drop action
 	// is rejected for any reason.
 	DropObject(Object, uo.Location, Mobile) bool
-
-	//
-	// Player / client interaction callbacks
-	//
-
 	// SingleClick is called when a client single-clicks the object
 	SingleClick(Mobile)
 	// DoubleClick is called when a client double-clicks the object
@@ -123,6 +123,8 @@ type BaseObject struct {
 	location uo.Location
 	// Facing is the direction the object is facing
 	facing uo.Direction
+	// Collection of all dynamic dispatch function pointers
+	ddfn map[string]func(Object, Object)
 }
 
 // TypeName implements the util.Serializeable interface.
@@ -180,23 +182,6 @@ func (o *BaseObject) Deserialize(f *util.TagFileObject) {
 
 // Parent implements the Object interface
 func (o *BaseObject) Parent() Object { return o.parent }
-
-// RootParent implements the Object interface
-func (o *BaseObject) RootParent() Object {
-	if o.parent == nil {
-		// This is hacky and prooves I still don't fully understand Go
-		// interfaces
-		return world.Find(o.Serial())
-	}
-	topmost := o.parent
-	for {
-		p := topmost.Parent()
-		if p == nil {
-			return topmost
-		}
-		topmost = p
-	}
-}
 
 // HasParent implements the Object interface
 func (o *BaseObject) HasParent(t Object) bool {
@@ -300,4 +285,20 @@ func (o *BaseObject) Facing() uo.Direction { return o.facing }
 // SetFacing implements the Object interface
 func (o *BaseObject) SetFacing(f uo.Direction) {
 	o.facing = f.Bound()
+}
+
+// LinkEvent implements the Object interface
+func (o *BaseObject) LinkEvent(which string, fn func(Object, Object)) {
+	if o.ddfn == nil {
+		o.ddfn = make(map[string]func(Object, Object))
+	}
+	o.ddfn[which] = fn
+}
+
+// GetEventHandler implements the Object interface
+func (o *BaseObject) GetEventHandler(which string) func(Object, Object) {
+	if o.ddfn == nil {
+		return nil
+	}
+	return o.ddfn[which]
 }

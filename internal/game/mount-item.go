@@ -23,12 +23,12 @@ func (i *MountItem) TypeName() string {
 
 // Serialize implements the util.Serializeable interface.
 func (i *MountItem) Serialize(f *util.TagFileWriter) {
-	i.BaseItem.Serialize(f)
+	i.BaseWearable.Serialize(f)
 }
 
 // Deserialize implements the util.Serializeable interface.
 func (i *MountItem) Deserialize(f *util.TagFileObject) {
-	i.BaseItem.Deserialize(f)
+	i.BaseWearable.Deserialize(f)
 }
 
 // RemoveObject implements the Object interface

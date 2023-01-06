@@ -181,16 +181,18 @@ func (m *Map) SetNewParent(o, p Object) bool {
 		// Drag packets only happen for items
 		return true
 	}
-	newLocation := item.RootParent().Location()
-	if item.RootParent().Serial().IsMobile() {
+	itemRoot := RootParent(item)
+	newLocation := itemRoot.Location()
+	if itemRoot.Serial().IsMobile() {
 		newLocation.Z += 18
 	}
 	oldLocation := newLocation
 	newParentMobile, _ := p.(Mobile)
 	oldParentMobile, _ := oldParent.(Mobile)
 	if oldParent != nil {
-		oldLocation = oldParent.RootParent().Location()
-		if oldParent.RootParent().Serial().IsMobile() {
+		oldRoot := RootParent(oldParent)
+		oldLocation = oldRoot.Location()
+		if oldRoot.Serial().IsMobile() {
 			oldLocation.Z += 18
 		}
 	} else {

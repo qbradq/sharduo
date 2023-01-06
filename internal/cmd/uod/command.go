@@ -259,9 +259,11 @@ func (c *DebugCommand) Compile() error {
 		return errors.New("debug command requires a command name: [debug command_name")
 	}
 	switch c.args[1] {
+	case "mount":
+		fallthrough
 	case "shirtbag":
 		if len(c.args) != 2 {
-			return errors.New("debug shirtbag command requires 0 arguments")
+			return fmt.Errorf("debug %s command requires 0 arguments", c.args[1])
 		}
 	case "splat":
 		if len(c.args) != 3 {
@@ -279,6 +281,9 @@ func (c *DebugCommand) Execute(n *NetState) error {
 		return nil
 	}
 	switch c.args[1] {
+	case "mount":
+		mi := world.New("HorseMountItem")
+		n.m.ForceEquip(mi.(*game.MountItem))
 	case "shirtbag":
 		backpack := world.New("Backpack").(game.Container)
 		backpack.SetLocation(n.m.Location())
