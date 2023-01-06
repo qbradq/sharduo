@@ -17,6 +17,9 @@ import (
 	"github.com/qbradq/sharduo/lib/uo"
 )
 
+// TargetCallback is the function signature for target callbacks
+type TargetCallback func(*clientpacket.TargetResponse)
+
 // ErrWrongPacket is the error logged when the client sends an unexpected
 // packet during character login.
 var ErrWrongPacket = errors.New("wrong packet")
@@ -29,6 +32,8 @@ type NetState struct {
 	m                  game.Mobile
 	account            *game.Account
 	observedContainers map[uo.Serial]game.Container
+	targetCallback     TargetCallback
+	targetDeadline     uo.Time
 }
 
 // NewNetState constructs a new NetState object.
@@ -632,5 +637,46 @@ func (n *NetState) OpenPaperDoll(m game.Mobile) {
 			WarMode:   false,
 			Alterable: false,
 		})
+	}
+}
+
+// TargetSendCursor implements the game.NetState interface
+func (n *NetState) TargetSendCursor(ttype uo.TargetType, fn TargetCallback) {
+	if n.m == nil {
+		return
+	}
+	n.targetCallback = fn
+	n.targetDeadline = world.Time() + uo.DurationSecond*30
+	n.Send(&serverpacket.Target{
+		Serial:     n.m.Serial(),
+		TargetType: ttype,
+		CursorType: uo.CursorTypeNeutral,
+	})
+}
+
+// TargetResponse handles the target response
+func (n *NetState) TargetResponse(r *clientpacket.TargetResponse) {
+	// Target cursor canceled
+	if r.X == uo.TargetCanceledX && r.Y == uo.TargetCanceledY {
+		n.targetCallback = nil
+		n.targetDeadline = uo.TimeNever
+		n.Send(&serverpacket.Target{
+			Serial:     uo.SerialZero,
+			TargetType: uo.TargetTypeObject,
+			CursorType: uo.CursorTypeCancel,
+		})
+	}
+	// Target has timed out or never existed
+	if n.targetCallback == nil {
+		return
+	}
+	// This makes it safe for a target callback to send another targeting cursor
+	// such as in the herding skill
+	cb := n.targetCallback
+	n.targetCallback = nil
+	n.targetDeadline = uo.TimeNever
+	// Only execute the callback if the target has not expired
+	if world.Time() <= n.targetDeadline {
+		cb(r)
 	}
 }

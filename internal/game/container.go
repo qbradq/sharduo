@@ -246,7 +246,7 @@ func (c *BaseContainer) ForceAddObject(o Object) {
 	}
 	// Determine if we should try to auto-stack the item
 	l := item.DropLocation()
-	if item.Stackable() && l.X == uo.RandomX && l.Y == uo.RandomY {
+	if item.Stackable() && l.X == uo.RandomDropX && l.Y == uo.RandomDropY {
 		for _, i := range c.contents {
 			if i.CanCombineWith(item) && i.Combine(item) {
 				return
@@ -261,10 +261,10 @@ func (c *BaseContainer) ForceAddObject(o Object) {
 		addedItems += container.ItemCount()
 	}
 	// Location bounding
-	if l.X == uo.RandomX {
+	if l.X == uo.RandomDropX {
 		l.X = world.Random().Random(c.bounds.X, c.bounds.X+c.bounds.W-1)
 	}
-	if l.Y == uo.RandomY {
+	if l.Y == uo.RandomDropY {
 		l.Y = world.Random().Random(c.bounds.Y, c.bounds.Y+c.bounds.H-1)
 	}
 	if l.X < c.bounds.X {

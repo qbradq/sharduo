@@ -25,8 +25,12 @@ const (
 	MaxItemStackHeight        int    = 18
 	DefaultMaxContainerWeight int    = 400
 	DefaultMaxContainerItems  int    = 125
-	RandomX                   int    = 0xFFFF
-	RandomY                   int    = 0xFFFF
+	RandomDropX               int    = 0xFFFF
+	RandomDropY               int    = 0xFFFF
+	TargetCanceledX           int    = 0xFFFF
+	TargetCanceledY           int    = 0xFFFF
+	ContainerOpenLowerLimit   int    = -8
+	ContainerOpenUpperLimit   int    = 16
 )
 
 // BoundZ bounds a Z value

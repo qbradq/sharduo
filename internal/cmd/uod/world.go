@@ -10,8 +10,6 @@ import (
 	"time"
 
 	"github.com/qbradq/sharduo/internal/game"
-	"github.com/qbradq/sharduo/lib/clientpacket"
-	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
 )
@@ -43,8 +41,6 @@ type World struct {
 	lock sync.Mutex
 	// Save directory string
 	savePath string
-	// TargetManager for the world
-	tm *TargetManager
 	// Collection of all objects that need to be updated
 	updateList map[game.Object]struct{}
 	// Current time in the Sossarian universe in seconds
@@ -63,7 +59,6 @@ func NewWorld(savePath string, rng uo.RandomSource) *World {
 		rng:           rng,
 		requestQueue:  make(chan WorldRequest, 1024*16),
 		savePath:      savePath,
-		tm:            NewTargetManager(rng),
 		updateList:    make(map[game.Object]struct{}),
 		time:          uo.TimeEpoch,
 		wallClockTime: time.Now(),
@@ -259,27 +254,6 @@ func (w *World) Save() error {
 	return w.reportErrors(errs)
 }
 
-// SendTarget sends a targeting request to the client.
-func (w *World) SendTarget(n *NetState, ttype uo.TargetType, ctx interface{}, fn TargetCallback) {
-	t := w.tm.New(&Target{
-		NetState: n,
-		Callback: fn,
-		Context:  ctx,
-		TTL:      uo.DurationSecond * 30,
-	})
-	n.Send(&serverpacket.Target{
-		Serial:     t.Serial(),
-		TargetType: ttype,
-		CursorType: uo.CursorTypeNeutral,
-	})
-}
-
-// ExecuteTarget executes a targeting response. Returns true if the target
-// request was still pending and executed.
-func (w *World) ExecuteTarget(r *clientpacket.TargetResponse) bool {
-	return w.tm.Execute(r)
-}
-
 // SendRequest sends a WorldRequest to the world's goroutine. Returns true if
 // the command was successfully queued. This never blocks.
 func (w *World) SendRequest(cmd WorldRequest) bool {
@@ -410,9 +384,7 @@ func (w *World) Process() {
 					m.NetState().UpdateObject(o)
 				}
 			}
-			for o := range w.updateList {
-				delete(w.updateList, o)
-			}
+			w.updateList = make(map[game.Object]struct{})
 		case r := <-w.requestQueue:
 			// TODO Graceful shutdown signal (outside this struct)
 			// Handle graceful shutdown

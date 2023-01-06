@@ -12,7 +12,7 @@ type Location struct {
 
 // This Location value indicates to a container that the item should be placed
 // at a random location.
-var RandomContainerLocation Location = Location{X: RandomX, Y: RandomY}
+var RandomContainerLocation Location = Location{X: RandomDropX, Y: RandomDropY}
 
 // WrapToOverworld returns the location wrapped to the overworld portion of the
 // map.

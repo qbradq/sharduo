@@ -80,7 +80,7 @@ func (c *LocationCommand) Execute(n *NetState) error {
 	if n == nil {
 		return nil
 	}
-	world.SendTarget(n, uo.TargetTypeLocation, nil, func(r *clientpacket.TargetResponse, ctx interface{}) {
+	n.TargetSendCursor(uo.TargetTypeLocation, func(r *clientpacket.TargetResponse) {
 		n.SystemMessage("Location X=%d Y=%d Z=%d", r.X, r.Y, r.Z)
 	})
 	return nil
@@ -113,7 +113,7 @@ func (c *NewCommand) Execute(n *NetState) error {
 	if n == nil {
 		return nil
 	}
-	world.SendTarget(n, uo.TargetTypeLocation, nil, func(r *clientpacket.TargetResponse, ctx interface{}) {
+	n.TargetSendCursor(uo.TargetTypeLocation, func(r *clientpacket.TargetResponse) {
 		o := world.New(c.args[1])
 		if o == nil {
 			n.SystemMessage("failed to create %s", c.args[1])
@@ -221,8 +221,8 @@ func (c *TeleportCommand) Execute(n *NetState) error {
 		return nil
 	}
 
-	var fn func(*clientpacket.TargetResponse, interface{})
-	fn = func(r *clientpacket.TargetResponse, ctx interface{}) {
+	var fn func(*clientpacket.TargetResponse)
+	fn = func(r *clientpacket.TargetResponse) {
 		if !world.Map().TeleportMobile(n.m, uo.Location{
 			X: r.X,
 			Y: r.Y,
@@ -231,10 +231,10 @@ func (c *TeleportCommand) Execute(n *NetState) error {
 			n.SystemMessage("something is blocking that location")
 		}
 		if c.MultiTargeted {
-			world.SendTarget(n, uo.TargetTypeLocation, nil, fn)
+			n.TargetSendCursor(uo.TargetTypeLocation, fn)
 		}
 	}
-	world.SendTarget(n, uo.TargetTypeLocation, nil, fn)
+	n.TargetSendCursor(uo.TargetTypeLocation, fn)
 
 	return nil
 }
@@ -343,7 +343,7 @@ func (c *BankCommand) Execute(n *NetState) error {
 	if n == nil {
 		return nil
 	}
-	world.SendTarget(n, uo.TargetTypeObject, nil, func(r *clientpacket.TargetResponse, ctx interface{}) {
+	n.TargetSendCursor(uo.TargetTypeObject, func(r *clientpacket.TargetResponse) {
 		o := world.Find(r.TargetObject)
 		if o == nil {
 			n.SystemMessage("object %s not found", r.TargetObject)

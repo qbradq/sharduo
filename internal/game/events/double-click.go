@@ -78,7 +78,8 @@ func OpenPaperDoll(receiver, source game.Object) {
 	sm.NetState().OpenPaperDoll(rm)
 }
 
-// OpenContainer opens this container for the mobile.
+// OpenContainer opens this container for the mobile. As an additional
+// restriction it checks the Z distance against the uo.ContainerOpen* limits.
 func OpenContainer(receiver, source game.Object) {
 	rc, ok := receiver.(game.Container)
 	if !ok {
@@ -86,6 +87,11 @@ func OpenContainer(receiver, source game.Object) {
 	}
 	sm, ok := source.(game.Mobile)
 	if !ok {
+		return
+	}
+	dz := rc.Location().Z - sm.Location().Z
+	if dz < uo.ContainerOpenLowerLimit || dz > uo.ContainerOpenUpperLimit {
+		// TODO send cliloc 500312
 		return
 	}
 	rc.Open(sm)

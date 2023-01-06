@@ -26,7 +26,8 @@ func init() {
 var worldHandlers = util.NewRegistry[uo.Serial, func(*NetState, clientpacket.Packet)]("world-handlers")
 
 func handleTargetResponse(n *NetState, cp clientpacket.Packet) {
-	world.ExecuteTarget(cp.(*clientpacket.TargetResponse))
+	p := cp.(*clientpacket.TargetResponse)
+	n.TargetResponse(p)
 }
 
 func handleStatusRequest(n *NetState, cp clientpacket.Packet) {
