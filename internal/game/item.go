@@ -17,6 +17,8 @@ type Item interface {
 	Object
 	// BaseGraphic returns the graphic of the item
 	BaseGraphic() uo.Graphic
+	// SetBaseGraphic sets the base graphic of the item
+	SetBaseGraphic(uo.Graphic)
 	// GraphicOffset returns the current graphic offset of the item, this will
 	// range 0-255 inclusive.
 	GraphicOffset() int
@@ -164,6 +166,9 @@ func (i *BaseItem) Deserialize(f *util.TagFileObject) {
 
 // BaseGraphic implements the Item interface.
 func (i *BaseItem) BaseGraphic() uo.Graphic { return i.graphic }
+
+// SetBaseGraphic implements the Item interface.
+func (i *BaseItem) SetBaseGraphic(g uo.Graphic) { i.graphic = g }
 
 // GraphicOffset implements the Item interface.
 func (i *BaseItem) GraphicOffset() int {

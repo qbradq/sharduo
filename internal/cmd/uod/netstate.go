@@ -308,32 +308,31 @@ func (n *NetState) sendMobile(mobile game.Mobile) {
 	if n.m != nil {
 		notoriety = n.m.GetNotorietyFor(mobile)
 	}
-	if mobile.IsHumanBody() {
-		p := &serverpacket.EquippedMobile{
-			ID:        mobile.Serial(),
-			Body:      mobile.Body(),
-			X:         mobile.Location().X,
-			Y:         mobile.Location().Y,
-			Z:         mobile.Location().Z,
-			Facing:    mobile.Facing(),
-			IsRunning: mobile.IsRunning(),
-			Hue:       mobile.Hue(),
-			Flags:     mobile.MobileFlags(),
-			Notoriety: notoriety,
-		}
-		mobile.MapEquipment(func(w game.Wearable) error {
-			p.Equipment = append(p.Equipment, &serverpacket.EquippedMobileItem{
-				ID:      w.Serial(),
-				Graphic: w.BaseGraphic(),
-				Layer:   w.Layer(),
-				Hue:     w.Hue(),
-			})
-			return nil
-		})
-		n.Send(p)
-	} else {
-		n.MoveMobile(mobile)
+	p := &serverpacket.EquippedMobile{
+		ID:        mobile.Serial(),
+		Body:      mobile.Body(),
+		X:         mobile.Location().X,
+		Y:         mobile.Location().Y,
+		Z:         mobile.Location().Z,
+		Facing:    mobile.Facing(),
+		IsRunning: mobile.IsRunning(),
+		Hue:       mobile.Hue(),
+		Flags:     mobile.MobileFlags(),
+		Notoriety: notoriety,
 	}
+	mobile.MapEquipment(func(w game.Wearable) error {
+		if !w.Layer().IsVisible() {
+			return nil
+		}
+		p.Equipment = append(p.Equipment, &serverpacket.EquippedMobileItem{
+			ID:      w.Serial(),
+			Graphic: w.BaseGraphic(),
+			Layer:   w.Layer(),
+			Hue:     w.Hue(),
+		})
+		return nil
+	})
+	n.Send(p)
 }
 
 // updateMobile sends a StatusBarInfo packet for the mobile.

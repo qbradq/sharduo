@@ -646,7 +646,6 @@ func (m *BaseMobile) doEquip(w Wearable, force bool) bool {
 			mob.NetState().WornItem(w, m)
 		}
 	}
-	world.Update(m)
 	return true
 }
 
@@ -676,7 +675,6 @@ func (m *BaseMobile) doUnequip(w Wearable, force bool) bool {
 	for _, mob := range world.Map().GetNetStatesInRange(m.Location(), uo.MaxViewRange) {
 		mob.NetState().RemoveObject(w)
 	}
-	world.Update(m)
 	return true
 }
 

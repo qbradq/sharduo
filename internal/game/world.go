@@ -46,3 +46,8 @@ var world World
 func RegisterWorld(w World) {
 	world = w
 }
+
+// GetWorld returns the internal world object.
+func GetWorld() World {
+	return world
+}

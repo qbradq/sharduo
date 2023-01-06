@@ -13,6 +13,7 @@ including all features required to mine ore and smelt it into ingots.
 ### Required Features ###
 * ~~Map loading~~
 * Map tile query
+* Following the map during movement
 * ~~Stats~~
 * ~~Running~~
 * ~~Picking up and dropping items on the ground~~
@@ -33,6 +34,7 @@ including all features required to mine ore and smelt it into ingots.
 * Skill gains
 * Stat gains
 * ~~Stackable items~~
+* Respond to status closed messages
 
 ### Nice to Haves ###
 * ~~Gold~~

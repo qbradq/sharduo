@@ -79,3 +79,6 @@ func (i *MountItem) ForceAddObject(o Object) {
 func (i *MountItem) ForceRemoveObject(o Object) {
 	i.m = nil
 }
+
+// Mount returns the current mount mobile associated to the item. Might be nil.
+func (i *MountItem) Mount() Mobile { return i.m }

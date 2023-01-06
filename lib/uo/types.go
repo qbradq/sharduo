@@ -97,7 +97,11 @@ const (
 	LayerBankBox                  Layer = 29
 	LayerFirstValid               Layer = LayerWeapon
 	LayerLastValid                Layer = LayerBankBox
+	LayerLastVisible              Layer = LayerMount
 )
+
+// IsVisible returns true if the layer should be visible to players
+func (l Layer) IsVisible() bool { return l <= LayerLastVisible }
 
 // A StatusFlag describes the status of a mobile
 type StatusFlag byte
