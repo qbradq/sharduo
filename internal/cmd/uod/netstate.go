@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/lib/clientpacket"
 	"github.com/qbradq/sharduo/lib/serverpacket"
@@ -29,22 +28,31 @@ var ErrWrongPacket = errors.New("wrong packet")
 type NetState struct {
 	conn               *net.TCPConn
 	sendQueue          chan serverpacket.Packet
-	id                 string
 	m                  game.Mobile
 	account            *game.Account
 	observedContainers map[uo.Serial]game.Container
 	targetCallback     TargetCallback
 	targetDeadline     uo.Time
+	updateGroup        int
+	deadline           uo.Time
 }
 
 // NewNetState constructs a new NetState object.
 func NewNetState(conn *net.TCPConn) *NetState {
-	uuid, _ := uuid.NewRandom()
 	return &NetState{
 		conn:               conn,
 		sendQueue:          make(chan serverpacket.Packet, 1024*16),
-		id:                 uuid.String(),
 		observedContainers: make(map[uo.Serial]game.Container),
+		updateGroup:        world.Random().Random(0, int(uo.DurationSecond)-1),
+		deadline:           world.Time() + uo.DurationMinute*5,
+	}
+}
+
+// Update should be called once per real-world second to search for stale net
+// states, expired targeting cursors, etc.
+func (n *NetState) Update() {
+	if world.Time() > n.deadline {
+		n.Disconnect()
 	}
 }
 
@@ -70,12 +78,16 @@ func (n *NetState) Disconnect() {
 			n.sendQueue = nil
 		}
 	}
+	gameNetStates.Delete(n)
 }
 
 // Service is the goroutine that services the netstate.
 func (n *NetState) Service() {
 	// When this goroutine ends so will the TCP connection.
 	defer n.Disconnect()
+
+	// Give the player 15 minutes at the login / character create screen
+	n.deadline = world.Time() + uo.DurationMinute*15
 
 	// Start SendService
 	go n.SendService()
@@ -86,7 +98,7 @@ func (n *NetState) Service() {
 	n.conn.SetNoDelay(true)
 	n.conn.SetReadBuffer(64 * 1024)
 	n.conn.SetWriteBuffer(128 * 1024)
-	n.conn.SetDeadline(time.Now().Add(time.Minute * 5))
+	n.conn.SetDeadline(time.Now().Add(time.Minute * 15))
 	r := clientpacket.NewReader(n.conn)
 	log.Printf("info: connection from %s", n.conn.RemoteAddr().String())
 
@@ -113,7 +125,6 @@ func (n *NetState) Service() {
 		return
 	}
 	n.account = account
-	n.id = account.Username()
 
 	// Character list
 	n.Send(&serverpacket.CharacterList{
@@ -181,6 +192,9 @@ func (n *NetState) readLoop(r *clientpacket.Reader) {
 		}
 		// 5 minute timeout, should never be hit due to client ping packets
 		n.conn.SetDeadline(time.Now().Add(time.Minute * 5))
+		// 5 minute deadline to allow for crazy stuff like connection
+		// interruptions, very long save times, etc.
+		n.deadline = world.Time() + uo.DurationMinute*5
 
 		cp := clientpacket.New(data)
 		switch p := cp.(type) {

@@ -64,7 +64,17 @@ func handleGameConnection(c *net.TCPConn) {
 	ns := NewNetState(c)
 	gameNetStates.Store(ns, true)
 	ns.Service()
-	gameNetStates.Delete(ns)
+}
+
+// Executes the update method on all net states in the numbered update group.
+func UpdateNetStates(group int) {
+	gameNetStates.Range(func(key, value interface{}) bool {
+		n := key.(*NetState)
+		if n.updateGroup == group {
+			n.Update()
+		}
+		return true
+	})
 }
 
 // BroadcastPacket sends a packet to every connected net state with an attached

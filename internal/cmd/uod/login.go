@@ -20,10 +20,39 @@ var loginServerListener *net.TCPListener
 // Login server connections
 var loginServerConnections sync.Map
 
+// loginServerConnection is a wrapper struct for login server connections
+type loginServerConnection struct {
+	// TCP connection
+	c *net.TCPConn
+	// Deadline for this connection to time out
+	deadline time.Time
+}
+
 // StopLoginService attempts to gracefully stop the login service.
 func StopLoginService() {
 	if loginServerListener != nil {
 		loginServerListener.Close()
+	}
+}
+
+// cleanStaleLoginConnections disconnects and removes all stale login server
+// connections.
+func cleanStaleLoginConnections(done chan bool) {
+	for {
+		ticker := time.NewTicker(time.Second * 30)
+		select {
+		case t := <-ticker.C:
+			loginServerConnections.Range(func(key, value interface{}) bool {
+				c := key.(*loginServerConnection)
+				if t.After(c.deadline) {
+					c.c.Close()
+					loginServerConnections.Delete(key)
+				}
+				return true
+			})
+		case <-done:
+			return
+		}
 	}
 }
 
@@ -51,6 +80,9 @@ func LoginServerMain(wg *sync.WaitGroup) {
 	defer loginServerListener.Close()
 	log.Printf("login server listening at %s:%d\n", configuration.LoginServerAddress, configuration.LoginServerPort)
 
+	done := make(chan bool)
+	go cleanStaleLoginConnections(done)
+
 	for {
 		c, err := loginServerListener.AcceptTCP()
 		if err != nil {
@@ -62,6 +94,7 @@ func LoginServerMain(wg *sync.WaitGroup) {
 		go handleLoginConnection(c)
 	}
 
+	done <- true
 	loginServerListener.Close()
 	loginServerConnections.Range(func(key, value interface{}) bool {
 		c := key.(*net.TCPConn)
@@ -70,24 +103,29 @@ func LoginServerMain(wg *sync.WaitGroup) {
 	})
 }
 
-func handleLoginConnection(c *net.TCPConn) {
+func handleLoginConnection(conn *net.TCPConn) {
 	var err error
 
+	// Setup QoS options
+	defer conn.Close()
+	conn.SetKeepAlive(false)
+	conn.SetLinger(0)
+	conn.SetNoDelay(true)
+	conn.SetReadBuffer(64 * 1024)
+	conn.SetWriteBuffer(64 * 1024)
+	conn.SetDeadline(time.Now().Add(time.Minute * 5))
+	r := clientpacket.NewReader(conn)
+
+	// Connection registration
+	c := &loginServerConnection{
+		c:        conn,
+		deadline: time.Now().Add(time.Minute * 5),
+	}
 	loginServerConnections.Store(c, true)
 	defer loginServerConnections.Delete(c)
 
-	// Setup QoS options
-	defer c.Close()
-	c.SetKeepAlive(false)
-	c.SetLinger(0)
-	c.SetNoDelay(true)
-	c.SetReadBuffer(64 * 1024)
-	c.SetWriteBuffer(64 * 1024)
-	c.SetDeadline(time.Now().Add(time.Minute * 15))
-	r := clientpacket.NewReader(c)
-
 	// Packet writer
-	pw := bufio.NewWriterSize(c, 64*1024)
+	pw := bufio.NewWriterSize(conn, 64*1024)
 
 	// Login seed packet
 	var vMajor, vMinor, vPatch, vExtra int = 7, 0, 15, 1

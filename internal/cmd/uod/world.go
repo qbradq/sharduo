@@ -386,7 +386,8 @@ func (w *World) Main(wg *sync.WaitGroup) {
 			w.time++
 			w.wallClockTime = t
 			// TODO timer handling
-			// TODO interleave net state updates
+			// Interleave net state updates
+			UpdateNetStates(int(w.time % uo.DurationSecond))
 			// Update objects
 			for o := range w.updateList {
 				for _, m := range w.m.GetNetStatesInRange(o.Location(), uo.MaxViewRange) {

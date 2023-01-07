@@ -49,7 +49,7 @@ including all features required to mine ore and smelt it into ingots.
 * Horses and Llamas
 * Pack Horses and Llamas
 * Banker NPC
-* ~~Bank box~~q
+* ~~Bank box~~
 * Line of sight checks
 * Paper Dolls for others
 * Item durability
@@ -61,8 +61,8 @@ This is a list of known issues that must be resolved before the server may be
 opened to outside connections.
 
 * Player movement packet throttling
-* Removal of stale NetStates in the game service goroutine
-* Removal of stale NetStates in the login service goroutine
+* ~~Removal of stale NetStates in the game service goroutine~~
+* ~~Removal of stale connections in the login service goroutine~~
 * ~~Integration of the game service into a single self-managed structure~~
 * Restrict command usage to access levels
 * ~~Do not allow items within the bank box to be used unless the bank box is open~~
