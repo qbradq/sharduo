@@ -99,9 +99,7 @@ func handleDoubleClickRequest(n *NetState, cp clientpacket.Packet) {
 		game.DynamicDispatch("OnDoubleClick", o, n.m)
 		return
 	}
-	// Make sure we are not trying to access an item within a closed bank
-	// box.
-	if n.m.InBank(o) && !n.m.BankBoxOpen() {
+	if !n.m.CanAccess(o) {
 		return
 	}
 	// Range check
@@ -149,16 +147,9 @@ func handleLiftRequest(n *NetState, cp clientpacket.Packet) {
 		n.DropReject(uo.MoveItemRejectReasonOutOfRange)
 		return
 	}
-	// Make sure we are not trying to lift an object that's in a cointainer we
-	// are not observing.
-	thisp := o.Parent()
-	if thisp != nil {
-		if container, ok := thisp.(game.Container); ok {
-			// Only consider objects within a container
-			if !n.ContainerIsObserving(container) {
-				return
-			}
-		}
+	if !n.m.CanAccess(item) {
+		n.DropReject(uo.MoveItemRejectReasonBelongsToAnother)
+		return
 	}
 	// TODO Line of sight check
 	item.Split(p.Amount)
@@ -214,16 +205,10 @@ func handleDropRequest(n *NetState, cp clientpacket.Packet) {
 			n.DropReject(uo.MoveItemRejectReasonOutOfRange)
 			return
 		}
-		// Make sure we are not trying to drop onto an object that's in a
-		// container that we do not have open
-		tp := target.Parent()
-		if tp != nil {
-			if container, ok := tp.(game.Container); ok {
-				// Only consider objects within a container
-				if !n.ContainerIsObserving(container) {
-					return
-				}
-			}
+		if !n.m.CanAccess(target) {
+			n.m.DropItemInCursor()
+			n.DropReject(uo.MoveItemRejectReasonOutOfRange)
+			return
 		}
 		// TODO Line of sight check
 		dropTarget := uo.Location{

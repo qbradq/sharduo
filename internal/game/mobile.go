@@ -155,6 +155,15 @@ type Mobile interface {
 	// AfterMove is called by Map.MoveMobile after the mobile has arrived at its
 	// new location.
 	AfterMove()
+
+	//
+	// Queries
+	//
+
+	// CanAccess returns true if this mobile has access to the given object.
+	// This only considers container accessability and ownership, NOT line of
+	// sight or range.
+	CanAccess(Object) bool
 }
 
 // BaseMobile provides the base implementation for Mobile
@@ -564,20 +573,19 @@ func (m *BaseMobile) ForceRemoveObject(o Object) {
 
 // DropObject implements the Object interface
 func (m *BaseMobile) DropObject(obj Object, l uo.Location, from Mobile) bool {
-	// TODO Access calculations
-	if from.Serial() != m.Serial() {
-		return false
+	bpo := m.EquipmentInSlot(uo.LayerBackpack)
+	if bpo != nil && bpo.TemplateName() == "PackAnimalBackpack" {
+		// We are a pack animal, try to put the item in our pack
+		// TODO check master
+		return m.DropToBackpack(obj, false)
 	}
-	// Try to put the object in our backpack
-	backpack := m.equipment.GetItemInLayer(uo.LayerBackpack)
-	if backpack == nil {
-		// No backpack found, something is very wrong
-		return false
+	if from.Serial() == m.Serial() {
+		// We are dropping something onto ourselves, try to put it in our
+		// backpack
+		return m.DropToBackpack(obj, false)
 	}
-	if item, ok := obj.(Item); ok {
-		item.SetDropLocation(l)
-		return backpack.DropObject(item, l, from)
-	}
+	// TODO try to feed tamed animals
+	// This is a regular mobile, dropping things on them makes no sense
 	return false
 }
 
@@ -813,4 +821,36 @@ func (m *BaseMobile) BankBoxOpen() bool {
 		return false
 	}
 	return m.NetState().ContainerIsObserving(bbobj)
+}
+
+// CanAccess implements the Mobile interface.
+func (m *BaseMobile) CanAccess(o Object) bool {
+	if o == nil {
+		return false
+	}
+	for {
+		if o.Parent() == nil {
+			// Object is directly on the map
+			return true
+		}
+		if c, ok := o.(Container); ok {
+			if m.n != nil && m.n.ContainerIsObserving(c) {
+				// We are observing the container or one of the object's parent
+				// containers, so we can see the object. No need for redundant
+				// access rights checking.
+				return true
+			}
+			if c.TemplateName() == "PlayerBankBox" {
+				// This is a player's bank box and it's not open, otherwise the
+				// above check would have been true. Bail now. Even though we
+				// own the bank box we can't access its children if it's closed.
+				return false
+			}
+		}
+		if owner, ok := o.(Mobile); ok {
+			// This object is directly owned by a mobile
+			return owner.Serial() == m.Serial()
+		}
+		o = o.Parent()
+	}
 }

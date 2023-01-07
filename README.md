@@ -27,7 +27,7 @@ including all features required to mine ore and smelt it into ingots.
 * Smelting
 * ~~Backpack and inventory~~
 * ~~Container handling~~
-* Spacial chat with speaking, yelling, and whispering
+* Spacial chat with speaking, yelling, whispering, and emotes
 * Mobile weight limit and stamina
 * ~~Stat updates~~
 * Skill updates
@@ -53,7 +53,7 @@ including all features required to mine ore and smelt it into ingots.
 * Banker NPC
 * ~~Bank box~~
 * Line of sight checks
-* Paper Dolls for others
+* ~~Paper Dolls for others~~
 * Item durability
 
 ## Outstanding Issues ##
