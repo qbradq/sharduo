@@ -9,8 +9,9 @@ import (
 
 func init() {
 	reg("Mount", Mount)
-	reg("OpenPaperDoll", OpenPaperDoll)
+	reg("OpenBackpack", OpenBackpack)
 	reg("OpenContainer", OpenContainer)
+	reg("OpenPaperDoll", OpenPaperDoll)
 	reg("PlayerDoubleClick", PlayerDoubleClick)
 }
 
@@ -62,7 +63,7 @@ func OpenPaperDoll(receiver, source game.Object) {
 	if !ok {
 		return
 	}
-	sm, ok := receiver.(game.Mobile)
+	sm, ok := source.(game.Mobile)
 	if !ok {
 		return
 	}
@@ -126,4 +127,29 @@ func Mount(receiver, source game.Object) {
 	}
 	// Remove the mount from the world and attach it to the receiver
 	game.GetWorld().Map().SetNewParent(rm, mi)
+}
+
+// OpenBackpack attempts to open the backpack of the receiver as in snooping or
+// pack animals.
+func OpenBackpack(reciever, source game.Object) {
+	sm, ok := source.(game.Mobile)
+	if !ok {
+		return
+	}
+	if sm.NetState() == nil {
+		return
+	}
+	rm, ok := reciever.(game.Mobile)
+	if !ok {
+		return
+	}
+	bpo := rm.EquipmentInSlot(uo.LayerBackpack)
+	if bpo == nil {
+		return
+	}
+	bp, ok := bpo.(game.Container)
+	if !ok {
+		return
+	}
+	sm.NetState().ContainerOpen(bp)
 }

@@ -26,9 +26,9 @@ func NewEquipmentCollection() *EquipmentCollection {
 	}
 }
 
-// NewEquipmentCollectionWith reads the collection references from the given
+// NewEquipmentCollectionWith reads the collection of references from the given
 // slice of object IDs and rebuilds the pointers.
-func NewEquipmentCollectionWith(ids []uo.Serial) *EquipmentCollection {
+func NewEquipmentCollectionWith(ids []uo.Serial, parent Object) *EquipmentCollection {
 	c := NewEquipmentCollection()
 	for _, id := range ids {
 		o := world.Find(id)
@@ -46,6 +46,7 @@ func NewEquipmentCollectionWith(ids []uo.Serial) *EquipmentCollection {
 			continue
 		}
 		c.equipment[w.Layer()] = w
+		w.SetParent(parent)
 	}
 	return c
 }

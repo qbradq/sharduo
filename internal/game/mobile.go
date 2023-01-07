@@ -279,28 +279,10 @@ func (m *BaseMobile) Deserialize(f *util.TagFileObject) {
 
 // OnAfterDeserialize implements the util.Serializeable interface.
 func (m *BaseMobile) OnAfterDeserialize(f *util.TagFileObject) {
-	m.equipment = NewEquipmentCollectionWith(f.GetObjectReferences("Equipment"))
-	for _, w := range m.equipment.equipment {
-		w.SetParent(m)
-	}
-	// Make sure all mobiles have an inventory
-	if !m.equipment.IsLayerOccupied(uo.LayerBackpack) {
-		var w Wearable
-		if m.isPlayerCharacter {
-			w = world.New("PlayerBackpack").(Wearable)
-		} else {
-			w = world.New("NPCBackpack").(Wearable)
-		}
-		if !m.Equip(w) {
-			log.Println("failed to equip auto-generated inventory backpack")
-		}
-	}
-	// Make sure all players have a bank box
-	if m.IsPlayerCharacter() && !m.equipment.IsLayerOccupied(uo.LayerBankBox) {
-		if !m.Equip(world.New("PlayerBankBox").(Wearable)) {
-			log.Println("failed to equip auto-generated player bank box")
-		}
-	}
+	m.equipment = NewEquipmentCollectionWith(f.GetObjectReferences("Equipment"), m)
+	// for _, w := range m.equipment.equipment {
+	// 	w.SetParent(m)
+	// }
 	// If we had an item on the cursor at the time of the save we drop it at
 	// our feet just so we don't leak it.
 	incs := uo.Serial(f.GetHex("ItemInCursor", uint32(uo.SerialItemNil)))
@@ -312,6 +294,17 @@ func (m *BaseMobile) OnAfterDeserialize(f *util.TagFileObject) {
 				m.DropItemInCursor()
 			}
 		}
+	}
+	if !m.equipment.IsLayerOccupied(uo.LayerBackpack) {
+		log.Printf("error: mobile %s does not have a backpack, removing", m.Serial().String())
+		world.Remove(m)
+		return
+	}
+	// Make sure all players have a bank box
+	if m.IsPlayerCharacter() && !m.equipment.IsLayerOccupied(uo.LayerBankBox) {
+		log.Printf("error: player mobile %s does not have a bank box, removing", m.Serial().String())
+		world.Remove(m)
+		return
 	}
 }
 
