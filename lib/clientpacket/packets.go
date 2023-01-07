@@ -26,6 +26,7 @@ func init() {
 	packetFactory.Register(0xBF, newGeneralInformation)
 	packetFactory.Register(0xC8, newClientViewRange)
 	packetFactory.Register(0xEF, newLoginSeed)
+	packetFactory.Register(0xF0, newProtocolExtension)
 }
 
 // Packet is the interface all client packets implement.
@@ -507,5 +508,22 @@ func newWearItemRequest(in []byte) Packet {
 		Wearer: uo.Serial(GetUint32(in[5:9])),
 	}
 	p.SetSerial(0x13)
+	return p
+}
+
+// ProtocolExtension is sent by ClassicUO to query party and guild member
+// positions for the built-in world map. I think the latest versions of Razor,
+// UO Steam, and UOAM/UOPS do this as well.
+type ProtocolExtension struct {
+	util.BaseSerialer
+	// Type of request
+	RequestType uo.ProtocolExtensionRequest
+}
+
+func newProtocolExtension(in []byte) Packet {
+	p := &ProtocolExtension{
+		RequestType: uo.ProtocolExtensionRequest(in[0]),
+	}
+	p.SetSerial(0xF0)
 	return p
 }

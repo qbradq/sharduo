@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"io"
+	"strings"
 	"testing"
 )
 
@@ -96,7 +97,7 @@ func TestReaderUnknownPacket(t *testing.T) {
 		t.Fatal(err)
 	}
 	_, err := uat.Read()
-	if err != ErrUnknownPacket {
+	if !strings.Contains(err.Error(), "unknown packet") {
 		t.Fatal("Failed to detect unknown packet")
 	}
 }

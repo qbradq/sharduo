@@ -63,7 +63,7 @@ opened to outside connections.
 * Player movement packet throttling
 * Removal of stale NetStates in the game service goroutine
 * Removal of stale NetStates in the login service goroutine
-* Integration of the game service into a single self-managed structure
+* ~~Integration of the game service into a single self-managed structure~~
 * Restrict command usage to access levels
 * ~~Do not allow items within the bank box to be used unless the bank box is open~~
 * ~~Proper coordinate wrapping in game.Map.getChunksInBounds()~~

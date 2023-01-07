@@ -1,7 +1,7 @@
 package uod
 
 import (
-	"errors"
+	"log"
 
 	"github.com/qbradq/sharduo/lib/clientpacket"
 	"github.com/qbradq/sharduo/lib/serverpacket"
@@ -46,7 +46,7 @@ func handleClientSpeech(c *PacketContext) {
 			cmd := ParseCommand(p.Text[1:])
 			if cmd != nil {
 				if err := cmd.Compile(); err != nil {
-					c.NetState.SystemMessage(err.Error())
+					c.NetState.Speech(nil, err.Error())
 					return
 				}
 				world.SendRequest(&SpeechCommandRequest{
@@ -67,6 +67,7 @@ func handleClientSpeech(c *PacketContext) {
 func handleClientVersion(c *PacketContext) {
 	p := c.Packet.(*clientpacket.Version)
 	if p.String != "7.0.15.1" {
-		c.NetState.Error("version check", errors.New("bad client version"))
+		log.Printf("error: bad client version %s: disconnecting client", p.String)
+		c.NetState.Disconnect()
 	}
 }

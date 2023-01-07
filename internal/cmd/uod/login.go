@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"log"
 	"net"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/qbradq/sharduo/internal/game"
@@ -12,34 +14,67 @@ import (
 	"github.com/qbradq/sharduo/lib/uo"
 )
 
+// Login server listener
+var loginServerListener *net.TCPListener
+
+// Login server connections
+var loginServerConnections sync.Map
+
+// StopLoginService attempts to gracefully stop the login service.
+func StopLoginService() {
+	if loginServerListener != nil {
+		loginServerListener.Close()
+	}
+}
+
 // LoginServerMain is the entry point for the login server.
-func LoginServerMain() {
+func LoginServerMain(wg *sync.WaitGroup) {
+	var err error
+
+	wg.Add(1)
+	defer wg.Done()
+
 	defaultUsername := configuration.DefaultAdminUsername
 	defaultPassword := game.HashPassword(configuration.DefaultAdminPassword)
 
 	admin := world.AuthenticateAccount(defaultUsername, defaultPassword)
 	log.Println("default admin username", admin.Username())
 
-	l, err := net.ListenTCP("tcp", &net.TCPAddr{
+	loginServerListener, err = net.ListenTCP("tcp", &net.TCPAddr{
 		IP:   net.ParseIP(configuration.LoginServerAddress),
 		Port: configuration.LoginServerPort,
 	})
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("error: %s", err.Error())
 		return
 	}
+	defer loginServerListener.Close()
 	log.Printf("login server listening at %s:%d\n", configuration.LoginServerAddress, configuration.LoginServerPort)
+
 	for {
-		c, err := l.AcceptTCP()
+		c, err := loginServerListener.AcceptTCP()
 		if err != nil {
-			log.Fatal(err)
+			if !strings.Contains(err.Error(), "closed network connection") {
+				log.Printf("error: %s", err.Error())
+			}
+			break
 		}
 		go handleLoginConnection(c)
 	}
+
+	loginServerListener.Close()
+	loginServerConnections.Range(func(key, value interface{}) bool {
+		c := key.(*net.TCPConn)
+		c.Close()
+		return true
+	})
 }
 
 func handleLoginConnection(c *net.TCPConn) {
 	var err error
+
+	loginServerConnections.Store(c, true)
+	defer loginServerConnections.Delete(c)
 
 	// Setup QoS options
 	defer c.Close()

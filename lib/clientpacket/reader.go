@@ -2,12 +2,9 @@ package clientpacket
 
 import (
 	"encoding/binary"
-	"errors"
+	"fmt"
 	"io"
 )
-
-// ErrUnknownPacket is returned when an unknown packet is encountered.
-var ErrUnknownPacket = errors.New("unknown packet")
 
 const maxInputBuffer = 64 * 1024
 
@@ -50,7 +47,7 @@ func (r *Reader) Read() ([]byte, error) {
 
 	// Packet body
 	if length == 0 { // Bad packet
-		return nil, ErrUnknownPacket
+		return nil, fmt.Errorf("unknown packet 0x%02X", r.inbuf[0])
 	} else if length == -1 { // Dynamic length
 		_, err := io.ReadFull(r.r, r.inbuf[1:3])
 		if err != nil {

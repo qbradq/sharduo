@@ -303,3 +303,11 @@ const (
 	GumpDefault          Gump = 0x0046 // Partial skull with glowing eyes
 	GumpContainerDefault Gump = 0x03E8 // Huge chest, old login gump
 )
+
+// Protocol extension request types
+type ProtocolExtensionRequest byte
+
+const (
+	ProtocolExtensionRequestPartyLocations ProtocolExtensionRequest = 0x00 // Send all party member locations for tracking
+	ProtocolExtensionRequestGuildLocations ProtocolExtensionRequest = 0x01 // Send all guild member locations for tracking
+)

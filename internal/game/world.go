@@ -3,6 +3,7 @@ package game
 import (
 	"time"
 
+	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/uo"
 )
 
@@ -38,6 +39,11 @@ type World interface {
 	// ServerTime returns the current wall-clock time of the server. This is
 	// updated once per tick.
 	ServerTime() time.Time
+	// BroadcastPacket sends the packet to every net state connected to the
+	// game service with an attached mobile.
+	BroadcastPacket(serverpacket.Packet)
+	// BroadcastMessage sends a system message to every net state with a mobile
+	BroadcastMessage(Object, string, ...interface{})
 }
 
 var world World

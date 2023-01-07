@@ -11,8 +11,6 @@ type NetState interface {
 	// Speech and messaging
 	//
 
-	// SystemMessage sends a system message
-	SystemMessage(string, ...interface{})
 	// Speech sends a speech packet
 	Speech(Object, string, ...interface{})
 

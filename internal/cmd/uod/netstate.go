@@ -5,9 +5,10 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net"
-	"os"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -45,22 +46,6 @@ func NewNetState(conn *net.TCPConn) *NetState {
 		id:                 uuid.String(),
 		observedContainers: make(map[uo.Serial]game.Container),
 	}
-}
-
-// Log logs a message from this netstate as in fmt.Sprintf.
-func (n *NetState) Log(fmtstr string, args ...interface{}) {
-	s := fmt.Sprintf(fmtstr, args...)
-	log.Printf("%s:log:%s", n.id, s)
-}
-
-// Error logs an message from this netstate and disconnect it.
-func (n *NetState) Error(where string, err error) {
-	if err != nil {
-		log.Printf("%s:error:at %s:%s", n.id, where, err.Error())
-	} else {
-		log.Printf("%s:error:at %s", n.id, where)
-	}
-	n.Disconnect()
 }
 
 // Send attempts to add a packet to the client's send queue and returns false if
@@ -103,28 +88,28 @@ func (n *NetState) Service() {
 	n.conn.SetWriteBuffer(128 * 1024)
 	n.conn.SetDeadline(time.Now().Add(time.Minute * 5))
 	r := clientpacket.NewReader(n.conn)
-	n.Log("connection from %s", n.conn.RemoteAddr().String())
+	log.Printf("info: connection from %s", n.conn.RemoteAddr().String())
 
 	// Connection header
 	if err := r.ReadConnectionHeader(); err != nil {
-		n.Error("read header", err)
+		log.Printf("error: %s", err.Error())
 		return
 	}
 
 	// Game server login packet
 	cp, err := r.ReadPacket()
 	if err != nil {
-		n.Error("waiting for game server login", err)
+		log.Printf("error: %s", err.Error())
 		return
 	}
 	gslp, ok := cp.(*clientpacket.GameServerLogin)
 	if !ok {
-		n.Error("waiting for game server login", ErrWrongPacket)
+		log.Printf("error: %s", err.Error())
 		return
 	}
 	account := world.AuthenticateLoginSession(gslp.Username, game.HashPassword(gslp.Password), gslp.Key)
 	if account == nil {
-		n.Error(fmt.Sprintf("bad login seed 0x%08X", gslp.Key), nil)
+		log.Printf("error: %s", err.Error())
 		return
 	}
 	n.account = account
@@ -140,12 +125,12 @@ func (n *NetState) Service() {
 	// Character login
 	cp, err = r.ReadPacket()
 	if err != nil {
-		n.Error("waiting for character login", err)
+		log.Printf("error: %s", err.Error())
 		return
 	}
 	_, ok = cp.(*clientpacket.CharacterLogin)
 	if !ok {
-		n.Error("waiting for character login", ErrWrongPacket)
+		log.Printf("error: %s", err.Error())
 		return
 	}
 
@@ -170,13 +155,13 @@ func (n *NetState) SendService() {
 				return
 			}
 			if err := w.Write(p, pw); err != nil {
-				n.Error("writing packet", err)
+				log.Printf("error: %s", err.Error())
 				return
 			}
 		default:
 			if pw.Buffered() > 0 {
 				if err := pw.Flush(); err != nil {
-					n.Error("sending packet", err)
+					log.Printf("error: %s", err.Error())
 					return
 				}
 			}
@@ -188,11 +173,10 @@ func (n *NetState) readLoop(r *clientpacket.Reader) {
 	for {
 		data, err := r.Read()
 		if err != nil {
-			if errors.Is(err, os.ErrDeadlineExceeded) {
-				n.Error("reading packet timeout", err)
-				return
+			if err != io.EOF && !strings.Contains(err.Error(), "closed network connection") {
+				log.Printf("error: %s, disconnecting client", err.Error())
 			}
-			n.Error("reading packet", err)
+			n.Disconnect()
 			return
 		}
 		// 5 minute timeout, should never be hit due to client ping packets
@@ -201,16 +185,14 @@ func (n *NetState) readLoop(r *clientpacket.Reader) {
 		cp := clientpacket.New(data)
 		switch p := cp.(type) {
 		case nil:
-			n.Error("decoding packet",
-				fmt.Errorf("unknown packet 0x%02X", data[0]))
+			log.Printf("error: unknown packet 0x%02X", data[0])
 		case *clientpacket.MalformedPacket:
-			n.Error("decoding packet",
-				fmt.Errorf("malformed packet %s", p.Serial().String()))
+			log.Printf("error: malformed packet %s", p.Serial().String())
 		case *clientpacket.UnknownPacket:
-			n.Log("unknown %s packet %s", p.PType, cp.Serial().String())
+			log.Printf("error: unknown %s packet %s", p.PType, cp.Serial().String())
 			return
 		case *clientpacket.UnsupportedPacket:
-			n.Log("unsupported %s packet %s:\n%s", p.PType, cp.Serial().String(),
+			log.Printf("unsupported %s packet %s:\n%s", p.PType, cp.Serial().String(),
 				hex.Dump(data))
 		case *clientpacket.IgnoredPacket:
 			// Do nothing
@@ -235,12 +217,6 @@ func (n *NetState) readLoop(r *clientpacket.Reader) {
 			}
 		}
 	}
-}
-
-// SystemMessage sends a system message to the connected client. This is a
-// wrapper around n.SendSpeech.
-func (n *NetState) SystemMessage(fmtstr string, args ...interface{}) {
-	n.Speech(nil, fmtstr, args...)
 }
 
 // Speech sends a speech packet to the attached client.
@@ -438,7 +414,7 @@ func (n *NetState) WornItem(wearable game.Wearable, wearer game.Mobile) {
 	})
 }
 
-// DropReject sends a move reject packet
+// DropReject sends an item move reject packet
 func (n *NetState) DropReject(reason uo.MoveItemRejectReason) {
 	n.Send(&serverpacket.MoveItemReject{
 		Reason: reason,

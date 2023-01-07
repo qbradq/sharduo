@@ -81,7 +81,7 @@ func (c *LocationCommand) Execute(n *NetState) error {
 		return nil
 	}
 	n.TargetSendCursor(uo.TargetTypeLocation, func(r *clientpacket.TargetResponse) {
-		n.SystemMessage("Location X=%d Y=%d Z=%d", r.X, r.Y, r.Z)
+		n.Speech(nil, "Location X=%d Y=%d Z=%d", r.X, r.Y, r.Z)
 	})
 	return nil
 }
@@ -116,7 +116,7 @@ func (c *NewCommand) Execute(n *NetState) error {
 	n.TargetSendCursor(uo.TargetTypeLocation, func(r *clientpacket.TargetResponse) {
 		o := world.New(c.args[1])
 		if o == nil {
-			n.SystemMessage("failed to create %s", c.args[1])
+			n.Speech(nil, "failed to create %s", c.args[1])
 			return
 		}
 		o.SetLocation(uo.Location{
@@ -127,16 +127,16 @@ func (c *NewCommand) Execute(n *NetState) error {
 		if len(c.args) == 3 {
 			item, ok := o.(game.Item)
 			if !ok {
-				n.SystemMessage("amount specified for non-item %s", c.args[1])
+				n.Speech(nil, "amount specified for non-item %s", c.args[1])
 				return
 			}
 			if !item.Stackable() {
-				n.SystemMessage("amount specified for non-stackable item %s", c.args[1])
+				n.Speech(nil, "amount specified for non-stackable item %s", c.args[1])
 				return
 			}
 			v, err := strconv.ParseInt(c.args[2], 0, 32)
 			if err != nil {
-				n.SystemMessage(err.Error())
+				n.Speech(nil, err.Error())
 			}
 			item.SetAmount(int(v))
 		}
@@ -228,7 +228,7 @@ func (c *TeleportCommand) Execute(n *NetState) error {
 			Y: r.Y,
 			Z: r.Z,
 		}) {
-			n.SystemMessage("something is blocking that location")
+			n.Speech(nil, "something is blocking that location")
 		}
 		if c.MultiTargeted {
 			n.TargetSendCursor(uo.TargetTypeLocation, fn)
@@ -314,7 +314,7 @@ func (c *DebugCommand) Execute(n *NetState) error {
 			}
 		}
 		end := time.Now().UnixMilli()
-		n.SystemMessage("generated %d items in %d milliseconds\n", count, end-start)
+		n.Speech(nil, "generated %d items in %d milliseconds\n", count, end-start)
 	}
 	return nil
 }
@@ -346,22 +346,22 @@ func (c *BankCommand) Execute(n *NetState) error {
 	n.TargetSendCursor(uo.TargetTypeObject, func(r *clientpacket.TargetResponse) {
 		o := world.Find(r.TargetObject)
 		if o == nil {
-			n.SystemMessage("object %s not found", r.TargetObject)
+			n.Speech(nil, "object %s not found", r.TargetObject)
 			return
 		}
 		m, ok := o.(game.Mobile)
 		if !ok {
-			n.SystemMessage("object %s not a mobile", r.TargetObject)
+			n.Speech(nil, "object %s not a mobile", r.TargetObject)
 			return
 		}
 		bw := m.EquipmentInSlot(uo.LayerBankBox)
 		if bw == nil {
-			n.SystemMessage("mobile %s does not have a bank box", r.TargetObject)
+			n.Speech(nil, "mobile %s does not have a bank box", r.TargetObject)
 			return
 		}
 		box, ok := bw.(game.Container)
 		if !ok {
-			n.SystemMessage("mobile %s bank box was not a container", r.TargetObject)
+			n.Speech(nil, "mobile %s bank box was not a container", r.TargetObject)
 			return
 		}
 		box.Open(n.m)

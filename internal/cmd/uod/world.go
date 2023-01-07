@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/qbradq/sharduo/internal/game"
+	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
 )
@@ -27,7 +28,7 @@ type World struct {
 	m *game.Map
 	// The data store of the user accounts
 	ads *util.DataStore[*game.Account]
-	// Index of usernames ot account serials
+	// Index of usernames to account serials
 	aidx map[string]uo.Serial
 	// Accounting access lock
 	alock sync.Mutex
@@ -362,9 +363,16 @@ func (w *World) Time() uo.Time { return w.time }
 // ServerTime implements the game.World interface.
 func (w *World) ServerTime() time.Time { return w.wallClockTime }
 
-// Process is the goroutine that services the command queue and is the only
+// Stop attempts to gracefully shut down the world process.
+func (w *World) Stop() {
+	close(w.requestQueue)
+}
+
+// Main is the goroutine that services the command queue and is the only
 // goroutine allowed to interact with the contents of the world.
-func (w *World) Process() {
+func (w *World) Main(wg *sync.WaitGroup) {
+	wg.Add(1)
+	defer wg.Done()
 	var done bool
 	ticker := time.NewTicker(time.Second / time.Duration(uo.DurationSecond))
 	for !done {
@@ -378,10 +386,13 @@ func (w *World) Process() {
 			w.time++
 			w.wallClockTime = t
 			// TODO timer handling
+			// TODO interleave net state updates
 			// Update objects
 			for o := range w.updateList {
 				for _, m := range w.m.GetNetStatesInRange(o.Location(), uo.MaxViewRange) {
-					m.NetState().UpdateObject(o)
+					if o.Location().XYDistance(m.Location()) <= m.ViewRange() {
+						m.NetState().UpdateObject(o)
+					}
 				}
 			}
 			w.updateList = make(map[game.Object]struct{})
@@ -396,7 +407,7 @@ func (w *World) Process() {
 			// If we are not trying to handle a tick we process packets.
 			if err := r.Execute(); err != nil {
 				if r.GetNetState() != nil {
-					r.GetNetState().SystemMessage(err.Error())
+					r.GetNetState().Speech(nil, err.Error())
 				}
 				log.Println(err)
 			}
@@ -418,4 +429,39 @@ func (w *World) GetItemDefinition(g uo.Graphic) *uo.StaticDefinition {
 // Update implements the game.World interface.
 func (w *World) Update(o game.Object) {
 	w.updateList[o] = struct{}{}
+}
+
+// BroadcastPacket implements the game.World interface.
+func (w *World) BroadcastPacket(p serverpacket.Packet) {
+	BroadcastPacket(p)
+}
+
+// BroadcastMessage implements the game.World interface.
+func (w *World) BroadcastMessage(speaker game.Object, fmtstr string, args ...interface{}) {
+	sid := uo.SerialSystem
+	body := uo.BodySystem
+	font := uo.FontNormal
+	hue := uo.Hue(1153)
+	name := ""
+	text := fmt.Sprintf(fmtstr, args...)
+	stype := uo.SpeechTypeSystem
+	if speaker != nil {
+		sid = speaker.Serial()
+		stype = uo.SpeechTypeNormal
+		name = speaker.DisplayName()
+		if item, ok := speaker.(game.Item); ok {
+			body = uo.Body(item.BaseGraphic())
+		} else if mob, ok := speaker.(game.Mobile); ok {
+			body = mob.Body()
+		}
+	}
+	w.BroadcastPacket(&serverpacket.Speech{
+		Speaker: sid,
+		Body:    body,
+		Font:    font,
+		Hue:     hue,
+		Name:    name,
+		Text:    text,
+		Type:    stype,
+	})
 }
