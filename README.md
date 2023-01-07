@@ -45,8 +45,10 @@ including all features required to mine ore and smelt it into ingots.
 * Miner Guildmaster NPC
 * Miner's Guild
 * Buying from vendors
-* Mounts
+* ~~Mounts~~
 * Horses and Llamas
+* Walk Random AI
+* Follow Master AI
 * Pack Horses and Llamas
 * Banker NPC
 * ~~Bank box~~

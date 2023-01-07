@@ -1,6 +1,9 @@
 package game
 
 import (
+	"log"
+
+	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
 )
 
@@ -24,11 +27,21 @@ func (i *MountItem) TypeName() string {
 // Serialize implements the util.Serializeable interface.
 func (i *MountItem) Serialize(f *util.TagFileWriter) {
 	i.BaseWearable.Serialize(f)
+	f.WriteHex("Mount", uint32(i.m.Serial()))
 }
 
 // Deserialize implements the util.Serializeable interface.
 func (i *MountItem) Deserialize(f *util.TagFileObject) {
 	i.BaseWearable.Deserialize(f)
+	ms := uo.Serial(f.GetHex("Mount", uint32(uo.SerialSystem)))
+	if ms != uo.SerialSystem {
+		o := world.Find(ms)
+		if o == nil {
+			log.Printf("error: mount item %s referenced non-existent mobile %s", i.Serial().String(), ms.String())
+		} else if m, ok := o.(Mobile); ok {
+			i.m = m
+		}
+	}
 }
 
 // RemoveObject implements the Object interface

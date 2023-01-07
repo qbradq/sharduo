@@ -9,6 +9,7 @@ import (
 	"log"
 	"net"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/qbradq/sharduo/internal/game"
@@ -35,6 +36,7 @@ type NetState struct {
 	targetDeadline     uo.Time
 	updateGroup        int
 	deadline           uo.Time
+	disconnectLock     sync.Once
 }
 
 // NewNetState constructs a new NetState object.
@@ -79,7 +81,10 @@ func (n *NetState) Send(p serverpacket.Packet) bool {
 
 // Disconnect disconnects the NetState.
 func (n *NetState) Disconnect() {
-	if n != nil {
+	n.disconnectLock.Do(func() {
+		if n == nil {
+			return
+		}
 		if n.conn != nil {
 			n.conn.Close()
 		}
@@ -87,8 +92,8 @@ func (n *NetState) Disconnect() {
 			close(n.sendQueue)
 			n.sendQueue = nil
 		}
-	}
-	gameNetStates.Delete(n)
+		gameNetStates.Delete(n)
+	})
 }
 
 // Service is the goroutine that services the netstate.

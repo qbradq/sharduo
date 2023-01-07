@@ -8,34 +8,28 @@ import (
 )
 
 func init() {
-	evreg.Add("Mount", Mount)
-	evreg.Add("OpenPaperDoll", OpenPaperDoll)
-	evreg.Add("OpenContainer", OpenContainer)
-	evreg.Add("PlayerDoubleClick", PlayerDoubleClick)
+	reg("Mount", Mount)
+	reg("OpenPaperDoll", OpenPaperDoll)
+	reg("OpenContainer", OpenContainer)
+	reg("PlayerDoubleClick", PlayerDoubleClick)
 }
 
 // PlayerDoubleClick selects between the open paper doll and dismount actions
-// based on the current state of the player mobile.
+// based on the identity of the source.
 func PlayerDoubleClick(receiver, source game.Object) {
 	rm, ok := receiver.(game.Mobile)
 	if !ok {
 		return
 	}
-	sm, ok := receiver.(game.Mobile)
+	sm, ok := source.(game.Mobile)
 	if !ok {
 		return
 	}
-	if sm.NetState() == nil {
-		return
-	}
-	if source.Serial() == uo.SerialSystem {
-		// Client is explicitly requesting the paper doll
-		sm.NetState().OpenPaperDoll(rm)
-		return
-	}
 	if receiver.Serial() != source.Serial() {
-		// Someone other than our player is double-clicking on us, always send
-		// the paper doll.
+		// Someone is trying to open our paper doll, just send it
+		if sm.NetState() == nil {
+			return
+		}
 		sm.NetState().OpenPaperDoll(rm)
 		return
 	}
@@ -124,6 +118,8 @@ func Mount(receiver, source game.Object) {
 		mi.SetBaseGraphic(0x3EA1)
 	case 0xCC:
 		mi.SetBaseGraphic(0x3EA2)
+	case 0xDC:
+		mi.SetBaseGraphic(0x3EA6)
 	}
 	if !sm.Equip(mi) {
 		return

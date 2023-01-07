@@ -324,17 +324,17 @@ type DoubleClick struct {
 	util.BaseSerialer
 	// Object ID clicked on
 	ID uo.Serial
-	// IsSelf is true if the requested object is the player's mobile
-	IsSelf bool
+	// WantPaperDoll is true if this is a request for our own paper doll
+	WantPaperDoll bool
 }
 
 func newDoubleClick(in []byte) Packet {
 	s := uo.Serial(GetUint32(in[:4]))
-	isSelf := s.IsSelf()
+	isPaperDoll := s.IsSelf()
 	s = s.StripSelfFlag()
 	p := &DoubleClick{
-		ID:     s,
-		IsSelf: isSelf,
+		ID:            s,
+		WantPaperDoll: isPaperDoll,
 	}
 	p.SetSerial(0x06)
 	return p

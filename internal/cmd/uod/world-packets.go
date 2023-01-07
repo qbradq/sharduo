@@ -77,6 +77,13 @@ func handleDoubleClickRequest(n *NetState, cp clientpacket.Packet) {
 		return
 	}
 	p := cp.(*clientpacket.DoubleClick)
+	if p.WantPaperDoll {
+		// This is an explicit request for our own paper doll, just send it
+		if n.m != nil {
+			n.OpenPaperDoll(n.m)
+		}
+		return
+	}
 	o := world.Find(p.ID.StripSelfFlag())
 	if o == nil {
 		return

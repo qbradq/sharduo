@@ -41,9 +41,9 @@ type Object interface {
 
 	// LinkEvent links the named function to this object. Use the global
 	// function DynamicDispatch to execute these functions.
-	LinkEvent(string, func(Object, Object))
+	LinkEvent(string, *func(Object, Object))
 	// GetEventHandler returns the named link function or nil.
-	GetEventHandler(string) func(Object, Object)
+	GetEventHandler(string) *func(Object, Object)
 	// RecalculateStats is called after an object has been deserialized and
 	// should be used to recalculate dynamic attributes.
 	RecalculateStats()
@@ -122,7 +122,7 @@ type BaseObject struct {
 	// Facing is the direction the object is facing
 	facing uo.Direction
 	// Collection of all dynamic dispatch function pointers
-	ddfn map[string]func(Object, Object)
+	eventHandlers map[string]*func(Object, Object)
 }
 
 // TypeName implements the util.Serializeable interface.
@@ -135,14 +135,28 @@ func (o *BaseObject) SerialType() uo.SerialType {
 	return uo.SerialTypeItem
 }
 
+// serializeEvent attempts to output the event handler name, if any
+func (o *BaseObject) serializeEvent(which string, f *util.TagFileWriter) {
+	fn := o.eventHandlers[which]
+	if fn == nil {
+		return
+	}
+	name := eventNameGetter(fn)
+	if name == "" {
+		// Something very wrong
+		log.Printf("error: object %s referenced unknown event callback %s", o.Serial().String(), name)
+		return
+	}
+	f.WriteString(which, name)
+}
+
 // Serialize implements the util.Serializeable interface.
 func (o *BaseObject) Serialize(f *util.TagFileWriter) {
 	o.BaseSerializeable.Serialize(f)
+	// Owned properties
 	f.WriteString("TemplateName", o.templateName)
 	if o.parent != nil {
 		f.WriteHex("Parent", uint32(o.parent.Serial()))
-	} else {
-		f.WriteHex("Parent", uint32(uo.SerialSystem))
 	}
 	f.WriteString("Name", o.name)
 	f.WriteBool("ArticleA", o.articleA)
@@ -150,6 +164,8 @@ func (o *BaseObject) Serialize(f *util.TagFileWriter) {
 	f.WriteNumber("Hue", int(o.hue))
 	f.WriteLocation("Location", o.location)
 	f.WriteNumber("Facing", int(o.facing))
+	// Events
+	o.serializeEvent("OnDoubleClick", f)
 }
 
 // Deserialize implements the util.Serializeable interface.
@@ -297,27 +313,27 @@ func (o *BaseObject) deserializeEvent(which string, tfo *util.TagFileObject) {
 }
 
 // LinkEvent implements the Object interface
-func (o *BaseObject) LinkEvent(which string, fn func(Object, Object)) {
+func (o *BaseObject) LinkEvent(which string, fn *func(Object, Object)) {
 	if which == "" {
 		return
 	}
 	if fn == nil {
-		if o.ddfn == nil {
+		if o.eventHandlers == nil {
 			return
 		}
-		delete(o.ddfn, which)
+		delete(o.eventHandlers, which)
 		return
 	}
-	if o.ddfn == nil {
-		o.ddfn = make(map[string]func(Object, Object))
+	if o.eventHandlers == nil {
+		o.eventHandlers = make(map[string]*func(Object, Object))
 	}
-	o.ddfn[which] = fn
+	o.eventHandlers[which] = fn
 }
 
 // GetEventHandler implements the Object interface
-func (o *BaseObject) GetEventHandler(which string) func(Object, Object) {
-	if o.ddfn == nil {
+func (o *BaseObject) GetEventHandler(which string) *func(Object, Object) {
+	if o.eventHandlers == nil {
 		return nil
 	}
-	return o.ddfn[which]
+	return o.eventHandlers[which]
 }
