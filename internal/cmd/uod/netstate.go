@@ -53,6 +53,16 @@ func NewNetState(conn *net.TCPConn) *NetState {
 func (n *NetState) Update() {
 	if world.Time() > n.deadline {
 		n.Disconnect()
+		return
+	}
+	if n.targetCallback != nil && world.Time() > n.targetDeadline {
+		n.targetCallback = nil
+		n.targetDeadline = uo.TimeNever
+		n.Send(&serverpacket.Target{
+			Serial:     uo.SerialZero,
+			TargetType: uo.TargetTypeObject,
+			CursorType: uo.CursorTypeCancel,
+		})
 	}
 }
 
@@ -646,27 +656,22 @@ func (n *NetState) TargetSendCursor(ttype uo.TargetType, fn TargetCallback) {
 
 // TargetResponse handles the target response
 func (n *NetState) TargetResponse(r *clientpacket.TargetResponse) {
-	// Target cursor canceled
-	if r.X == uo.TargetCanceledX && r.Y == uo.TargetCanceledY {
-		n.targetCallback = nil
-		n.targetDeadline = uo.TimeNever
-		n.Send(&serverpacket.Target{
-			Serial:     uo.SerialZero,
-			TargetType: uo.TargetTypeObject,
-			CursorType: uo.CursorTypeCancel,
-		})
-	}
-	// Target has timed out or never existed
-	if n.targetCallback == nil {
-		return
-	}
-	// This makes it safe for a target callback to send another targeting cursor
-	// such as in the herding skill
 	cb := n.targetCallback
+	dl := n.targetDeadline
 	n.targetCallback = nil
 	n.targetDeadline = uo.TimeNever
-	// Only execute the callback if the target has not expired
-	if world.Time() <= n.targetDeadline {
-		cb(r)
+	// Target has timed out or never existed
+	if cb == nil {
+		return
 	}
+	// Target has timed out before NetState.Update() could notice
+	if world.Time() > dl {
+		return
+	}
+	// Target cursor canceled
+	if r.X == uo.TargetCanceledX && r.Y == uo.TargetCanceledY {
+		return
+	}
+	// Execute callback
+	cb(r)
 }
