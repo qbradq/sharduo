@@ -311,3 +311,12 @@ const (
 	ProtocolExtensionRequestPartyLocations ProtocolExtensionRequest = 0x00 // Send all party member locations for tracking
 	ProtocolExtensionRequestGuildLocations ProtocolExtensionRequest = 0x01 // Send all guild member locations for tracking
 )
+
+// Stat is a numeric code to refer to a mobile stat
+type Stat byte
+
+const (
+	StatStrength     Stat = 0 // Strength
+	StatDexterity    Stat = 1 // Dexterity
+	StatIntelligence Stat = 2 // Intelligence
+)

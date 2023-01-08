@@ -55,8 +55,10 @@ type Mobile interface {
 	// AdjustGold adds n to the total amount of gold on the mobile
 	AdjustGold(int)
 	// Skill returns the raw skill value (range 0-1000) of the named skill
-	Skill(string) int
-	// SkillCheck returns true if the
+	Skill(uo.Skill) int
+	// SkillCheck returns true if the skill check succeeded. This function will
+	// also calculate skill and stat gains and send mobile updates for these.
+	SkillCheck(uo.Skill, int, int) bool
 
 	//
 	// AI-related values
@@ -227,6 +229,8 @@ type BaseMobile struct {
 	mana int
 	// Current stamina
 	stamina int
+	// Map of raw skill values
+	skills map[uo.Skill]int
 
 	//
 	// Cache values
@@ -266,10 +270,17 @@ func (m *BaseMobile) Serialize(f *util.TagFileWriter) {
 	if m.cursor.Occupied() {
 		f.WriteHex("ItemInCursor", uint32(m.cursor.Item().Serial()))
 	}
+	for s, v := range m.skills {
+		if s > uo.SkillLast {
+			continue
+		}
+		f.WriteNumber("Skill"+uo.SkillNames[s], v)
+	}
 }
 
 // Deserialize implements the util.Serializeable interface.
 func (m *BaseMobile) Deserialize(f *util.TagFileObject) {
+	m.skills = make(map[uo.Skill]int)
 	m.cursor = &Cursor{}
 	m.BaseObject.Deserialize(f)
 	m.viewRange = f.GetNumber("ViewRange", uo.MaxViewRange)
@@ -287,6 +298,14 @@ func (m *BaseMobile) Deserialize(f *util.TagFileObject) {
 	m.hitPoints = f.GetNumber("HitPoints", 1)
 	m.mana = f.GetNumber("Mana", 1)
 	m.stamina = f.GetNumber("Stamina", 1)
+	// Load skills
+	for s := uo.SkillFirst; s <= uo.SkillLast; s++ {
+		v := f.GetNumber("Skill"+uo.SkillNames[s], 10000)
+		if v == 10000 {
+			continue
+		}
+		m.skills[s] = v
+	}
 }
 
 // OnAfterDeserialize implements the util.Serializeable interface.
@@ -856,4 +875,79 @@ func (m *BaseMobile) CanAccess(o Object) bool {
 		}
 		o = o.Parent()
 	}
+}
+
+// Skill implements the Mobile interface.
+func (m *BaseMobile) Skill(which uo.Skill) int {
+	return m.skills[which]
+}
+
+// SkillCheck implements the Mobile interface.
+func (m *BaseMobile) SkillCheck(which uo.Skill, min, max int) bool {
+	if which > uo.SkillLast {
+		return false
+	}
+	// Get the skill value and look for corner cases
+	v := m.skills[which]
+	if v < min {
+		// No chance
+		return false
+	}
+	if v >= max {
+		// No callange
+		return true
+	}
+	// Calculate success
+	spread := max - min
+	chance := float32(v-min) / float32(max-min)
+	success := false
+	if world.Random().Random(0, spread) < int(chance*1000.0) {
+		success = true
+	}
+	// Calculate skill gain
+	tryGainSkill := v < 1000
+	// TODO Check skill lock
+	if tryGainSkill {
+		gc := float32(1.0)
+		gc += float32(1000-v) / float32(1000)
+		gc /= 2.0
+		if success {
+			gc += float32((1.0 - chance)) * 0.5
+		}
+		gc /= 2.0
+		if gc < 0.01 {
+			gc = 0.01
+		}
+		if gc > 1.00 {
+			gc = 1.00
+		}
+		// NPCs get double the skill gain chance
+		if !m.isPlayerCharacter {
+			gc *= 2
+		}
+		toGain := 0
+		if v <= 100 {
+			// Always gain when below 10.0 skill, and make gains faster
+			toGain = world.Random().Random(0, 4) + 1
+		} else if float32(world.Random().Random(0, 1000))/1000.0 < gc {
+			// Just a chance of gain
+			toGain = 1
+		}
+		if toGain > 0 {
+			// Execute skill gain
+			m.skills[which] = v + toGain
+			// TODO Send single-skill update to ourselves if needed
+		}
+	}
+	// Determine if we can gain a stat
+	if world.Random().Random(0, 100) > 5 {
+		// 5% chance of stat gain on every skill use
+		return success
+	}
+	// TODO Consider total stat cap
+	info := uo.SkillInfo[which]
+	primaryStat := info.PrimaryStat
+	secondaryStat := info.SecondaryStat
+	// TODO Consider stat locks
+	return success
 }

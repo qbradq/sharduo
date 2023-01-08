@@ -37,6 +37,9 @@ including all features required to mine ore and smelt it into ingots.
 * Stat gains
 * ~~Stackable items~~
 * Respond to status closed messages
+* Animations
+* Sounds
+* Music
 
 ### Nice to Haves ###
 * ~~Gold~~
