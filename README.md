@@ -28,8 +28,10 @@ including all features required to mine ore and smelt it into ingots.
 * ~~Backpack and inventory~~
 * ~~Container handling~~
 * Spacial chat with speaking, yelling, whispering, and emotes
+* Global chat
 * Mobile weight limit and stamina
 * ~~Stat updates~~
+* Skill system
 * Skill updates
 * Skill gains
 * Stat gains
@@ -78,6 +80,10 @@ milestone but do need to be resolved sometime.
 * Improve client file load time
 * Proper coordinate wrapping in uo.Location.XYDistance()
 * Wrapped overworld
+
+## Feature Packages ##
+Below are tasks that need to be completed to fully implement other feature
+verticals.
 
 # Shard Administration Advice #
 The ShardUO software and the creative content within were developed to host a

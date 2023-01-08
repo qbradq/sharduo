@@ -54,6 +54,9 @@ type Mobile interface {
 	Gold() int
 	// AdjustGold adds n to the total amount of gold on the mobile
 	AdjustGold(int)
+	// Skill returns the raw skill value (range 0-1000) of the named skill
+	Skill(string) int
+	// SkillCheck returns true if the
 
 	//
 	// AI-related values
