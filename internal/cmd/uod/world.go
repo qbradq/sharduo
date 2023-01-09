@@ -43,7 +43,7 @@ type World struct {
 	// Save directory string
 	savePath string
 	// Collection of all objects that need to be updated
-	updateList map[game.Object]struct{}
+	updateList map[uo.Serial]game.Object
 	// Current time in the Sossarian universe in seconds
 	time uo.Time
 	// Current time on the server
@@ -60,7 +60,7 @@ func NewWorld(savePath string, rng uo.RandomSource) *World {
 		rng:           rng,
 		requestQueue:  make(chan WorldRequest, 1024*16),
 		savePath:      savePath,
-		updateList:    make(map[game.Object]struct{}),
+		updateList:    make(map[uo.Serial]game.Object),
 		time:          uo.TimeEpoch,
 		wallClockTime: time.Now(),
 	}
@@ -135,7 +135,7 @@ func (w *World) Load() error {
 	}
 	r.Close()
 
-	// Load objects
+	// Load game objects
 	r, err = sfr.GetReader("objects.ini")
 	if err != nil {
 		errs = append(errs, err)
@@ -143,6 +143,14 @@ func (w *World) Load() error {
 		errs = append(errs, w.ods.Read(r)...)
 	}
 	r.Close()
+
+	// Load timers
+	r, err = sfr.GetReader("timers.ini")
+	if err != nil {
+		errs = append(errs, err)
+	} else {
+		errs = append(errs, game.ReadTimers(r)...)
+	}
 
 	// If there were errors trying to load objects into the data stores we
 	// should just stop now. There will be tons of dereferencing errors if we
@@ -240,6 +248,15 @@ func (w *World) Save() error {
 		errs = append(errs, err)
 	} else {
 		errs = append(errs, w.ods.Write(f)...)
+	}
+	f.Close()
+
+	// Save timers
+	f, err = sfw.GetWriter("timers.ini")
+	if err != nil {
+		errs = append(errs, err)
+	} else {
+		errs = append(errs, game.WriteTimers(f)...)
 	}
 	f.Close()
 
@@ -381,18 +398,19 @@ func (w *World) Main(wg *sync.WaitGroup) {
 			// Time handling
 			w.time++
 			w.wallClockTime = t
-			// TODO timer handling
+			// Update timers
+			game.UpdateTimers(w.time)
 			// Interleave net state updates
 			UpdateNetStates(int(w.time % uo.DurationSecond))
 			// Update objects
-			for o := range w.updateList {
+			for _, o := range w.updateList {
 				for _, m := range w.m.GetNetStatesInRange(o.Location(), uo.MaxViewRange) {
 					if o.Location().XYDistance(m.Location()) <= m.ViewRange() {
 						m.NetState().UpdateObject(o)
 					}
 				}
 			}
-			w.updateList = make(map[game.Object]struct{})
+			w.updateList = make(map[uo.Serial]game.Object)
 		case r := <-w.requestQueue:
 			// TODO Graceful shutdown signal (outside this struct)
 			// Handle graceful shutdown
@@ -425,7 +443,7 @@ func (w *World) GetItemDefinition(g uo.Graphic) *uo.StaticDefinition {
 
 // Update implements the game.World interface.
 func (w *World) Update(o game.Object) {
-	w.updateList[o] = struct{}{}
+	w.updateList[o.Serial()] = o
 }
 
 // BroadcastPacket implements the game.World interface.

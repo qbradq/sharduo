@@ -260,6 +260,8 @@ func (c *DebugCommand) Compile() error {
 		return errors.New("debug command requires a command name: [debug command_name")
 	}
 	switch c.args[1] {
+	case "delay_test":
+		fallthrough
 	case "mount":
 		fallthrough
 	case "shirtbag":
@@ -282,6 +284,8 @@ func (c *DebugCommand) Execute(n *NetState) error {
 		return nil
 	}
 	switch c.args[1] {
+	case "delay_test":
+		game.NewTimer(uo.DurationSecond*5, true, "OpenPaperDoll", n.m, n.m)
 	case "mount":
 		mi := world.New("HorseMountItem")
 		n.m.ForceEquip(mi.(*game.MountItem))
