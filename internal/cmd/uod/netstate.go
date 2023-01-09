@@ -347,27 +347,37 @@ func (n *NetState) sendMobile(mobile game.Mobile) {
 
 // updateMobile sends a StatusBarInfo packet for the mobile.
 func (n *NetState) updateMobile(mobile game.Mobile) {
-	n.Send(&serverpacket.StatusBarInfo{
-		Mobile:         mobile.Serial(),
-		Name:           mobile.DisplayName(),
-		Female:         mobile.IsFemale(),
-		HP:             mobile.HitPoints(),
-		MaxHP:          mobile.MaxHitPoints(),
-		NameChangeFlag: false,
-		Strength:       mobile.Strength(),
-		Dexterity:      mobile.Dexterity(),
-		Intelligence:   mobile.Intelligence(),
-		Stamina:        mobile.Stamina(),
-		MaxStamina:     mobile.MaxStamina(),
-		Mana:           mobile.Mana(),
-		MaxMana:        mobile.MaxMana(),
-		Gold:           mobile.Gold(),
-		ArmorRating:    0,
-		Weight:         int(mobile.Weight()),
-		StatsCap:       uo.StatsCapDefault,
-		Followers:      0,
-		MaxFollowers:   uo.MaxFollowers,
-	})
+	if n.m == nil {
+		// Skip disconnected net states
+		return
+	}
+	if n.m.Serial() == mobile.Serial() {
+		// TODO try to detect when just sending the hp/mp/sp deltas would be sufficient
+		// Full status update for the player
+		n.Send(&serverpacket.StatusBarInfo{
+			Mobile:         mobile.Serial(),
+			Name:           mobile.DisplayName(),
+			Female:         mobile.IsFemale(),
+			HP:             mobile.HitPoints(),
+			MaxHP:          mobile.MaxHitPoints(),
+			NameChangeFlag: false,
+			Strength:       mobile.Strength(),
+			Dexterity:      mobile.Dexterity(),
+			Intelligence:   mobile.Intelligence(),
+			Stamina:        mobile.Stamina(),
+			MaxStamina:     mobile.MaxStamina(),
+			Mana:           mobile.Mana(),
+			MaxMana:        mobile.MaxMana(),
+			Gold:           mobile.Gold(),
+			ArmorRating:    0,
+			Weight:         int(mobile.Weight()),
+			StatsCap:       uo.StatsCapDefault,
+			Followers:      0,
+			MaxFollowers:   uo.MaxFollowers,
+		})
+		return
+	}
+	// TODO send hp delta for other mobiles
 }
 
 // UpdateObject implements the game.NetState interface.
@@ -679,4 +689,13 @@ func (n *NetState) TargetResponse(r *clientpacket.TargetResponse) {
 	}
 	// Execute callback
 	cb(r)
+}
+
+// UpdateSkill implements the game.NetState interface.
+func (n *NetState) UpdateSkill(which uo.Skill, lock uo.SkillLock, value int) {
+	n.Send(&serverpacket.SingleSkillUpdate{
+		Skill: which,
+		Value: value,
+		Lock:  lock,
+	})
 }

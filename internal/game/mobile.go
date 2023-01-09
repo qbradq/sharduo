@@ -134,6 +134,11 @@ type Mobile interface {
 	// backpack. If the second argument is true, the item will be placed without
 	// regard to weight and item caps. Returns true if successful.
 	DropToBackpack(Object, bool) bool
+	// DropToFeet is a helper function that places items at the mobile's feet.
+	// The item is forced to the location of the mobile's feet without regard to
+	// having enough space. Use this function as a last-ditch method to get an
+	// item to a player.
+	DropToFeet(Object)
 	// AdjustWeight adds n to this mobile's equipment collection's weight cache.
 	AdjustWeight(float32)
 	// InBank returns true if the given item is within this mobile's bank box.
@@ -320,10 +325,7 @@ func (m *BaseMobile) OnAfterDeserialize(f *util.TagFileObject) {
 	if incs != uo.SerialItemNil {
 		o := world.Find(incs)
 		if o != nil {
-			if item, ok := o.(Item); ok {
-				m.cursor.item = item
-				m.DropItemInCursor()
-			}
+			m.DropToFeet(o)
 		}
 	}
 	if !m.equipment.IsLayerOccupied(uo.LayerBackpack) {
@@ -647,6 +649,12 @@ func (m *BaseMobile) DropToBackpack(o Object, force bool) bool {
 	return true
 }
 
+// DropToFeet implements the Mobile interface.
+func (m *BaseMobile) DropToFeet(o Object) {
+	o.SetLocation(m.location)
+	world.Map().ForceAddObject(o)
+}
+
 // doEquip equips a wearable to the mobile forcefully if requested
 func (m *BaseMobile) doEquip(w Wearable, force bool) bool {
 	if w == nil {
@@ -899,27 +907,28 @@ func (m *BaseMobile) SkillCheck(which uo.Skill, min, max int) bool {
 	}
 	// Calculate success
 	spread := max - min
-	chance := float32(v-min) / float32(max-min)
+	chance := ((v - min) * 1000) / (max - min)
 	success := false
-	if world.Random().Random(0, spread) < int(chance*1000.0) {
+	if world.Random().Random(0, spread) < chance {
 		success = true
 	}
 	// Calculate skill gain
 	tryGainSkill := v < 1000
 	// TODO Check skill lock
 	if tryGainSkill {
-		gc := float32(1.0)
-		gc += float32(1000-v) / float32(1000)
-		gc /= 2.0
+		gc := 1000
+		gc += 1000 - v
+		gc /= 2
 		if success {
-			gc += float32((1.0 - chance)) * 0.5
+			gc *= 1500
+			gc /= 1000
 		}
-		gc /= 2.0
-		if gc < 0.01 {
-			gc = 0.01
+		gc /= 2
+		if gc < 10 {
+			gc = 10
 		}
-		if gc > 1.00 {
-			gc = 1.00
+		if gc > 1000 {
+			gc = 1000
 		}
 		// NPCs get double the skill gain chance
 		if !m.isPlayerCharacter {
@@ -929,18 +938,20 @@ func (m *BaseMobile) SkillCheck(which uo.Skill, min, max int) bool {
 		if v <= 100 {
 			// Always gain when below 10.0 skill, and make gains faster
 			toGain = world.Random().Random(0, 4) + 1
-		} else if float32(world.Random().Random(0, 1000))/1000.0 < gc {
+		} else if world.Random().Random(0, 1000) < gc {
 			// Just a chance of gain
 			toGain = 1
 		}
 		if toGain > 0 {
 			// Execute skill gain
 			m.skills[which] = v + toGain
-			// TODO Send single-skill update to ourselves if needed
+			if m.n != nil {
+				m.n.UpdateSkill(which, uo.SkillLockUp, v+toGain)
+			}
 		}
 	}
 	// Determine if we can gain a stat
-	if world.Random().Random(0, 100) > 5 {
+	if world.Random().Random(0, 100) >= 5 {
 		// 5% chance of stat gain on every skill use
 		return success
 	}
@@ -948,6 +959,35 @@ func (m *BaseMobile) SkillCheck(which uo.Skill, min, max int) bool {
 	info := uo.SkillInfo[which]
 	primaryStat := info.PrimaryStat
 	secondaryStat := info.SecondaryStat
+	statToConsider := primaryStat
+	if world.Random().Random(0, 3) == 0 {
+		statToConsider = secondaryStat
+	}
 	// TODO Consider stat locks
+	sv := 0
+	switch statToConsider {
+	case uo.StatStrength:
+		sv = m.baseStrength
+	case uo.StatDexterity:
+		sv = m.baseDexterity
+	case uo.StatIntelligence:
+		sv = m.baseIntelligence
+	}
+	if sv >= 100 {
+		// Can't gain any more
+		return success
+	}
+	// Apply stat gain
+	switch statToConsider {
+	case uo.StatStrength:
+		m.baseStrength++
+	case uo.StatDexterity:
+		m.baseDexterity++
+	case uo.StatIntelligence:
+		m.baseIntelligence++
+	}
+	// If we've gotten this far we need to send a status update for the new stat
+	world.Update(m)
+
 	return success
 }

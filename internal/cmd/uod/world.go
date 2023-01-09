@@ -306,11 +306,7 @@ func (w *World) Remove(o game.Object) {
 		}
 		w.m.ForceRemoveObject(o)
 	} else {
-		if container, ok := o.(game.Container); ok {
-			container.ForceRemoveObject(o)
-		} else {
-			p.ForceRemoveObject(o)
-		}
+		p.ForceRemoveObject(o)
 	}
 	o.SetParent(game.TheVoid)
 	w.ods.Remove(o)

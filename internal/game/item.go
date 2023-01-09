@@ -33,6 +33,10 @@ type Item interface {
 	// SetAmount sets the amount of the stack. If this is out of range it will
 	// be bounded to a sane value
 	SetAmount(int)
+	// Consume attempts to remove n from the number of items in this stack and
+	// returns true if successful. This function takes care of removing the
+	// object if amount reaches zero and updating the object otherwise.
+	Consume(int) bool
 	// Split splits off a number of items from a stack. nil is returned if
 	// n < 1 || n >= item.Amount(). nil is also returned for all non-stackable
 	// items. In the event of an error during duplication the error will be
@@ -168,7 +172,10 @@ func (i *BaseItem) Deserialize(f *util.TagFileObject) {
 func (i *BaseItem) BaseGraphic() uo.Graphic { return i.graphic }
 
 // SetBaseGraphic implements the Item interface.
-func (i *BaseItem) SetBaseGraphic(g uo.Graphic) { i.graphic = g }
+func (i *BaseItem) SetBaseGraphic(g uo.Graphic) {
+	i.graphic = g
+	i.def = world.GetItemDefinition(g)
+}
 
 // GraphicOffset implements the Item interface.
 func (i *BaseItem) GraphicOffset() int {
@@ -196,6 +203,23 @@ func (i *BaseItem) SetAmount(n int) {
 	} else {
 		i.amount = n
 	}
+}
+
+// Consume implements the Item interface.
+func (i *BaseItem) Consume(n int) bool {
+	if n < 1 {
+		return true
+	}
+	if n > i.amount {
+		return false
+	}
+	i.amount -= n
+	if i.amount == 0 {
+		world.Remove(i)
+	} else {
+		world.Update(i)
+	}
+	return true
 }
 
 // DisplayName implements the Object interface.

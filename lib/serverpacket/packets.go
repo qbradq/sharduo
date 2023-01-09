@@ -788,10 +788,32 @@ type MoveReject struct {
 
 // Write implements the Packet interface.
 func (p *MoveReject) Write(w io.Writer) {
-	PutByte(w, 0x21) // General information packet ID
+	PutByte(w, 0x21) // Packet ID
 	PutByte(w, p.Sequence)
 	PutUint16(w, uint16(p.Location.X))
 	PutUint16(w, uint16(p.Location.Y))
 	PutByte(w, byte(p.Facing))
 	PutByte(w, byte(int8(p.Location.Z)))
+}
+
+// SingleSkillUpdate sends an update for a single skill.
+type SingleSkillUpdate struct {
+	// Which skill changed
+	Skill uo.Skill
+	// New raw value of the skill (0-1000)
+	Value int
+	// Lock state
+	Lock uo.SkillLock
+}
+
+// Write implements the Packet interface.
+func (p *SingleSkillUpdate) Write(w io.Writer) {
+	PutByte(w, 0x3A)                       // Packet ID
+	PutUint16(w, 13)                       // Packet length
+	PutByte(w, byte(uo.SkillUpdateSingle)) // Update type
+	PutUint16(w, uint16(p.Skill))          // Skill index
+	PutUint16(w, uint16(p.Value))          // Display value
+	PutUint16(w, uint16(p.Value))          // Base value
+	PutByte(w, byte(p.Lock))               // Lock code
+	PutUint16(w, 1000)                     // Skill cap
 }

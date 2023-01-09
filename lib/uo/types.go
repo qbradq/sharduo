@@ -320,3 +320,22 @@ const (
 	StatDexterity    Stat = 1 // Dexterity
 	StatIntelligence Stat = 2 // Intelligence
 )
+
+// SkillLock is a numeric code for the states of skill lock
+type SkillLock byte
+
+const (
+	SkillLockUp     SkillLock = 0 // Skill is marked for gains
+	SkillLockDown   SkillLock = 1 // Skill is marked for atrophy
+	SkillLockLocked SkillLock = 2 // Skill is locked
+)
+
+// SkillUpdate is a code for the types of skill updates
+type SkillUpdate byte
+
+const (
+	SkillUpdateLegacyAll    SkillUpdate = 0x00
+	SkillUpdateAll          SkillUpdate = 0x02
+	SkillUpdateSingle       SkillUpdate = 0xDF
+	SkillUpdateLegacySingle SkillUpdate = 0xFF
+)

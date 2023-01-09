@@ -15,6 +15,13 @@ const (
 	GraphicHueMask      Graphic = 0x7fff
 )
 
+// IsNoDraw tries to determine if this is one of the common no-draw tiles.
+// Please note that this is NOT 100% accurate.
+func (i Graphic) IsNoDraw() bool {
+	return i == GraphicNoDraw ||
+		(i >= GraphicNoDrawStart && i <= GraphicNoDrawEnd)
+}
+
 // HasHueFlag returns true if the hue flag is present
 func (i Graphic) HasHueFlag() bool {
 	return i&GraphicHueFlag != 0

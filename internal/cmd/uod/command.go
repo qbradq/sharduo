@@ -368,3 +368,64 @@ func (c *BankCommand) Execute(n *NetState) error {
 	})
 	return nil
 }
+
+// StaticCommand creates a StaticItem object at the targeted location with the
+// given graphic.
+type StaticCommand struct {
+	BaseCommand
+	// Graphic of the item to create
+	Graphic uo.Graphic
+}
+
+// newStaticCommand constructs a new StaticCommand
+func newStaticCommand(args CommandArgs) Command {
+	return &StaticCommand{
+		BaseCommand: BaseCommand{
+			args: args,
+		},
+		Graphic: uo.GraphicDefault,
+	}
+}
+
+// Compile implements the Command interface
+func (c *StaticCommand) Compile() error {
+	if len(c.args) != 2 {
+		return errors.New("usage: static item_id")
+	}
+	n, err := strconv.ParseInt(c.args[1], 0, 32)
+	if err != nil {
+		return err
+	}
+	c.Graphic = uo.Graphic(n)
+	if c.Graphic.IsNoDraw() {
+		return fmt.Errorf("refusing to create no-draw static 0x%04X", c.Graphic)
+	}
+	return nil
+}
+
+// Execute implements the Command interface
+func (c *StaticCommand) Execute(n *NetState) error {
+	if n == nil {
+		return nil
+	}
+	n.TargetSendCursor(uo.TargetTypeLocation, func(r *clientpacket.TargetResponse) {
+		o := world.New("StaticItem")
+		if o == nil {
+			n.Speech(nil, "StaticItem template not found")
+			return
+		}
+		i, ok := o.(game.Item)
+		if !ok {
+			n.Speech(nil, "StaticItem template was not an item")
+			return
+		}
+		i.SetBaseGraphic(c.Graphic)
+		i.SetLocation(uo.Location{
+			X: r.X,
+			Y: r.Y,
+			Z: r.Z,
+		})
+		world.Map().ForceAddObject(i)
+	})
+	return nil
+}

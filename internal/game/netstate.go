@@ -22,12 +22,8 @@ type NetState interface {
 	SendObject(Object)
 	// RemoveObject sends a delete object packet to the client
 	RemoveObject(Object)
-	// DrawPlayer sends a DrawPlayer packet for the attached mobile if any
-	DrawPlayer()
 	// UpdateObject sends packets to update the stats of an object
 	UpdateObject(Object)
-	// MoveMobile sends an MoveMobile packet for the given mobile
-	MoveMobile(Mobile)
 	// UpdateMobile sends a
 	// WordItem sends the WornItem packet to the given mobile
 	WornItem(Wearable, Mobile)
@@ -35,6 +31,17 @@ type NetState interface {
 	DragItem(Item, Mobile, uo.Location, Mobile, uo.Location)
 	// DropReject sends the MoveItemReject packet with the given reason code
 	DropReject(uo.MoveItemRejectReason)
+
+	//
+	// Mobile updates
+	//
+
+	// DrawPlayer sends a DrawPlayer packet for the attached mobile if any
+	DrawPlayer()
+	// MoveMobile sends an MoveMobile packet for the given mobile
+	MoveMobile(Mobile)
+	// UpdateSkill updates a single skill on the client side
+	UpdateSkill(uo.Skill, uo.SkillLock, int)
 
 	//
 	// Gumps

@@ -1,0 +1,66 @@
+package events
+
+import (
+	"github.com/qbradq/sharduo/internal/game"
+	"github.com/qbradq/sharduo/lib/uo"
+)
+
+func init() {
+	reg("SmeltOre", SmeltOre)
+}
+
+var forgeItemSet = map[uo.Graphic]struct{}{
+	0x0FB1: {},
+	0x197A: {},
+	0x197E: {},
+	0x1982: {},
+	0x1986: {},
+	0x198A: {},
+	0x198E: {},
+	0x1992: {},
+	0x1996: {},
+	0x199A: {},
+	0x199E: {},
+	0x19A2: {},
+	0x19A6: {},
+}
+
+func SmeltOre(receiver, source game.Object) {
+	// The only scenario in which we would reject the request is if the ore
+	// belongs to a mobile other than the smelter.
+	root := game.RootParent(receiver)
+	if root.Serial().IsMobile() && root.Serial() != receiver.Serial() {
+		return
+	}
+	if !game.GetWorld().Map().Query(source.Location(), 3, forgeItemSet) {
+		return
+	}
+	ore, ok := receiver.(game.Item)
+	if !ok {
+		// Something is very wrong
+		return
+	}
+	smelter, ok := source.(game.Mobile)
+	if !ok {
+		// Something is very wrong
+		return
+	}
+	if !smelter.SkillCheck(uo.SkillMining, 0, 750) {
+		// Skill check failed, burn some ore
+		// TODO send cliloc 501989
+		ore.Consume(1)
+		return
+	}
+	io := game.GetWorld().New("IronIngot")
+	ingot, ok := io.(game.Item)
+	if !ok {
+		// Something is very wrong
+		return
+	}
+	ingot.SetAmount(ore.Amount() * 2)
+	game.GetWorld().Remove(ore)
+	if !smelter.DropToBackpack(ingot, false) {
+		smelter.DropToFeet(ingot)
+	}
+	// TODO send cliloc 501988
+}
