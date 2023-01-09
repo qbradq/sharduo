@@ -705,4 +705,7 @@ func (n *NetState) SendAllSkills() {
 	if n.m == nil {
 		return
 	}
+	n.Send(&serverpacket.FullSkillUpdate{
+		SkillValues: n.m.Skills(),
+	})
 }

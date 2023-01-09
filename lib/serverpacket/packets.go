@@ -817,3 +817,23 @@ func (p *SingleSkillUpdate) Write(w io.Writer) {
 	PutByte(w, byte(p.Lock))               // Lock code
 	PutUint16(w, 1000)                     // Skill cap
 }
+
+// FullSkillUpdate sends an update for all skills.
+type FullSkillUpdate struct {
+	// Slice of all skill values
+	SkillValues []int
+}
+
+// Write implements the Packet interface.
+func (p *FullSkillUpdate) Write(w io.Writer) {
+	PutByte(w, 0x3A)                             // Packet ID
+	PutUint16(w, uint16(4+len(p.SkillValues)*9)) // Packet length
+	PutByte(w, byte(uo.SkillUpdateAll))          // Update type
+	for id, value := range p.SkillValues {
+		PutUint16(w, uint16(id+1))       // Skill ID - Not sure why this is 1-based in this one packet, but oh well
+		PutUint16(w, uint16(value))      // Displayed value
+		PutUint16(w, uint16(value))      // Base value
+		PutByte(w, byte(uo.SkillLockUp)) // Skill lock
+		PutUint16(w, 1000)               // Skill cap
+	}
+}

@@ -36,7 +36,7 @@ func handleStatusRequest(n *NetState, cp clientpacket.Packet) {
 	case uo.StatusRequestTypeBasic:
 		n.UpdateObject(n.m)
 	case uo.StatusRequestTypeSkills:
-		// TODO Respond to skills request
+		n.SendAllSkills()
 	}
 }
 

@@ -56,6 +56,8 @@ type Mobile interface {
 	AdjustGold(int)
 	// Skill returns the raw skill value (range 0-1000) of the named skill
 	Skill(uo.Skill) int
+	// Skills returns a slice of all raw skill values (range 0-1000)
+	Skills() []int
 	// SkillCheck returns true if the skill check succeeded. This function will
 	// also calculate skill and stat gains and send mobile updates for these.
 	SkillCheck(uo.Skill, int, int) bool
@@ -878,9 +880,10 @@ func (m *BaseMobile) CanAccess(o Object) bool {
 }
 
 // Skill implements the Mobile interface.
-func (m *BaseMobile) Skill(which uo.Skill) int {
-	return m.skills[which]
-}
+func (m *BaseMobile) Skill(which uo.Skill) int { return m.skills[which] }
+
+// Skills implements the Mobile interface.
+func (m *BaseMobile) Skills() []int { return m.skills }
 
 // SkillCheck implements the Mobile interface.
 func (m *BaseMobile) SkillCheck(which uo.Skill, min, max int) bool {
@@ -937,6 +940,7 @@ func (m *BaseMobile) SkillCheck(which uo.Skill, min, max int) bool {
 		if toGain > 0 {
 			// Execute skill gain
 			m.skills[which] = v + toGain
+			log.Println(m.skills[which])
 			if m.n != nil {
 				m.n.UpdateSkill(which, uo.SkillLockUp, v+toGain)
 			}
