@@ -208,5 +208,6 @@ const (
 	SkillThrowing             Skill = 57
 	SkillFirst                Skill = SkillAlchemy
 	SkillLast                 Skill = SkillThrowing
+	SkillCount                Skill = SkillLast + 1
 	SkillAll                  Skill = 0xFF // Asks for all skills in a status request
 )

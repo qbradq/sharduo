@@ -26,21 +26,27 @@ var forgeItemSet = map[uo.Graphic]struct{}{
 }
 
 func SmeltOre(receiver, source game.Object) {
-	// The only scenario in which we would reject the request is if the ore
-	// belongs to a mobile other than the smelter.
-	root := game.RootParent(receiver)
-	if root.Serial().IsMobile() && root.Serial() != receiver.Serial() {
-		return
-	}
-	if !game.GetWorld().Map().Query(source.Location(), 3, forgeItemSet) {
-		return
-	}
-	ore, ok := receiver.(game.Item)
+	smelter, ok := source.(game.Mobile)
 	if !ok {
 		// Something is very wrong
 		return
 	}
-	smelter, ok := source.(game.Mobile)
+	// The only scenario in which we would reject the request is if the ore
+	// belongs to a mobile other than the smelter.
+	root := game.RootParent(receiver)
+	if root.Serial().IsMobile() && root.Serial() != receiver.Serial() {
+		if smelter.NetState() != nil {
+			smelter.NetState().Speech(nil, "You cannot access that.")
+		}
+		return
+	}
+	if !game.GetWorld().Map().Query(source.Location(), 3, forgeItemSet) {
+		if smelter.NetState() != nil {
+			smelter.NetState().Speech(nil, "There is no forge nearby.")
+		}
+		return
+	}
+	ore, ok := receiver.(game.Item)
 	if !ok {
 		// Something is very wrong
 		return

@@ -255,12 +255,16 @@ func (o *BaseObject) DropObject(obj Object, l uo.Location, from Mobile) bool {
 	return false
 }
 
-// SingleClick implements the Object interface
-func (o *BaseObject) SingleClick(from Mobile) {
+func defaultSingleClickHandler(o Object, from Mobile) {
 	// Default action is to send the name as over-head text
 	if from.NetState() != nil {
 		from.NetState().Speech(o, o.DisplayName())
 	}
+}
+
+// SingleClick implements the Object interface
+func (o *BaseObject) SingleClick(from Mobile) {
+	defaultSingleClickHandler(o, from)
 }
 
 // Location implements the Object interface

@@ -699,3 +699,10 @@ func (n *NetState) UpdateSkill(which uo.Skill, lock uo.SkillLock, value int) {
 		Lock:  lock,
 	})
 }
+
+// SendAllSkills sends all skill values and lock states to the client.
+func (n *NetState) SendAllSkills() {
+	if n.m == nil {
+		return
+	}
+}

@@ -28,6 +28,8 @@ type Item interface {
 	Flippable() bool
 	// Stackable returns true if the item can be stacked
 	Stackable() bool
+	// Movable returns true if the item can be moved
+	Movable() bool
 	// Amount of the stack
 	Amount() int
 	// SetAmount sets the amount of the stack. If this is out of range it will
@@ -190,6 +192,9 @@ func (i *BaseItem) Flippable() bool { return i.flippedGraphic != uo.GraphicNone 
 
 // Stackable implements the Item interface.
 func (i *BaseItem) Stackable() bool { return i.stackable }
+
+// Movable implements the Item interface
+func (i *BaseItem) Movable() bool { return i.def.Weight != 255 }
 
 // Amount implements the Item interface.
 func (i *BaseItem) Amount() int { return i.amount }

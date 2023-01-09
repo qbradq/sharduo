@@ -31,6 +31,7 @@ const (
 	TargetCanceledY           int    = 0xFFFF
 	ContainerOpenLowerLimit   int    = -8
 	ContainerOpenUpperLimit   int    = 16
+	InvalidSkillValue         int    = 0xBAADF00D
 )
 
 // BoundZ bounds a Z value

@@ -234,8 +234,8 @@ type BaseMobile struct {
 	mana int
 	// Current stamina
 	stamina int
-	// Map of raw skill values
-	skills map[uo.Skill]int
+	// Raw skill values
+	skills []int
 
 	//
 	// Cache values
@@ -275,17 +275,16 @@ func (m *BaseMobile) Serialize(f *util.TagFileWriter) {
 	if m.cursor.Occupied() {
 		f.WriteHex("ItemInCursor", uint32(m.cursor.Item().Serial()))
 	}
-	for s, v := range m.skills {
-		if s > uo.SkillLast {
-			continue
+	for i, v := range m.skills {
+		if v != 0 {
+			f.WriteNumber("Skill"+uo.SkillNames[i], v)
 		}
-		f.WriteNumber("Skill"+uo.SkillNames[s], v)
 	}
 }
 
 // Deserialize implements the util.Serializeable interface.
 func (m *BaseMobile) Deserialize(f *util.TagFileObject) {
-	m.skills = make(map[uo.Skill]int)
+	m.skills = make([]int, uo.SkillCount)
 	m.cursor = &Cursor{}
 	m.BaseObject.Deserialize(f)
 	m.viewRange = f.GetNumber("ViewRange", uo.MaxViewRange)
@@ -305,20 +304,13 @@ func (m *BaseMobile) Deserialize(f *util.TagFileObject) {
 	m.stamina = f.GetNumber("Stamina", 1)
 	// Load skills
 	for s := uo.SkillFirst; s <= uo.SkillLast; s++ {
-		v := f.GetNumber("Skill"+uo.SkillNames[s], 10000)
-		if v == 10000 {
-			continue
-		}
-		m.skills[s] = v
+		m.skills[s] = f.GetNumber("Skill"+uo.SkillNames[s], 0)
 	}
 }
 
 // OnAfterDeserialize implements the util.Serializeable interface.
 func (m *BaseMobile) OnAfterDeserialize(f *util.TagFileObject) {
 	m.equipment = NewEquipmentCollectionWith(f.GetObjectReferences("Equipment"), m)
-	// for _, w := range m.equipment.equipment {
-	// 	w.SetParent(m)
-	// }
 	// If we had an item on the cursor at the time of the save we drop it at
 	// our feet just so we don't leak it.
 	incs := uo.Serial(f.GetHex("ItemInCursor", uint32(uo.SerialItemNil)))

@@ -12,7 +12,7 @@ including all features required to mine ore and smelt it into ingots.
 
 ### Required Features ###
 * ~~Map loading~~
-* Map tile query
+* ~~Map tile query~~
 * Following the map during movement
 * ~~Stats~~
 * ~~Running~~
@@ -21,25 +21,26 @@ including all features required to mine ore and smelt it into ingots.
 * ~~Removing equipment~~
 * ~~Equipping equipment~~
 * Action rate-limiting
-* Using equipment
+* ~~Using equipment~~
 * Timers
 * Mining skill
-* Smelting
+* ~~Smelting~~
 * ~~Backpack and inventory~~
 * ~~Container handling~~
 * Spacial chat with speaking, yelling, whispering, and emotes
 * Global chat
 * Mobile weight limit and stamina
 * ~~Stat updates~~
-* Skill system
-* Skill updates
-* Skill gains
-* Stat gains
+* ~~Skill system~~
+* ~~Skill updates~~
+* ~~Skill gains~~
+* ~~Stat gains~~
 * ~~Stackable items~~
 * Respond to status closed messages
 * Animations
 * Sounds
 * Music
+* Clilocs
 
 ### Nice to Haves ###
 * ~~Gold~~
@@ -50,6 +51,7 @@ including all features required to mine ore and smelt it into ingots.
 * Miner Guildmaster NPC
 * Miner's Guild
 * Buying from vendors
+* Selling to vendors
 * ~~Mounts~~
 * ~~Horses and Llamas~~
 * Walk Random AI

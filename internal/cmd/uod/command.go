@@ -20,6 +20,7 @@ func init() {
 	commandFactory.Add("debug", newDebugCommand)
 	commandFactory.Add("location", newLocationCommand)
 	commandFactory.Add("new", newNewCommand)
+	commandFactory.Add("static", newStaticCommand)
 	commandFactory.Add("teleport", newTeleportCommand)
 }
 

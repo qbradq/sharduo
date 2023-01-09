@@ -5,6 +5,10 @@ import (
 	"github.com/qbradq/sharduo/lib/util"
 )
 
+func init() {
+	ObjectFactory.RegisterCtor(func(v any) util.Serializeable { return &StaticItem{} })
+}
+
 // StaticItem is a light-weight Item implementation intended to be used for
 // non-functional decorative items.
 type StaticItem struct {
@@ -17,6 +21,16 @@ type StaticItem struct {
 	location uo.Location
 	// Hue
 	hue uo.Hue
+}
+
+// TypeName implements the util.Serializeable interface.
+func (o *StaticItem) TypeName() string {
+	return "StaticItem"
+}
+
+// SerialType implements the util.Serializeable interface.
+func (o *StaticItem) SerialType() uo.SerialType {
+	return uo.SerialTypeItem
 }
 
 // Item interface
@@ -32,6 +46,7 @@ func (i *StaticItem) GraphicOffset() int            { return 0 }
 func (i *StaticItem) Dyable() bool                  { return false }
 func (i *StaticItem) Flippable() bool               { return false }
 func (i *StaticItem) Stackable() bool               { return false }
+func (i *StaticItem) Movable() bool                 { return false }
 func (i *StaticItem) Amount() int                   { return i.def.Count }
 func (i *StaticItem) SetAmount(int)                 {}
 func (i *StaticItem) Consume(n int) bool            { return false }
@@ -56,7 +71,7 @@ func (i *StaticItem) AddObject(o Object) bool                           { return
 func (i *StaticItem) ForceAddObject(o Object)                           {}
 func (i *StaticItem) ForceRemoveObject(o Object)                        {}
 func (i *StaticItem) DropObject(o Object, l uo.Location, m Mobile) bool { return false }
-func (i *StaticItem) SingleClick(m Mobile)                              {}
+func (i *StaticItem) SingleClick(m Mobile)                              { defaultSingleClickHandler(i, m) }
 func (i *StaticItem) Location() uo.Location                             { return i.location }
 func (i *StaticItem) SetLocation(l uo.Location)                         { i.location = l }
 func (i *StaticItem) Hue() uo.Hue                                       { return i.hue }
@@ -87,3 +102,42 @@ func (i *StaticItem) Deserialize(f *util.TagFileObject) {
 		Z: 55,
 	})
 }
+
+// Flag accessors
+func (i *StaticItem) Background() bool   { return i.def.TileFlags&uo.TileFlagsBackground != 0 }
+func (i *StaticItem) Weapon() bool       { return i.def.TileFlags&uo.TileFlagsWeapon != 0 }
+func (i *StaticItem) Transparent() bool  { return i.def.TileFlags&uo.TileFlagsTransparent != 0 }
+func (i *StaticItem) Translucent() bool  { return i.def.TileFlags&uo.TileFlagsTranslucent != 0 }
+func (i *StaticItem) Wall() bool         { return i.def.TileFlags&uo.TileFlagsWall != 0 }
+func (i *StaticItem) Damaging() bool     { return i.def.TileFlags&uo.TileFlagsDamaging != 0 }
+func (i *StaticItem) Impassable() bool   { return i.def.TileFlags&uo.TileFlagsImpassable != 0 }
+func (i *StaticItem) Wet() bool          { return i.def.TileFlags&uo.TileFlagsWet != 0 }
+func (i *StaticItem) Surface() bool      { return i.def.TileFlags&uo.TileFlagsSurface != 0 }
+func (i *StaticItem) Bridge() bool       { return i.def.TileFlags&uo.TileFlagsBridge != 0 }
+func (i *StaticItem) Generic() bool      { return i.def.TileFlags&uo.TileFlagsGeneric != 0 }
+func (i *StaticItem) Window() bool       { return i.def.TileFlags&uo.TileFlagsWindow != 0 }
+func (i *StaticItem) NoShoot() bool      { return i.def.TileFlags&uo.TileFlagsNoShoot != 0 }
+func (i *StaticItem) ArticleA() bool     { return i.def.TileFlags&uo.TileFlagsArticleA != 0 }
+func (i *StaticItem) ArticleAn() bool    { return i.def.TileFlags&uo.TileFlagsArticleAn != 0 }
+func (i *StaticItem) Internal() bool     { return i.def.TileFlags&uo.TileFlagsInternal != 0 }
+func (i *StaticItem) Foliage() bool      { return i.def.TileFlags&uo.TileFlagsFoliage != 0 }
+func (i *StaticItem) PartialHue() bool   { return i.def.TileFlags&uo.TileFlagsPartialHue != 0 }
+func (i *StaticItem) NoHouse() bool      { return i.def.TileFlags&uo.TileFlagsNoHouse != 0 }
+func (i *StaticItem) Map() bool          { return i.def.TileFlags&uo.TileFlagsMap != 0 }
+func (i *StaticItem) Container() bool    { return i.def.TileFlags&uo.TileFlagsContainer != 0 }
+func (i *StaticItem) Wearable() bool     { return i.def.TileFlags&uo.TileFlagsWearable != 0 }
+func (i *StaticItem) LightSource() bool  { return i.def.TileFlags&uo.TileFlagsLightSource != 0 }
+func (i *StaticItem) Animation() bool    { return i.def.TileFlags&uo.TileFlagsAnimation != 0 }
+func (i *StaticItem) NoDiagonal() bool   { return i.def.TileFlags&uo.TileFlagsNoDiagonal != 0 }
+func (i *StaticItem) Armor() bool        { return i.def.TileFlags&uo.TileFlagsArmor != 0 }
+func (i *StaticItem) Roof() bool         { return i.def.TileFlags&uo.TileFlagsRoof != 0 }
+func (i *StaticItem) Door() bool         { return i.def.TileFlags&uo.TileFlagsDoor != 0 }
+func (i *StaticItem) StairBack() bool    { return i.def.TileFlags&uo.TileFlagsStairBack != 0 }
+func (i *StaticItem) StairRight() bool   { return i.def.TileFlags&uo.TileFlagsStairRight != 0 }
+func (i *StaticItem) AlphaBlend() bool   { return i.def.TileFlags&uo.TileFlagsAlphaBlend != 0 }
+func (i *StaticItem) UseNewArt() bool    { return i.def.TileFlags&uo.TileFlagsUseNewArt != 0 }
+func (i *StaticItem) ArtUsed() bool      { return i.def.TileFlags&uo.TileFlagsArtUsed != 0 }
+func (i *StaticItem) NoShadow() bool     { return i.def.TileFlags&uo.TileFlagsBackground != 0 }
+func (i *StaticItem) PixelBleed() bool   { return i.def.TileFlags&uo.TileFlagsPixelBleed != 0 }
+func (i *StaticItem) PlayAnimOnce() bool { return i.def.TileFlags&uo.TileFlagsPlayAnimOnce != 0 }
+func (i *StaticItem) MultiMovable() bool { return i.def.TileFlags&uo.TileFlagsMultiMovable != 0 }

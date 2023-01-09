@@ -143,6 +143,10 @@ func handleLiftRequest(n *NetState, cp clientpacket.Packet) {
 		n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		return
 	}
+	if !item.Movable() {
+		n.DropReject(uo.MoveItemRejectReasonCannotLift)
+		return
+	}
 	if n.m.Location().XYDistance(game.RootParent(item).Location()) > uo.MaxLiftRange {
 		n.DropReject(uo.MoveItemRejectReasonOutOfRange)
 		return
