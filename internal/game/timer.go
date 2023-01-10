@@ -105,7 +105,7 @@ func WriteTimers(w io.WriteCloser) []error {
 	lfw.WriteSegmentHeader("Timers")
 	for pool, timers := range timerPools {
 		for s, t := range timers {
-			lfw.WriteLine(fmt.Sprintf("%d,%d,%d,%s,%d,%d", s, pool, t.deadline, t.event, t.receiver, t.source))
+			lfw.WriteLine(fmt.Sprintf("%d,%d,%d,%d,%d,%s", s, pool, t.deadline, t.receiver, t.source, t.event))
 		}
 	}
 	lfw.WriteBlankLine()
@@ -127,10 +127,11 @@ func ReadTimers(r io.Reader) []error {
 		if line == "" {
 			break
 		}
-		var serial, pool, deadline, receiver, source int
+		var serial, pool, receiver, source int
+		var deadline uint64
 		var event string
-		if n, err := fmt.Sscanf(line, "%d,%d,%d,%s,%d,%d",
-			&serial, &pool, &deadline, &event, &receiver, &source); n != 6 || err != nil {
+		if n, err := fmt.Sscanf(line+"\n", "%d,%d,%d,%d,%d,%s",
+			&serial, &pool, &deadline, &receiver, &source, &event); n != 6 || err != nil {
 			if err != nil {
 				ret = append(ret, err)
 			}

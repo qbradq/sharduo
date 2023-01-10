@@ -3,15 +3,17 @@ package events
 import "github.com/qbradq/sharduo/internal/game"
 
 func init() {
-	reg("ReportTime", ReportTime)
+	reg("WhisperTime", WhisperTime)
 }
 
-// ReportTime sends the current Sossarian time to the receiver as a system
-// message. Mainly used in tests.
-func ReportTime(receiver, source game.Object) {
-	if m, ok := receiver.(game.Mobile); ok {
-		if m.NetState() != nil {
-			m.NetState().Speech(receiver, "%d", game.GetWorld().Time())
-		}
+// WhisperTime whispers the current Sossarian time to the receiver.
+func WhisperTime(receiver, source game.Object) {
+	m, ok := receiver.(game.Mobile)
+	if !ok {
+		return
 	}
+	if m.NetState() == nil {
+		return
+	}
+	m.NetState().Speech(receiver, "%d", game.GetWorld().Time())
 }

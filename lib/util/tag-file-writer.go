@@ -33,6 +33,11 @@ func (f *TagFileWriter) WriteNumber(name string, value int) {
 	f.WriteLine(fmt.Sprintf("%s=%d", name, value))
 }
 
+// WriteULong writes a 64-bit unsigned number to the io.Writer in base 10.
+func (f *TagFileWriter) WriteULong(name string, value uint64) {
+	f.WriteLine(fmt.Sprintf("%s=%d", name, value))
+}
+
 // WriteFloat writes a float to the io.Writer in base 10.
 func (f *TagFileWriter) WriteFloat(name string, value float32) {
 	f.WriteLine(fmt.Sprintf("%s=%f", name, value))

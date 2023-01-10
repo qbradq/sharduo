@@ -104,6 +104,22 @@ func (o *TagFileObject) GetNumber(name string, def int) int {
 	return def
 }
 
+// GetULong returns the named property as a uint64 or the default if not found.
+// This function may add errors to the internal error slice. Only use this for
+// actual 64-bit values, like uo.Time.
+func (o *TagFileObject) GetULong(name string, def uint64) uint64 {
+	v := o.p[name]
+	if v == "" {
+		return def
+	}
+	n, err := strconv.ParseUint(v, 0, 64)
+	if err != nil {
+		o.errs = append(o.errs, err)
+		return def
+	}
+	return n
+}
+
 // GetFloat returns the named property as a float32 or the default if not
 // found. This function may add errors to the internal error slice.
 func (o *TagFileObject) GetFloat(name string, def float32) float32 {
