@@ -111,17 +111,15 @@ func (f *ListFileReader) StreamNextSegmentHeader() string {
 		return ret
 	}
 
-	for {
-		line, err = f.readNextLine()
-		if err != nil {
-			return ""
-		}
-		if f.isSegmentLine(line) {
-			return f.extractSegmentName(line)
-		}
-		f.errs = append(f.errs, errors.New("expected a segment line, found a list entry"))
+	line, err = f.readNextLine()
+	if err != nil {
 		return ""
 	}
+	if f.isSegmentLine(line) {
+		return f.extractSegmentName(line)
+	}
+	f.errs = append(f.errs, errors.New("expected a segment line, found a list entry"))
+	return ""
 }
 
 // StreamNextEntry continues reading the list file until the next non-empty,
@@ -132,17 +130,15 @@ func (f *ListFileReader) StreamNextEntry() string {
 	var line string
 	var err error
 
-	for {
-		line, err = f.readNextLine()
-		if err != nil {
-			return ""
-		}
-		if f.isSegmentLine(line) {
-			f.nextSegmentName = f.extractSegmentName(line)
-			return ""
-		}
-		return line
+	line, err = f.readNextLine()
+	if err != nil {
+		return ""
 	}
+	if f.isSegmentLine(line) {
+		f.nextSegmentName = f.extractSegmentName(line)
+		return ""
+	}
+	return line
 }
 
 // SkipCurrentSegment runs the file forward to the start of the next segment

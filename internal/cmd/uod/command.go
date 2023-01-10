@@ -285,7 +285,19 @@ func (c *DebugCommand) Execute(n *NetState) error {
 	}
 	switch c.args[1] {
 	case "delay_test":
-		game.NewTimer(uo.DurationSecond*5, true, "OpenPaperDoll", n.m, n.m)
+		game.NewTimer(uo.DurationSecond*5, true, "WhisperTime", n.m, n.m)
+		game.NewTimer(uo.DurationSecond*10, true, "WhisperTime", n.m, n.m)
+		game.NewTimer(uo.DurationSecond*15, true, "WhisperTime", n.m, n.m)
+		game.NewTimer(uo.DurationSecond*20, true, "WhisperTime", n.m, n.m)
+		game.NewTimer(uo.DurationSecond*25, true, "WhisperTime", n.m, n.m)
+		game.NewTimer(uo.DurationSecond*30, true, "WhisperTime", n.m, n.m)
+		game.NewTimer(uo.DurationSecond*35, true, "WhisperTime", n.m, n.m)
+		game.NewTimer(uo.DurationSecond*40, true, "WhisperTime", n.m, n.m)
+		game.NewTimer(uo.DurationSecond*45, true, "WhisperTime", n.m, n.m)
+		game.NewTimer(uo.DurationSecond*50, true, "WhisperTime", n.m, n.m)
+		game.NewTimer(uo.DurationSecond*55, true, "WhisperTime", n.m, n.m)
+		game.NewTimer(uo.DurationSecond*60, true, "WhisperTime", n.m, n.m)
+		game.NewTimer(uo.DurationSecond*65, true, "WhisperTime", n.m, n.m)
 	case "mount":
 		mi := world.New("HorseMountItem")
 		n.m.ForceEquip(mi.(*game.MountItem))

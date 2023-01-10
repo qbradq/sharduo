@@ -3,6 +3,7 @@ package uod
 import (
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path"
@@ -103,6 +104,18 @@ func (w *World) reportErrors(errs []error) error {
 	return fmt.Errorf("%d errors reported", len(errs))
 }
 
+// loadGlobalData loads all global data for the world.
+func (w *World) loadGlobalData(r io.Reader) []error {
+	tfr := &util.TagFileReader{}
+	tfr.StartReading(r)
+	tfo := tfr.ReadObject()
+	if tfo == nil {
+		return append(tfr.Errors(), errors.New("unable to load world object"))
+	}
+	w.time = uo.Time(tfo.GetULong("Time", uint64(uo.TimeEpoch)))
+	return tfo.Errors()
+}
+
 // Load loads all of the data stores that the world is responsible for.
 // ErrSaveFileLocked is returned when another goroutine is trying to save or
 // load. os.ErrNotExist is returned when there are no saves available to load.
@@ -126,8 +139,17 @@ func (w *World) Load() error {
 	}
 	log.Println("loading data stores from", filePath)
 
+	// Load global data
+	r, err := sfr.GetReader("world.ini")
+	if err != nil {
+		errs = append(errs, err)
+	} else {
+		errs = append(errs, w.loadGlobalData(r)...)
+	}
+	r.Close()
+
 	// Load account objects
-	r, err := sfr.GetReader("accounts.ini")
+	r, err = sfr.GetReader("accounts.ini")
 	if err != nil {
 		errs = append(errs, err)
 	} else {
@@ -217,6 +239,18 @@ func (w *World) getFileName() string {
 	return time.Now().Format("2006-01-02_15-04-05")
 }
 
+// saveGlobalData saves all global data in tag file format.
+func (w *World) saveGlobalData(writer io.WriteCloser) []error {
+	tfw := util.NewTagFileWriter(writer)
+	tfw.WriteComment("global world data")
+	tfw.WriteBlankLine()
+	tfw.WriteSegmentHeader("Globals")
+	tfw.WriteULong("Time", uint64(w.time))
+	tfw.WriteBlankLine()
+	tfw.WriteComment("END OF FILE")
+	return nil
+}
+
 // Save saves all of the data stores that the world is responsible for
 func (w *World) Save() error {
 	var errs []error
@@ -233,8 +267,17 @@ func (w *World) Save() error {
 	}
 	log.Println("saving data stores to", filePath)
 
+	// Save global data
+	f, err := sfw.GetWriter("world.ini")
+	if err != nil {
+		errs = append(errs, err)
+	} else {
+		errs = append(errs, w.saveGlobalData(f)...)
+	}
+	f.Close()
+
 	// Save accounts
-	f, err := sfw.GetWriter("accounts.ini")
+	f, err = sfw.GetWriter("accounts.ini")
 	if err != nil {
 		errs = append(errs, err)
 	} else {
