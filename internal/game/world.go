@@ -57,3 +57,17 @@ func RegisterWorld(w World) {
 func GetWorld() World {
 	return world
 }
+
+// Find returns the given object cast to the given interface, or the zero value
+// if any of this fails.
+func Find[I Object](s uo.Serial) I {
+	var zero I
+	o := world.Find(s)
+	if o == nil {
+		return zero
+	}
+	if i, ok := o.(I); ok {
+		return i
+	}
+	return zero
+}

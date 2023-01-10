@@ -285,7 +285,18 @@ func (c *DebugCommand) Execute(n *NetState) error {
 	}
 	switch c.args[1] {
 	case "delay_test":
-		game.NewTimer(uo.DurationSecond*5, true, "OpenPaperDoll", n.m, n.m)
+		game.NewTimer(uo.DurationSecond*5, true, "ReportTime", n.m, n.m)
+		game.NewTimer(uo.DurationSecond*10, true, "ReportTime", n.m, n.m)
+		game.NewTimer(uo.DurationSecond*15, true, "ReportTime", n.m, n.m)
+		game.NewTimer(uo.DurationSecond*20, true, "ReportTime", n.m, n.m)
+		game.NewTimer(uo.DurationSecond*25, true, "ReportTime", n.m, n.m)
+		game.NewTimer(uo.DurationSecond*30, true, "ReportTime", n.m, n.m)
+		game.NewTimer(uo.DurationSecond*35, true, "ReportTime", n.m, n.m)
+		game.NewTimer(uo.DurationSecond*40, true, "ReportTime", n.m, n.m)
+		game.NewTimer(uo.DurationSecond*45, true, "ReportTime", n.m, n.m)
+		game.NewTimer(uo.DurationSecond*50, true, "ReportTime", n.m, n.m)
+		game.NewTimer(uo.DurationSecond*55, true, "ReportTime", n.m, n.m)
+		game.NewTimer(uo.DurationSecond*60, true, "ReportTime", n.m, n.m)
 	case "mount":
 		mi := world.New("HorseMountItem")
 		n.m.ForceEquip(mi.(*game.MountItem))
