@@ -22,7 +22,7 @@ including all features required to mine ore and smelt it into ingots.
 * ~~Equipping equipment~~
 * Action rate-limiting
 * ~~Using equipment~~
-* Timers
+* ~~Timers~~
 * Mining skill
 * ~~Smelting~~
 * ~~Backpack and inventory~~
@@ -41,6 +41,7 @@ including all features required to mine ore and smelt it into ingots.
 * Sounds
 * Music
 * Clilocs
+* Auto-saves
 
 ### Nice to Haves ###
 * ~~Gold~~
@@ -62,6 +63,10 @@ including all features required to mine ore and smelt it into ingots.
 * Line of sight checks
 * ~~Paper Dolls for others~~
 * Item durability
+
+### Nerdy Things I Might Do for Fun ###
+* Global light levels
+* Day/Night cycles
 
 ## Outstanding Issues ##
 

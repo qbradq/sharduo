@@ -260,6 +260,8 @@ func (c *DebugCommand) Compile() error {
 		return errors.New("debug command requires a command name: [debug command_name")
 	}
 	switch c.args[1] {
+	case "memory_test":
+		fallthrough
 	case "delay_test":
 		fallthrough
 	case "mount":
@@ -284,6 +286,28 @@ func (c *DebugCommand) Execute(n *NetState) error {
 		return nil
 	}
 	switch c.args[1] {
+	case "memory_test":
+		start := time.Now()
+		for i := 0; i < 1_000_000; i++ {
+			o := world.New("FancyShirt")
+			o.SetLocation(uo.Location{
+				X: world.Random().Random(100, uo.MapWidth-101),
+				Y: world.Random().Random(100, uo.MapHeight-101),
+				Z: 65,
+			})
+			world.Map().ForceAddObject(o)
+		}
+		for i := 0; i < 150_000; i++ {
+			o := world.New("Player")
+			o.SetLocation(uo.Location{
+				X: world.Random().Random(100, uo.MapWidth-101),
+				Y: world.Random().Random(100, uo.MapHeight-101),
+				Z: 65,
+			})
+			world.Map().ForceAddObject(o)
+		}
+		end := time.Now()
+		log.Printf("operation completed in %s", end.Sub(start))
 	case "delay_test":
 		game.NewTimer(uo.DurationSecond*5, true, "WhisperTime", n.m, n.m)
 		game.NewTimer(uo.DurationSecond*10, true, "WhisperTime", n.m, n.m)

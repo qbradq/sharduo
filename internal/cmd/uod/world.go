@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"runtime/pprof"
 	"sync"
 	"time"
 
@@ -123,16 +124,26 @@ func (w *World) loadGlobalData(r io.Reader) []error {
 // encountered is returned if there are any.
 func (w *World) Load() error {
 	var errs []error
+	start := time.Now()
+
+	pf, err := os.Create("load.cpu.pprof")
+	if err != nil {
+		return err
+	}
+	if err := pprof.StartCPUProfile(pf); err != nil {
+		return err
+	}
+	defer pprof.StopCPUProfile()
 
 	if !w.lock.TryLock() {
 		return ErrSaveFileLocked
 	}
 	defer w.lock.Unlock()
 
-	sfr := util.NewDebugSaveFileReader()
 	filePath := w.latestSavePath()
-	if filePath == "" {
-		return os.ErrNotExist
+	sfr, err := util.NewSaveFileReaderByPath(filePath)
+	if err != nil {
+		return err
 	}
 	if err := sfr.Open(filePath); err != nil {
 		return err
@@ -231,6 +242,13 @@ func (w *World) Load() error {
 		return nil
 	})
 
+	if len(errs) == 0 {
+		end := time.Now()
+		elapsed := end.Sub(start).Round(time.Millisecond)
+		log.Printf("load operation complete in %ds%dms",
+			elapsed.Milliseconds()/1000, elapsed.Milliseconds()%1000)
+	}
+
 	return w.reportErrors(errs)
 }
 
@@ -254,13 +272,26 @@ func (w *World) saveGlobalData(writer io.WriteCloser) []error {
 // Save saves all of the data stores that the world is responsible for
 func (w *World) Save() error {
 	var errs []error
+	start := time.Now()
+
+	pf, err := os.Create("save.cpu.pprof")
+	if err != nil {
+		return err
+	}
+	if err := pprof.StartCPUProfile(pf); err != nil {
+		return err
+	}
+	defer pprof.StopCPUProfile()
 
 	if !w.lock.TryLock() {
 		return ErrSaveFileLocked
 	}
 	defer w.lock.Unlock()
 
-	sfw := util.NewDebugSaveFileWriter()
+	sfw, err := util.NewSaveFileWriter(configuration.GameSaveType)
+	if err != nil {
+		return err
+	}
 	filePath := path.Join(w.savePath, w.getFileName())
 	if err := sfw.Open(filePath); err != nil {
 		return err
@@ -311,6 +342,22 @@ func (w *World) Save() error {
 		errs = append(errs, w.m.Write(f)...)
 	}
 	f.Close()
+
+	if len(errs) == 0 {
+		end := time.Now()
+		elapsed := end.Sub(start).Round(time.Millisecond)
+		log.Printf("save operation complete in %ds%dms",
+			elapsed.Milliseconds()/1000, elapsed.Milliseconds()%1000)
+	}
+
+	sfw.Close()
+
+	if len(errs) == 0 {
+		end := time.Now()
+		elapsed := end.Sub(start).Round(time.Millisecond)
+		log.Printf("save operation with flush to disk complete in %ds%dms",
+			elapsed.Milliseconds()/1000, elapsed.Milliseconds()%1000)
+	}
 
 	return w.reportErrors(errs)
 }

@@ -2,12 +2,78 @@ package util
 
 import (
 	"archive/zip"
+	"bytes"
 	"fmt"
 	"io"
 	"os"
 	"path"
 	"path/filepath"
 )
+
+// Global buffers
+var objectsINIBuf = bytes.NewBuffer(make([]byte, 1024*1024*512))
+var mapINIBuf = bytes.NewBuffer(make([]byte, 1024*1024*16))
+
+// NewSaveFileReaderByPath creates a new SaveFileReader implementation based on
+// the characteristics of the path.
+//
+// Characteristics:
+// 1. If the path has no file extension it is assumed to be a flat file save.
+// 2. If the path has the file extension ".zip" it is assumed to be compressed.
+// 3. An error is returned in any other case.
+//   - If the path does not exist this will return an error.
+func NewSaveFileReaderByPath(p string) (SaveFileReader, error) {
+	if _, err := os.Stat(p); err != nil {
+		return nil, err
+	}
+	ext := path.Ext(p)
+	switch ext {
+	case "":
+		return NewSaveFileReader("Flat")
+	case ".zip":
+		return NewSaveFileReader("Compressed")
+	default:
+		return nil, fmt.Errorf("unsupported save file type %s", ext)
+	}
+}
+
+// NewSaveFileReader creates a new SaveFileReader implementation by name.
+func NewSaveFileReader(which string) (SaveFileReader, error) {
+	switch which {
+	case "Flat":
+		return NewFlatSaveFileReader(), nil
+	case "Compressed":
+		return NewCompressedSaveFileReader(), nil
+	default:
+		return nil, fmt.Errorf("unknown SaveFileReader type %s", which)
+	}
+}
+
+// NewSaveFileWriter creates a new SaveFileWriter implementation by name.
+func NewSaveFileWriter(which string) (SaveFileWriter, error) {
+	switch which {
+	case "Flat":
+		return NewFlatSaveFileWriter(), nil
+	case "Compressed":
+		return NewCompressedSaveFileWriter(), nil
+	default:
+		return nil, fmt.Errorf("unknown SaveFileWriter type %s", which)
+	}
+}
+
+// writeCloserWrapper is a wrapper struct for an io.Writer with a do-nothing
+// Close() function so it implements the io.WriteCloser interface.
+type writeCloserWrapper struct {
+	w io.Writer
+}
+
+// Write implements the io.Writer interface.
+func (w writeCloserWrapper) Write(p []byte) (n int, err error) {
+	return w.w.Write(p)
+}
+
+// Close implements the io.Closer interface.
+func (w writeCloserWrapper) Close() error { return nil }
 
 // SaveFileReader is the interface all save file implementations provide for
 // reading saves.
@@ -98,12 +164,12 @@ func (f *CompressedSaveFileWriter) Open(p string) error {
 }
 
 // GetWriter implements the SaveFileWriter interface.
-func (f *CompressedSaveFileWriter) GetWriter(segment string) (io.Writer, error) {
+func (f *CompressedSaveFileWriter) GetWriter(segment string) (io.WriteCloser, error) {
 	o, err := f.w.Create(segment)
 	if err != nil {
 		return nil, err
 	}
-	return o, nil
+	return writeCloserWrapper{w: o}, nil
 }
 
 // Close implements the SaveFileWriter interface.
@@ -111,19 +177,19 @@ func (f *CompressedSaveFileWriter) Close() error {
 	return f.w.Close()
 }
 
-// DebugSaveFileReader reads data sets from individual files from a directory.
-type DebugSaveFileReader struct {
+// FlatSaveFileReader reads data sets from individual files from a directory.
+type FlatSaveFileReader struct {
 	// Path to the directory for the save files
 	savePath string
 }
 
-// NewDebugSaveFileReader creates a new DebugSaveFileReader and returns it.
-func NewDebugSaveFileReader() *DebugSaveFileReader {
-	return &DebugSaveFileReader{}
+// NewFlatSaveFileReader creates a new DebugSaveFileReader and returns it.
+func NewFlatSaveFileReader() *FlatSaveFileReader {
+	return &FlatSaveFileReader{}
 }
 
 // Open implements the SaveFileReader interface
-func (f *DebugSaveFileReader) Open(p string) error {
+func (f *FlatSaveFileReader) Open(p string) error {
 	f.savePath = filepath.Clean(p)
 	info, err := os.Stat(f.savePath)
 	if err != nil {
@@ -136,38 +202,64 @@ func (f *DebugSaveFileReader) Open(p string) error {
 }
 
 // GetReader implements the SaveFileReader interface
-func (f *DebugSaveFileReader) GetReader(segment string) (io.ReadCloser, error) {
+func (f *FlatSaveFileReader) GetReader(segment string) (io.ReadCloser, error) {
 	return os.Open(filepath.Clean(path.Join(f.savePath, segment)))
 }
 
 // Close implements the SaveFileReader interface
-func (f *DebugSaveFileReader) Close() error {
+func (f *FlatSaveFileReader) Close() error {
 	return nil
 }
 
-// DebugSaveFileWriter writes data sets to individual files in a directory.
-type DebugSaveFileWriter struct {
+// FlatSaveFileWriter writes data sets to individual files in a directory.
+type FlatSaveFileWriter struct {
 	// Path to the directory for the save files
 	savePath string
+	// Map of all output buffers
+	bufs map[string]*bytes.Buffer
 }
 
-// NewDebugSaveFileWriter returns a new DebugSaveFileWriter object.
-func NewDebugSaveFileWriter() *DebugSaveFileWriter {
-	return &DebugSaveFileWriter{}
+// NewFlatSaveFileWriter returns a new DebugSaveFileWriter object.
+func NewFlatSaveFileWriter() *FlatSaveFileWriter {
+	return &FlatSaveFileWriter{
+		bufs: make(map[string]*bytes.Buffer),
+	}
 }
 
 // Open implements the SaveFileWriter interface.
-func (f *DebugSaveFileWriter) Open(p string) error {
+func (f *FlatSaveFileWriter) Open(p string) error {
 	f.savePath = filepath.Clean(p)
 	return os.MkdirAll(f.savePath, 0777)
 }
 
 // GetWriter implements the SaveFileWriter interface
-func (f *DebugSaveFileWriter) GetWriter(segment string) (io.WriteCloser, error) {
-	return os.Create(filepath.Clean(path.Join(f.savePath, segment)))
+func (f *FlatSaveFileWriter) GetWriter(segment string) (io.WriteCloser, error) {
+	if _, duplicate := f.bufs[segment]; duplicate {
+		return nil, fmt.Errorf("duplicate segment %s", segment)
+	}
+	var buf *bytes.Buffer
+	// Hacky for now
+	switch segment {
+	case "objects.ini":
+		buf = objectsINIBuf
+	case "map.ini":
+		buf = mapINIBuf
+	default:
+		buf = bytes.NewBuffer(make([]byte, 1024*64))
+	}
+	buf.Reset()
+	f.bufs[segment] = buf
+	return &writeCloserWrapper{
+		w: buf,
+	}, nil
 }
 
 // Close implements the SaveFileWriter interface
-func (f *DebugSaveFileWriter) Close() error {
+func (f *FlatSaveFileWriter) Close() error {
+	for p, buf := range f.bufs {
+		if err := os.WriteFile(path.Join(f.savePath, p), buf.Bytes(), 0777); err != nil {
+			return err
+		}
+	}
 	return nil
 }

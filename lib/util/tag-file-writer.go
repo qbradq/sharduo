@@ -1,8 +1,8 @@
 package util
 
 import (
-	"fmt"
 	"io"
+	"strconv"
 	"strings"
 
 	"github.com/qbradq/sharduo/lib/uo"
@@ -23,29 +23,29 @@ func NewTagFileWriter(w io.WriteCloser) *TagFileWriter {
 
 // WriteObject writes a Serializeable to the given io.Writer.
 func (f *TagFileWriter) WriteObject(s Serializeable) {
-	f.WriteLine(fmt.Sprintf("[%s]", s.TypeName()))
+	f.WriteLine("[" + s.TypeName() + "]")
 	s.Serialize(f)
 	f.WriteBlankLine()
 }
 
 // WriteNumber writes a number to the io.Writer in base 10.
 func (f *TagFileWriter) WriteNumber(name string, value int) {
-	f.WriteLine(fmt.Sprintf("%s=%d", name, value))
+	f.WriteLine(name + "=" + strconv.FormatInt(int64(value), 10))
 }
 
 // WriteULong writes a 64-bit unsigned number to the io.Writer in base 10.
 func (f *TagFileWriter) WriteULong(name string, value uint64) {
-	f.WriteLine(fmt.Sprintf("%s=%d", name, value))
+	f.WriteLine(name + "=" + strconv.FormatUint(value, 10))
 }
 
 // WriteFloat writes a float to the io.Writer in base 10.
 func (f *TagFileWriter) WriteFloat(name string, value float32) {
-	f.WriteLine(fmt.Sprintf("%s=%f", name, value))
+	f.WriteLine(name + "=" + strconv.FormatFloat(float64(value), 'f', -1, 32))
 }
 
 // WriteHex writes a number to the io.Writer in base 16 without leading zeros.
 func (f *TagFileWriter) WriteHex(name string, value uint32) {
-	f.WriteLine(fmt.Sprintf("%s=0x%X", name, value))
+	f.WriteLine(name + "=" + strconv.FormatUint(uint64(value), 16))
 }
 
 // WriteString writes a string to the io.Writer. Leading and trailing
@@ -55,7 +55,7 @@ func (f *TagFileWriter) WriteString(name, value string) {
 		return
 	}
 	value = strings.TrimSpace(value)
-	f.WriteLine(fmt.Sprintf("%s=%s", name, value))
+	f.WriteLine(name + "=" + value)
 }
 
 // WriteBool writes a boolean value to the io.Writer. If value is false, no
@@ -68,12 +68,19 @@ func (f *TagFileWriter) WriteBool(name string, value bool) {
 
 // WriteLocation writes a uo.Location value to the io.Writer in tag file format.
 func (f *TagFileWriter) WriteLocation(name string, l uo.Location) {
-	f.WriteLine(fmt.Sprintf("%s=%d,%d,%d", name, l.X, l.Y, l.Z))
+	f.WriteLine(name + "=" +
+		strconv.FormatInt(int64(l.X), 10) + "," +
+		strconv.FormatInt(int64(l.Y), 10) + "," +
+		strconv.FormatInt(int64(l.Z), 10))
 }
 
 // WriteBounds writes a uo.Bounds value to the io.Writer in tag file format.
 func (f *TagFileWriter) WriteBounds(name string, b uo.Bounds) {
-	f.WriteLine(fmt.Sprintf("%s=%d,%d,%d,%d", name, b.X, b.Y, b.W, b.H))
+	f.WriteLine(name + "=" +
+		strconv.FormatInt(int64(b.X), 10) + "," +
+		strconv.FormatInt(int64(b.Y), 10) + "," +
+		strconv.FormatInt(int64(b.W), 10) + "," +
+		strconv.FormatInt(int64(b.H), 10))
 }
 
 // ValuesAsSerials returns the values of the input map as a slice of uo.Serial

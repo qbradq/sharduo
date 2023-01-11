@@ -64,6 +64,8 @@ type Configuration struct {
 	GameServerAddress string
 	// TCP port to bind to
 	GameServerPort int
+	// Save file type
+	GameSaveType string
 
 	//
 	// Debug flags
@@ -126,6 +128,7 @@ func (c *Configuration) LoadConfiguration() error {
 	// Game service configuration
 	c.GameServerAddress = tfo.GetString("GameServerAddress", "0.0.0.0")
 	c.GameServerPort = tfo.GetNumber("GameServerPort", 7777)
+	c.GameSaveType = tfo.GetString("GameSaveType", "Flat")
 	// Debug flags
 	c.GenerateDebugMaps = tfo.GetBool("GenerateDebugMaps", false)
 
