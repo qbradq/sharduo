@@ -57,7 +57,7 @@ type BaseContainer struct {
 	contentItems int
 	// All of the observers of the container
 	observers map[ContainerObserver]struct{}
-	// Bounds of the container
+	// Bounds of the container GUMP
 	bounds uo.Bounds
 }
 
