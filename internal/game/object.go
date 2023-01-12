@@ -3,6 +3,7 @@ package game
 import (
 	"log"
 
+	"github.com/qbradq/sharduo/internal/marshal"
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
 )
@@ -32,6 +33,8 @@ type Object interface {
 	HasParent(Object) bool
 	// SetParent sets the parent pointer. Use nil to represent the world.
 	SetParent(Object)
+	// ObjectType returns the marshal.ObjectType associated with this struct.
+	ObjectType() marshal.ObjectType
 	// TemplateName returns the name of the template used to create this object.
 	TemplateName() string
 
@@ -39,9 +42,9 @@ type Object interface {
 	// Callbacks
 	//
 
-	// LinkEvent links the named function to this object. Use the global
-	// function DynamicDispatch to execute these functions.
-	LinkEvent(string, *func(Object, Object))
+	// LinkEvent links the named handler to this object's event callbacks. Use
+	// the global function ExecuteEventHandler.
+	LinkEvent(string, string)
 	// GetEventHandler returns the named link function or nil.
 	GetEventHandler(string) *func(Object, Object)
 	// RecalculateStats is called after an object has been deserialized and
@@ -121,14 +124,17 @@ type BaseObject struct {
 	location uo.Location
 	// Facing is the direction the object is facing
 	facing uo.Direction
-	// Collection of all dynamic dispatch function pointers
-	eventHandlers map[string]*func(Object, Object)
+	// Collection of all event handler names
+	eventHandlers map[string]string
 }
 
 // TypeName implements the util.Serializeable interface.
 func (o *BaseObject) TypeName() string {
 	return "BaseObject"
 }
+
+// ObjectType implements the Object interface.
+func (o *BaseObject) ObjectType() marshal.ObjectType { return marshal.ObjectTypeObject }
 
 // SerialType implements the util.Serializeable interface.
 func (o *BaseObject) SerialType() uo.SerialType {
@@ -137,14 +143,9 @@ func (o *BaseObject) SerialType() uo.SerialType {
 
 // serializeEvent attempts to output the event handler name, if any
 func (o *BaseObject) serializeEvent(which string, f *util.TagFileWriter) {
-	fn := o.eventHandlers[which]
-	if fn == nil {
-		return
-	}
-	name := eventNameGetter(fn)
+	name := o.eventHandlers[which]
 	if name == "" {
-		// Something very wrong
-		log.Printf("error: object %s referenced unknown event callback %s", o.Serial().String(), name)
+		// Something is wrong
 		return
 	}
 	f.WriteString(which, name)
@@ -166,6 +167,26 @@ func (o *BaseObject) Serialize(f *util.TagFileWriter) {
 	f.WriteNumber("Facing", int(o.facing))
 	// Events
 	o.serializeEvent("OnDoubleClick", f)
+}
+
+// Marshal implements the marshal.Marshaler interface.
+func (o *BaseObject) Marshal(s *marshal.TagFileSegment) {
+	ps := uo.SerialSystem
+	if o.parent != nil {
+		ps = o.parent.Serial()
+	}
+	s.PutObjectHeader(
+		o.ObjectType(),
+		o.Serial(),
+		o.templateName,
+		ps,
+		o.name,
+		o.hue,
+		o.location,
+		o.eventHandlers)
+	s.PutTag(marshal.TagArticleA, o.articleA)
+	s.PutTag(marshal.TagArticleAn, o.articleAn)
+	s.PutTag(marshal.TagFacing, byte(o.facing))
 }
 
 // Deserialize implements the util.Serializeable interface.
@@ -195,6 +216,30 @@ func (o *BaseObject) Deserialize(f *util.TagFileObject) {
 	o.facing = uo.Direction(f.GetNumber("Facing", int(uo.DirectionSouth)))
 	// Events
 	o.deserializeEvent("OnDoubleClick", f)
+}
+
+// Unmarshal implements the marshal.Unmarshaler interface.
+func (o *BaseObject) Unmarshal(to *marshal.TagObject) {
+	o.SetSerial(to.Serial)
+	o.templateName = to.Template
+	o.name = to.Name
+	o.hue = to.Hue
+	o.location = to.Location
+	o.articleA = to.Tags.Bool(marshal.TagArticleA)
+	o.articleAn = to.Tags.Bool(marshal.TagArticleAn)
+	o.facing = uo.Direction(to.Tags.Byte(marshal.TagFacing, byte(uo.DirectionSouth)))
+	o.eventHandlers = to.Events
+}
+
+// AfterUnmarshal implements the marshal.Unmarshaler interface.
+func (o *BaseObject) AfterUnmarshal(to *marshal.TagObject) {
+	if to.Parent == uo.SerialSystem {
+		o.parent = nil
+	} else if to.Parent == uo.SerialZero {
+		log.Printf("warning: object %s has no parent", o.Serial().String())
+	} else {
+		o.parent = world.Find(to.Parent)
+	}
 }
 
 // Parent implements the Object interface
@@ -309,29 +354,25 @@ func (o *BaseObject) deserializeEvent(which string, tfo *util.TagFileObject) {
 	if eventName == "" {
 		return
 	}
-	eventHandler := eventHandlerGetter(eventName)
-	if eventHandler == nil {
-		log.Printf("warning: object %s referenced unknown event handler %s", o.Serial().String(), eventName)
-	}
-	o.LinkEvent(which, eventHandler)
+	o.LinkEvent(which, eventName)
 }
 
 // LinkEvent implements the Object interface
-func (o *BaseObject) LinkEvent(which string, fn *func(Object, Object)) {
-	if which == "" {
+func (o *BaseObject) LinkEvent(event, handler string) {
+	if event == "" {
 		return
 	}
-	if fn == nil {
+	if handler == "" {
 		if o.eventHandlers == nil {
 			return
 		}
-		delete(o.eventHandlers, which)
+		delete(o.eventHandlers, event)
 		return
 	}
 	if o.eventHandlers == nil {
-		o.eventHandlers = make(map[string]*func(Object, Object))
+		o.eventHandlers = make(map[string]string)
 	}
-	o.eventHandlers[which] = fn
+	o.eventHandlers[event] = handler
 }
 
 // GetEventHandler implements the Object interface
@@ -339,5 +380,6 @@ func (o *BaseObject) GetEventHandler(which string) *func(Object, Object) {
 	if o.eventHandlers == nil {
 		return nil
 	}
-	return o.eventHandlers[which]
+	eventHandler := o.eventHandlers[which]
+	return eventHandlerGetter(eventHandler)
 }

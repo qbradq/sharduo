@@ -30,42 +30,43 @@ type Tag byte
 // hue
 // location
 const (
-	TagArticleA          Tag = 0
-	TagArticleAn         Tag = 1
-	TagFacing            Tag = 2
-	TagOnDoubleClick     Tag = 3
-	TagGraphic           Tag = 4
-	TagFlippedGraphic    Tag = 5
-	TagFlipped           Tag = 6
-	TagDyable            Tag = 7
-	TagWeight            Tag = 8
-	TagStackable         Tag = 9
-	TagAmount            Tag = 10
-	TagPlural            Tag = 11
-	TagIsPlayerCharacter Tag = 12
-	TagIsFemale          Tag = 13
-	TagBody              Tag = 14
-	TagNotoriety         Tag = 15
-	TagCursor            Tag = 16
-	TagEquipment         Tag = 17
-	TagStrength          Tag = 18
-	TagDexterity         Tag = 19
-	TagIntelligence      Tag = 20
-	TagHitPoints         Tag = 21
-	TagMana              Tag = 22
-	TagStamina           Tag = 23
-	TagSkills            Tag = 24
-	TagLayer             Tag = 25
-	TagRequiredSkill     Tag = 26
-	TagManagedObject     Tag = 27
-	TagContents          Tag = 28
-	TagGump              Tag = 29
-	TagMaxWeight         Tag = 30
-	TagMaxItems          Tag = 31
-	TagBounds            Tag = 32
-	TagUsername          Tag = 33
-	TagPasswordHash      Tag = 34
-	TagPlayerMobile      Tag = 35
+	TagEndOfList         Tag = 0
+	TagArticleA          Tag = 1
+	TagArticleAn         Tag = 2
+	TagFacing            Tag = 3
+	TagOnDoubleClick     Tag = 4
+	TagGraphic           Tag = 5
+	TagFlippedGraphic    Tag = 6
+	TagFlipped           Tag = 7
+	TagDyable            Tag = 8
+	TagWeight            Tag = 9
+	TagStackable         Tag = 10
+	TagAmount            Tag = 11
+	TagPlural            Tag = 12
+	TagIsPlayerCharacter Tag = 13
+	TagIsFemale          Tag = 14
+	TagBody              Tag = 15
+	TagNotoriety         Tag = 16
+	TagCursor            Tag = 17
+	TagEquipment         Tag = 18
+	TagStrength          Tag = 19
+	TagDexterity         Tag = 20
+	TagIntelligence      Tag = 21
+	TagHitPoints         Tag = 22
+	TagMana              Tag = 23
+	TagStamina           Tag = 24
+	TagSkills            Tag = 25
+	TagLayer             Tag = 26
+	TagRequiredSkill     Tag = 27
+	TagManagedObject     Tag = 28
+	TagContents          Tag = 29
+	TagGump              Tag = 30
+	TagMaxWeight         Tag = 31
+	TagMaxItems          Tag = 32
+	TagBounds            Tag = 33
+	TagUsername          Tag = 34
+	TagPasswordHash      Tag = 35
+	TagPlayerMobile      Tag = 36
 )
 
 // TagValue is a code to indicate what kind of data a value contains
@@ -87,6 +88,7 @@ const (
 
 // Mapping of TagValue codes to Tag codes
 var tagValueMapping = []TagValue{
+	TagValueBool,           // TagEndOfList
 	TagValueBool,           // TagArticleA
 	TagValueBool,           // TagArticleAn
 	TagValueByte,           // TagFacing,
@@ -117,10 +119,24 @@ var tagValueMapping = []TagValue{
 	TagValueInt,            // TagManagedObject
 	TagValueReferenceSlice, // TagContents Tag
 	TagValueShort,          // TagGump
-	TagValueShort,          // TagMaxWeight
+	TagValueInt,            // TagMaxWeight
 	TagValueShort,          // TagMaxItems
 	TagValueBounds,         // TagBounds
 	TagValueString,         // TagUsername
 	TagValueString,         // TagPasswordHash
 	TagValueInt,            // TagPlayerMobile
 }
+
+// ObjectType are the concrete Go types in the game package.
+type ObjectType uint8
+
+const (
+	ObjectTypeObject            ObjectType = 0 // BaseObject
+	ObjectTypeStatic            ObjectType = 1 // StaticItem
+	ObjectTypeItem              ObjectType = 2 // BaseItem
+	ObjectTypeWearable          ObjectType = 3 // BaseWearable
+	ObjectTypeWearableContainer ObjectType = 4 // WearableContainer
+	ObjectTypeWeapon            ObjectType = 5 // BaseWeapon
+	ObjectTypeContainer         ObjectType = 6 // BaseContainer
+	ObjectTypeMountItem         ObjectType = 7 // MountItem
+)

@@ -1,5 +1,7 @@
 package game
 
+import "github.com/qbradq/sharduo/lib/uo"
+
 // VoidObject is an object that blindly accepts object adds and removes and does
 // not track them. If an object is left parented to a Void object it will leak.
 type VoidObject struct {
@@ -12,6 +14,9 @@ var TheVoid *VoidObject = &VoidObject{
 		name: "the void",
 	},
 }
+
+// Serial implements the util.Serialer interface.
+func (o *VoidObject) Serial() uo.Serial { return uo.SerialZero }
 
 // RemoveObject implements the Object interface
 func (o *VoidObject) RemoveObject(c Object) bool {

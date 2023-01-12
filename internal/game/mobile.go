@@ -55,9 +55,9 @@ type Mobile interface {
 	// AdjustGold adds n to the total amount of gold on the mobile
 	AdjustGold(int)
 	// Skill returns the raw skill value (range 0-1000) of the named skill
-	Skill(uo.Skill) int
+	Skill(uo.Skill) int16
 	// Skills returns a slice of all raw skill values (range 0-1000)
-	Skills() []int
+	Skills() []int16
 	// SkillCheck returns true if the skill check succeeded. This function will
 	// also calculate skill and stat gains and send mobile updates for these.
 	SkillCheck(uo.Skill, int, int) bool
@@ -237,7 +237,7 @@ type BaseMobile struct {
 	// Current stamina
 	stamina int
 	// Raw skill values
-	skills []int
+	skills []int16
 
 	//
 	// Cache values
@@ -279,14 +279,14 @@ func (m *BaseMobile) Serialize(f *util.TagFileWriter) {
 	}
 	for i, v := range m.skills {
 		if v != 0 {
-			f.WriteNumber("Skill"+uo.SkillNames[i], v)
+			f.WriteNumber("Skill"+uo.SkillNames[i], int(v))
 		}
 	}
 }
 
 // Deserialize implements the util.Serializeable interface.
 func (m *BaseMobile) Deserialize(f *util.TagFileObject) {
-	m.skills = make([]int, uo.SkillCount)
+	m.skills = make([]int16, uo.SkillCount)
 	m.cursor = &Cursor{}
 	m.BaseObject.Deserialize(f)
 	m.viewRange = f.GetNumber("ViewRange", uo.MaxViewRange)
@@ -306,7 +306,7 @@ func (m *BaseMobile) Deserialize(f *util.TagFileObject) {
 	m.stamina = f.GetNumber("Stamina", 1)
 	// Load skills
 	for s := uo.SkillFirst; s <= uo.SkillLast; s++ {
-		m.skills[s] = f.GetNumber("Skill"+uo.SkillNames[s], 0)
+		m.skills[s] = int16(f.GetNumber("Skill"+uo.SkillNames[s], 0))
 	}
 }
 
@@ -880,10 +880,10 @@ func (m *BaseMobile) CanAccess(o Object) bool {
 }
 
 // Skill implements the Mobile interface.
-func (m *BaseMobile) Skill(which uo.Skill) int { return m.skills[which] }
+func (m *BaseMobile) Skill(which uo.Skill) int16 { return m.skills[which] }
 
 // Skills implements the Mobile interface.
-func (m *BaseMobile) Skills() []int { return m.skills }
+func (m *BaseMobile) Skills() []int16 { return m.skills }
 
 // SkillCheck implements the Mobile interface.
 func (m *BaseMobile) SkillCheck(which uo.Skill, min, max int) bool {
@@ -891,7 +891,7 @@ func (m *BaseMobile) SkillCheck(which uo.Skill, min, max int) bool {
 		return false
 	}
 	// Get the skill value and look for corner cases
-	v := m.skills[which]
+	v := int(m.skills[which])
 	if v < min {
 		// No chance
 		return false
@@ -939,8 +939,7 @@ func (m *BaseMobile) SkillCheck(which uo.Skill, min, max int) bool {
 		}
 		if toGain > 0 {
 			// Execute skill gain
-			m.skills[which] = v + toGain
-			log.Println(m.skills[which])
+			m.skills[which] = int16(v + toGain)
 			if m.n != nil {
 				m.n.UpdateSkill(which, uo.SkillLockUp, v+toGain)
 			}

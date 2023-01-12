@@ -1,7 +1,7 @@
 package clientpacket
 
 import (
-	. "github.com/qbradq/sharduo/lib/dataconv"
+	dc "github.com/qbradq/sharduo/lib/dataconv"
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
 )
@@ -73,7 +73,7 @@ func New(data []byte) Packet {
 
 	length := InfoTable[data[0]].Length
 	if length == -1 {
-		length = int(GetUint16(data[1:3]))
+		length = int(dc.GetUint16(data[1:3]))
 		pdat = data[3:length]
 	} else if length == 0 {
 		return newUnknownPacket(packetFactory.GetName(), uo.Serial(data[0]))
@@ -101,7 +101,7 @@ func NewUnsupportedPacket(ptype string, in []byte) *UnsupportedPacket {
 }
 
 // UnknownPacket is sent when the packet being decoded has no length
-// information. This puts the packet stream in an inconsistent state.
+// information. This dc.Puts the packet stream in an inconsistent state.
 type UnknownPacket struct {
 	util.BaseSerialer
 	PType string
@@ -151,11 +151,11 @@ type LoginSeed struct {
 
 func newLoginSeed(in []byte) Packet {
 	p := &LoginSeed{
-		Seed:         GetUint32(in[0:4]),
-		VersionMajor: int(GetUint32(in[4:8])),
-		VersionMinor: int(GetUint32(in[8:12])),
-		VersionPatch: int(GetUint32(in[12:16])),
-		VersionExtra: int(GetUint32(in[16:20])),
+		Seed:         dc.GetUint32(in[0:4]),
+		VersionMajor: int(dc.GetUint32(in[4:8])),
+		VersionMinor: int(dc.GetUint32(in[8:12])),
+		VersionPatch: int(dc.GetUint32(in[12:16])),
+		VersionExtra: int(dc.GetUint32(in[16:20])),
 	}
 	p.SetSerial(0xEF)
 	return p
@@ -173,8 +173,8 @@ type AccountLogin struct {
 
 func newAccountLogin(in []byte) Packet {
 	p := &AccountLogin{
-		Username: NullString(in[0:30]),
-		Password: NullString(in[30:60]),
+		Username: dc.NullString(in[0:30]),
+		Password: dc.NullString(in[30:60]),
 	}
 	p.SetSerial(0x80)
 	return p
@@ -190,7 +190,7 @@ type SelectServer struct {
 
 func newSelectServer(in []byte) Packet {
 	p := &SelectServer{
-		Index: int(GetUint16(in[0:2])),
+		Index: int(dc.GetUint16(in[0:2])),
 	}
 	p.SetSerial(0xA0)
 	return p
@@ -209,9 +209,9 @@ type GameServerLogin struct {
 
 func newGameServerLogin(in []byte) Packet {
 	p := &GameServerLogin{
-		Key:      uo.Serial(GetUint32(in[:4])),
-		Username: NullString(in[4:34]),
-		Password: NullString(in[34:64]),
+		Key:      uo.Serial(dc.GetUint32(in[:4])),
+		Username: dc.NullString(in[4:34]),
+		Password: dc.NullString(in[34:64]),
 	}
 	p.SetSerial(0x91)
 	return p
@@ -226,7 +226,7 @@ type CharacterLogin struct {
 
 func newCharacterLogin(in []byte) Packet {
 	p := &CharacterLogin{
-		Slot: int(GetUint32(in[64:68])),
+		Slot: int(dc.GetUint32(in[64:68])),
 	}
 	p.SetSerial(0x5D)
 	return p
@@ -242,7 +242,7 @@ type Version struct {
 func newVersion(in []byte) Packet {
 	// Length check not required, it can be nil
 	p := &Version{
-		String: NullString(in),
+		String: dc.NullString(in),
 	}
 	p.SetSerial(0xBD)
 	return p
@@ -282,8 +282,8 @@ func newSpeech(in []byte) Packet {
 	}
 	s := &Speech{
 		Type: uo.SpeechType(in[0]),
-		Hue:  uo.Hue(GetUint16(in[1:3])),
-		Font: uo.Font(GetUint16(in[3:5])),
+		Hue:  uo.Hue(dc.GetUint16(in[1:3])),
+		Font: uo.Font(dc.GetUint16(in[3:5])),
 	}
 	s.SetSerial(0xAD)
 	if s.Type >= uo.SpeechTypeClientParsed {
@@ -297,10 +297,10 @@ func newSpeech(in []byte) Packet {
 		if len(in) < 13+skip {
 			return newMalformedPacket(0xAD)
 		}
-		s.Text = NullString(in[12+skip:])
+		s.Text = dc.NullString(in[12+skip:])
 		return s
 	}
-	s.Text = UTF16String(in[9:])
+	s.Text = dc.UTF16String(in[9:])
 	return s
 }
 
@@ -313,7 +313,7 @@ type SingleClick struct {
 
 func newSingleClick(in []byte) Packet {
 	p := &SingleClick{
-		ID: uo.Serial(GetUint32(in)),
+		ID: uo.Serial(dc.GetUint32(in)),
 	}
 	p.SetSerial(0x09)
 	return p
@@ -329,7 +329,7 @@ type DoubleClick struct {
 }
 
 func newDoubleClick(in []byte) Packet {
-	s := uo.Serial(GetUint32(in[:4]))
+	s := uo.Serial(dc.GetUint32(in[:4]))
 	isPaperDoll := s.IsSelf()
 	s = s.StripSelfFlag()
 	p := &DoubleClick{
@@ -353,7 +353,7 @@ type PlayerStatusRequest struct {
 func newPlayerStatusRequest(in []byte) Packet {
 	p := &PlayerStatusRequest{
 		StatusRequestType: uo.StatusRequestType(in[4]),
-		PlayerMobileID:    uo.Serial(GetUint32(in[5:])),
+		PlayerMobileID:    uo.Serial(dc.GetUint32(in[5:])),
 	}
 	p.SetSerial(0x34)
 	return p
@@ -403,29 +403,29 @@ func newWalkRequest(in []byte) Packet {
 		Direction:   d,
 		IsRunning:   r,
 		Sequence:    int(in[1]),
-		FastWalkKey: GetUint32(in[2:]),
+		FastWalkKey: dc.GetUint32(in[2:]),
 	}
 	p.SetSerial(0x02)
 	return p
 }
 
-// TargetResponse is sent by the client to respond to a targeting cursor
+// TargetResponse is sent by the client to respond to a tardc.Geting cursor
 type TargetResponse struct {
 	util.BaseSerialer
-	// Target type
+	// Tardc.Get type
 	TargetType uo.TargetType
-	// Serial of this targeting request
+	// Serial of this tardc.Geting request
 	TargetSerial uo.Serial
 	// Cursor type
 	CursorType uo.CursorType
-	// TargetObject is the serial of the object clicked on, or uo.SerialZero if
-	// no object was targeted.
+	// Tardc.GetObject is the serial of the object clicked on, or uo.SerialZero if
+	// no object was tardc.Geted.
 	TargetObject uo.Serial
-	// The X location of the target
+	// The X location of the tardc.Get
 	X int
-	// The Y location of the target
+	// The Y location of the tardc.Get
 	Y int
-	// The Z location of the target
+	// The Z location of the tardc.Get
 	Z int
 	// Graphic of the object clicked, if any
 	Graphic uo.Graphic
@@ -434,13 +434,13 @@ type TargetResponse struct {
 func newTargetResponse(in []byte) Packet {
 	p := &TargetResponse{
 		TargetType:   uo.TargetType(in[0]),
-		TargetSerial: uo.Serial(GetUint32(in[1:5])),
+		TargetSerial: uo.Serial(dc.GetUint32(in[1:5])),
 		CursorType:   uo.CursorType(in[5]),
-		TargetObject: uo.Serial(GetUint32(in[6:10])),
-		X:            int(GetUint16(in[10:12])),
-		Y:            int(GetUint16(in[12:14])),
+		TargetObject: uo.Serial(dc.GetUint32(in[6:10])),
+		X:            int(dc.GetUint16(in[10:12])),
+		Y:            int(dc.GetUint16(in[12:14])),
 		Z:            int(in[15]),
-		Graphic:      uo.Graphic(GetUint16(in[16:18])),
+		Graphic:      uo.Graphic(dc.GetUint16(in[16:18])),
 	}
 	p.SetSerial(0x6C)
 	return p
@@ -457,8 +457,8 @@ type LiftRequest struct {
 
 func newLiftRequest(in []byte) Packet {
 	p := &LiftRequest{
-		Item:   uo.Serial(GetUint32(in[0:4])),
-		Amount: int(GetUint16(in[4:6])),
+		Item:   uo.Serial(dc.GetUint32(in[0:4])),
+		Amount: int(dc.GetUint16(in[4:6])),
 	}
 	p.SetSerial(0x07)
 	return p
@@ -482,12 +482,12 @@ type DropRequest struct {
 
 func newDropRequest(in []byte) Packet {
 	p := &DropRequest{
-		Item: uo.Serial(GetUint32(in[0:4])),
-		X:    int(GetUint16(in[4:6])),
-		Y:    int(GetUint16(in[6:8])),
+		Item: uo.Serial(dc.GetUint32(in[0:4])),
+		X:    int(dc.GetUint16(in[4:6])),
+		Y:    int(dc.GetUint16(in[6:8])),
 		Z:    int(int8(in[8])),
 		// Skip one byte for the grid index
-		Container: uo.Serial(GetUint32(in[10:14])),
+		Container: uo.Serial(dc.GetUint32(in[10:14])),
 	}
 	p.SetSerial(0x08)
 	return p
@@ -504,8 +504,8 @@ type WearItemRequest struct {
 
 func newWearItemRequest(in []byte) Packet {
 	p := &WearItemRequest{
-		Item:   uo.Serial(GetUint32(in[0:4])),
-		Wearer: uo.Serial(GetUint32(in[5:9])),
+		Item:   uo.Serial(dc.GetUint32(in[0:4])),
+		Wearer: uo.Serial(dc.GetUint32(in[5:9])),
 	}
 	p.SetSerial(0x13)
 	return p

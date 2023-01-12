@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/qbradq/sharduo/internal/marshal"
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
 )
@@ -66,6 +67,9 @@ func (o *BaseContainer) TypeName() string {
 	return "BaseContainer"
 }
 
+// ObjectType implements the Object interface.
+func (i *BaseContainer) ObjectType() marshal.ObjectType { return marshal.ObjectTypeContainer }
+
 // Serialize implements the util.Serializeable interface.
 func (c *BaseContainer) Serialize(f *util.TagFileWriter) {
 	c.BaseItem.Serialize(f)
@@ -74,6 +78,16 @@ func (c *BaseContainer) Serialize(f *util.TagFileWriter) {
 	f.WriteNumber("MaxContainerItems", c.maxContainerItems)
 	f.WriteBounds("Bounds", c.bounds)
 	f.WriteObjectReferences("Contents", util.ToSerials(c.contents))
+}
+
+// Marshal implements the marshal.Marshaler interface.
+func (i *BaseContainer) Marshal(s *marshal.TagFileSegment) {
+	i.BaseItem.Marshal(s)
+	s.PutTag(marshal.TagGump, uint16(i.gump))
+	s.PutTag(marshal.TagMaxWeight, uint32(i.maxContainerWeight*1000))
+	s.PutTag(marshal.TagMaxItems, uint16(i.maxContainerItems))
+	s.PutTag(marshal.TagBounds, i.bounds)
+	// TODO write contents
 }
 
 // Deserialize implements the util.Serializeable interface.

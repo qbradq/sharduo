@@ -4,6 +4,7 @@ import (
 	"log"
 	"strconv"
 
+	"github.com/qbradq/sharduo/internal/marshal"
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
 )
@@ -143,6 +144,9 @@ func (i *BaseItem) TypeName() string {
 	return "BaseItem"
 }
 
+// ObjectType implements the Object interface.
+func (i *BaseItem) ObjectType() marshal.ObjectType { return marshal.ObjectTypeItem }
+
 // Serialize implements the util.Serializeable interface.
 func (i *BaseItem) Serialize(f *util.TagFileWriter) {
 	i.BaseObject.Serialize(f)
@@ -154,6 +158,19 @@ func (i *BaseItem) Serialize(f *util.TagFileWriter) {
 	f.WriteBool("Stackable", i.stackable)
 	f.WriteNumber("Amount", i.amount)
 	f.WriteString("Plural", i.plural)
+}
+
+// Marshal implements the marshal.Marshaler interface.
+func (i *BaseItem) Marshal(s *marshal.TagFileSegment) {
+	i.BaseObject.Marshal(s)
+	s.PutTag(marshal.TagGraphic, uint16(i.graphic))
+	s.PutTag(marshal.TagFlippedGraphic, uint16(i.flippedGraphic))
+	s.PutTag(marshal.TagFlipped, i.flipped)
+	s.PutTag(marshal.TagDyable, i.dyable)
+	s.PutTag(marshal.TagWeight, uint32(i.weight*1000))
+	s.PutTag(marshal.TagStackable, i.stackable)
+	s.PutTag(marshal.TagAmount, uint16(i.amount))
+	s.PutTag(marshal.TagPlural, i.plural)
 }
 
 // Deserialize implements the util.Serializeable interface.
@@ -168,6 +185,19 @@ func (i *BaseItem) Deserialize(f *util.TagFileObject) {
 	i.stackable = f.GetBool("Stackable", false)
 	i.amount = f.GetNumber("Amount", 1)
 	i.plural = f.GetString("Plural", "")
+}
+
+// Unmarshal implements the marshal.Unmarshaler interface.
+func (i *BaseItem) Unmarshal(to *marshal.TagObject) {
+	i.BaseObject.Unmarshal(to)
+	i.graphic = uo.Graphic(to.Tags.Short(marshal.TagGraphic, uint16(uo.GraphicDefault)))
+	i.def = world.GetItemDefinition(i.graphic)
+	i.flippedGraphic = uo.Graphic(to.Tags.Short(marshal.TagFlippedGraphic, 0))
+	i.dyable = to.Tags.Bool(marshal.TagDyable)
+	i.weight = float32(to.Tags.Int(marshal.TagWeight, 1000)) / float32(1000.0)
+	i.stackable = to.Tags.Bool(marshal.TagStackable)
+	i.amount = int(to.Tags.Short(marshal.TagAmount, uint16(1)))
+	i.plural = to.Tags.String(marshal.TagPlural, "")
 }
 
 // BaseGraphic implements the Item interface.

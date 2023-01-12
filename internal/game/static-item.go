@@ -1,6 +1,7 @@
 package game
 
 import (
+	"github.com/qbradq/sharduo/internal/marshal"
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
 )
@@ -27,6 +28,9 @@ type StaticItem struct {
 func (o *StaticItem) TypeName() string {
 	return "StaticItem"
 }
+
+// ObjectType implements the Object interface.
+func (o *StaticItem) ObjectType() marshal.ObjectType { return marshal.ObjectTypeStatic }
 
 // SerialType implements the util.Serializeable interface.
 func (o *StaticItem) SerialType() uo.SerialType {
@@ -63,7 +67,7 @@ func (i *StaticItem) Parent() Object                                    { return
 func (i *StaticItem) HasParent(o Object) bool                           { return o == nil }
 func (i *StaticItem) SetParent(o Object)                                {}
 func (i *StaticItem) TemplateName() string                              { return "StaticItem" }
-func (i *StaticItem) LinkEvent(s string, fn *func(Object, Object))      {}
+func (i *StaticItem) LinkEvent(event, handler string)                   {}
 func (i *StaticItem) GetEventHandler(s string) *func(Object, Object)    { return nil }
 func (i *StaticItem) RecalculateStats()                                 {}
 func (i *StaticItem) RemoveObject(o Object) bool                        { return false }
@@ -89,6 +93,23 @@ func (i *StaticItem) Serialize(f *util.TagFileWriter) {
 	f.WriteLocation("Location", i.location)
 }
 
+// An empty event map so we don't have to allocate one every time.
+var _emptyEventHandlers = make(map[string]string)
+
+// Marshal implements the marshal.Marshaler interface.
+func (i *StaticItem) Marshal(s *marshal.TagFileSegment) {
+	s.PutObjectHeader(
+		i.ObjectType(),
+		i.Serial(),
+		"StaticItem",
+		uo.SerialSystem,
+		"",
+		i.hue,
+		i.location,
+		_emptyEventHandlers)
+	s.PutShort(uint16(i.graphic))
+}
+
 // Deserialize implements the util.Serializeable interface.
 func (i *StaticItem) Deserialize(f *util.TagFileObject) {
 	i.BaseSerializeable.Deserialize(f)
@@ -102,6 +123,18 @@ func (i *StaticItem) Deserialize(f *util.TagFileObject) {
 		Z: 55,
 	})
 }
+
+// Unmarshal implements the marshal.Unmarshaler interface.
+func (i *StaticItem) Unmarshal(to *marshal.TagObject) {
+	i.SetSerial(to.Serial)
+	i.hue = to.Hue
+	i.location = to.Location
+	i.graphic = uo.Graphic(to.Tags.Short(marshal.TagGraphic, uint16(uo.GraphicDefault)))
+	i.def = world.GetItemDefinition(i.graphic)
+}
+
+// AfterUnmarshal implements the marshal.Unmarshaler interface.
+func (i *StaticItem) AfterUnmarshal(to *marshal.TagObject) {}
 
 // Flag accessors
 func (i *StaticItem) Background() bool   { return i.def.TileFlags&uo.TileFlagsBackground != 0 }

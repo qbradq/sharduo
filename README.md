@@ -81,6 +81,7 @@ opened to outside connections.
 * Restrict command usage to access levels
 * ~~Do not allow items within the bank box to be used unless the bank box is open~~
 * ~~Proper coordinate wrapping in game.Map.getChunksInBounds()~~
+* Pretty sure we are leaking objects during world.Remove(), fix it
 
 ### Miscellaneous Issues ###
 This is a list of known issues that do not need to be resolved before the next
