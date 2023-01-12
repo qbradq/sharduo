@@ -28,6 +28,16 @@ func NewDataStore[K Serializeable](name string, rng uo.RandomSource, f *Serializ
 	}
 }
 
+// Data returns the underlying data store.
+func (s *DataStore[K]) Data() map[uo.Serial]K {
+	return s.SerialPool.objects
+}
+
+// SetData throws away the underlying data store and replaces it.
+func (s *DataStore[K]) SetData(data map[uo.Serial]K) {
+	s.SerialPool.SetData(data)
+}
+
 // Read reads the data store from the tag file. This creates the objects of the
 // data store but does not deserialize them. Deserialization should be done
 // after all data stores are loaded so pointers can be resolved. This has the

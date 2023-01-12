@@ -2,8 +2,10 @@ package game
 
 import (
 	"io"
+	"log"
 	"strconv"
 
+	"github.com/qbradq/sharduo/internal/marshal"
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/uo/file"
 	"github.com/qbradq/sharduo/lib/util"
@@ -107,6 +109,36 @@ func (m *Map) Write(w io.WriteCloser) []error {
 	lfw.WriteBlankLine()
 	lfw.WriteComment("END OF FILE")
 	return nil
+}
+
+// Marshal writes out all object references of objects that are directly on the
+// map.
+func (m *Map) Marshal(s *marshal.TagFileSegment) {
+	for _, c := range m.chunks {
+		for _, item := range c.items {
+			s.PutInt(uint32(item.Serial()))
+			s.IncrementRecordCount()
+		}
+		for _, mobile := range c.mobiles {
+			s.PutInt(uint32(mobile.Serial()))
+			s.IncrementRecordCount()
+		}
+	}
+}
+
+// Unmarshal reads all object references of the objects that are parented
+// directly to the map.
+func (m *Map) Unmarshal(s *marshal.TagFileSegment) {
+	for i := uint32(0); i < s.RecordCount(); i++ {
+		serial := uo.Serial(s.Int())
+		o := world.Find(serial)
+		if o == nil {
+			log.Printf("warning: map referenced leaked object %s", serial.String())
+			continue
+		}
+		c := m.getChunk(o.Location())
+		c.Add(o)
+	}
 }
 
 // getChunk returns a pointer to the chunk for the given location.

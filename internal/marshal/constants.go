@@ -67,6 +67,7 @@ const (
 	TagUsername          Tag = 34
 	TagPasswordHash      Tag = 35
 	TagPlayerMobile      Tag = 36
+	TagViewRange         Tag = 37
 )
 
 // TagValue is a code to indicate what kind of data a value contains
@@ -117,7 +118,7 @@ var tagValueMapping = []TagValue{
 	TagValueByte,           // TagLayer
 	TagValueByte,           // TagRequiredSkill
 	TagValueInt,            // TagManagedObject
-	TagValueReferenceSlice, // TagContents Tag
+	TagValueReferenceSlice, // TagContents
 	TagValueShort,          // TagGump
 	TagValueInt,            // TagMaxWeight
 	TagValueShort,          // TagMaxItems
@@ -125,6 +126,7 @@ var tagValueMapping = []TagValue{
 	TagValueString,         // TagUsername
 	TagValueString,         // TagPasswordHash
 	TagValueInt,            // TagPlayerMobile
+	TagValueByte,           // TagViewRange
 }
 
 // ObjectType are the concrete Go types in the game package.
@@ -139,4 +141,5 @@ const (
 	ObjectTypeWeapon            ObjectType = 5 // BaseWeapon
 	ObjectTypeContainer         ObjectType = 6 // BaseContainer
 	ObjectTypeMountItem         ObjectType = 7 // MountItem
+	ObjectTypeMobile            ObjectType = 8 // BaseMobile
 )

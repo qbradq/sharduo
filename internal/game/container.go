@@ -11,6 +11,7 @@ import (
 
 func init() {
 	ObjectFactory.RegisterCtor(func(v any) util.Serializeable { return &BaseContainer{} })
+	objectCtors[marshal.ObjectTypeContainer] = func() Object { return &BaseContainer{} }
 }
 
 // Container is the interface all objects implement that can contain other
@@ -82,12 +83,20 @@ func (c *BaseContainer) Serialize(f *util.TagFileWriter) {
 
 // Marshal implements the marshal.Marshaler interface.
 func (i *BaseContainer) Marshal(s *marshal.TagFileSegment) {
+	contentSerials := make([]uo.Serial, len(i.contents))
+	for idx, o := range i.contents {
+		// Sanity check: slices over 255 members will panic the marshal package.
+		if idx > 255 {
+			break
+		}
+		contentSerials[idx] = o.Serial()
+	}
 	i.BaseItem.Marshal(s)
 	s.PutTag(marshal.TagGump, uint16(i.gump))
 	s.PutTag(marshal.TagMaxWeight, uint32(i.maxContainerWeight*1000))
 	s.PutTag(marshal.TagMaxItems, uint16(i.maxContainerItems))
 	s.PutTag(marshal.TagBounds, i.bounds)
-	// TODO write contents
+	s.PutTag(marshal.TagContents, contentSerials)
 }
 
 // Deserialize implements the util.Serializeable interface.
@@ -97,6 +106,15 @@ func (c *BaseContainer) Deserialize(f *util.TagFileObject) {
 	c.maxContainerWeight = f.GetFloat("MaxContainerWeight", float32(uo.DefaultMaxContainerWeight))
 	c.maxContainerItems = f.GetNumber("MaxContainerItems", uo.DefaultMaxContainerItems)
 	c.bounds = f.GetBounds("Bounds", uo.Bounds{X: 44, Y: 65, W: 142, H: 94})
+}
+
+// Unmarshal implements the marshal.Unmarshaler interface.
+func (c *BaseContainer) Unmarshal(o *marshal.TagObject) {
+	c.BaseItem.Unmarshal(o)
+	c.gump = uo.Gump(o.Tags.Short(marshal.TagGump, uint16(uo.GumpContainerDefault)))
+	c.maxContainerWeight = float32(o.Tags.Int(marshal.TagWeight, 1000)) / float32(1000.0)
+	c.maxContainerItems = int(o.Tags.Short(marshal.TagAmount, 1))
+	c.bounds = o.Tags.Bounds(marshal.TagBounds, uo.Bounds{})
 }
 
 // OnAfterDeserialize implements the util.Serializeable interface.
@@ -110,6 +128,25 @@ func (c *BaseContainer) OnAfterDeserialize(t *util.TagFileObject) {
 		item, ok := o.(Item)
 		if !ok {
 			log.Printf("failed to link object 0x%X into container, it is not an item", serial)
+		}
+		c.contents = c.contents.Append(item)
+	}
+}
+
+// AfterUnmarshal implements the marshal.Unmarshaler interface.
+func (c *BaseContainer) AfterUnmarshal(to *marshal.TagObject) {
+	c.BaseItem.AfterUnmarshal(to)
+	serials := to.Tags.ReferenceSlice(marshal.TagContents)
+	for _, s := range serials {
+		o := world.Find(s)
+		if o == nil {
+			log.Printf("warning: object %s not found linking container contents", s.String())
+			continue
+		}
+		item, ok := o.(Item)
+		if !ok {
+			log.Printf("warning: object %s was not an item linking container contents", s.String())
+			continue
 		}
 		c.contents = c.contents.Append(item)
 	}
@@ -247,6 +284,15 @@ func (c *BaseContainer) AddObject(o Object) bool {
 
 // ForceAddObject implements the Container interface.
 func (c *BaseContainer) ForceAddObject(o Object) {
+	// Sanity check: we can't allow the number of direct children of this
+	// container to exceed 255 or the Marshal() call will panic. This could
+	// happen if a player finds a reliable way of force-dropping items to their
+	// bank box or backpack. This will leak the object but at this point we are
+	// dealing with an exploit / system abuse and don't really care.
+	if len(c.contents) > 255 {
+		world.Remove(o)
+		return
+	}
 	if o == nil {
 		return
 	}

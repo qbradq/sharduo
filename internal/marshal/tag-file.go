@@ -25,19 +25,18 @@ import (
 // Blob                   []byte          Raw segment data
 //
 // Segment Header:
-// ID     uint8  Unique identifier of the segment
-// Offset uint64 Offset from the beginning of the file where the raw segment data starts
-// Length uint64 Length of the raw segment data
+// ID                     uint8           Unique identifier of the segment
+// Offset                 uint64          Offset from the beginning of the file where the raw segment data starts
+// Length                 uint64          Length of the raw segment data
+// Records                uint32          Number of records in the segment
 //
 // StringDictionarySegment:
 // A tag file will always have a string dictionary segment with segment ID
 // SegmentStringDictionary. It is used to look up all string references in all
 // TagObject segments in the file. Format as follows:
-// StringCount            uint32          Number of strings in the segment
 // Strings                []string        Array of null-terminated UTF-8 strings
 //
 // TagObjectSegment:
-// ObjectCount            uint32          Number of objects in the segment
 // Objects                []TagObject     Object data
 //
 // TagObject:
@@ -97,8 +96,9 @@ func NewTagFile(d []byte) *TagFile {
 		s.id = Segment(d[ofs])
 		segmentOffset := binary.LittleEndian.Uint64(d[ofs+1 : ofs+9])
 		segmentLength := binary.LittleEndian.Uint64(d[ofs+9 : ofs+17])
+		s.records = binary.LittleEndian.Uint32(d[ofs+17 : ofs+21])
 		s.buf = bytes.NewBuffer(d[segmentOffset : segmentOffset+segmentLength])
-		ofs += 17
+		ofs += 21
 	}
 	// Pre-load the string dictionary
 	var sdseg *TagFileSegment
@@ -111,9 +111,7 @@ func NewTagFile(d []byte) *TagFile {
 		panic("string dictionary segment not found")
 	}
 	sdd := bytes.NewBuffer(sdseg.buf.Bytes())
-	sdd.Read(buf[0:4])
-	dictLength := binary.LittleEndian.Uint32(buf[0:4])
-	for i := uint32(0); i < dictLength; i++ {
+	for i := uint32(0); i < sdseg.records; i++ {
 		sdd.Read(buf[0:4])
 		sid := binary.LittleEndian.Uint32(buf[0:4])
 		stringData, _ := sdd.ReadBytes(0)
@@ -138,8 +136,6 @@ func (f *TagFile) Output(w io.Writer) {
 	// First we have to generate the raw data for the dictionary segment so we
 	// know how long it will be.
 	dictBuf := &bytes.Buffer{}
-	binary.LittleEndian.PutUint32(buf[0:4], uint32(len(f.dict))) // String count
-	dictBuf.Write(buf[0:4])
 	for s, id := range f.dict {
 		binary.LittleEndian.PutUint32(buf[0:4], id) // String ID - NOT SEQUENTIAL ORDER!
 		dictBuf.Write(buf[0:4])
@@ -152,19 +148,21 @@ func (f *TagFile) Output(w io.Writer) {
 	buf[0] = byte(len(f.segs) + 1) // +1 is for the dictionary segment
 	w.Write(buf[0:1])
 	// Write segment headers
-	var ofs uint64 = 9 + 17*(uint64(len(f.segs))+1)
+	var ofs uint64 = 9 + 21*(uint64(len(f.segs))+1)
 	// Dictionary segment header
 	buf[0] = byte(SegmentStringDictionary)                          // Segment ID
 	binary.LittleEndian.PutUint64(buf[1:9], ofs)                    // File offset
 	binary.LittleEndian.PutUint64(buf[9:17], uint64(dictBuf.Len())) // Length
-	w.Write(buf[0:17])
+	binary.LittleEndian.PutUint32(buf[17:21], uint32(len(f.dict)))  // Record count
+	w.Write(buf[0:21])
 	ofs += uint64(dictBuf.Len())
 	// Other segments
 	for _, seg := range f.segs {
 		buf[0] = byte(seg.id)                                           // Segment ID
 		binary.LittleEndian.PutUint64(buf[1:9], ofs)                    // File offset
 		binary.LittleEndian.PutUint64(buf[9:17], uint64(seg.buf.Len())) // Length
-		w.Write(buf[0:17])
+		binary.LittleEndian.PutUint32(buf[17:21], seg.records)          // Record count
+		w.Write(buf[0:21])
 		ofs += uint64(seg.buf.Len())
 	}
 	// Segment data
@@ -182,7 +180,7 @@ func (f *TagFile) Segment(which Segment) *TagFileSegment {
 		}
 	}
 	s := NewTagFileSegment(which)
-	f.segs[which] = s
+	f.segs = append(f.segs, s)
 	return s
 }
 
@@ -210,19 +208,27 @@ func (f *TagFile) StringByReference(ref uint32) string {
 
 // TagFileSegment manages a single segment in the file.
 type TagFileSegment struct {
-	parent *TagFile      // Parent tag file
-	id     Segment       // Segment ID
-	buf    *bytes.Buffer // Raw data buffer
-	tbuf   []byte        // Temporary buffer
+	parent  *TagFile      // Parent tag file
+	id      Segment       // Segment ID
+	buf     *bytes.Buffer // Raw data buffer
+	tbuf    []byte        // Temporary buffer
+	records uint32        // Number of records in this segment
 }
 
 // NewTagFileSegment returns an initialized TagFile object.
 func NewTagFileSegment(id Segment) *TagFileSegment {
 	return &TagFileSegment{
 		id:   id,
+		buf:  &bytes.Buffer{},
 		tbuf: make([]byte, 4*2*256+1),
 	}
 }
+
+// IncrementRecordCount increments the record count of the segment by one.
+func (s *TagFileSegment) IncrementRecordCount() { s.records++ }
+
+// RecordCount returns the number of records encoded into the segment.
+func (s *TagFileSegment) RecordCount() uint32 { return s.records }
 
 // PutByte writes a single 8-bit value to the segment.
 func (s *TagFileSegment) PutByte(v byte) {
@@ -274,19 +280,18 @@ func (s *TagFileSegment) PutStringsMap(m map[string]string) {
 	s.buf.Write(s.tbuf[:ofs])
 }
 
-// PutObjectReferences writes all of the keys from the given map as 32-bit
+// PutObjectReferences writes all of the serials from the given slice as 32-bit
 // object references to the tag file segment preceded by the count of references
-// (8-bit value). This is hacky but avoids copying map keys into slices for
-// every single object in the game during save.
-func PutObjectReferences[I any](s *TagFileSegment, m map[uo.Serial]I) {
-	l := len(m)
+// (8-bit value).
+func (s *TagFileSegment) PutObjectReferences(serials []uo.Serial) {
+	l := len(serials)
 	if l > 255 {
-		panic("map too big for PutObjectReferences")
+		panic("slice too big for PutObjectReferences")
 	}
 	s.tbuf[0] = byte(l)
 	ofs := 1
-	for k := range m {
-		binary.LittleEndian.PutUint32(s.tbuf[ofs+0:ofs+4], uint32(k))
+	for _, serial := range serials {
+		binary.LittleEndian.PutUint32(s.tbuf[ofs+0:ofs+4], uint32(serial))
 		ofs += 4
 	}
 	s.buf.Write(s.tbuf[:ofs])
@@ -475,6 +480,13 @@ func (s *TagFileSegment) PutTag(t Tag, value interface{}) {
 		}
 		s.PutByte(byte(t))
 		s.PutShortSlice(v)
+	case []uo.Serial:
+		if valueType != TagValueReferenceSlice {
+			log.Printf("warning: tag %d is not a reference slice", t)
+			return
+		}
+		s.PutByte(byte(t))
+		s.PutObjectReferences(v)
 	default:
 		log.Printf("warning: unhandled type for tag %d", t)
 	}
@@ -586,34 +598,36 @@ func (s *TagFileSegment) Bounds() uo.Bounds {
 	}
 }
 
-// ObjectHeader returns the data of the next object header encoded into the
-// segment.
-func (s *TagFileSegment) ObjectHeader() (
-	otype ObjectType,
-	serial uo.Serial,
-	template string,
-	parent uo.Serial,
-	name string,
-	hue uo.Hue,
-	location uo.Location,
-	events map[string]string) {
+// TagObject returns the data of the next object encoded into the segment.
+func (s *TagFileSegment) TagObject() *TagObject {
 	d := s.buf.Bytes()
-	otype = ObjectType(d[0])
-	serial = uo.Serial(binary.LittleEndian.Uint32(d[1:5]))
+	otype := ObjectType(d[0])
+	serial := uo.Serial(binary.LittleEndian.Uint32(d[1:5]))
 	sref := binary.LittleEndian.Uint32(d[5:9])
-	template = s.parent.StringByReference(sref)
-	parent = uo.Serial(binary.LittleEndian.Uint32(d[9:13]))
+	template := s.parent.StringByReference(sref)
+	parent := uo.Serial(binary.LittleEndian.Uint32(d[9:13]))
 	sref = binary.LittleEndian.Uint32(d[13:17])
-	name = s.parent.StringByReference(sref)
-	hue = uo.Hue(binary.LittleEndian.Uint16(d[17:19]))
-	location = uo.Location{
+	name := s.parent.StringByReference(sref)
+	hue := uo.Hue(binary.LittleEndian.Uint16(d[17:19]))
+	location := uo.Location{
 		X: int(binary.LittleEndian.Uint16(d[19:21])),
 		Y: int(binary.LittleEndian.Uint16(d[21:23])),
 		Z: int(int8(d[23])),
 	}
 	s.buf.Next(24)
-	events = s.StringMap()
-	return
+	events := s.StringMap()
+	tags := s.Tags()
+	return &TagObject{
+		Type:     otype,
+		Serial:   serial,
+		Template: template,
+		Parent:   parent,
+		Name:     name,
+		Hue:      hue,
+		Location: location,
+		Events:   events,
+		Tags:     tags,
+	}
 }
 
 // Tags returns a TagCollection containing the next collection of dynamic tags

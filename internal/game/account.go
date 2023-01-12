@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/google/uuid"
+	"github.com/qbradq/sharduo/internal/marshal"
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
 )
@@ -68,6 +69,31 @@ func (a *Account) Deserialize(f *util.TagFileObject) {
 	}
 	a.passwordHash = f.GetString("PasswordHash", "")
 	a.player = uo.Serial(f.GetHex("Player", uint32(uo.SerialMobileNil)))
+}
+
+// MarshalAccounts marshals all accounts in the map.
+func MarshalAccounts(s *marshal.TagFileSegment, accounts map[uo.Serial]*Account) {
+	for _, a := range accounts {
+		s.PutInt(uint32(a.Serial()))
+		s.PutString(a.username)
+		s.PutString(a.passwordHash)
+		s.PutInt(uint32(a.player))
+		s.IncrementRecordCount()
+	}
+}
+
+// UnmarshalAccounts unmarshals all accounts into a map.
+func UnmarshalAccounts(s *marshal.TagFileSegment) map[uo.Serial]*Account {
+	ret := make(map[uo.Serial]*Account)
+	for i := uint32(0); i < s.RecordCount(); i++ {
+		a := &Account{}
+		a.SetSerial(uo.Serial(s.Int()))
+		a.username = s.String()
+		a.passwordHash = s.String()
+		a.player = uo.Serial(s.Int())
+		ret[a.Serial()] = a
+	}
+	return ret
 }
 
 // Username returns the username of the account

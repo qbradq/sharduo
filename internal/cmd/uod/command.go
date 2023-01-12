@@ -260,6 +260,8 @@ func (c *DebugCommand) Compile() error {
 		return errors.New("debug command requires a command name: [debug command_name")
 	}
 	switch c.args[1] {
+	case "marshal":
+		fallthrough
 	case "memory_test":
 		fallthrough
 	case "delay_test":
@@ -286,6 +288,8 @@ func (c *DebugCommand) Execute(n *NetState) error {
 		return nil
 	}
 	switch c.args[1] {
+	case "marshal":
+		world.Marshal()
 	case "memory_test":
 		start := time.Now()
 		for i := 0; i < 1_000_000; i++ {

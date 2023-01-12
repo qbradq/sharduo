@@ -8,6 +8,7 @@ import (
 
 func init() {
 	ObjectFactory.RegisterCtor(func(v any) util.Serializeable { return &StaticItem{} })
+	objectCtors[marshal.ObjectTypeStatic] = func() Object { return &StaticItem{} }
 }
 
 // StaticItem is a light-weight Item implementation intended to be used for

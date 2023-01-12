@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/qbradq/sharduo/internal/marshal"
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
 )
@@ -154,6 +155,39 @@ func ReadTimers(r io.Reader) []error {
 		}
 	}
 	return append(ret, lfr.Errors()...)
+}
+
+// MarshalTimers writes all timers to the segment.
+func MarshalTimers(s *marshal.TagFileSegment) {
+	for pool, timers := range timerPools {
+		for serial, t := range timers {
+			s.PutInt(uint32(serial))
+			s.PutShort(uint16(pool))
+			s.PutLong(uint64(t.deadline))
+			s.PutInt(uint32(t.receiver))
+			s.PutInt(uint32(t.source))
+			s.PutString(t.event)
+			s.IncrementRecordCount()
+		}
+	}
+}
+
+// UnmarshalTimers reads all timers from the segment.
+func UnmarshalTimers(s *marshal.TagFileSegment) {
+	for i := uint32(0); i < s.RecordCount(); i++ {
+		serial := uo.Serial(s.Int())
+		pool := int(s.Short())
+		deadline := uo.Time(s.Long())
+		receiver := uo.Serial(s.Int())
+		source := uo.Serial(s.Int())
+		event := s.String()
+		timerPools[pool][serial] = &Timer{
+			deadline: deadline,
+			event:    event,
+			receiver: receiver,
+			source:   source,
+		}
+	}
 }
 
 // Execute executes the event on the timer

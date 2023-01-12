@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/qbradq/sharduo/internal/game"
+	"github.com/qbradq/sharduo/internal/marshal"
 	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
@@ -252,6 +253,33 @@ func (w *World) Load() error {
 	return w.reportErrors(errs)
 }
 
+// Unmarshal reads in all of the data stores we are responsible for.
+func (w *World) Unmarshal() error {
+	start := time.Now()
+	filePath := w.latestSavePath()
+	d, err := os.ReadFile(filePath)
+	if err != nil {
+		return err
+	}
+	end := time.Now()
+	elapsed := end.Sub(start)
+	log.Printf("read save file into memory in %ds%03d", elapsed.Microseconds()/1000, elapsed.Microseconds()%1000)
+
+	start = time.Now()
+	tf := marshal.NewTagFile(d)
+	s := tf.Segment(marshal.SegmentWorld)
+	w.time = uo.Time(s.Long())
+	game.UnmarshalTimers(tf.Segment(marshal.SegmentTimers))
+	game.UnmarshalAccounts(tf.Segment(marshal.SegmentAccounts))
+	game.UnmarshalObjects(tf.Segment(marshal.SegmentObjects))
+	w.m.Unmarshal(tf.Segment(marshal.SegmentMap))
+	end = time.Now()
+	elapsed = end.Sub(start)
+	log.Printf("save unmarshaled in %ds%03d", elapsed.Microseconds()/1000, elapsed.Microseconds()%1000)
+
+	return nil
+}
+
 // getFileName returns the file name portion of the save path without extension.
 func (w *World) getFileName() string {
 	return time.Now().Format("2006-01-02_15-04-05")
@@ -360,6 +388,43 @@ func (w *World) Save() error {
 	}
 
 	return w.reportErrors(errs)
+}
+
+// Marshal writes all of the data stores that the world is responsible for.
+func (w *World) Marshal() error {
+	if !w.lock.TryLock() {
+		return ErrSaveFileLocked
+	}
+	defer w.lock.Unlock()
+
+	filePath := path.Join(w.savePath, w.getFileName()+".sav")
+	log.Printf("saving data stores to %s", filePath)
+
+	start := time.Now()
+	tf := marshal.NewTagFile(nil)
+	s := tf.Segment(marshal.SegmentWorld)
+	s.PutLong(uint64(w.time))
+	game.MarshalTimers(tf.Segment(marshal.SegmentTimers))
+	game.MarshalAccounts(tf.Segment(marshal.SegmentAccounts), w.ads.Data())
+	game.MarshalObjects(tf.Segment(marshal.SegmentObjects), w.ods.Data())
+	w.m.Marshal(tf.Segment(marshal.SegmentMap))
+	end := time.Now()
+	elapsed := end.Sub(start)
+	log.Printf("generated save data in %ds%03dms", elapsed.Microseconds()/1000, elapsed.Milliseconds()%1000)
+
+	start = time.Now()
+	f, err := os.Create(filePath)
+	if err != nil {
+		return err
+	}
+	tf.Output(f)
+	f.Close()
+	tf.Close()
+	end = time.Now()
+	elapsed = end.Sub(start)
+	log.Printf("saved file to disk in %ds%03dms", elapsed.Microseconds()/1000, elapsed.Milliseconds()%1000)
+
+	return nil
 }
 
 // SendRequest sends a WorldRequest to the world's goroutine. Returns true if

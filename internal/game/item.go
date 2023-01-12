@@ -11,6 +11,7 @@ import (
 
 func init() {
 	ObjectFactory.RegisterCtor(func(v any) util.Serializeable { return &BaseItem{} })
+	objectCtors[marshal.ObjectTypeItem] = func() Object { return &BaseItem{} }
 }
 
 // Item is the interface that all non-static items implement.

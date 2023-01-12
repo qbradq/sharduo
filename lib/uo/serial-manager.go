@@ -81,3 +81,8 @@ func (m *SerialManager) Contains(s Serial) bool {
 func (m *SerialManager) Remove(s Serial) {
 	delete(m.used, s)
 }
+
+// Clear removes all serials from the set
+func (m *SerialManager) Clear() {
+	m.used = make(map[Serial]struct{})
+}

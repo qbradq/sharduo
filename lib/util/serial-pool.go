@@ -22,6 +22,20 @@ func NewSerialPool[K Serialer](name string, rng uo.RandomSource) *SerialPool[K] 
 	}
 }
 
+// SetData sets the underlying data store.
+func (p *SerialPool[K]) SetData(data map[uo.Serial]K) {
+	var zero K
+	// Don't leak objects
+	for k := range p.objects {
+		p.objects[k] = zero
+	}
+	p.objects = data
+	p.sm.Clear()
+	for k := range p.objects {
+		p.sm.Add(k)
+	}
+}
+
 // Add adds the object to the pool, assigning it a unique serial.
 func (p *SerialPool[K]) Add(o K, stype uo.SerialType) {
 	o.SetSerial(p.sm.New(stype))

@@ -9,14 +9,18 @@ import (
 )
 
 var ObjectFactory = util.NewSerializeableFactory("objects")
+var objectCtors = make(map[marshal.ObjectType]func() Object)
 
 func init() {
 	ObjectFactory.RegisterCtor(func(v any) util.Serializeable { return &BaseObject{} })
+	objectCtors[marshal.ObjectTypeObject] = func() Object { return &BaseObject{} }
 }
 
 // Object is the interface every object in the game implements
 type Object interface {
 	util.Serializeable
+	marshal.Marshaler
+	marshal.Unmarshaler
 
 	// List of all events supported by basic Objects
 	// OnDoubleClick....................Player double-clicks on object
@@ -126,6 +130,32 @@ type BaseObject struct {
 	facing uo.Direction
 	// Collection of all event handler names
 	eventHandlers map[string]string
+}
+
+// MarshalObjects writes all objects in the map to the segment.
+func MarshalObjects(s *marshal.TagFileSegment, objects map[uo.Serial]Object) {
+	for _, o := range objects {
+		o.Marshal(s)
+		s.PutTag(marshal.TagEndOfList, true)
+		s.IncrementRecordCount()
+	}
+}
+
+// UnmarshalObjects reads all objects from the segment and deserializes them.
+func UnmarshalObjects(s *marshal.TagFileSegment) map[uo.Serial]Object {
+	ret := make(map[uo.Serial]Object)
+	for i := uint32(0); i < s.RecordCount(); i++ {
+		to := s.TagObject()
+		ctor := objectCtors[to.Type]
+		if ctor == nil {
+			log.Printf("error: object %s no constructor for object type %d", to.Serial.String(), to.Type)
+			continue
+		}
+		o := ctor()
+		o.Unmarshal(to)
+		ret[o.Serial()] = o
+	}
+	return ret
 }
 
 // TypeName implements the util.Serializeable interface.
