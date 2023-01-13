@@ -398,7 +398,17 @@ func (w *World) Marshal() error {
 	defer w.lock.Unlock()
 
 	filePath := path.Join(w.savePath, w.getFileName()+".sav")
+	filePath = path.Clean(filePath)
+	os.MkdirAll(path.Dir(filePath), 0777)
 	log.Printf("saving data stores to %s", filePath)
+
+	pf, err := os.Create("marshal.cpu.pprof")
+	if err != nil {
+		return err
+	}
+	if err := pprof.StartCPUProfile(pf); err != nil {
+		return err
+	}
 
 	start := time.Now()
 	tf := marshal.NewTagFile(nil)
@@ -410,7 +420,9 @@ func (w *World) Marshal() error {
 	w.m.Marshal(tf.Segment(marshal.SegmentMap))
 	end := time.Now()
 	elapsed := end.Sub(start)
-	log.Printf("generated save data in %ds%03dms", elapsed.Microseconds()/1000, elapsed.Milliseconds()%1000)
+	log.Printf("generated save data in %ds%03dms", elapsed.Milliseconds()/1000, elapsed.Milliseconds()%1000)
+
+	pprof.StopCPUProfile()
 
 	start = time.Now()
 	f, err := os.Create(filePath)
@@ -422,7 +434,7 @@ func (w *World) Marshal() error {
 	tf.Close()
 	end = time.Now()
 	elapsed = end.Sub(start)
-	log.Printf("saved file to disk in %ds%03dms", elapsed.Microseconds()/1000, elapsed.Milliseconds()%1000)
+	log.Printf("saved file to disk in %ds%03dms", elapsed.Milliseconds()/1000, elapsed.Milliseconds()%1000)
 
 	return nil
 }
