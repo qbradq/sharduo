@@ -271,7 +271,7 @@ func (w *World) Unmarshal() error {
 	w.time = uo.Time(s.Long())
 	game.UnmarshalTimers(tf.Segment(marshal.SegmentTimers))
 	game.UnmarshalAccounts(tf.Segment(marshal.SegmentAccounts))
-	game.UnmarshalObjects(tf.Segment(marshal.SegmentObjects))
+	game.UnmarshalObjects(tf.Segment(marshal.SegmentObjectsStart))
 	w.m.Unmarshal(tf.Segment(marshal.SegmentMap))
 	end = time.Now()
 	elapsed = end.Sub(start)
@@ -411,13 +411,41 @@ func (w *World) Marshal() error {
 	}
 
 	start := time.Now()
+	wg := &sync.WaitGroup{}
 	tf := marshal.NewTagFile(nil)
 	s := tf.Segment(marshal.SegmentWorld)
-	s.PutLong(uint64(w.time))
-	game.MarshalTimers(tf.Segment(marshal.SegmentTimers))
-	game.MarshalAccounts(tf.Segment(marshal.SegmentAccounts), w.ads.Data())
-	game.MarshalObjects(tf.Segment(marshal.SegmentObjects), w.ods.Data())
-	w.m.Marshal(tf.Segment(marshal.SegmentMap))
+	wg.Add(1)
+	go func(s *marshal.TagFileSegment) {
+		s.PutLong(uint64(w.time))
+		wg.Done()
+	}(s)
+	wg.Add(1)
+	go func() {
+		game.MarshalTimers(tf.Segment(marshal.SegmentTimers))
+		wg.Done()
+	}()
+	wg.Add(1)
+	go func() {
+		game.MarshalAccounts(tf.Segment(marshal.SegmentAccounts), w.ads.Data())
+		wg.Done()
+	}()
+	saveGoroutines := 4
+	for i := 0; i < saveGoroutines; i++ {
+		s := tf.Segment(marshal.SegmentObjectsStart + marshal.Segment(i))
+		d := w.ods.Data()
+		pool := i
+		wg.Add(1)
+		go func() {
+			game.MarshalObjects(s, d, saveGoroutines, pool)
+			wg.Done()
+		}()
+	}
+	wg.Add(1)
+	go func() {
+		w.m.Marshal(tf.Segment(marshal.SegmentMap))
+		wg.Done()
+	}()
+	wg.Wait()
 	end := time.Now()
 	elapsed := end.Sub(start)
 	log.Printf("generated save data in %ds%03dms", elapsed.Milliseconds()/1000, elapsed.Milliseconds()%1000)

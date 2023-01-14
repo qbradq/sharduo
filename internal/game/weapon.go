@@ -55,5 +55,5 @@ func (w *BaseWeapon) Deserialize(f *util.TagFileObject) {
 // Unmarshal implements the marshal.Unmarshaler interface.
 func (w *BaseWeapon) Unmarshal(to *marshal.TagObject) {
 	w.BaseWearable.Unmarshal(to)
-	w.skill = uo.Skill(to.Tags.Byte(marshal.TagRequiredSkill, byte(uo.SkillSwordsmanship)))
+	w.skill = uo.Skill(to.Tags.Byte(marshal.TagRequiredSkill))
 }

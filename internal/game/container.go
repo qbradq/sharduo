@@ -111,10 +111,10 @@ func (c *BaseContainer) Deserialize(f *util.TagFileObject) {
 // Unmarshal implements the marshal.Unmarshaler interface.
 func (c *BaseContainer) Unmarshal(o *marshal.TagObject) {
 	c.BaseItem.Unmarshal(o)
-	c.gump = uo.Gump(o.Tags.Short(marshal.TagGump, uint16(uo.GumpContainerDefault)))
-	c.maxContainerWeight = float32(o.Tags.Int(marshal.TagWeight, 1000)) / float32(1000.0)
-	c.maxContainerItems = int(o.Tags.Short(marshal.TagAmount, 1))
-	c.bounds = o.Tags.Bounds(marshal.TagBounds, uo.Bounds{})
+	c.gump = uo.Gump(o.Tags.Short(marshal.TagGump))
+	c.maxContainerWeight = float32(o.Tags.Int(marshal.TagWeight)) / float32(1000.0)
+	c.maxContainerItems = int(o.Tags.Short(marshal.TagAmount))
+	c.bounds = o.Tags.Bounds(marshal.TagBounds)
 }
 
 // OnAfterDeserialize implements the util.Serializeable interface.

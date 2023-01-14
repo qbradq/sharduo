@@ -7,10 +7,10 @@ type Segment byte
 const (
 	SegmentStringDictionary Segment = 0
 	SegmentAccounts         Segment = 1
-	SegmentObjects          Segment = 2
-	SegmentMap              Segment = 3
-	SegmentTimers           Segment = 4
-	SegmentWorld            Segment = 5
+	SegmentMap              Segment = 2
+	SegmentTimers           Segment = 3
+	SegmentWorld            Segment = 4
+	SegmentObjectsStart     Segment = 0x7F // THIS MUST BE THE LAST ENTRY!
 )
 
 // Tag represents a property name within an object segment as opposed to a raw
@@ -68,6 +68,7 @@ const (
 	TagPasswordHash      Tag = 35
 	TagPlayerMobile      Tag = 36
 	TagViewRange         Tag = 37
+	TagLastValidValue    Tag = TagViewRange
 )
 
 // TagValue is a code to indicate what kind of data a value contains
@@ -87,50 +88,8 @@ const (
 	TagValueShortSlice     TagValue = 9 // Slice of 16-bit numbers
 )
 
-// Mapping of TagValue codes to Tag codes
-var tagValueMapping = []TagValue{
-	TagValueBool,           // TagEndOfList
-	TagValueBool,           // TagArticleA
-	TagValueBool,           // TagArticleAn
-	TagValueByte,           // TagFacing,
-	TagValueString,         // TagOnDoubleClick,
-	TagValueShort,          // TagGraphic,
-	TagValueShort,          // TagFlippedGraphic,
-	TagValueBool,           // TagFlipped,
-	TagValueBool,           // TagDyable,
-	TagValueInt,            // TagWeight = weight*1000
-	TagValueBool,           // TagStackable
-	TagValueShort,          // TagAmount
-	TagValueString,         // TagPlural
-	TagValueBool,           // TagIsPlayerCharacter
-	TagValueBool,           // TagIsFemale
-	TagValueShort,          // TagBody
-	TagValueByte,           // TagNotoriety
-	TagValueInt,            // TagCursor
-	TagValueReferenceSlice, // TagEquipment
-	TagValueShort,          // TagStrength
-	TagValueShort,          // TagDexterity
-	TagValueShort,          // TagIntelligence
-	TagValueShort,          // TagHitPoints
-	TagValueShort,          // TagMana
-	TagValueShort,          // TagStamina
-	TagValueShortSlice,     // TagSkills
-	TagValueByte,           // TagLayer
-	TagValueByte,           // TagRequiredSkill
-	TagValueInt,            // TagManagedObject
-	TagValueReferenceSlice, // TagContents
-	TagValueShort,          // TagGump
-	TagValueInt,            // TagMaxWeight
-	TagValueShort,          // TagMaxItems
-	TagValueBounds,         // TagBounds
-	TagValueString,         // TagUsername
-	TagValueString,         // TagPasswordHash
-	TagValueInt,            // TagPlayerMobile
-	TagValueByte,           // TagViewRange
-}
-
 // ObjectType are the concrete Go types in the game package.
-type ObjectType uint8
+type ObjectType byte
 
 const (
 	ObjectTypeObject            ObjectType = 0 // BaseObject

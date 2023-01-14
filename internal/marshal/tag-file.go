@@ -148,7 +148,7 @@ func NewTagFileSegment(id Segment, parent *TagFile) *TagFileSegment {
 		parent: parent,
 		id:     id,
 		buf:    &bytes.Buffer{},
-		tbuf:   make([]byte, 4*2*256+1),
+		tbuf:   make([]byte, 4*256+3),
 	}
 }
 
@@ -290,130 +290,116 @@ func (s *TagFileSegment) PutObjectHeader(
 // PutTag writes a tagged value to the segment. Please note that to write a
 // reference slice please use PutByte(byte(tag)), PutObjectReferences[I].
 func (s *TagFileSegment) PutTag(t Tag, value interface{}) {
-	if int(t) >= len(tagValueMapping) {
-		return
-	}
 	if t == TagEndOfList {
-		s.tbuf[0] = byte(TagEndOfList)
-		s.buf.Write(s.tbuf[0:1])
+		s.buf.WriteByte(byte(TagEndOfList))
 		return
 	}
-	valueType := tagValueMapping[t]
 	switch v := value.(type) {
 	case bool:
-		if valueType != TagValueBool {
-			log.Printf("warning: tag %d is not a bool", t)
-			return
-		}
 		if v {
-			s.PutByte(byte(t))
+			s.tbuf[0] = byte(t)
+			s.tbuf[1] = byte(TagValueBool)
+			s.buf.Write(s.tbuf[0:2])
 		}
 	case uint8:
-		if valueType != TagValueByte {
-			log.Printf("warning: tag %d is not a byte", t)
-			return
-		}
-		s.PutByte(byte(t))
-		s.PutByte(v)
+		s.tbuf[0] = byte(t)
+		s.tbuf[1] = byte(TagValueByte)
+		s.tbuf[2] = byte(v)
+		s.buf.Write(s.tbuf[0:3])
 	case int8:
-		if valueType != TagValueByte {
-			log.Printf("warning: tag %d is not a byte", t)
-			return
-		}
-		s.PutByte(byte(t))
-		s.PutByte(byte(v))
+		s.tbuf[0] = byte(t)
+		s.tbuf[1] = byte(TagValueByte)
+		s.tbuf[2] = byte(v)
+		s.buf.Write(s.tbuf[0:3])
 	case uint16:
-		if valueType != TagValueShort {
-			log.Printf("warning: tag %d is not a short", t)
-			return
-		}
-		s.PutByte(byte(t))
-		s.PutShort(v)
+		s.tbuf[0] = byte(t)
+		s.tbuf[1] = byte(TagValueShort)
+		binary.LittleEndian.PutUint16(s.tbuf[2:4], v)
+		s.buf.Write(s.tbuf[0:4])
 	case int16:
-		if valueType != TagValueShort {
-			log.Printf("warning: tag %d is not a short", t)
-			return
-		}
-		s.PutByte(byte(t))
-		s.PutShort(uint16(v))
+		s.tbuf[0] = byte(t)
+		s.tbuf[1] = byte(TagValueShort)
+		binary.LittleEndian.PutUint16(s.tbuf[2:4], uint16(v))
+		s.buf.Write(s.tbuf[0:4])
 	case uint:
-		if valueType != TagValueInt {
-			log.Printf("warning: tag %d is not an integer", t)
-			return
-		}
-		s.PutByte(byte(t))
-		s.PutInt(uint32(v))
+		s.tbuf[0] = byte(t)
+		s.tbuf[1] = byte(TagValueInt)
+		binary.LittleEndian.PutUint32(s.tbuf[2:6], uint32(v))
+		s.buf.Write(s.tbuf[0:6])
 	case int:
-		if valueType != TagValueInt {
-			log.Printf("warning: tag %d is not an integer", t)
-			return
-		}
-		s.PutByte(byte(t))
-		s.PutInt(uint32(v))
+		s.tbuf[0] = byte(t)
+		s.tbuf[1] = byte(TagValueInt)
+		binary.LittleEndian.PutUint32(s.tbuf[2:6], uint32(v))
+		s.buf.Write(s.tbuf[0:6])
 	case uint32:
-		if valueType != TagValueInt {
-			log.Printf("warning: tag %d is not an integer", t)
-			return
-		}
-		s.PutByte(byte(t))
-		s.PutInt(uint32(v))
+		s.tbuf[0] = byte(t)
+		s.tbuf[1] = byte(TagValueInt)
+		binary.LittleEndian.PutUint32(s.tbuf[2:6], uint32(v))
+		s.buf.Write(s.tbuf[0:6])
 	case int32:
-		if valueType != TagValueInt {
-			log.Printf("warning: tag %d is not an integer", t)
-			return
-		}
-		s.PutByte(byte(t))
-		s.PutInt(uint32(v))
+		s.tbuf[0] = byte(t)
+		s.tbuf[1] = byte(TagValueInt)
+		binary.LittleEndian.PutUint32(s.tbuf[2:6], uint32(v))
+		s.buf.Write(s.tbuf[0:6])
 	case uint64:
-		if valueType != TagValueLong {
-			log.Printf("warning: tag %d is not a long", t)
-			return
-		}
-		s.PutByte(byte(t))
-		s.PutLong(v)
+		s.tbuf[0] = byte(t)
+		s.tbuf[1] = byte(TagValueLong)
+		binary.LittleEndian.PutUint64(s.tbuf[2:10], uint64(v))
+		s.buf.Write(s.tbuf[0:10])
 	case int64:
-		if valueType != TagValueLong {
-			log.Printf("warning: tag %d is not a long", t)
-			return
-		}
-		s.PutByte(byte(t))
-		s.PutLong(uint64(v))
+		s.tbuf[0] = byte(t)
+		s.tbuf[1] = byte(TagValueLong)
+		binary.LittleEndian.PutUint64(s.tbuf[2:10], uint64(v))
+		s.buf.Write(s.tbuf[0:10])
 	case string:
-		if valueType != TagValueString {
-			log.Printf("warning: tag %d is not a string", t)
-			return
-		}
-		ref := s.parent.StringReference(v)
-		s.PutByte(byte(t))
-		s.PutInt(ref)
+		s.tbuf[0] = byte(t)
+		s.tbuf[1] = byte(TagValueString)
+		s.buf.Write(s.tbuf[0:1])
+		s.buf.WriteString(v)
+		s.buf.WriteByte(0)
 	case uo.Location:
-		if valueType != TagValueLocation {
-			log.Printf("warning: tag %d is not a location value", t)
-			return
-		}
-		s.PutByte(byte(t))
-		s.PutLocation(v)
+		s.tbuf[0] = byte(t)
+		s.tbuf[1] = byte(TagValueLocation)
+		binary.LittleEndian.PutUint16(s.tbuf[2:4], uint16(v.X))
+		binary.LittleEndian.PutUint16(s.tbuf[4:6], uint16(v.Y))
+		s.tbuf[6] = uint8(int8(v.Z))
+		s.buf.Write(s.tbuf[0:7])
 	case uo.Bounds:
-		if valueType != TagValueBounds {
-			log.Printf("warning: tag %d is not a bounds value", t)
-			return
-		}
-		s.PutByte(byte(t))
-		s.PutBounds(v)
+		s.tbuf[0] = byte(t)
+		s.tbuf[1] = byte(TagValueBounds)
+		binary.LittleEndian.PutUint16(s.tbuf[2:4], uint16(v.X))
+		binary.LittleEndian.PutUint16(s.tbuf[4:6], uint16(v.Y))
+		binary.LittleEndian.PutUint16(s.tbuf[6:8], uint16(v.W))
+		binary.LittleEndian.PutUint16(s.tbuf[8:10], uint16(v.H))
+		s.buf.Write(s.tbuf[0:10])
 	case []int16:
-		if valueType != TagValueShortSlice {
-			log.Printf("warning: tag %d is not a short slice", t)
+		s.tbuf[0] = byte(t)
+		s.tbuf[1] = byte(TagValueShortSlice)
+		if len(v) > 255 {
+			log.Printf("error: tag %d slice too long")
 			return
 		}
-		s.PutByte(byte(t))
-		s.PutShortSlice(v)
+		s.tbuf[2] = byte(len(v))
+		ofs := 3
+		for _, n := range v {
+			binary.LittleEndian.PutUint16(s.tbuf[ofs+0:ofs+2], uint16(n))
+			ofs += 2
+		}
+		s.buf.Write(s.tbuf[0:ofs])
 	case []uo.Serial:
-		if valueType != TagValueReferenceSlice {
-			log.Printf("warning: tag %d is not a reference slice", t)
+		s.tbuf[0] = byte(t)
+		s.tbuf[1] = byte(TagValueReferenceSlice)
+		if len(v) > 255 {
+			log.Printf("error: tag %d slice too long")
 			return
 		}
-		s.PutByte(byte(t))
-		s.PutObjectReferences(v)
+		s.tbuf[2] = byte(len(v))
+		ofs := 3
+		for _, n := range v {
+			binary.LittleEndian.PutUint32(s.tbuf[ofs+0:ofs+4], uint32(n))
+			ofs += 4
+		}
+		s.buf.Write(s.tbuf[0:ofs])
 	default:
 		log.Printf("warning: unhandled type for tag %d", t)
 	}
@@ -446,23 +432,21 @@ func (s *TagFileSegment) Long() uint64 {
 // String returns the next UTF-8 string in the segment by reading a 32-bit
 // string reference and indexing the tag file string dictionary.
 func (s *TagFileSegment) String() string {
-	s.buf.Read(s.tbuf[:4])
-	ref := binary.LittleEndian.Uint32(s.tbuf[:4])
-	return s.parent.StringByReference(ref)
+	d, err := s.buf.ReadString(0)
+	if err != nil || len(d) == 0 {
+		return ""
+	}
+	return string(d[0 : len(d)-1])
 }
 
 // StringMap returns the next map[string]string encoded into the segment.
 func (s *TagFileSegment) StringMap() map[string]string {
-	d := s.buf.Bytes()
 	ret := make(map[string]string)
-	count := int(d[0])
+	count, _ := s.buf.ReadByte()
 	ofs := 1
-	for i := 0; i < count; i++ {
-		kref := binary.LittleEndian.Uint32(d[ofs+0 : ofs+4])
-		vref := binary.LittleEndian.Uint32(d[ofs+4 : ofs+8])
-		ofs += 8
-		k := s.parent.StringByReference(kref)
-		v := s.parent.StringByReference(vref)
+	for i := 0; i < int(count); i++ {
+		k, _ := s.buf.ReadString(0)
+		v, _ := s.buf.ReadString(0)
 		if k == "" || v == "" {
 			continue
 		}
@@ -527,21 +511,17 @@ func (s *TagFileSegment) Bounds() uo.Bounds {
 
 // TagObject returns the data of the next object encoded into the segment.
 func (s *TagFileSegment) TagObject() *TagObject {
-	d := s.buf.Bytes()
-	otype := ObjectType(d[0])
-	serial := uo.Serial(binary.LittleEndian.Uint32(d[1:5]))
-	sref := binary.LittleEndian.Uint32(d[5:9])
-	template := s.parent.StringByReference(sref)
-	parent := uo.Serial(binary.LittleEndian.Uint32(d[9:13]))
-	sref = binary.LittleEndian.Uint32(d[13:17])
-	name := s.parent.StringByReference(sref)
-	hue := uo.Hue(binary.LittleEndian.Uint16(d[17:19]))
+	otype := ObjectType(s.Byte())
+	serial := uo.Serial(s.Int())
+	template := s.String()
+	parent := uo.Serial(s.Int())
+	name := s.String()
+	hue := uo.Hue(s.Short())
 	location := uo.Location{
-		X: int(binary.LittleEndian.Uint16(d[19:21])),
-		Y: int(binary.LittleEndian.Uint16(d[21:23])),
-		Z: int(int8(d[23])),
+		X: int(s.Short()),
+		Y: int(s.Short()),
+		Z: int(int8(s.Byte())),
 	}
-	s.buf.Next(24)
 	events := s.StringMap()
 	tags := s.Tags()
 	return &TagObject{
@@ -560,198 +540,145 @@ func (s *TagFileSegment) TagObject() *TagObject {
 // Tags returns a TagCollection containing the next collection of dynamic tags
 // encoded in the segment.
 func (s *TagFileSegment) Tags() *TagCollection {
-	d := s.buf.Bytes()
 	c := &TagCollection{
-		tags: make(map[Tag]interface{}),
+		tags: make([]interface{}, TagLastValidValue+1),
 	}
-	ofs := 0
 	for {
-		tag := Tag(d[ofs])
-		ofs++
+		tag := Tag(s.Byte())
 		if tag == TagEndOfList {
 			break
 		}
-		if int(tag) > len(tagValueMapping) {
+		if tag > TagLastValidValue {
+			// Something is wrong
+			log.Printf("warning: save file contains unknown tag ID %d", tag)
 			break
 		}
-		switch tagValueMapping[tag] {
+		tagType := TagValue(s.Byte())
+		switch tagType {
 		case TagValueBool:
 			c.tags[tag] = true
 		case TagValueByte:
-			c.tags[tag] = d[ofs]
-			ofs++
+			c.tags[tag] = s.Byte()
 		case TagValueShort:
-			c.tags[tag] = binary.LittleEndian.Uint16(d[ofs+0 : ofs+2])
-			ofs += 2
+			c.tags[tag] = s.Short()
 		case TagValueInt:
-			c.tags[tag] = binary.LittleEndian.Uint32(d[ofs+0 : ofs+4])
-			ofs += 4
+			c.tags[tag] = s.Int()
 		case TagValueLong:
-			c.tags[tag] = binary.LittleEndian.Uint64(d[ofs+0 : ofs+8])
-			ofs += 8
+			c.tags[tag] = s.Long()
 		case TagValueString:
-			sref := binary.LittleEndian.Uint32(d[ofs+0 : ofs+4])
-			ofs += 4
-			str := s.parent.StringByReference(sref)
+			str := s.String()
 			if len(str) > 0 {
 				c.tags[tag] = str
 			}
 		case TagValueReferenceSlice:
 			var v []uo.Serial
-			count := d[ofs]
-			ofs++
-			for i := 0; i < int(count); i++ {
-				v = append(v, uo.Serial(binary.LittleEndian.Uint32(d[ofs+0:ofs+4])))
-				ofs += 4
+			count := int(s.Byte())
+			for i := 0; i < count; i++ {
+				v = append(v, uo.Serial(s.Int()))
 			}
 			c.tags[tag] = v
 		case TagValueLocation:
-			c.tags[tag] = uo.Location{
-				X: int(binary.LittleEndian.Uint16(d[ofs+0 : ofs+2])),
-				Y: int(binary.LittleEndian.Uint16(d[ofs+2 : ofs+4])),
-				Z: int(int8(d[4])),
-			}
-			ofs += 5
+			c.tags[tag] = s.Location()
 		case TagValueBounds:
-			c.tags[tag] = uo.Bounds{
-				X: int(binary.LittleEndian.Uint16(d[ofs+0 : ofs+2])),
-				Y: int(binary.LittleEndian.Uint16(d[ofs+2 : ofs+4])),
-				Z: int(int8(d[4])),
-				W: int(binary.LittleEndian.Uint16(d[ofs+5 : ofs+7])),
-				H: int(binary.LittleEndian.Uint16(d[ofs+7 : ofs+9])),
-				D: int(int8(d[9])),
-			}
-			ofs += 10
+			c.tags[tag] = s.Bounds()
 		case TagValueShortSlice:
 			var v []int16
-			count := d[ofs]
-			ofs++
-			for i := 0; i < int(count); i++ {
-				v = append(v, int16(binary.LittleEndian.Uint16(d[ofs+0:ofs+2])))
-				ofs += 2
+			count := int(s.Byte())
+			for i := 0; i < count; i++ {
+				v = append(v, int16(s.Short()))
 			}
 			c.tags[tag] = v
 		default:
-			panic(fmt.Sprintf("unhandled tag value type %d", tagValueMapping[tag]))
+			panic(fmt.Sprintf("unhandled tag value type %d", tagType))
 		}
 	}
-	s.buf.Next(ofs)
 	return c
 }
 
 // TagCollection manages a collection of tag values.
 type TagCollection struct {
-	tags map[Tag]interface{}
+	tags []interface{}
 }
 
 // Bool returns true if the tag is contained within the collection, false
 // otherwise.
 func (c *TagCollection) Bool(t Tag) bool {
-	if int(t) > len(tagValueMapping) || tagValueMapping[t] != TagValueBool {
-		panic(fmt.Sprintf("tag %d is not a bool", t))
+	if t > TagLastValidValue {
+		panic(fmt.Sprintf("warning: unknown tag type %d", t))
 	}
-	_, found := c.tags[t]
-	return found
+	return c.tags[t].(bool)
 }
 
-// Byte returns the named 8-bit value or the default value if not found.
-func (c *TagCollection) Byte(t Tag, def byte) byte {
-	if int(t) > len(tagValueMapping) || tagValueMapping[t] != TagValueByte {
-		panic(fmt.Sprintf("tag %d is not a byte", t))
+// Byte returns the named 8-bit value
+func (c *TagCollection) Byte(t Tag) byte {
+	if t > TagLastValidValue {
+		panic(fmt.Sprintf("warning: unknown tag type %d", t))
 	}
-	if ret, found := c.tags[t].(byte); found {
-		return ret
-	}
-	return def
+	return c.tags[t].(byte)
 }
 
-// Short returns the named 16-bit value or the default value if not found.
-func (c *TagCollection) Short(t Tag, def uint16) uint16 {
-	if int(t) > len(tagValueMapping) || tagValueMapping[t] != TagValueShort {
-		panic(fmt.Sprintf("tag %d is not a short", t))
+// Short returns the named 16-bit value
+func (c *TagCollection) Short(t Tag) uint16 {
+	if t > TagLastValidValue {
+		panic(fmt.Sprintf("warning: unknown tag type %d", t))
 	}
-	if ret, found := c.tags[t].(uint16); found {
-		return ret
-	}
-	return def
+	return c.tags[t].(uint16)
 }
 
-// Int returns the named 32-bit value or the default value if not found.
-func (c *TagCollection) Int(t Tag, def uint32) uint32 {
-	if int(t) > len(tagValueMapping) || tagValueMapping[t] != TagValueInt {
-		panic(fmt.Sprintf("tag %d is not an int", t))
+// Int returns the named 32-bit value
+func (c *TagCollection) Int(t Tag) uint32 {
+	if t > TagLastValidValue {
+		panic(fmt.Sprintf("warning: unknown tag type %d", t))
 	}
-	if ret, found := c.tags[t].(uint32); found {
-		return ret
-	}
-	return def
+	return c.tags[t].(uint32)
 }
 
 // Long returns the named 64-bit value or the default value if not found.
-func (c *TagCollection) Long(t Tag, def uint64) uint64 {
-	if int(t) > len(tagValueMapping) || tagValueMapping[t] != TagValueLong {
-		panic(fmt.Sprintf("tag %d is not a long", t))
+func (c *TagCollection) Long(t Tag) uint64 {
+	if t > TagLastValidValue {
+		panic(fmt.Sprintf("warning: unknown tag type %d", t))
 	}
-	if ret, found := c.tags[t].(uint64); found {
-		return ret
-	}
-	return def
+	return c.tags[t].(uint64)
 }
 
-// String returns the named string value or the default value if not found.
-func (c *TagCollection) String(t Tag, def string) string {
-	if int(t) > len(tagValueMapping) || tagValueMapping[t] != TagValueString {
-		panic(fmt.Sprintf("tag %d is not a string", t))
+// String returns the named string value
+func (c *TagCollection) String(t Tag) string {
+	if t > TagLastValidValue {
+		panic(fmt.Sprintf("warning: unknown tag type %d", t))
 	}
-	if ret, found := c.tags[t].(string); found {
-		return ret
-	}
-	return def
+	return c.tags[t].(string)
 }
 
-// Location returns the named location value or the default value if not found.
-func (c *TagCollection) Location(t Tag, def uo.Location) uo.Location {
-	if int(t) > len(tagValueMapping) || tagValueMapping[t] != TagValueLocation {
-		panic(fmt.Sprintf("tag %d is not a location", t))
+// Location returns the named location value
+func (c *TagCollection) Location(t Tag) uo.Location {
+	if t > TagLastValidValue {
+		panic(fmt.Sprintf("warning: unknown tag type %d", t))
 	}
-	if ret, found := c.tags[t].(uo.Location); found {
-		return ret
-	}
-	return def
+	return c.tags[t].(uo.Location)
 }
 
-// Bounds returns the named bounds value or the default value if not found.
-func (c *TagCollection) Bounds(t Tag, def uo.Bounds) uo.Bounds {
-	if int(t) > len(tagValueMapping) || tagValueMapping[t] != TagValueBounds {
-		panic(fmt.Sprintf("tag %d is not a bounds value", t))
+// Bounds returns the named bounds value
+func (c *TagCollection) Bounds(t Tag) uo.Bounds {
+	if t > TagLastValidValue {
+		panic(fmt.Sprintf("warning: unknown tag type %d", t))
 	}
-	if ret, found := c.tags[t].(uo.Bounds); found {
-		return ret
-	}
-	return def
+	return c.tags[t].(uo.Bounds)
 }
 
-// ReferenceSlice returns the named slice of references or nil if the tag is not
-// found.
+// ReferenceSlice returns the named slice of references
 func (c *TagCollection) ReferenceSlice(t Tag) []uo.Serial {
-	if int(t) > len(tagValueMapping) || tagValueMapping[t] != TagValueReferenceSlice {
-		panic(fmt.Sprintf("tag %d is not a reference slice", t))
+	if t > TagLastValidValue {
+		panic(fmt.Sprintf("warning: unknown tag type %d", t))
 	}
-	if ret, found := c.tags[t].([]uo.Serial); found {
-		return ret
-	}
-	return nil
+	return c.tags[t].([]uo.Serial)
 }
 
-// ShortSlice returns the named slice of shorts or nil if the tag is not found.
+// ShortSlice returns the named slice of shorts
 func (c *TagCollection) ShortSlice(t Tag) []int16 {
-	if int(t) > len(tagValueMapping) || tagValueMapping[t] != TagValueShortSlice {
-		panic(fmt.Sprintf("tag %d is not a short slice", t))
+	if t > TagLastValidValue {
+		panic(fmt.Sprintf("warning: unknown tag type %d", t))
 	}
-	if ret, found := c.tags[t].([]int16); found {
-		return ret
-	}
-	return nil
+	return c.tags[t].([]int16)
 }
 
 // TagObject manages all of the information for one object.

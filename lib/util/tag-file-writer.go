@@ -45,7 +45,7 @@ func (f *TagFileWriter) WriteFloat(name string, value float32) {
 
 // WriteHex writes a number to the io.Writer in base 16 without leading zeros.
 func (f *TagFileWriter) WriteHex(name string, value uint32) {
-	f.WriteLine(name + "=" + strconv.FormatUint(uint64(value), 16))
+	f.WriteLine(name + "=0x" + strconv.FormatUint(uint64(value), 16))
 }
 
 // WriteString writes a string to the io.Writer. Leading and trailing

@@ -64,8 +64,8 @@ func (i *MountItem) Deserialize(f *util.TagFileObject) {
 // Unmarshal implements the marshal.Unmarshaler interface.
 func (i *MountItem) Unmarshal(to *marshal.TagObject) {
 	i.BaseWearable.Unmarshal(to)
-	ms := uo.Serial(to.Tags.Int(marshal.TagManagedObject, uint32(uo.SerialZero)))
-	if ms != uo.SerialZero {
+	ms := uo.Serial(to.Tags.Int(marshal.TagManagedObject))
+	if ms != 0 {
 		o := world.Find(ms)
 		if o == nil {
 			log.Printf("warning: mount item %s references non-existent object %s", i.Serial().String(), ms.String())

@@ -339,20 +339,23 @@ func (m *BaseMobile) Deserialize(f *util.TagFileObject) {
 func (m *BaseMobile) Unmarshal(to *marshal.TagObject) {
 	m.BaseObject.Unmarshal(to)
 	m.cursor = &Cursor{}
-	m.viewRange = int(to.Tags.Byte(marshal.TagViewRange, byte(18)))
+	m.viewRange = uo.BoundViewRange(int(to.Tags.Byte(marshal.TagViewRange)))
 	m.isPlayerCharacter = to.Tags.Bool(marshal.TagIsPlayerCharacter)
 	m.isFemale = to.Tags.Bool(marshal.TagIsFemale)
-	m.body = uo.Body(to.Tags.Short(marshal.TagBody, uint16(uo.BodyDefault)))
-	m.notoriety = uo.Notoriety(to.Tags.Byte(marshal.TagNotoriety, byte(uo.NotorietyAttackable)))
-	m.baseStrength = int(to.Tags.Short(marshal.TagStrength, uint16(10)))
-	m.baseDexterity = int(to.Tags.Short(marshal.TagDexterity, uint16(10)))
-	m.baseIntelligence = int(to.Tags.Short(marshal.TagIntelligence, uint16(10)))
-	m.hitPoints = int(to.Tags.Short(marshal.TagStrength, uint16(10)))
-	m.stamina = int(to.Tags.Short(marshal.TagStrength, uint16(10)))
-	m.mana = int(to.Tags.Short(marshal.TagStrength, uint16(10)))
+	m.body = uo.Body(to.Tags.Short(marshal.TagBody))
+	m.notoriety = uo.Notoriety(to.Tags.Byte(marshal.TagNotoriety))
+	m.baseStrength = int(to.Tags.Short(marshal.TagStrength))
+	m.baseDexterity = int(to.Tags.Short(marshal.TagDexterity))
+	m.baseIntelligence = int(to.Tags.Short(marshal.TagIntelligence))
+	m.hitPoints = int(to.Tags.Short(marshal.TagStrength))
+	m.stamina = int(to.Tags.Short(marshal.TagStrength))
+	m.mana = int(to.Tags.Short(marshal.TagStrength))
 	m.skills = to.Tags.ShortSlice(marshal.TagSkills)
-	if m.skills == nil {
-		m.skills = make([]int16, uo.SkillCount)
+	if len(m.skills) < int(uo.SkillCount) {
+		s := make([]int16, uo.SkillCount)
+		copy(s, m.skills)
+	} else if len(m.skills) > int(uo.SkillCount) {
+		m.skills = m.skills[0:uo.SkillCount]
 	}
 }
 
@@ -388,13 +391,14 @@ func (m *BaseMobile) AfterUnmarshal(to *marshal.TagObject) {
 	m.equipment = NewEquipmentCollectionWith(to.Tags.ReferenceSlice(marshal.TagEquipment), m)
 	// If we had an item on the cursor at the time of the save we drop it at
 	// our feet just so we don't leak it.
-	incs := uo.Serial(to.Tags.Int(marshal.TagCursor, uint32(uo.SerialItemNil)))
-	if incs != uo.SerialItemNil {
+	incs := uo.Serial(to.Tags.Int(marshal.TagCursor))
+	if incs != 0 {
 		o := world.Find(incs)
 		if o != nil {
 			m.DropToFeet(o)
 		}
 	}
+	// Make sure all mobiles have a backpack, this should be covered in the template
 	if !m.equipment.IsLayerOccupied(uo.LayerBackpack) {
 		log.Printf("error: mobile %s does not have a backpack, removing", m.Serial().String())
 		world.Remove(m)

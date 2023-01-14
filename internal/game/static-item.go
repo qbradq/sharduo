@@ -130,7 +130,7 @@ func (i *StaticItem) Unmarshal(to *marshal.TagObject) {
 	i.SetSerial(to.Serial)
 	i.hue = to.Hue
 	i.location = to.Location
-	i.graphic = uo.Graphic(to.Tags.Short(marshal.TagGraphic, uint16(uo.GraphicDefault)))
+	i.graphic = uo.Graphic(to.Tags.Short(marshal.TagGraphic))
 	i.def = world.GetItemDefinition(i.graphic)
 }
 

@@ -191,14 +191,20 @@ func (i *BaseItem) Deserialize(f *util.TagFileObject) {
 // Unmarshal implements the marshal.Unmarshaler interface.
 func (i *BaseItem) Unmarshal(to *marshal.TagObject) {
 	i.BaseObject.Unmarshal(to)
-	i.graphic = uo.Graphic(to.Tags.Short(marshal.TagGraphic, uint16(uo.GraphicDefault)))
+	i.graphic = uo.Graphic(to.Tags.Short(marshal.TagGraphic))
 	i.def = world.GetItemDefinition(i.graphic)
-	i.flippedGraphic = uo.Graphic(to.Tags.Short(marshal.TagFlippedGraphic, 0))
+	i.flippedGraphic = uo.Graphic(to.Tags.Short(marshal.TagFlippedGraphic))
 	i.dyable = to.Tags.Bool(marshal.TagDyable)
-	i.weight = float32(to.Tags.Int(marshal.TagWeight, 1000)) / float32(1000.0)
+	i.weight = float32(to.Tags.Int(marshal.TagWeight)) / float32(1000.0)
+	if i.weight < 0.0001 {
+		i.weight = 1.0
+	}
 	i.stackable = to.Tags.Bool(marshal.TagStackable)
-	i.amount = int(to.Tags.Short(marshal.TagAmount, uint16(1)))
-	i.plural = to.Tags.String(marshal.TagPlural, "")
+	i.amount = int(to.Tags.Short(marshal.TagAmount))
+	if i.amount < 1 {
+		i.amount = 1
+	}
+	i.plural = to.Tags.String(marshal.TagPlural)
 }
 
 // BaseGraphic implements the Item interface.

@@ -133,11 +133,15 @@ type BaseObject struct {
 }
 
 // MarshalObjects writes all objects in the map to the segment.
-func MarshalObjects(s *marshal.TagFileSegment, objects map[uo.Serial]Object) {
+func MarshalObjects(s *marshal.TagFileSegment, objects map[uo.Serial]Object, pools, pool int) {
+	ps := uint32(pools)
+	p := uint32(pool)
 	for _, o := range objects {
-		o.Marshal(s)
-		s.PutTag(marshal.TagEndOfList, true)
-		s.IncrementRecordCount()
+		if uint32(o.Serial())%ps == p {
+			o.Marshal(s)
+			s.PutTag(marshal.TagEndOfList, true)
+			s.IncrementRecordCount()
+		}
 	}
 }
 
@@ -257,7 +261,7 @@ func (o *BaseObject) Unmarshal(to *marshal.TagObject) {
 	o.location = to.Location
 	o.articleA = to.Tags.Bool(marshal.TagArticleA)
 	o.articleAn = to.Tags.Bool(marshal.TagArticleAn)
-	o.facing = uo.Direction(to.Tags.Byte(marshal.TagFacing, byte(uo.DirectionSouth)))
+	o.facing = uo.Direction(to.Tags.Byte(marshal.TagFacing))
 	o.eventHandlers = to.Events
 }
 
