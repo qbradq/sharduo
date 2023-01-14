@@ -44,7 +44,7 @@ func (i *MountItem) Marshal(s *marshal.TagFileSegment) {
 		ms = i.m.Serial()
 	}
 	i.BaseWearable.Marshal(s)
-	s.PutTag(marshal.TagManagedObject, uint32(ms))
+	s.PutTag(marshal.TagManagedObject, marshal.TagValueInt, uint32(ms))
 }
 
 // Deserialize implements the util.Serializeable interface.

@@ -164,14 +164,14 @@ func (i *BaseItem) Serialize(f *util.TagFileWriter) {
 // Marshal implements the marshal.Marshaler interface.
 func (i *BaseItem) Marshal(s *marshal.TagFileSegment) {
 	i.BaseObject.Marshal(s)
-	s.PutTag(marshal.TagGraphic, uint16(i.graphic))
-	s.PutTag(marshal.TagFlippedGraphic, uint16(i.flippedGraphic))
-	s.PutTag(marshal.TagFlipped, i.flipped)
-	s.PutTag(marshal.TagDyable, i.dyable)
-	s.PutTag(marshal.TagWeight, uint32(i.weight*1000))
-	s.PutTag(marshal.TagStackable, i.stackable)
-	s.PutTag(marshal.TagAmount, uint16(i.amount))
-	s.PutTag(marshal.TagPlural, i.plural)
+	s.PutTag(marshal.TagGraphic, marshal.TagValueShort, uint16(i.graphic))
+	s.PutTag(marshal.TagFlippedGraphic, marshal.TagValueShort, uint16(i.flippedGraphic))
+	s.PutTag(marshal.TagFlipped, marshal.TagValueBool, i.flipped)
+	s.PutTag(marshal.TagDyable, marshal.TagValueBool, i.dyable)
+	s.PutTag(marshal.TagWeight, marshal.TagValueInt, uint32(i.weight*1000))
+	s.PutTag(marshal.TagStackable, marshal.TagValueBool, i.stackable)
+	s.PutTag(marshal.TagAmount, marshal.TagValueShort, uint16(i.amount))
+	s.PutTag(marshal.TagPlural, marshal.TagValueString, i.plural)
 }
 
 // Deserialize implements the util.Serializeable interface.

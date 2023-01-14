@@ -47,7 +47,7 @@ func (i *BaseWearable) Serialize(f *util.TagFileWriter) {
 // Marshal implements the marshal.Marshaler interface.
 func (i *BaseWearable) Marshal(s *marshal.TagFileSegment) {
 	i.BaseItem.Marshal(s)
-	s.PutTag(marshal.TagLayer, byte(i.layer))
+	s.PutTag(marshal.TagLayer, marshal.TagValueByte, byte(i.layer))
 }
 
 // Deserialize implements the util.Serializeable interface.

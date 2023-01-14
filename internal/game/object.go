@@ -136,10 +136,10 @@ type BaseObject struct {
 func MarshalObjects(s *marshal.TagFileSegment, objects map[uo.Serial]Object, pools, pool int) {
 	ps := uint32(pools)
 	p := uint32(pool)
-	for _, o := range objects {
-		if uint32(o.Serial())%ps == p {
+	for serial, o := range objects {
+		if uint32(serial)%ps == p {
 			o.Marshal(s)
-			s.PutTag(marshal.TagEndOfList, true)
+			s.PutTag(marshal.TagEndOfList, marshal.TagValueBool, true)
 			s.IncrementRecordCount()
 		}
 	}
@@ -218,9 +218,9 @@ func (o *BaseObject) Marshal(s *marshal.TagFileSegment) {
 		o.hue,
 		o.location,
 		o.eventHandlers)
-	s.PutTag(marshal.TagArticleA, o.articleA)
-	s.PutTag(marshal.TagArticleAn, o.articleAn)
-	s.PutTag(marshal.TagFacing, byte(o.facing))
+	s.PutTag(marshal.TagArticleA, marshal.TagValueBool, o.articleA)
+	s.PutTag(marshal.TagArticleAn, marshal.TagValueBool, o.articleAn)
+	s.PutTag(marshal.TagFacing, marshal.TagValueByte, byte(o.facing))
 }
 
 // Deserialize implements the util.Serializeable interface.

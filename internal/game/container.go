@@ -92,11 +92,11 @@ func (i *BaseContainer) Marshal(s *marshal.TagFileSegment) {
 		contentSerials[idx] = o.Serial()
 	}
 	i.BaseItem.Marshal(s)
-	s.PutTag(marshal.TagGump, uint16(i.gump))
-	s.PutTag(marshal.TagMaxWeight, uint32(i.maxContainerWeight*1000))
-	s.PutTag(marshal.TagMaxItems, uint16(i.maxContainerItems))
-	s.PutTag(marshal.TagBounds, i.bounds)
-	s.PutTag(marshal.TagContents, contentSerials)
+	s.PutTag(marshal.TagGump, marshal.TagValueShort, uint16(i.gump))
+	s.PutTag(marshal.TagMaxWeight, marshal.TagValueInt, uint32(i.maxContainerWeight*1000))
+	s.PutTag(marshal.TagMaxItems, marshal.TagValueShort, uint16(i.maxContainerItems))
+	s.PutTag(marshal.TagBounds, marshal.TagValueBounds, i.bounds)
+	s.PutTag(marshal.TagContents, marshal.TagValueReferenceSlice, contentSerials)
 }
 
 // Deserialize implements the util.Serializeable interface.

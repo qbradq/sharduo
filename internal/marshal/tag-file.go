@@ -289,112 +289,74 @@ func (s *TagFileSegment) PutObjectHeader(
 
 // PutTag writes a tagged value to the segment. Please note that to write a
 // reference slice please use PutByte(byte(tag)), PutObjectReferences[I].
-func (s *TagFileSegment) PutTag(t Tag, value interface{}) {
+func (s *TagFileSegment) PutTag(t Tag, tv TagValue, value interface{}) {
 	if t == TagEndOfList {
 		s.buf.WriteByte(byte(TagEndOfList))
 		return
 	}
-	switch v := value.(type) {
-	case bool:
-		if v {
+	if tv == TagValueBool {
+		if value.(bool) {
 			s.tbuf[0] = byte(t)
-			s.tbuf[1] = byte(TagValueBool)
+			s.tbuf[1] = byte(tv)
 			s.buf.Write(s.tbuf[0:2])
 		}
-	case uint8:
-		s.tbuf[0] = byte(t)
-		s.tbuf[1] = byte(TagValueByte)
-		s.tbuf[2] = byte(v)
-		s.buf.Write(s.tbuf[0:3])
-	case int8:
-		s.tbuf[0] = byte(t)
-		s.tbuf[1] = byte(TagValueByte)
-		s.tbuf[2] = byte(v)
-		s.buf.Write(s.tbuf[0:3])
-	case uint16:
-		s.tbuf[0] = byte(t)
-		s.tbuf[1] = byte(TagValueShort)
-		binary.LittleEndian.PutUint16(s.tbuf[2:4], v)
+		return
+	}
+	s.tbuf[0] = byte(t)
+	s.tbuf[1] = byte(tv)
+	s.buf.Write(s.tbuf[0:2])
+	switch tv {
+	// case TagValueBool: // Handled in special case above
+	case TagValueByte:
+		s.buf.WriteByte(value.(byte))
+	case TagValueShort:
+		binary.LittleEndian.PutUint16(s.tbuf[0:2], value.(uint16))
+		s.buf.Write(s.tbuf[0:2])
+	case TagValueInt:
+		binary.LittleEndian.PutUint32(s.tbuf[0:4], value.(uint32))
 		s.buf.Write(s.tbuf[0:4])
-	case int16:
-		s.tbuf[0] = byte(t)
-		s.tbuf[1] = byte(TagValueShort)
-		binary.LittleEndian.PutUint16(s.tbuf[2:4], uint16(v))
-		s.buf.Write(s.tbuf[0:4])
-	case uint:
-		s.tbuf[0] = byte(t)
-		s.tbuf[1] = byte(TagValueInt)
-		binary.LittleEndian.PutUint32(s.tbuf[2:6], uint32(v))
-		s.buf.Write(s.tbuf[0:6])
-	case int:
-		s.tbuf[0] = byte(t)
-		s.tbuf[1] = byte(TagValueInt)
-		binary.LittleEndian.PutUint32(s.tbuf[2:6], uint32(v))
-		s.buf.Write(s.tbuf[0:6])
-	case uint32:
-		s.tbuf[0] = byte(t)
-		s.tbuf[1] = byte(TagValueInt)
-		binary.LittleEndian.PutUint32(s.tbuf[2:6], uint32(v))
-		s.buf.Write(s.tbuf[0:6])
-	case int32:
-		s.tbuf[0] = byte(t)
-		s.tbuf[1] = byte(TagValueInt)
-		binary.LittleEndian.PutUint32(s.tbuf[2:6], uint32(v))
-		s.buf.Write(s.tbuf[0:6])
-	case uint64:
-		s.tbuf[0] = byte(t)
-		s.tbuf[1] = byte(TagValueLong)
-		binary.LittleEndian.PutUint64(s.tbuf[2:10], uint64(v))
-		s.buf.Write(s.tbuf[0:10])
-	case int64:
-		s.tbuf[0] = byte(t)
-		s.tbuf[1] = byte(TagValueLong)
-		binary.LittleEndian.PutUint64(s.tbuf[2:10], uint64(v))
-		s.buf.Write(s.tbuf[0:10])
-	case string:
-		s.tbuf[0] = byte(t)
-		s.tbuf[1] = byte(TagValueString)
-		s.buf.Write(s.tbuf[0:1])
-		s.buf.WriteString(v)
+	case TagValueLong:
+		binary.LittleEndian.PutUint64(s.tbuf[0:8], value.(uint64))
+		s.buf.Write(s.tbuf[0:8])
+	case TagValueString:
+		s.buf.WriteString(value.(string))
 		s.buf.WriteByte(0)
-	case uo.Location:
-		s.tbuf[0] = byte(t)
-		s.tbuf[1] = byte(TagValueLocation)
-		binary.LittleEndian.PutUint16(s.tbuf[2:4], uint16(v.X))
-		binary.LittleEndian.PutUint16(s.tbuf[4:6], uint16(v.Y))
-		s.tbuf[6] = uint8(int8(v.Z))
-		s.buf.Write(s.tbuf[0:7])
-	case uo.Bounds:
-		s.tbuf[0] = byte(t)
-		s.tbuf[1] = byte(TagValueBounds)
-		binary.LittleEndian.PutUint16(s.tbuf[2:4], uint16(v.X))
-		binary.LittleEndian.PutUint16(s.tbuf[4:6], uint16(v.Y))
-		binary.LittleEndian.PutUint16(s.tbuf[6:8], uint16(v.W))
-		binary.LittleEndian.PutUint16(s.tbuf[8:10], uint16(v.H))
+	case TagValueLocation:
+		l := value.(uo.Location)
+		binary.LittleEndian.PutUint16(s.tbuf[0:2], uint16(l.X))
+		binary.LittleEndian.PutUint16(s.tbuf[2:4], uint16(l.Y))
+		s.tbuf[4] = uint8(int8(l.Z))
+		s.buf.Write(s.tbuf[0:5])
+	case TagValueBounds:
+		b := value.(uo.Bounds)
+		binary.LittleEndian.PutUint16(s.tbuf[0:2], uint16(b.X))
+		binary.LittleEndian.PutUint16(s.tbuf[2:4], uint16(b.Y))
+		s.tbuf[4] = uint8(int8(b.Z))
+		binary.LittleEndian.PutUint16(s.tbuf[5:7], uint16(b.W))
+		binary.LittleEndian.PutUint16(s.tbuf[7:9], uint16(b.H))
+		s.tbuf[9] = uint8(int8(b.Z))
 		s.buf.Write(s.tbuf[0:10])
-	case []int16:
-		s.tbuf[0] = byte(t)
-		s.tbuf[1] = byte(TagValueShortSlice)
+	case TagValueShortSlice:
+		v := value.([]int16)
 		if len(v) > 255 {
 			log.Printf("error: tag %d slice too long")
 			return
 		}
-		s.tbuf[2] = byte(len(v))
-		ofs := 3
+		s.tbuf[0] = byte(len(v))
+		ofs := 1
 		for _, n := range v {
 			binary.LittleEndian.PutUint16(s.tbuf[ofs+0:ofs+2], uint16(n))
 			ofs += 2
 		}
 		s.buf.Write(s.tbuf[0:ofs])
-	case []uo.Serial:
-		s.tbuf[0] = byte(t)
-		s.tbuf[1] = byte(TagValueReferenceSlice)
+	case TagValueReferenceSlice:
+		v := value.([]uo.Serial)
 		if len(v) > 255 {
 			log.Printf("error: tag %d slice too long")
 			return
 		}
-		s.tbuf[2] = byte(len(v))
-		ofs := 3
+		s.tbuf[0] = byte(len(v))
+		ofs := 1
 		for _, n := range v {
 			binary.LittleEndian.PutUint32(s.tbuf[ofs+0:ofs+4], uint32(n))
 			ofs += 4
