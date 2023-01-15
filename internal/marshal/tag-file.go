@@ -274,12 +274,12 @@ func (s *TagFileSegment) PutObjectHeader(
 	events map[string]string) {
 	buf := make([]byte, 7)
 	s.buf.WriteByte(byte(otype))
-	binary.LittleEndian.PutUint32(buf, uint32(serial))
-	s.buf.Write(buf)
+	binary.LittleEndian.PutUint32(buf[0:4], uint32(serial))
+	s.buf.Write(buf[0:4])
 	s.buf.WriteString(template)
 	s.buf.WriteByte(0)
-	binary.LittleEndian.PutUint32(buf, uint32(parent))
-	s.buf.Write(buf)
+	binary.LittleEndian.PutUint32(buf[0:4], uint32(parent))
+	s.buf.Write(buf[0:4])
 	s.buf.WriteString(name)
 	s.buf.WriteByte(0)
 	binary.LittleEndian.PutUint16(buf[0:2], uint16(hue))
@@ -299,9 +299,7 @@ func (s *TagFileSegment) PutTag(t Tag, tv TagValue, value interface{}) {
 	}
 	if tv == TagValueBool {
 		if value.(bool) {
-			s.tbuf[0] = byte(t)
-			s.tbuf[1] = byte(tv)
-			s.buf.Write(s.tbuf[0:2])
+			s.PutByte(byte(t))
 		}
 		return
 	}
@@ -342,7 +340,7 @@ func (s *TagFileSegment) PutTag(t Tag, tv TagValue, value interface{}) {
 	case TagValueShortSlice:
 		v := value.([]int16)
 		if len(v) > 255 {
-			log.Printf("error: tag %d slice too long")
+			log.Printf("error: tag %d slice too long", t)
 			return
 		}
 		s.tbuf[0] = byte(len(v))
@@ -355,7 +353,7 @@ func (s *TagFileSegment) PutTag(t Tag, tv TagValue, value interface{}) {
 	case TagValueReferenceSlice:
 		v := value.([]uo.Serial)
 		if len(v) > 255 {
-			log.Printf("error: tag %d slice too long")
+			log.Printf("error: tag %d slice too long", t)
 			return
 		}
 		s.tbuf[0] = byte(len(v))
@@ -408,7 +406,6 @@ func (s *TagFileSegment) String() string {
 func (s *TagFileSegment) StringMap() map[string]string {
 	ret := make(map[string]string)
 	count, _ := s.buf.ReadByte()
-	ofs := 1
 	for i := 0; i < int(count); i++ {
 		k, _ := s.buf.ReadString(0)
 		v, _ := s.buf.ReadString(0)
@@ -417,7 +414,6 @@ func (s *TagFileSegment) StringMap() map[string]string {
 		}
 		ret[k] = v
 	}
-	s.buf.Next(ofs)
 	return ret
 }
 

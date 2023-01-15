@@ -10,7 +10,6 @@ import (
 	"path"
 	"sync"
 	"syscall"
-	"time"
 
 	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/internal/game/events"
@@ -156,12 +155,16 @@ func Main() {
 	wg := &sync.WaitGroup{}
 
 	// Start the goroutines
+	wg.Add(3)
 	go world.Main(wg)
 	go LoginServerMain(wg)
 	go GameServerMain(wg)
-	time.Sleep(time.Second * 1)
 	wg.Wait()
-	if err := world.Marshal(); err != nil {
+	// Always save right before we go down
+	wg, err := world.Marshal()
+	if err != nil {
 		log.Printf("ERROR SAVING WORLD AT END OF MAIN: %s", err.Error())
+	} else {
+		wg.Wait()
 	}
 }

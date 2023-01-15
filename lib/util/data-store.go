@@ -141,6 +141,18 @@ func (s *DataStore[K]) Write(w io.WriteCloser) []error {
 	return nil
 }
 
+// Marshal marshals all of the object belonging to a given serial pool to a
+// segment.
+func (s *DataStore[K]) Marshal(seg *marshal.TagFileSegment, pools, pool int) {
+	for serial, k := range s.objects {
+		if int(serial)%pools == pool {
+			k.Marshal(seg)
+			seg.PutTag(marshal.TagEndOfList, marshal.TagValueBool, true)
+			seg.IncrementRecordCount()
+		}
+	}
+}
+
 // LoadMarshalData loads all of the object data from the given segment and
 // rebuilds the database with those objects. UnmarsahlObjects and
 // AfterUnmarshalObjects should be called afterwards to complete the load and

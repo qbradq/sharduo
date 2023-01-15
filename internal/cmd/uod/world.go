@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"runtime/pprof"
+	"strings"
 	"sync"
 	"time"
 
@@ -258,7 +259,12 @@ func (w *World) Unmarshal() error {
 	start := time.Now()
 	filePath := w.latestSavePath()
 	d, err := os.ReadFile(filePath)
-	if err != nil {
+	if d == nil {
+		return os.ErrNotExist
+	} else if err != nil {
+		if strings.Contains(err.Error(), "handle is invalid") {
+			return os.ErrNotExist
+		}
 		return err
 	}
 	end := time.Now()
@@ -273,7 +279,6 @@ func (w *World) Unmarshal() error {
 	// Timers
 	game.UnmarshalTimers(tf.Segment(marshal.SegmentTimers))
 	// Create objects in data stores
-	w.ads.LoadMarshalData(tf.Segment(marshal.SegmentAccounts))
 	seg := marshal.SegmentObjectsStart
 	for {
 		s := tf.Segment(seg)
@@ -283,13 +288,17 @@ func (w *World) Unmarshal() error {
 		w.ods.LoadMarshalData(s)
 	}
 	// Unmarshal objects in the datastores
-	w.ads.UnmarshalObjects()
 	w.ods.UnmarshalObjects()
 	// Call the AfterUnmarshal hook on all objects in the datastores
-	w.ads.AfterUnmarshalObjects()
 	w.ods.AfterUnmarshalObjects()
 	// Let the map accumulate all of it's child objects
 	w.m.Unmarshal(tf.Segment(marshal.SegmentMap))
+	// Rebuild accounts dataset
+	s = tf.Segment(marshal.SegmentAccounts)
+	for i := uint32(0); i < s.RecordCount(); i++ {
+		a := &game.Account{}
+		a.Read(s)
+	}
 	// Done
 	end = time.Now()
 	elapsed = end.Sub(start)
@@ -408,10 +417,11 @@ func (w *World) Save() error {
 	return w.reportErrors(errs)
 }
 
-// Marshal writes all of the data stores that the world is responsible for.
-func (w *World) Marshal() error {
+// Marshal writes all of the data stores that the world is responsible for. A
+// WaitGroup is returned to wait for the file to be written to disk.
+func (w *World) Marshal() (*sync.WaitGroup, error) {
 	if !w.lock.TryLock() {
-		return ErrSaveFileLocked
+		return nil, ErrSaveFileLocked
 	}
 	defer w.lock.Unlock()
 
@@ -422,10 +432,10 @@ func (w *World) Marshal() error {
 
 	pf, err := os.Create("marshal.cpu.pprof")
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if err := pprof.StartCPUProfile(pf); err != nil {
-		return err
+		return nil, err
 	}
 
 	start := time.Now()
@@ -434,55 +444,67 @@ func (w *World) Marshal() error {
 	s := tf.Segment(marshal.SegmentWorld)
 	wg.Add(1)
 	go func(s *marshal.TagFileSegment) {
+		// Raw data for globals, treat this with kid gloves
 		s.PutLong(uint64(w.time))
 		wg.Done()
 	}(s)
 	wg.Add(1)
 	go func() {
+		// Raw data for timers, this shouldn't change anymore
 		game.MarshalTimers(tf.Segment(marshal.SegmentTimers))
 		wg.Done()
 	}()
 	wg.Add(1)
 	go func() {
-		game.MarshalAccounts(tf.Segment(marshal.SegmentAccounts), w.ads.Data())
+		// Accounting data in TagCollection format
+		s := tf.Segment(marshal.SegmentAccounts)
+		w.ads.Marshal(s, 1, 0)
 		wg.Done()
 	}()
 	saveGoroutines := 4
 	for i := 0; i < saveGoroutines; i++ {
+		// Object data in TagObject format
 		s := tf.Segment(marshal.SegmentObjectsStart + marshal.Segment(i))
-		d := w.ods.Data()
 		pool := i
 		wg.Add(1)
 		go func() {
-			game.MarshalObjects(s, d, saveGoroutines, pool)
+			w.ods.Marshal(s, saveGoroutines, pool)
 			wg.Done()
 		}()
 	}
 	wg.Add(1)
 	go func() {
+		// Raw data for map object list
 		w.m.Marshal(tf.Segment(marshal.SegmentMap))
 		wg.Done()
 	}()
+	// The main goroutine is blocked at this point
 	wg.Wait()
 	end := time.Now()
 	elapsed := end.Sub(start)
 	log.Printf("generated save data in %ds%03dms", elapsed.Milliseconds()/1000, elapsed.Milliseconds()%1000)
-
 	pprof.StopCPUProfile()
 
-	start = time.Now()
-	f, err := os.Create(filePath)
-	if err != nil {
-		return err
-	}
-	tf.Output(f)
-	f.Close()
-	tf.Close()
-	end = time.Now()
-	elapsed = end.Sub(start)
-	log.Printf("saved file to disk in %ds%03dms", elapsed.Milliseconds()/1000, elapsed.Milliseconds()%1000)
+	// Kick off another goroutine to persist the save to disk and let the main
+	// goroutine continue.
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		start := time.Now()
+		f, err := os.Create(filePath)
+		if err != nil {
+			log.Printf("error: unable to create save file %s", filePath)
+			return
+		}
+		tf.Output(f)
+		f.Close()
+		tf.Close()
+		end := time.Now()
+		elapsed := end.Sub(start)
+		log.Printf("saved file to disk in %ds%03dms", elapsed.Milliseconds()/1000, elapsed.Milliseconds()%1000)
+	}()
 
-	return nil
+	return wg, nil
 }
 
 // SendRequest sends a WorldRequest to the world's goroutine. Returns true if
@@ -597,7 +619,6 @@ func (w *World) Stop() {
 // Main is the goroutine that services the command queue and is the only
 // goroutine allowed to interact with the contents of the world.
 func (w *World) Main(wg *sync.WaitGroup) {
-	wg.Add(1)
 	defer wg.Done()
 	var done bool
 	ticker := time.NewTicker(time.Second / time.Duration(uo.DurationSecond))

@@ -60,7 +60,6 @@ func cleanStaleLoginConnections(done chan bool) {
 func LoginServerMain(wg *sync.WaitGroup) {
 	var err error
 
-	wg.Add(1)
 	defer wg.Done()
 
 	defaultUsername := configuration.DefaultAdminUsername
@@ -97,8 +96,8 @@ func LoginServerMain(wg *sync.WaitGroup) {
 	done <- true
 	loginServerListener.Close()
 	loginServerConnections.Range(func(key, value interface{}) bool {
-		c := key.(*net.TCPConn)
-		c.Close()
+		c := key.(*loginServerConnection)
+		c.c.Close()
 		return true
 	})
 }

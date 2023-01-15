@@ -131,40 +131,6 @@ type BaseObject struct {
 	eventHandlers map[string]string
 }
 
-// MarshalObjects writes all objects in the map to the segment.
-func MarshalObjects(s *marshal.TagFileSegment, objects map[uo.Serial]Object, pools, pool int) {
-	ps := uint32(pools)
-	p := uint32(pool)
-	for serial, o := range objects {
-		if uint32(serial)%ps == p {
-			o.Marshal(s)
-			s.PutTag(marshal.TagEndOfList, marshal.TagValueBool, true)
-			s.IncrementRecordCount()
-		}
-	}
-}
-
-// UnmarshalObjects reads all objects from the segment and deserializes them.
-func UnmarshalObjects(s *marshal.TagFileSegment) map[uo.Serial]Object {
-	ret := make(map[uo.Serial]Object)
-	for i := uint32(0); i < s.RecordCount(); i++ {
-		to := s.TagObject()
-		ctor := marshal.Constructor(to.Type)
-		if ctor == nil {
-			log.Printf("error: object %s no constructor for object type %d", to.Serial.String(), to.Type)
-			continue
-		}
-		iface := ctor()
-		o, ok := iface.(Object)
-		if !ok {
-			log.Printf("error: object %s did not return an object", to.Serial.String())
-		}
-		o.Unmarshal(to)
-		ret[o.Serial()] = o
-	}
-	return ret
-}
-
 // TypeName implements the util.Serializeable interface.
 func (o *BaseObject) TypeName() string {
 	return "BaseObject"
@@ -224,6 +190,7 @@ func (o *BaseObject) Marshal(s *marshal.TagFileSegment) {
 	s.PutTag(marshal.TagArticleA, marshal.TagValueBool, o.articleA)
 	s.PutTag(marshal.TagArticleAn, marshal.TagValueBool, o.articleAn)
 	s.PutTag(marshal.TagFacing, marshal.TagValueByte, byte(o.facing))
+	s.PutTag(marshal.TagEndOfList, marshal.TagValueBool, true)
 }
 
 // Deserialize implements the util.Serializeable interface.

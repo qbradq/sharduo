@@ -27,7 +27,6 @@ func StopGameService() {
 func GameServerMain(wg *sync.WaitGroup) {
 	var err error
 
-	wg.Add(1)
 	defer wg.Done()
 
 	gameServerListener, err = net.ListenTCP("tcp", &net.TCPAddr{

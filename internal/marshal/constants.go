@@ -63,10 +63,7 @@ const (
 	TagMaxWeight         Tag = 31
 	TagMaxItems          Tag = 32
 	TagBounds            Tag = 33
-	TagUsername          Tag = 34
-	TagPasswordHash      Tag = 35
-	TagPlayerMobile      Tag = 36
-	TagViewRange         Tag = 37
+	TagViewRange         Tag = 34
 	TagLastValidValue    Tag = TagViewRange
 )
 

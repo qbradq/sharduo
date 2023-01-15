@@ -64,9 +64,14 @@ func (a *Account) Serialize(f *util.TagFileWriter) {
 
 // Marshal implements the marshal.Marshaler interface.
 func (a *Account) Marshal(s *marshal.TagFileSegment) {
-	s.PutTag(marshal.TagUsername, marshal.TagValueString, a.username)
-	s.PutTag(marshal.TagPasswordHash, marshal.TagValueString, a.passwordHash)
-	s.PutTag(marshal.TagPlayerMobile, marshal.TagValueInt, int(a.player))
+	// Common header
+	s.PutInt(uint32(a.Serial()))
+	s.PutInt(uint32(a.player))
+	s.PutString(a.username)
+	s.PutString(a.passwordHash)
+	// We don't use the TagObject format here because there is a lot of overhead
+	// for non-game objects. Just use a TagCollection.
+	s.PutTag(marshal.TagEndOfList, marshal.TagValueBool, true)
 }
 
 // Deserialize implements the util.Serializeable interface.
@@ -81,43 +86,25 @@ func (a *Account) Deserialize(f *util.TagFileObject) {
 	a.player = uo.Serial(f.GetHex("Player", uint32(uo.SerialMobileNil)))
 }
 
+// Read unmarshals from a segment... this needs a refactor
+// TODO refactor this
+func (a *Account) Read(s *marshal.TagFileSegment) {
+	a.SetSerial(uo.Serial(s.Int()))
+	a.player = uo.Serial(s.Int())
+	a.username = s.String()
+	a.passwordHash = s.String()
+	// An empty tags collection exists so we can add stuff later if needed
+	s.Tags()
+}
+
 // Unmarshal implements the marshal.Unmarshaler interface.
 func (a *Account) Unmarshal(to *marshal.TagObject) {
-	a.username = to.Tags.String(marshal.TagUsername)
-	a.passwordHash = to.Tags.String(marshal.TagPasswordHash)
-	a.player = uo.Serial(to.Tags.Int(marshal.TagPlayerMobile))
+	// Account deserialization happens inside world.Unmarshal
 }
 
 // AfterUnmarshal implements the marshal.Unmarshaler interface.
 func (a *Account) AfterUnmarshal(to *marshal.TagObject) {
-	if world.Find(a.player) == nil {
-		log.Printf("warning: account %s refrences non-existant player mobile %s", a.Serial().String(), a.player.String())
-	}
-}
-
-// MarshalAccounts marshals all accounts in the map.
-func MarshalAccounts(s *marshal.TagFileSegment, accounts map[uo.Serial]*Account) {
-	for _, a := range accounts {
-		s.PutInt(uint32(a.Serial()))
-		s.PutString(a.username)
-		s.PutString(a.passwordHash)
-		s.PutInt(uint32(a.player))
-		s.IncrementRecordCount()
-	}
-}
-
-// UnmarshalAccounts unmarshals all accounts into a map.
-func UnmarshalAccounts(s *marshal.TagFileSegment) map[uo.Serial]*Account {
-	ret := make(map[uo.Serial]*Account)
-	for i := uint32(0); i < s.RecordCount(); i++ {
-		a := &Account{}
-		a.SetSerial(uo.Serial(s.Int()))
-		a.username = s.String()
-		a.passwordHash = s.String()
-		a.player = uo.Serial(s.Int())
-		ret[a.Serial()] = a
-	}
-	return ret
+	// Account deserialization happens inside world.Unmarshal
 }
 
 // Username returns the username of the account
