@@ -10,7 +10,7 @@ import (
 
 func init() {
 	ObjectFactory.RegisterCtor(func(v any) util.Serializeable { return &WearableContainer{} })
-	objectCtors[marshal.ObjectTypeWearableContainer] = func() Object { return &WearableContainer{} }
+	marshal.RegisterCtor(marshal.ObjectTypeWearableContainer, func() interface{} { return &WearableContainer{} })
 }
 
 // WearableContainer is a wearable item with the properties of a container, such

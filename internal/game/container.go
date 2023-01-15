@@ -11,7 +11,7 @@ import (
 
 func init() {
 	ObjectFactory.RegisterCtor(func(v any) util.Serializeable { return &BaseContainer{} })
-	objectCtors[marshal.ObjectTypeContainer] = func() Object { return &BaseContainer{} }
+	marshal.RegisterCtor(marshal.ObjectTypeContainer, func() interface{} { return &BaseContainer{} })
 }
 
 // Container is the interface all objects implement that can contain other

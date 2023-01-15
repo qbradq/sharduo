@@ -265,14 +265,32 @@ func (w *World) Unmarshal() error {
 	elapsed := end.Sub(start)
 	log.Printf("read save file into memory in %ds%03d", elapsed.Microseconds()/1000, elapsed.Microseconds()%1000)
 
+	// Global data
 	start = time.Now()
 	tf := marshal.NewTagFile(d)
 	s := tf.Segment(marshal.SegmentWorld)
 	w.time = uo.Time(s.Long())
+	// Timers
 	game.UnmarshalTimers(tf.Segment(marshal.SegmentTimers))
-	game.UnmarshalAccounts(tf.Segment(marshal.SegmentAccounts))
-	game.UnmarshalObjects(tf.Segment(marshal.SegmentObjectsStart))
+	// Create objects in data stores
+	w.ads.LoadMarshalData(tf.Segment(marshal.SegmentAccounts))
+	seg := marshal.SegmentObjectsStart
+	for {
+		s := tf.Segment(seg)
+		if s.IsEmpty() {
+			break
+		}
+		w.ods.LoadMarshalData(s)
+	}
+	// Unmarshal objects in the datastores
+	w.ads.UnmarshalObjects()
+	w.ods.UnmarshalObjects()
+	// Call the AfterUnmarshal hook on all objects in the datastores
+	w.ads.AfterUnmarshalObjects()
+	w.ods.AfterUnmarshalObjects()
+	// Let the map accumulate all of it's child objects
 	w.m.Unmarshal(tf.Segment(marshal.SegmentMap))
+	// Done
 	end = time.Now()
 	elapsed = end.Sub(start)
 	log.Printf("save unmarshaled in %ds%03d", elapsed.Microseconds()/1000, elapsed.Microseconds()%1000)

@@ -1,7 +1,6 @@
 package game
 
 var eventHandlerGetter func(string) *func(Object, Object)
-var eventNameGetter func(*func(Object, Object)) string
 
 // RootParent returns the top-most parent of the object who's parent is the map.
 // If this object's parent is the map this object is returned.
@@ -43,9 +42,4 @@ func ExecuteEventHandler(which string, receiver, source Object) {
 // by name.
 func SetEventHandlerGetter(fn func(string) *func(Object, Object)) {
 	eventHandlerGetter = fn
-}
-
-// SetEventNameGetter stes the function used to get event handler names.
-func SetEventNameGetter(fn func(*func(Object, Object)) string) {
-	eventNameGetter = fn
 }

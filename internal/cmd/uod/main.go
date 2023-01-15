@@ -122,9 +122,6 @@ func Initialize() {
 	game.SetEventHandlerGetter(func(which string) *func(game.Object, game.Object) {
 		return events.GetEventHandler(which)
 	})
-	game.SetEventNameGetter(func(fn *func(game.Object, game.Object)) string {
-		return events.GetEventName(fn)
-	})
 
 	// Load object templates
 	templateManager = NewTemplateManager("templates")
@@ -142,7 +139,7 @@ func Initialize() {
 	game.RegisterWorld(world)
 
 	// Try to load the most recent save
-	if err := world.Load(); err != nil {
+	if err := world.Unmarshal(); err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			log.Println("warning: no save files found")
 		} else {
@@ -164,7 +161,7 @@ func Main() {
 	go GameServerMain(wg)
 	time.Sleep(time.Second * 1)
 	wg.Wait()
-	if err := world.Save(); err != nil {
+	if err := world.Marshal(); err != nil {
 		log.Printf("ERROR SAVING WORLD AT END OF MAIN: %s", err.Error())
 	}
 }

@@ -5,12 +5,11 @@ type Segment byte
 
 // Segment values
 const (
-	SegmentStringDictionary Segment = 0
-	SegmentAccounts         Segment = 1
-	SegmentMap              Segment = 2
-	SegmentTimers           Segment = 3
-	SegmentWorld            Segment = 4
-	SegmentObjectsStart     Segment = 0x7F // THIS MUST BE THE LAST ENTRY!
+	SegmentAccounts     Segment = 0
+	SegmentMap          Segment = 1
+	SegmentTimers       Segment = 2
+	SegmentWorld        Segment = 3
+	SegmentObjectsStart Segment = 0x7F // THIS MUST BE THE LAST ENTRY!
 )
 
 // Tag represents a property name within an object segment as opposed to a raw
@@ -101,4 +100,5 @@ const (
 	ObjectTypeContainer         ObjectType = 6 // BaseContainer
 	ObjectTypeMountItem         ObjectType = 7 // MountItem
 	ObjectTypeMobile            ObjectType = 8 // BaseMobile
+	ObjectTypeAccount           ObjectType = 9 // Account
 )

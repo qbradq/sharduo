@@ -51,12 +51,22 @@ func (a *Account) SerialType() uo.SerialType {
 	return uo.SerialTypeUnbound
 }
 
+// ObjectType implements the Object interface.
+func (a *Account) ObjectType() marshal.ObjectType { return marshal.ObjectTypeAccount }
+
 // Serialize implements the util.Serializeable interface.
 func (a *Account) Serialize(f *util.TagFileWriter) {
 	a.BaseSerializeable.Serialize(f)
 	f.WriteString("Username", a.username)
 	f.WriteString("PasswordHash", a.passwordHash)
 	f.WriteHex("Player", uint32(a.player))
+}
+
+// Marshal implements the marshal.Marshaler interface.
+func (a *Account) Marshal(s *marshal.TagFileSegment) {
+	s.PutTag(marshal.TagUsername, marshal.TagValueString, a.username)
+	s.PutTag(marshal.TagPasswordHash, marshal.TagValueString, a.passwordHash)
+	s.PutTag(marshal.TagPlayerMobile, marshal.TagValueInt, int(a.player))
 }
 
 // Deserialize implements the util.Serializeable interface.
@@ -69,6 +79,20 @@ func (a *Account) Deserialize(f *util.TagFileObject) {
 	}
 	a.passwordHash = f.GetString("PasswordHash", "")
 	a.player = uo.Serial(f.GetHex("Player", uint32(uo.SerialMobileNil)))
+}
+
+// Unmarshal implements the marshal.Unmarshaler interface.
+func (a *Account) Unmarshal(to *marshal.TagObject) {
+	a.username = to.Tags.String(marshal.TagUsername)
+	a.passwordHash = to.Tags.String(marshal.TagPasswordHash)
+	a.player = uo.Serial(to.Tags.Int(marshal.TagPlayerMobile))
+}
+
+// AfterUnmarshal implements the marshal.Unmarshaler interface.
+func (a *Account) AfterUnmarshal(to *marshal.TagObject) {
+	if world.Find(a.player) == nil {
+		log.Printf("warning: account %s refrences non-existant player mobile %s", a.Serial().String(), a.player.String())
+	}
 }
 
 // MarshalAccounts marshals all accounts in the map.

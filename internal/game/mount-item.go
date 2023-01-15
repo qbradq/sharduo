@@ -10,7 +10,7 @@ import (
 
 func init() {
 	ObjectFactory.RegisterCtor(func(v any) util.Serializeable { return &MountItem{} })
-	objectCtors[marshal.ObjectTypeMountItem] = func() Object { return &MountItem{} }
+	marshal.RegisterCtor(marshal.ObjectTypeMountItem, func() interface{} { return &MountItem{} })
 }
 
 // MountItem is a special wearable on uo.LayerMount that represents a mount

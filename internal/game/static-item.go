@@ -8,7 +8,7 @@ import (
 
 func init() {
 	ObjectFactory.RegisterCtor(func(v any) util.Serializeable { return &StaticItem{} })
-	objectCtors[marshal.ObjectTypeStatic] = func() Object { return &StaticItem{} }
+	marshal.RegisterCtor(marshal.ObjectTypeStatic, func() interface{} { return &StaticItem{} })
 }
 
 // StaticItem is a light-weight Item implementation intended to be used for
@@ -100,7 +100,7 @@ var _emptyEventHandlers = make(map[string]string)
 // Marshal implements the marshal.Marshaler interface.
 func (i *StaticItem) Marshal(s *marshal.TagFileSegment) {
 	s.PutObjectHeader(
-		i.ObjectType(),
+		marshal.ObjectTypeStatic,
 		i.Serial(),
 		"StaticItem",
 		uo.SerialSystem,

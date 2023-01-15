@@ -10,7 +10,7 @@ import (
 
 func init() {
 	ObjectFactory.RegisterCtor(func(v any) util.Serializeable { return &BaseMobile{} })
-	objectCtors[marshal.ObjectTypeMobile] = func() Object { return &BaseMobile{} }
+	marshal.RegisterCtor(marshal.ObjectTypeMobile, func() interface{} { return &BaseMobile{} })
 }
 
 // Mobile is the interface all mobiles implement

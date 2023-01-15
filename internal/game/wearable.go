@@ -8,7 +8,7 @@ import (
 
 func init() {
 	ObjectFactory.RegisterCtor(func(v any) util.Serializeable { return &BaseWearable{} })
-	objectCtors[marshal.ObjectTypeWearable] = func() Object { return &BaseWearable{} }
+	marshal.RegisterCtor(marshal.ObjectTypeWearable, func() interface{} { return &BaseWearable{} })
 }
 
 // Layerer represents an item that can be layered onto an equippable mobile.

@@ -152,6 +152,9 @@ func NewTagFileSegment(id Segment, parent *TagFile) *TagFileSegment {
 	}
 }
 
+// IsEmpty returns true if the segment contains no data.
+func (s *TagFileSegment) IsEmpty() bool { return s.buf.Len() == 0 }
+
 // IncrementRecordCount increments the record count of the segment by one.
 func (s *TagFileSegment) IncrementRecordCount() { s.records++ }
 

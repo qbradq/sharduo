@@ -3,15 +3,25 @@ package util
 import (
 	"fmt"
 	"io"
+	"log"
 
+	"github.com/qbradq/sharduo/internal/marshal"
 	"github.com/qbradq/sharduo/lib/uo"
 )
 
+type dsobj interface {
+	Serializeable
+	marshal.Marshaler
+	marshal.Unmarshaler
+}
+
 // DataStore is a file-backed key-value store.
-type DataStore[K Serializeable] struct {
+type DataStore[K dsobj] struct {
 	SerialPool[K]
 	// Pool of deserialization data for rebuilding the objects
 	tfoPool map[uo.Serial]*TagFileObject
+	// Pool of unmarshaled object data for rebuilding the objects
+	toPool map[uo.Serial]*marshal.TagObject
 	// Factory to use to create new objects during the indexing phase
 	f *SerializeableFactory
 	// Debug name of the data store
@@ -19,10 +29,11 @@ type DataStore[K Serializeable] struct {
 }
 
 // NewDataStore initializes and returns a new DataStore object.
-func NewDataStore[K Serializeable](name string, rng uo.RandomSource, f *SerializeableFactory) *DataStore[K] {
+func NewDataStore[K dsobj](name string, rng uo.RandomSource, f *SerializeableFactory) *DataStore[K] {
 	return &DataStore[K]{
 		SerialPool: *NewSerialPool[K](name, rng),
 		tfoPool:    make(map[uo.Serial]*TagFileObject),
+		toPool:     make(map[uo.Serial]*marshal.TagObject),
 		f:          f,
 		name:       name,
 	}
@@ -117,15 +128,57 @@ func (s *DataStore[K]) OnAfterDeserialize() []error {
 }
 
 // Write writes the contents to the writer
-func (p *DataStore[K]) Write(w io.WriteCloser) []error {
+func (s *DataStore[K]) Write(w io.WriteCloser) []error {
 	tfw := NewTagFileWriter(w)
-	tfw.WriteComment(p.name)
+	tfw.WriteComment(s.name)
 	tfw.WriteBlankLine()
-	for _, o := range p.objects {
+	for _, o := range s.objects {
 		tfw.WriteObject(o)
 		tfw.WriteBlankLine()
 	}
 	tfw.WriteComment("end of file")
 	tfw.Close()
 	return nil
+}
+
+// LoadMarshalData loads all of the object data from the given segment and
+// rebuilds the database with those objects. UnmarsahlObjects and
+// AfterUnmarshalObjects should be called afterwards to complete the load and
+// free internal resources.
+func (s *DataStore[K]) LoadMarshalData(seg *marshal.TagFileSegment) {
+	for i := 0; i < int(seg.RecordCount()); i++ {
+		to := seg.TagObject()
+		ctor := marshal.Constructor(to.Type)
+		if ctor == nil {
+			log.Printf("warning: object %s ctor not found for type %d, object leaked: %+v", to.Serial, to.Type, to)
+			continue
+		}
+		iface := ctor()
+		k, ok := iface.(K)
+		if !ok {
+			log.Printf("warning: object %s did not implement the expected interface, object leaked", to.Serial)
+			continue
+		}
+		s.toPool[to.Serial] = to
+		s.objects[to.Serial] = k
+	}
+}
+
+// UnmarshalObjects executes the Unmarshal function for all objects in the
+// datastore. LoadMarshalData must be called before this function, and
+// AfterUnmarshalObjects should be called after.
+func (s *DataStore[K]) UnmarshalObjects() {
+	for serial, k := range s.objects {
+		to := s.toPool[serial]
+		k.Unmarshal(to)
+	}
+}
+
+// AfterUnmarshalObjects executes the AfterUnmarshal function for all objects in
+// the datastore. LoadMarshalData and UnmarshalData should be called first.
+func (s *DataStore[K]) AfterUnmarshalObjects() {
+	for serial, k := range s.objects {
+		to := s.toPool[serial]
+		k.AfterUnmarshal(to)
+	}
 }

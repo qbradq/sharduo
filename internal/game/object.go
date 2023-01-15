@@ -9,11 +9,10 @@ import (
 )
 
 var ObjectFactory = util.NewSerializeableFactory("objects")
-var objectCtors = make(map[marshal.ObjectType]func() Object)
 
 func init() {
 	ObjectFactory.RegisterCtor(func(v any) util.Serializeable { return &BaseObject{} })
-	objectCtors[marshal.ObjectTypeObject] = func() Object { return &BaseObject{} }
+	marshal.RegisterCtor(marshal.ObjectTypeObject, func() interface{} { return &BaseObject{} })
 }
 
 // Object is the interface every object in the game implements
@@ -150,12 +149,16 @@ func UnmarshalObjects(s *marshal.TagFileSegment) map[uo.Serial]Object {
 	ret := make(map[uo.Serial]Object)
 	for i := uint32(0); i < s.RecordCount(); i++ {
 		to := s.TagObject()
-		ctor := objectCtors[to.Type]
+		ctor := marshal.Constructor(to.Type)
 		if ctor == nil {
 			log.Printf("error: object %s no constructor for object type %d", to.Serial.String(), to.Type)
 			continue
 		}
-		o := ctor()
+		iface := ctor()
+		o, ok := iface.(Object)
+		if !ok {
+			log.Printf("error: object %s did not return an object", to.Serial.String())
+		}
 		o.Unmarshal(to)
 		ret[o.Serial()] = o
 	}
