@@ -298,6 +298,8 @@ func (w *World) Unmarshal() error {
 	for i := uint32(0); i < s.RecordCount(); i++ {
 		a := &game.Account{}
 		a.Read(s)
+		w.ads.Add(a, uo.SerialTypeUnbound)
+		w.aidx[a.Username()] = a.Serial()
 	}
 	// Done
 	end = time.Now()

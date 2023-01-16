@@ -277,6 +277,9 @@ func (m *TemplateManager) newObject(templateName string) game.Object {
 	}
 	// If we've gotten here we at least have an uninitialized object of the
 	// proper type. We can return it in case of error.
+	if o, ok := s.(game.Object); ok {
+		o.SetObjectType(o.ObjectType())
+	}
 	// Deserialize the object.
 	s.Deserialize(tfo)
 	for _, err := range tfo.Errors() {

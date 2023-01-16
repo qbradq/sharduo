@@ -193,4 +193,5 @@ func (s *DataStore[K]) AfterUnmarshalObjects() {
 		to := s.toPool[serial]
 		k.AfterUnmarshal(to)
 	}
+	s.toPool = make(map[uo.Serial]*marshal.TagObject)
 }

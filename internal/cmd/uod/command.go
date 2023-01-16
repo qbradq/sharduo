@@ -20,6 +20,7 @@ func init() {
 	commandFactory.Add("debug", newDebugCommand)
 	commandFactory.Add("location", newLocationCommand)
 	commandFactory.Add("new", newNewCommand)
+	commandFactory.Add("save", newSaveCommand)
 	commandFactory.Add("static", newStaticCommand)
 	commandFactory.Add("teleport", newTeleportCommand)
 }
@@ -472,5 +473,30 @@ func (c *StaticCommand) Execute(n *NetState) error {
 		})
 		world.Map().ForceAddObject(i)
 	})
+	return nil
+}
+
+// SaveCommand saves the state of the game
+type SaveCommand struct {
+	BaseCommand
+}
+
+// newSaveCommand constructs a new SaveCommand
+func newSaveCommand(args CommandArgs) Command {
+	return &SaveCommand{
+		BaseCommand: BaseCommand{
+			args: args,
+		},
+	}
+}
+
+// Compile implements the Command interface
+func (c *SaveCommand) Compile() error {
+	return nil
+}
+
+// Execute implements the Command interface
+func (c *SaveCommand) Execute(n *NetState) error {
+	world.Marshal()
 	return nil
 }

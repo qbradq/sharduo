@@ -311,6 +311,11 @@ func (m *BaseMobile) Marshal(s *marshal.TagFileSegment) {
 	s.PutTag(marshal.TagMana, marshal.TagValueShort, uint16(m.mana))
 	s.PutTag(marshal.TagCursor, marshal.TagValueInt, uint32(cs))
 	s.PutTag(marshal.TagSkills, marshal.TagValueShortSlice, m.skills)
+	equipment := make([]uo.Serial, 0)
+	for _, w := range m.equipment.equipment {
+		equipment = append(equipment, w.Serial())
+	}
+	s.PutTag(marshal.TagEquipment, marshal.TagValueReferenceSlice, equipment)
 }
 
 // Deserialize implements the util.Serializeable interface.

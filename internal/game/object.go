@@ -38,6 +38,8 @@ type Object interface {
 	SetParent(Object)
 	// ObjectType returns the marshal.ObjectType associated with this struct.
 	ObjectType() marshal.ObjectType
+	// SetObjectType sets the marshal.ObjectType associated with this struct.
+	SetObjectType(marshal.ObjectType)
 	// TemplateName returns the name of the template used to create this object.
 	TemplateName() string
 
@@ -109,10 +111,12 @@ type Object interface {
 // interface
 type BaseObject struct {
 	util.BaseSerializeable
-	// Parent object
-	parent Object
+	// Object type code
+	otype marshal.ObjectType
 	// Name of the template this object was constructed from
 	templateName string
+	// Parent object
+	parent Object
 	// Display name of the object
 	name string
 	// If true, the article "a" is used to refer to the object. If no article
@@ -138,6 +142,9 @@ func (o *BaseObject) TypeName() string {
 
 // ObjectType implements the Object interface.
 func (o *BaseObject) ObjectType() marshal.ObjectType { return marshal.ObjectTypeObject }
+
+// SetObjectType implements the Object interface.
+func (o *BaseObject) SetObjectType(t marshal.ObjectType) { o.otype = t }
 
 // SerialType implements the util.Serializeable interface.
 func (o *BaseObject) SerialType() uo.SerialType {
@@ -179,7 +186,7 @@ func (o *BaseObject) Marshal(s *marshal.TagFileSegment) {
 		ps = o.parent.Serial()
 	}
 	s.PutObjectHeader(
-		o.ObjectType(),
+		o.otype,
 		o.Serial(),
 		o.templateName,
 		ps,
@@ -190,7 +197,6 @@ func (o *BaseObject) Marshal(s *marshal.TagFileSegment) {
 	s.PutTag(marshal.TagArticleA, marshal.TagValueBool, o.articleA)
 	s.PutTag(marshal.TagArticleAn, marshal.TagValueBool, o.articleAn)
 	s.PutTag(marshal.TagFacing, marshal.TagValueByte, byte(o.facing))
-	s.PutTag(marshal.TagEndOfList, marshal.TagValueBool, true)
 }
 
 // Deserialize implements the util.Serializeable interface.
@@ -200,7 +206,8 @@ func (o *BaseObject) Deserialize(f *util.TagFileObject) {
 	o.templateName = f.GetString("TemplateName", "")
 	if o.templateName == "" {
 		// Something is very wrong
-		log.Printf("warning: object 0x%08X has no TemplateName property", o.Serial())
+		log.Printf("warning: object %s has no TemplateName property", o.Serial().String())
+		return
 	}
 	ps := uo.Serial(f.GetHex("Parent", uint32(uo.SerialSystem)))
 	if ps == uo.SerialSystem {
@@ -225,6 +232,7 @@ func (o *BaseObject) Deserialize(f *util.TagFileObject) {
 // Unmarshal implements the marshal.Unmarshaler interface.
 func (o *BaseObject) Unmarshal(to *marshal.TagObject) {
 	o.SetSerial(to.Serial)
+	o.otype = to.Type
 	o.templateName = to.Template
 	o.name = to.Name
 	o.hue = to.Hue

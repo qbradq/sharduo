@@ -33,6 +33,9 @@ func (o *StaticItem) TypeName() string {
 // ObjectType implements the Object interface.
 func (o *StaticItem) ObjectType() marshal.ObjectType { return marshal.ObjectTypeStatic }
 
+// SetObjectType implements the Object interface.
+func (o *StaticItem) SetObjectType(t marshal.ObjectType) {}
+
 // SerialType implements the util.Serializeable interface.
 func (o *StaticItem) SerialType() uo.SerialType {
 	return uo.SerialTypeItem

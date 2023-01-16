@@ -297,17 +297,12 @@ func (s *TagFileSegment) PutTag(t Tag, tv TagValue, value interface{}) {
 		s.buf.WriteByte(byte(TagEndOfList))
 		return
 	}
-	if tv == TagValueBool {
-		if value.(bool) {
-			s.PutByte(byte(t))
-		}
-		return
-	}
 	s.tbuf[0] = byte(t)
 	s.tbuf[1] = byte(tv)
 	s.buf.Write(s.tbuf[0:2])
 	switch tv {
-	// case TagValueBool: // Handled in special case above
+	case TagValueBool:
+		// Just the presence of the tag means true, otherwise false
 	case TagValueByte:
 		s.buf.WriteByte(value.(byte))
 	case TagValueShort:
@@ -396,10 +391,13 @@ func (s *TagFileSegment) Long() uint64 {
 // string reference and indexing the tag file string dictionary.
 func (s *TagFileSegment) String() string {
 	d, err := s.buf.ReadString(0)
+	if len(d) > 0 {
+		d = d[:len(d)-1]
+	}
 	if err != nil || len(d) == 0 {
 		return ""
 	}
-	return string(d[0 : len(d)-1])
+	return string(d)
 }
 
 // StringMap returns the next map[string]string encoded into the segment.
@@ -527,13 +525,10 @@ func (s *TagFileSegment) Tags() *TagCollection {
 		case TagValueLong:
 			c.tags[tag] = s.Long()
 		case TagValueString:
-			str := s.String()
-			if len(str) > 0 {
-				c.tags[tag] = str
-			}
+			c.tags[tag] = s.String()
 		case TagValueReferenceSlice:
-			var v []uo.Serial
 			count := int(s.Byte())
+			v := make([]uo.Serial, 0, count)
 			for i := 0; i < count; i++ {
 				v = append(v, uo.Serial(s.Int()))
 			}
@@ -543,8 +538,8 @@ func (s *TagFileSegment) Tags() *TagCollection {
 		case TagValueBounds:
 			c.tags[tag] = s.Bounds()
 		case TagValueShortSlice:
-			var v []int16
 			count := int(s.Byte())
+			v := make([]int16, 0, count)
 			for i := 0; i < count; i++ {
 				v = append(v, int16(s.Short()))
 			}
@@ -631,7 +626,11 @@ func (c *TagCollection) ReferenceSlice(t Tag) []uo.Serial {
 	if t > TagLastValidValue {
 		panic(fmt.Sprintf("warning: unknown tag type %d", t))
 	}
-	return c.tags[t].([]uo.Serial)
+	v := c.tags[t]
+	if v == nil {
+		return make([]uo.Serial, 0)
+	}
+	return v.([]uo.Serial)
 }
 
 // ShortSlice returns the named slice of shorts
@@ -639,7 +638,11 @@ func (c *TagCollection) ShortSlice(t Tag) []int16 {
 	if t > TagLastValidValue {
 		panic(fmt.Sprintf("warning: unknown tag type %d", t))
 	}
-	return c.tags[t].([]int16)
+	v := c.tags[t]
+	if v == nil {
+		return make([]int16, 0)
+	}
+	return v.([]int16)
 }
 
 // TagObject manages all of the information for one object.
