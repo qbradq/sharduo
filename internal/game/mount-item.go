@@ -39,6 +39,7 @@ func (i *MountItem) Serialize(f *util.TagFileWriter) {
 
 // Marshal implements the marshal.Marshaler interface.
 func (i *MountItem) Marshal(s *marshal.TagFileSegment) {
+	i.BaseWearable.Marshal(s)
 	ms := uo.SerialZero
 	if i.m != nil {
 		ms = i.m.Serial()

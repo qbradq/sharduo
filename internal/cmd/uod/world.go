@@ -269,7 +269,7 @@ func (w *World) Unmarshal() error {
 	}
 	end := time.Now()
 	elapsed := end.Sub(start)
-	log.Printf("read save file into memory in %ds%03d", elapsed.Microseconds()/1000, elapsed.Microseconds()%1000)
+	log.Printf("read save file into memory in %ds%03dms", elapsed.Milliseconds()/1000, elapsed.Milliseconds()%1000)
 
 	// Global data
 	start = time.Now()
@@ -286,6 +286,7 @@ func (w *World) Unmarshal() error {
 			break
 		}
 		w.ods.LoadMarshalData(s)
+		seg++
 	}
 	// Unmarshal objects in the datastores
 	w.ods.UnmarshalObjects()
@@ -304,7 +305,7 @@ func (w *World) Unmarshal() error {
 	// Done
 	end = time.Now()
 	elapsed = end.Sub(start)
-	log.Printf("save unmarshaled in %ds%03d", elapsed.Microseconds()/1000, elapsed.Microseconds()%1000)
+	log.Printf("save unmarshaled in %ds%03d", elapsed.Milliseconds()/1000, elapsed.Milliseconds()%1000)
 
 	return nil
 }

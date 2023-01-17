@@ -58,6 +58,7 @@ func (i *BaseWearable) Deserialize(f *util.TagFileObject) {
 
 // Unmarshal implements the marshal.Unmarshaler interface.
 func (i *BaseWearable) Unmarshal(to *marshal.TagObject) {
+	i.BaseItem.Unmarshal(to)
 	i.layer = uo.Layer(to.Tags.Byte(marshal.TagLayer))
 }
 

@@ -171,6 +171,7 @@ func (s *DataStore[K]) LoadMarshalData(seg *marshal.TagFileSegment) {
 			log.Printf("warning: object %s did not implement the expected interface, object leaked", to.Serial)
 			continue
 		}
+		log.Printf("%s:%+v", to.Serial.String(), to)
 		s.toPool[to.Serial] = to
 		s.objects[to.Serial] = k
 	}

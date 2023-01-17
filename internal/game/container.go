@@ -83,6 +83,7 @@ func (c *BaseContainer) Serialize(f *util.TagFileWriter) {
 
 // Marshal implements the marshal.Marshaler interface.
 func (i *BaseContainer) Marshal(s *marshal.TagFileSegment) {
+	i.BaseItem.Marshal(s)
 	contentSerials := make([]uo.Serial, len(i.contents))
 	for idx, o := range i.contents {
 		// Sanity check: slices over 255 members will panic the marshal package.

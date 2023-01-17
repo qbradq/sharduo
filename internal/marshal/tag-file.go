@@ -405,8 +405,8 @@ func (s *TagFileSegment) StringMap() map[string]string {
 	ret := make(map[string]string)
 	count, _ := s.buf.ReadByte()
 	for i := 0; i < int(count); i++ {
-		k, _ := s.buf.ReadString(0)
-		v, _ := s.buf.ReadString(0)
+		k := s.String()
+		v := s.String()
 		if k == "" || v == "" {
 			continue
 		}
@@ -505,6 +505,8 @@ func (s *TagFileSegment) Tags() *TagCollection {
 	for {
 		tag := Tag(s.Byte())
 		if tag == TagEndOfList {
+			// TODO Debug
+			log.Println("EndOfList")
 			break
 		}
 		if tag > TagLastValidValue {
@@ -513,6 +515,7 @@ func (s *TagFileSegment) Tags() *TagCollection {
 			break
 		}
 		tagType := TagValue(s.Byte())
+		log.Printf("tag: %d valuetype: %d", tag, tagType)
 		switch tagType {
 		case TagValueBool:
 			c.tags[tag] = true
