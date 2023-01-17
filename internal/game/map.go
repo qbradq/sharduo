@@ -143,7 +143,7 @@ func (m *Map) Unmarshal(s *marshal.TagFileSegment) {
 
 // getChunk returns a pointer to the chunk for the given location.
 func (m *Map) getChunk(l uo.Location) *chunk {
-	l = l.WrapAndBound(l)
+	l = l.Bound()
 	cx := l.X / uo.ChunkWidth
 	cy := l.Y / uo.ChunkHeight
 	return m.chunks[cy*uo.MapChunksWidth+cx]

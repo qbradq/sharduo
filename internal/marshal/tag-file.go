@@ -283,8 +283,8 @@ func (s *TagFileSegment) PutObjectHeader(
 	s.buf.WriteString(name)
 	s.buf.WriteByte(0)
 	binary.LittleEndian.PutUint16(buf[0:2], uint16(hue))
-	binary.LittleEndian.PutUint16(buf[2:4], uint16(hue))
-	binary.LittleEndian.PutUint16(buf[4:6], uint16(hue))
+	binary.LittleEndian.PutUint16(buf[2:4], uint16(location.X))
+	binary.LittleEndian.PutUint16(buf[4:6], uint16(location.Y))
 	buf[6] = byte(int8(location.Z))
 	s.buf.Write(buf[0:7])
 	s.PutStringsMap(events)
@@ -296,13 +296,15 @@ func (s *TagFileSegment) PutTag(t Tag, tv TagValue, value interface{}) {
 	if t == TagEndOfList {
 		s.buf.WriteByte(byte(TagEndOfList))
 		return
+	} else if tv == TagValueBool && !value.(bool) {
+		return
 	}
 	s.tbuf[0] = byte(t)
 	s.tbuf[1] = byte(tv)
 	s.buf.Write(s.tbuf[0:2])
 	switch tv {
 	case TagValueBool:
-		// Just the presence of the tag means true, otherwise false
+		// Handled in special case at top
 	case TagValueByte:
 		s.buf.WriteByte(value.(byte))
 	case TagValueShort:
@@ -505,8 +507,6 @@ func (s *TagFileSegment) Tags() *TagCollection {
 	for {
 		tag := Tag(s.Byte())
 		if tag == TagEndOfList {
-			// TODO Debug
-			log.Println("EndOfList")
 			break
 		}
 		if tag > TagLastValidValue {
@@ -515,7 +515,6 @@ func (s *TagFileSegment) Tags() *TagCollection {
 			break
 		}
 		tagType := TagValue(s.Byte())
-		log.Printf("tag: %d valuetype: %d", tag, tagType)
 		switch tagType {
 		case TagValueBool:
 			c.tags[tag] = true
@@ -564,6 +563,9 @@ type TagCollection struct {
 func (c *TagCollection) Bool(t Tag) bool {
 	if t > TagLastValidValue {
 		panic(fmt.Sprintf("warning: unknown tag type %d", t))
+	}
+	if c.tags[t] == nil {
+		return false
 	}
 	return c.tags[t].(bool)
 }

@@ -1,6 +1,7 @@
 package uod
 
 import (
+	"compress/gzip"
 	"errors"
 	"fmt"
 	"io"
@@ -428,7 +429,7 @@ func (w *World) Marshal() (*sync.WaitGroup, error) {
 	}
 	defer w.lock.Unlock()
 
-	filePath := path.Join(w.savePath, w.getFileName()+".sav")
+	filePath := path.Join(w.savePath, w.getFileName()+".sav.gz")
 	filePath = path.Clean(filePath)
 	os.MkdirAll(path.Dir(filePath), 0777)
 	log.Printf("saving data stores to %s", filePath)
@@ -442,6 +443,14 @@ func (w *World) Marshal() (*sync.WaitGroup, error) {
 	}
 
 	start := time.Now()
+	// We have to build a slice of all of our objects so we don't have
+	// concurrency issues on the data store map during the multi-goroutine save
+	objects := make([]game.Object, len(w.ods.Data()))
+	idx := 0
+	for _, obj := range w.ods.Data() {
+		objects[idx] = obj
+		idx++
+	}
 	wg := &sync.WaitGroup{}
 	tf := marshal.NewTagFile(nil)
 	s := tf.Segment(marshal.SegmentWorld)
@@ -451,36 +460,46 @@ func (w *World) Marshal() (*sync.WaitGroup, error) {
 		s.PutLong(uint64(w.time))
 		wg.Done()
 	}(s)
+	s = tf.Segment(marshal.SegmentTimers)
 	wg.Add(1)
-	go func() {
+	go func(s *marshal.TagFileSegment) {
 		// Raw data for timers, this shouldn't change anymore
-		game.MarshalTimers(tf.Segment(marshal.SegmentTimers))
+		game.MarshalTimers(s)
 		wg.Done()
-	}()
+	}(s)
+	s = tf.Segment(marshal.SegmentAccounts)
 	wg.Add(1)
-	go func() {
+	go func(s *marshal.TagFileSegment) {
 		// Accounting data in TagCollection format
-		s := tf.Segment(marshal.SegmentAccounts)
 		w.ads.Marshal(s, 1, 0)
 		wg.Done()
-	}()
+	}(s)
 	saveGoroutines := 4
 	for i := 0; i < saveGoroutines; i++ {
 		// Object data in TagObject format
-		s := tf.Segment(marshal.SegmentObjectsStart + marshal.Segment(i))
-		pool := i
+		s = tf.Segment(marshal.SegmentObjectsStart + marshal.Segment(i))
 		wg.Add(1)
-		go func() {
-			w.ods.Marshal(s, saveGoroutines, pool)
+		go func(s *marshal.TagFileSegment, pool int) {
+			for i := pool; i < len(objects); i += saveGoroutines {
+				o := objects[i]
+				o.Marshal(s)
+				s.PutTag(marshal.TagEndOfList, marshal.TagValueBool, true)
+				s.IncrementRecordCount()
+			}
 			wg.Done()
-		}()
+		}(s, i)
 	}
 	wg.Add(1)
-	go func() {
+	s = tf.Segment(marshal.SegmentMap)
+	go func(s *marshal.TagFileSegment) {
 		// Raw data for map object list
-		w.m.Marshal(tf.Segment(marshal.SegmentMap))
+		for i := 0; i < len(objects); i++ {
+			o := objects[i]
+			s.PutInt(uint32(o.Serial()))
+			s.IncrementRecordCount()
+		}
 		wg.Done()
-	}()
+	}(s)
 	// The main goroutine is blocked at this point
 	wg.Wait()
 	end := time.Now()
@@ -499,8 +518,12 @@ func (w *World) Marshal() (*sync.WaitGroup, error) {
 			log.Printf("error: unable to create save file %s", filePath)
 			return
 		}
-		tf.Output(f)
-		f.Close()
+		zw := gzip.NewWriter(f)
+		zw.Name = filePath
+		zw.ModTime = start
+		zw.Comment = "ShardUO save file"
+		tf.Output(zw)
+		zw.Close()
 		tf.Close()
 		end := time.Now()
 		elapsed := end.Sub(start)

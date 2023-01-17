@@ -92,7 +92,6 @@ func (i *BaseContainer) Marshal(s *marshal.TagFileSegment) {
 		}
 		contentSerials[idx] = o.Serial()
 	}
-	i.BaseItem.Marshal(s)
 	s.PutTag(marshal.TagGump, marshal.TagValueShort, uint16(i.gump))
 	s.PutTag(marshal.TagMaxWeight, marshal.TagValueInt, uint32(i.maxContainerWeight*1000))
 	s.PutTag(marshal.TagMaxItems, marshal.TagValueShort, uint16(i.maxContainerItems))
