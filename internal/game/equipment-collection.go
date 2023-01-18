@@ -4,7 +4,6 @@ import (
 	"log"
 
 	"github.com/qbradq/sharduo/lib/uo"
-	"github.com/qbradq/sharduo/lib/util"
 )
 
 // EquipmentCollection is a collection of Items associated to equipment layers.
@@ -49,11 +48,6 @@ func NewEquipmentCollectionWith(ids []uo.Serial, parent Object) *EquipmentCollec
 		w.SetParent(parent)
 	}
 	return c
-}
-
-// Write writes the collection to the given tag file.
-func (c *EquipmentCollection) Write(name string, f *util.TagFileWriter) {
-	f.WriteObjectReferences(name, util.ValuesAsSerials(c.equipment))
 }
 
 // Map executes a function for every item in the collection.

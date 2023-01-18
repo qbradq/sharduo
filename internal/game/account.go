@@ -3,9 +3,7 @@ package game
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"log"
 
-	"github.com/google/uuid"
 	"github.com/qbradq/sharduo/internal/marshal"
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
@@ -37,26 +35,8 @@ type Account struct {
 	player uo.Serial
 }
 
-// GetTypeName implements the util.Serializeable interface.
-func (a *Account) TypeName() string {
-	return "Account"
-}
-
-// GetSerialType implements the util.Serializeable interface.
-func (a *Account) SerialType() uo.SerialType {
-	return uo.SerialTypeUnbound
-}
-
 // ObjectType implements the Object interface.
 func (a *Account) ObjectType() marshal.ObjectType { return marshal.ObjectTypeAccount }
-
-// Serialize implements the util.Serializeable interface.
-func (a *Account) Serialize(f *util.TagFileWriter) {
-	a.BaseSerializeable.Serialize(f)
-	f.WriteString("Username", a.username)
-	f.WriteString("PasswordHash", a.passwordHash)
-	f.WriteHex("Player", uint32(a.player))
-}
 
 // Marshal implements the marshal.Marshaler interface.
 func (a *Account) Marshal(s *marshal.TagFileSegment) {
@@ -70,20 +50,7 @@ func (a *Account) Marshal(s *marshal.TagFileSegment) {
 	s.PutTag(marshal.TagEndOfList, marshal.TagValueBool, true)
 }
 
-// Deserialize implements the util.Serializeable interface.
-func (a *Account) Deserialize(f *util.TagFileObject) {
-	a.BaseSerializeable.Deserialize(f)
-	accountRecoveryString := "__bad_account__" + uuid.New().String()
-	a.username = f.GetString("Username", accountRecoveryString)
-	if a.username == accountRecoveryString {
-		log.Println("account recovery required:", accountRecoveryString)
-	}
-	a.passwordHash = f.GetString("PasswordHash", "")
-	a.player = uo.Serial(f.GetHex("Player", uint32(uo.SerialMobileNil)))
-}
-
-// Read unmarshals from a segment... this needs a refactor
-// TODO refactor this
+// Read unmarshals from a segment
 func (a *Account) Read(s *marshal.TagFileSegment) {
 	a.SetSerial(uo.Serial(s.Int()))
 	a.player = uo.Serial(s.Int())

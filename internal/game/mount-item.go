@@ -21,20 +21,9 @@ type MountItem struct {
 	m Mobile
 }
 
-// TypeName implements the util.Serializeable interface.
-func (i *MountItem) TypeName() string {
-	return "MountItem"
-}
-
 // ObjectType implements the Object interface.
 func (i *MountItem) ObjectType() marshal.ObjectType {
 	return marshal.ObjectTypeMountItem
-}
-
-// Serialize implements the util.Serializeable interface.
-func (i *MountItem) Serialize(f *util.TagFileWriter) {
-	i.BaseWearable.Serialize(f)
-	f.WriteHex("Mount", uint32(i.m.Serial()))
 }
 
 // Marshal implements the marshal.Marshaler interface.

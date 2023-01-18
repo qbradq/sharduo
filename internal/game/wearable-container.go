@@ -21,20 +21,9 @@ type WearableContainer struct {
 	layer uo.Layer
 }
 
-// TypeName implements the util.Serializeable interface.
-func (o *WearableContainer) TypeName() string {
-	return "WearableContainer"
-}
-
 // ObjectType implements the Object interface.
 func (i *WearableContainer) ObjectType() marshal.ObjectType {
 	return marshal.ObjectTypeWearableContainer
-}
-
-// Serialize implements the util.Serializeable interface.
-func (s *WearableContainer) Serialize(f *util.TagFileWriter) {
-	s.BaseContainer.Serialize(f)
-	f.WriteNumber("Layer", int(s.layer))
 }
 
 // Marshal implements the marshal.Marshaler interface.

@@ -37,12 +37,8 @@ func (s *BaseSerialer) SetSerial(serial uo.Serial) {
 // Serializeable is the interface all serializeable objects implement.
 type Serializeable interface {
 	Serialer
-	// GetTypeName returns the name of the object's type, which must be unique
-	TypeName() string
-	// GetSerialType returns the type of serial number used by the object
+	// SerialType returns the type of serial number used by the object
 	SerialType() uo.SerialType
-	// Writes the object to a tag file.
-	Serialize(*TagFileWriter)
 	// Deserializes the object from a tag file object. DO NOT CREATE new game
 	// objects during deserialization!
 	Deserialize(*TagFileObject)
@@ -56,11 +52,6 @@ type Serializeable interface {
 // force includers of this base struct to register their own.
 type BaseSerializeable struct {
 	BaseSerialer
-}
-
-// Serialize implements the util.Serializeable interface.
-func (s *BaseSerializeable) Serialize(f *TagFileWriter) {
-	f.WriteHex("Serial", uint32(s.serial))
 }
 
 // Deserialize implements the util.Serializeable interface.

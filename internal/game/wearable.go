@@ -30,19 +30,8 @@ type BaseWearable struct {
 	layer uo.Layer
 }
 
-// TypeName implements the util.Serializeable interface.
-func (i *BaseWearable) TypeName() string {
-	return "BaseWearable"
-}
-
 // ObjectType implements the Object interface.
 func (i *BaseWearable) ObjectType() marshal.ObjectType { return marshal.ObjectTypeWearable }
-
-// Serialize implements the util.Serializeable interface.
-func (i *BaseWearable) Serialize(f *util.TagFileWriter) {
-	i.BaseItem.Serialize(f)
-	f.WriteNumber("Layer", int(i.layer))
-}
 
 // Marshal implements the marshal.Marshaler interface.
 func (i *BaseWearable) Marshal(s *marshal.TagFileSegment) {

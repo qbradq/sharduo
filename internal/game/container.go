@@ -63,23 +63,8 @@ type BaseContainer struct {
 	bounds uo.Bounds
 }
 
-// TypeName implements the util.Serializeable interface.
-func (o *BaseContainer) TypeName() string {
-	return "BaseContainer"
-}
-
 // ObjectType implements the Object interface.
 func (i *BaseContainer) ObjectType() marshal.ObjectType { return marshal.ObjectTypeContainer }
-
-// Serialize implements the util.Serializeable interface.
-func (c *BaseContainer) Serialize(f *util.TagFileWriter) {
-	c.BaseItem.Serialize(f)
-	f.WriteHex("Gump", uint32(c.gump))
-	f.WriteFloat("MaxContainerWeight", c.maxContainerWeight)
-	f.WriteNumber("MaxContainerItems", c.maxContainerItems)
-	f.WriteBounds("Bounds", c.bounds)
-	f.WriteObjectReferences("Contents", util.ToSerials(c.contents))
-}
 
 // Marshal implements the marshal.Marshaler interface.
 func (i *BaseContainer) Marshal(s *marshal.TagFileSegment) {

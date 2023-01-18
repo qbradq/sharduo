@@ -8,7 +8,8 @@ import (
 )
 
 type dsobj interface {
-	Serializeable
+	Serial() uo.Serial
+	SetSerial(uo.Serial)
 	marshal.Marshaler
 	marshal.Unmarshaler
 }

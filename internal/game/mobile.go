@@ -249,11 +249,6 @@ type BaseMobile struct {
 	gold int
 }
 
-// GetTypeName implements the util.Serializeable interface.
-func (m *BaseMobile) TypeName() string {
-	return "BaseMobile"
-}
-
 // ObjectType implements the Object interface.
 func (m *BaseMobile) ObjectType() marshal.ObjectType {
 	return marshal.ObjectTypeMobile
@@ -262,33 +257,6 @@ func (m *BaseMobile) ObjectType() marshal.ObjectType {
 // SerialType implements the util.Serializeable interface.
 func (o *BaseMobile) SerialType() uo.SerialType {
 	return uo.SerialTypeMobile
-}
-
-// Serialize implements the util.Serializeable interface.
-func (m *BaseMobile) Serialize(f *util.TagFileWriter) {
-	m.BaseObject.Serialize(f)
-	f.WriteNumber("ViewRange", m.viewRange)
-	f.WriteBool("IsPlayerCharacter", m.isPlayerCharacter)
-	f.WriteBool("IsFemale", m.isFemale)
-	f.WriteNumber("Body", int(m.body))
-	f.WriteNumber("Notoriety", int(m.notoriety))
-	f.WriteNumber("Strength", m.baseStrength)
-	f.WriteNumber("Dexterity", m.baseDexterity)
-	f.WriteNumber("Intelligence", m.baseIntelligence)
-	f.WriteNumber("HitPoints", m.hitPoints)
-	f.WriteNumber("Stamina", m.stamina)
-	f.WriteNumber("Mana", m.mana)
-	if m.equipment != nil {
-		m.equipment.Write("Equipment", f)
-	}
-	if m.cursor.Occupied() {
-		f.WriteHex("ItemInCursor", uint32(m.cursor.Item().Serial()))
-	}
-	for i, v := range m.skills {
-		if v != 0 {
-			f.WriteNumber("Skill"+uo.SkillNames[i], int(v))
-		}
-	}
 }
 
 // Marshal implements the marshal.Marshaler interface.

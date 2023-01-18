@@ -135,11 +135,6 @@ type BaseObject struct {
 	eventHandlers map[string]string
 }
 
-// TypeName implements the util.Serializeable interface.
-func (o *BaseObject) TypeName() string {
-	return "BaseObject"
-}
-
 // ObjectType implements the Object interface.
 func (o *BaseObject) ObjectType() marshal.ObjectType { return marshal.ObjectTypeObject }
 
@@ -149,34 +144,6 @@ func (o *BaseObject) SetObjectType(t marshal.ObjectType) { o.otype = t }
 // SerialType implements the util.Serializeable interface.
 func (o *BaseObject) SerialType() uo.SerialType {
 	return uo.SerialTypeItem
-}
-
-// serializeEvent attempts to output the event handler name, if any
-func (o *BaseObject) serializeEvent(which string, f *util.TagFileWriter) {
-	name := o.eventHandlers[which]
-	if name == "" {
-		// Something is wrong
-		return
-	}
-	f.WriteString(which, name)
-}
-
-// Serialize implements the util.Serializeable interface.
-func (o *BaseObject) Serialize(f *util.TagFileWriter) {
-	o.BaseSerializeable.Serialize(f)
-	// Owned properties
-	f.WriteString("TemplateName", o.templateName)
-	if o.parent != nil {
-		f.WriteHex("Parent", uint32(o.parent.Serial()))
-	}
-	f.WriteString("Name", o.name)
-	f.WriteBool("ArticleA", o.articleA)
-	f.WriteBool("ArticleAn", o.articleAn)
-	f.WriteNumber("Hue", int(o.hue))
-	f.WriteLocation("Location", o.location)
-	f.WriteNumber("Facing", int(o.facing))
-	// Events
-	o.serializeEvent("OnDoubleClick", f)
 }
 
 // Marshal implements the marshal.Marshaler interface.

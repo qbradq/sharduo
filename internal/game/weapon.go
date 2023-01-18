@@ -24,20 +24,9 @@ type BaseWeapon struct {
 	skill uo.Skill
 }
 
-// TypeName implements the util.Serializeable interface.
-func (w *BaseWeapon) TypeName() string {
-	return "BaseWeapon"
-}
-
 // ObjectType implements the Object interface.
 func (w *BaseWeapon) ObjectType() marshal.ObjectType {
 	return marshal.ObjectTypeWeapon
-}
-
-// Serialize implements the util.Serializeable interface.
-func (w *BaseWeapon) Serialize(f *util.TagFileWriter) {
-	w.BaseWearable.Serialize(f)
-	f.WriteNumber("Skill", int(w.skill))
 }
 
 // Marshal implements the marshal.Marshaler interface.

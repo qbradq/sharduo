@@ -25,11 +25,6 @@ type StaticItem struct {
 	hue uo.Hue
 }
 
-// TypeName implements the util.Serializeable interface.
-func (o *StaticItem) TypeName() string {
-	return "StaticItem"
-}
-
 // ObjectType implements the Object interface.
 func (o *StaticItem) ObjectType() marshal.ObjectType { return marshal.ObjectTypeStatic }
 
@@ -87,15 +82,6 @@ func (i *StaticItem) Facing() uo.Direction                              { return
 func (i *StaticItem) SetFacing(d uo.Direction)                          {}
 func (i *StaticItem) DisplayName() string                               { return i.def.Name }
 func (i *StaticItem) Weight() float32                                   { return 255.0 }
-
-// Serialize implements the util.Serializeable interface.
-func (i *StaticItem) Serialize(f *util.TagFileWriter) {
-	i.BaseSerializeable.Serialize(f)
-	// Owned properties
-	f.WriteNumber("Graphic", int(i.graphic))
-	f.WriteNumber("Hue", int(i.hue))
-	f.WriteLocation("Location", i.location)
-}
 
 // An empty event map so we don't have to allocate one every time.
 var _emptyEventHandlers = make(map[string]string)

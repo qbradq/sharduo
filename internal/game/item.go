@@ -140,26 +140,8 @@ type BaseItem struct {
 	dropLocation uo.Location
 }
 
-// TypeName implements the util.Serializeable interface.
-func (i *BaseItem) TypeName() string {
-	return "BaseItem"
-}
-
 // ObjectType implements the Object interface.
 func (i *BaseItem) ObjectType() marshal.ObjectType { return marshal.ObjectTypeItem }
-
-// Serialize implements the util.Serializeable interface.
-func (i *BaseItem) Serialize(f *util.TagFileWriter) {
-	i.BaseObject.Serialize(f)
-	f.WriteHex("Graphic", uint32(i.graphic))
-	f.WriteHex("FlippedGraphic", uint32(i.flippedGraphic))
-	f.WriteBool("Flipped", i.flipped)
-	f.WriteBool("Dyable", i.dyable)
-	f.WriteFloat("Weight", i.weight)
-	f.WriteBool("Stackable", i.stackable)
-	f.WriteNumber("Amount", i.amount)
-	f.WriteString("Plural", i.plural)
-}
 
 // Marshal implements the marshal.Marshaler interface.
 func (i *BaseItem) Marshal(s *marshal.TagFileSegment) {
