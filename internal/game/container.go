@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	ObjectFactory.RegisterCtor(func(v any) util.Serializeable { return &BaseContainer{} })
+	ObjectFactory.Add("BaseContainer", func() Object { return &BaseContainer{} })
 	marshal.RegisterCtor(marshal.ObjectTypeContainer, func() interface{} { return &BaseContainer{} })
 }
 

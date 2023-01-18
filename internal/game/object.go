@@ -8,10 +8,10 @@ import (
 	"github.com/qbradq/sharduo/lib/util"
 )
 
-var ObjectFactory = util.NewSerializeableFactory("objects")
+var ObjectFactory = util.NewFactory[string, Object]("object")
 
 func init() {
-	ObjectFactory.RegisterCtor(func(v any) util.Serializeable { return &BaseObject{} })
+	ObjectFactory.Add("BaseObject", func() Object { return &BaseObject{} })
 	marshal.RegisterCtor(marshal.ObjectTypeObject, func() interface{} { return &BaseObject{} })
 }
 

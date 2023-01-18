@@ -7,7 +7,7 @@ import (
 )
 
 func init() {
-	ObjectFactory.RegisterCtor(func(v any) util.Serializeable { return &BaseWeapon{} })
+	ObjectFactory.Add("BaseWeapon", func() Object { return &BaseWeapon{} })
 	marshal.RegisterCtor(marshal.ObjectTypeWeapon, func() interface{} { return &BaseWeapon{} })
 }
 

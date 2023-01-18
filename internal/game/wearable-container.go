@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	ObjectFactory.RegisterCtor(func(v any) util.Serializeable { return &WearableContainer{} })
+	ObjectFactory.Add("WearableContainer", func() Object { return &WearableContainer{} })
 	marshal.RegisterCtor(marshal.ObjectTypeWearableContainer, func() interface{} { return &WearableContainer{} })
 }
 

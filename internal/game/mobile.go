@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	ObjectFactory.RegisterCtor(func(v any) util.Serializeable { return &BaseMobile{} })
+	ObjectFactory.Add("BaseMobile", func() Object { return &BaseMobile{} })
 	marshal.RegisterCtor(marshal.ObjectTypeMobile, func() interface{} { return &BaseMobile{} })
 }
 

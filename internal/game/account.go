@@ -11,10 +11,6 @@ import (
 	"github.com/qbradq/sharduo/lib/util"
 )
 
-func init() {
-	ObjectFactory.RegisterCtor(func(v any) util.Serializeable { return &Account{} })
-}
-
 // Hashes a password suitable for the accounts database.
 func HashPassword(password string) string {
 	hd := sha256.Sum256([]byte(password))

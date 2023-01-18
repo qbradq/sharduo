@@ -7,7 +7,7 @@ import (
 )
 
 func init() {
-	ObjectFactory.RegisterCtor(func(v any) util.Serializeable { return &StaticItem{} })
+	ObjectFactory.Add("StaticItem", func() Object { return &StaticItem{} })
 	marshal.RegisterCtor(marshal.ObjectTypeStatic, func() interface{} { return &StaticItem{} })
 }
 

@@ -11,7 +11,7 @@ func init() {
 	giFactory.Ignore(0x000f) // Client flags
 }
 
-var giFactory = NewPacketFactory("general-information")
+var giFactory = &packetFactory{}
 
 func newGeneralInformation(in []byte) Packet {
 	scid := uo.Serial(GetUint16(in[0:2]))

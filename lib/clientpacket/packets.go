@@ -6,66 +6,36 @@ import (
 	"github.com/qbradq/sharduo/lib/util"
 )
 
+// Global packet registry
+var pf = &packetFactory{}
+
 func init() {
-	packetFactory.Register(0x02, newWalkRequest)
-	packetFactory.Register(0x06, newDoubleClick)
-	packetFactory.Register(0x07, newLiftRequest)
-	packetFactory.Register(0x08, newDropRequest)
-	packetFactory.Register(0x09, newSingleClick)
-	packetFactory.Register(0x13, newWearItemRequest)
-	packetFactory.Register(0x34, newPlayerStatusRequest)
-	packetFactory.Register(0x5D, newCharacterLogin)
-	packetFactory.Register(0x6C, newTargetResponse)
-	packetFactory.Register(0x73, newPing)
-	packetFactory.Register(0x80, newAccountLogin)
-	packetFactory.Register(0x91, newGameServerLogin)
-	packetFactory.Register(0xA0, newSelectServer)
-	packetFactory.Register(0xAD, newSpeech)
-	packetFactory.Ignore(0xB5) // Open chat window request
-	packetFactory.Register(0xBD, newVersion)
-	packetFactory.Register(0xBF, newGeneralInformation)
-	packetFactory.Register(0xC8, newClientViewRange)
-	packetFactory.Register(0xEF, newLoginSeed)
-	packetFactory.Register(0xF0, newProtocolExtension)
+	pf.Add(0x02, newWalkRequest)
+	pf.Add(0x06, newDoubleClick)
+	pf.Add(0x07, newLiftRequest)
+	pf.Add(0x08, newDropRequest)
+	pf.Add(0x09, newSingleClick)
+	pf.Add(0x13, newWearItemRequest)
+	pf.Add(0x34, newPlayerStatusRequest)
+	pf.Add(0x5D, newCharacterLogin)
+	pf.Add(0x6C, newTargetResponse)
+	pf.Add(0x73, newPing)
+	pf.Add(0x80, newAccountLogin)
+	pf.Add(0x91, newGameServerLogin)
+	pf.Add(0xA0, newSelectServer)
+	pf.Add(0xAD, newSpeech)
+	pf.Ignore(0xB5) // Open chat window request
+	pf.Add(0xBD, newVersion)
+	pf.Add(0xBF, newGeneralInformation)
+	pf.Add(0xC8, newClientViewRange)
+	pf.Add(0xEF, newLoginSeed)
+	pf.Add(0xF0, newProtocolExtension)
 }
 
 // Packet is the interface all client packets implement.
 type Packet interface {
 	util.Serialer
 }
-
-// PacketFactory creates client packets from slices of bytes
-type PacketFactory struct {
-	util.Factory[uo.Serial, []byte, Packet]
-}
-
-// NewPacketFactory creates a new PacketFactory ready for use
-func NewPacketFactory(name string) *PacketFactory {
-	return &PacketFactory{
-		*util.NewFactory[uo.Serial, []byte, Packet](name),
-	}
-}
-
-// Ignore ignores the given packet ID
-func (f *PacketFactory) Ignore(id uo.Serial) {
-	f.Add(id, func(in []byte) Packet {
-		p := &IgnoredPacket{}
-		p.SetSerial(id)
-		return p
-	})
-}
-
-// New creates a new client packet.
-func (f *PacketFactory) New(id uo.Serial, in []byte) Packet {
-	if p := f.Factory.New(id, in); p != nil {
-		return p
-	}
-	up := NewUnsupportedPacket(f.GetName(), in)
-	up.SetSerial(id)
-	return up
-}
-
-var packetFactory = NewPacketFactory("client")
 
 // New creates a new client packet based on data.
 func New(data []byte) Packet {
@@ -76,11 +46,11 @@ func New(data []byte) Packet {
 		length = int(dc.GetUint16(data[1:3]))
 		pdat = data[3:length]
 	} else if length == 0 {
-		return newUnknownPacket(packetFactory.GetName(), uo.Serial(data[0]))
+		return newUnknownPacket("client-packets", uo.Serial(data[0]))
 	} else {
 		pdat = data[1:length]
 	}
-	return packetFactory.New(uo.Serial(data[0]), pdat)
+	return pf.New(uo.Serial(data[0]), pdat)
 }
 
 // UnsupportedPacket is sent when the packet being decoded does not have a
