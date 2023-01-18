@@ -53,12 +53,13 @@ func (r *ClientPacketRequest) Execute() error {
 // message starting with the '[' character
 type SpeechCommandRequest struct {
 	BaseWorldRequest
-	Command Command
+	CommandLine string
 }
 
 // Execute implements the WorldRequest interface
 func (r *SpeechCommandRequest) Execute() error {
-	return r.Command.Execute(r.NetState)
+	ExecuteCommand(r.NetState, r.CommandLine)
+	return nil
 }
 
 // CharacterLoginRequest is sent by the server accepting a character login

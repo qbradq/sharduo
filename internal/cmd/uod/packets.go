@@ -43,20 +43,13 @@ func handleClientSpeech(c *PacketContext) {
 	}
 	if len(p.Text) > 1 {
 		if p.Text[0] == '[' {
-			cmd := ParseCommand(p.Text[1:])
-			if cmd != nil {
-				if err := cmd.Compile(); err != nil {
-					c.NetState.Speech(nil, err.Error())
-					return
-				}
-				world.SendRequest(&SpeechCommandRequest{
-					BaseWorldRequest: BaseWorldRequest{
-						NetState: c.NetState,
-					},
-					Command: cmd,
-				})
-				return
-			}
+			world.SendRequest(&SpeechCommandRequest{
+				BaseWorldRequest: BaseWorldRequest{
+					NetState: c.NetState,
+				},
+				CommandLine: p.Text[1:],
+			})
+			return
 		}
 	}
 	if c.NetState != nil && c.NetState.m != nil {

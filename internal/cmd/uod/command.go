@@ -2,123 +2,68 @@ package uod
 
 import (
 	"encoding/csv"
-	"errors"
-	"fmt"
 	"log"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/lib/clientpacket"
 	"github.com/qbradq/sharduo/lib/uo"
-	"github.com/qbradq/sharduo/lib/util"
 )
 
 func init() {
-	commandFactory.Add("bank", newBankCommand)
-	commandFactory.Add("debug", newDebugCommand)
-	commandFactory.Add("location", newLocationCommand)
-	commandFactory.Add("new", newNewCommand)
-	commandFactory.Add("save", newSaveCommand)
-	commandFactory.Add("static", newStaticCommand)
-	commandFactory.Add("teleport", newTeleportCommand)
+	commands["bank"] = commandBank
+	commands["location"] = commandLocation
+	commands["new"] = commandNew
+	commands["debug"] = commandDebug
+	commands["teleport"] = commandTeleport
+	commands["static"] = commandStatic
+	commands["save"] = commandSave
 }
 
-// Command is the interface all command objects implement
-type Command interface {
-	// Compile takes all appropriate steps that can be done in advance of
-	// command execution.
-	Compile() error
-	// Execute executes the command and should only be called after a call
-	// to Compile. Execute may be ran multiple times per object.
-	Execute(*NetState) error
-}
+// commandFunction is the signature of a command function
+type commandFunction func(*NetState, CommandArgs)
 
-// commandFactory manages the available commands
-var commandFactory = util.NewFactory[string, CommandArgs, Command]("commands")
+// commands is the mapping of command strings to commandFunction's
+var commands = make(map[string]commandFunction)
 
-// ParseCommand returns a Command object parsed from a command line
-func ParseCommand(line string) Command {
+// ExecuteCommand executes the command for the given command line
+func ExecuteCommand(n *NetState, line string) {
 	r := csv.NewReader(strings.NewReader(line))
 	r.Comma = ' ' // Space
 	c, err := r.Read()
 	if err != nil {
-		log.Println(err)
-		return nil
+		return
 	}
 	if len(c) == 0 {
-		return nil
+		return
 	}
-	return commandFactory.New(c[0], c)
-}
-
-// BaseCommand implements some basic command functionality
-type BaseCommand struct {
-	args CommandArgs
-}
-
-// LocationCommand reports the location of a target
-type LocationCommand struct {
-	BaseCommand
-}
-
-// newLocationCommand constructs a new LocationCommand
-func newLocationCommand(args CommandArgs) Command {
-	return &LocationCommand{
-		BaseCommand: BaseCommand{
-			args: args,
-		},
+	fn := commands[c[0]]
+	if fn != nil {
+		fn(n, c)
 	}
 }
 
-// Compile implements the Command interface
-func (c *LocationCommand) Compile() error {
-	return nil
-}
-
-// Execute implements the Command interface
-func (c *LocationCommand) Execute(n *NetState) error {
+func commandLocation(n *NetState, args CommandArgs) {
 	if n == nil {
-		return nil
+		return
 	}
 	n.TargetSendCursor(uo.TargetTypeLocation, func(r *clientpacket.TargetResponse) {
 		n.Speech(nil, "Location X=%d Y=%d Z=%d", r.X, r.Y, r.Z)
 	})
-	return nil
 }
 
-// NewCommand creates a new object from the named template
-type NewCommand struct {
-	BaseCommand
-}
-
-// newNewCommand constructs a new NewCommand
-func newNewCommand(args CommandArgs) Command {
-	return &NewCommand{
-		BaseCommand: BaseCommand{
-			args: args,
-		},
-	}
-}
-
-// Compile implements the Command interface
-func (c *NewCommand) Compile() error {
-	if len(c.args) < 2 || len(c.args) > 3 {
-		return fmt.Errorf("new command requires 2 or 3 arguments, got %d", len(c.args))
-	}
-	return nil
-}
-
-// Execute implements the Command interface
-func (c *NewCommand) Execute(n *NetState) error {
+func commandNew(n *NetState, args CommandArgs) {
 	if n == nil {
-		return nil
+		return
+	}
+	if len(args) < 2 || len(args) > 3 {
+		n.Speech(nil, "new command requires 2 or 3 arguments, got %d", len(args))
 	}
 	n.TargetSendCursor(uo.TargetTypeLocation, func(r *clientpacket.TargetResponse) {
-		o := world.New(c.args[1])
+		o := world.New(args[1])
 		if o == nil {
-			n.Speech(nil, "failed to create %s", c.args[1])
+			n.Speech(nil, "failed to create object with template %s", args[1])
 			return
 		}
 		o.SetLocation(uo.Location{
@@ -126,21 +71,21 @@ func (c *NewCommand) Execute(n *NetState) error {
 			Y: r.Y,
 			Z: r.Z,
 		})
-		if len(c.args) == 3 {
+		if len(args) == 3 {
 			item, ok := o.(game.Item)
 			if !ok {
-				n.Speech(nil, "amount specified for non-item %s", c.args[1])
+				n.Speech(nil, "amount specified for non-item %s", args[1])
 				return
 			}
 			if !item.Stackable() {
-				n.Speech(nil, "amount specified for non-stackable item %s", c.args[1])
+				n.Speech(nil, "amount specified for non-stackable item %s", args[1])
 				return
 			}
-			v, err := strconv.ParseInt(c.args[2], 0, 32)
-			if err != nil {
-				n.Speech(nil, err.Error())
+			v := args.Int(2)
+			if v < 1 {
+				v = 1
 			}
-			item.SetAmount(int(v))
+			item.SetAmount(v)
 		}
 		// Try to add the object to the map legit, but if that fails just force
 		// it so we don't leak it.
@@ -148,83 +93,55 @@ func (c *NewCommand) Execute(n *NetState) error {
 			world.Map().ForceAddObject(o)
 		}
 	})
-	return nil
 }
 
-// TeleportCommand teleports the user either by target to an absolute location
-type TeleportCommand struct {
-	BaseCommand
-	Targeted      bool
-	MultiTargeted bool
-	Location      uo.Location
-}
-
-// newTeleportCommand constructs a new TeleportCommand
-func newTeleportCommand(args CommandArgs) Command {
-	return &TeleportCommand{
-		BaseCommand: BaseCommand{
-			args: args,
-		},
-	}
-}
-
-// Compile implements the Command interface
-func (c *TeleportCommand) Compile() error {
-	c.Location.Z = uo.MapMaxZ
-	if len(c.args) > 4 {
-		return errors.New("teleport command expects a maximum of 3 arguments")
-	}
-	if len(c.args) == 4 {
-		z, err := strconv.ParseInt(c.args[3], 0, 32)
-		if err != nil {
-			return err
-		}
-		c.Location.Z = int(z)
-	}
-	if len(c.args) > 3 {
-		y, err := strconv.ParseInt(c.args[2], 0, 32)
-		if err != nil {
-			return err
-		}
-		c.Location.Y = int(y)
-		x, err := strconv.ParseInt(c.args[1], 0, 32)
-		if err != nil {
-			return err
-		}
-		c.Location.X = int(x)
-	}
-	if len(c.args) == 2 {
-		if c.args[1] == "multi" {
-			c.Targeted = true
-			c.MultiTargeted = true
-		} else {
-			return errors.New("incorrect usage of teleport command. Use [teleport (multi|X Y|X Y Z)")
-		}
-	}
-	if len(c.args) == 1 {
-		c.Targeted = true
-	}
-	return nil
-}
-
-// Execute implements the Command interface
-func (c *TeleportCommand) Execute(n *NetState) error {
+func commandTeleport(n *NetState, args CommandArgs) {
 	if n.m == nil {
-		return nil
+		return
 	}
-	if !c.Targeted {
-		if c.Location.Z == uo.MapMaxZ {
-			surface := world.Map().GetTopSurface(c.Location, uo.MapMaxZ)
-			c.Location.Z = surface.Z()
+	targeted := false
+	multi := false
+	l := uo.Location{}
+	l.Z = uo.MapMaxZ
+	if len(args) > 4 {
+		n.Speech(nil, "teleport command expects a maximum of 3 arguments")
+		return
+	}
+	if len(args) == 4 {
+		l.Z = args.Int(3)
+	}
+	if len(args) > 3 {
+		l.Y = args.Int(2)
+		l.X = args.Int(1)
+	}
+	if len(args) == 2 {
+		if args[1] == "multi" {
+			targeted = true
+			multi = true
+		} else {
+			n.Speech(nil, "incorrect usage of teleport command. Use [teleport (multi|X Y|X Y Z)")
+			return
 		}
-		if !world.Map().TeleportMobile(n.m, c.Location) {
-			return errors.New("something is blocking that location")
+	}
+	if len(args) == 1 {
+		targeted = true
+	}
+	l = l.Bound()
+	if !targeted {
+		if l.Z == uo.MapMaxZ {
+			l.Z = world.Map().GetTopSurface(l, uo.MapMaxZ).Z()
 		}
-		return nil
+		if !world.Map().TeleportMobile(n.m, l) {
+			n.Speech(nil, "something is blocking that location")
+		}
+		return
 	}
 
 	var fn func(*clientpacket.TargetResponse)
 	fn = func(r *clientpacket.TargetResponse) {
+		if n.m == nil {
+			return
+		}
 		if !world.Map().TeleportMobile(n.m, uo.Location{
 			X: r.X,
 			Y: r.Y,
@@ -232,37 +149,23 @@ func (c *TeleportCommand) Execute(n *NetState) error {
 		}) {
 			n.Speech(nil, "something is blocking that location")
 		}
-		if c.MultiTargeted {
+		if multi {
 			n.TargetSendCursor(uo.TargetTypeLocation, fn)
 		}
 	}
 	n.TargetSendCursor(uo.TargetTypeLocation, fn)
-
-	return nil
 }
 
-// DebugCommand is where I shove random test commands for development
-type DebugCommand struct {
-	BaseCommand
-}
-
-// newDebugCommand constructs a new DebugCommand
-func newDebugCommand(args CommandArgs) Command {
-	return &DebugCommand{
-		BaseCommand: BaseCommand{
-			args: args,
-		},
+func commandDebug(n *NetState, args CommandArgs) {
+	if n == nil || n.m == nil {
+		return
 	}
-}
-
-// Compile implements the Command interface
-func (c *DebugCommand) Compile() error {
-	if len(c.args) < 2 {
-		return errors.New("debug command requires a command name: [debug command_name")
+	// Sanitize input
+	if len(args) < 2 {
+		n.Speech(nil, "debug command requires a command name: [debug command_name")
+		return
 	}
-	switch c.args[1] {
-	case "marshal":
-		fallthrough
+	switch args[1] {
 	case "memory_test":
 		fallthrough
 	case "delay_test":
@@ -270,27 +173,21 @@ func (c *DebugCommand) Compile() error {
 	case "mount":
 		fallthrough
 	case "shirtbag":
-		if len(c.args) != 2 {
-			return fmt.Errorf("debug %s command requires 0 arguments", c.args[1])
+		if len(args) != 2 {
+			n.Speech(nil, "debug %s command requires 0 arguments", args[1])
+			return
 		}
 	case "splat":
-		if len(c.args) != 3 {
-			return errors.New("debug splat command requires 1 arguments")
+		if len(args) != 3 {
+			n.Speech(nil, "debug splat command requires 1 arguments")
+			return
 		}
 	default:
-		return fmt.Errorf("unknown debug command %s", c.args[1])
+		n.Speech(nil, "unknown debug command %s", args[1])
+		return
 	}
-	return nil
-}
-
-// Execute implements the Command interface
-func (c *DebugCommand) Execute(n *NetState) error {
-	if n == nil || n.m == nil || len(c.args) < 2 {
-		return nil
-	}
-	switch c.args[1] {
-	case "marshal":
-		world.Marshal()
+	// Execute command
+	switch args[1] {
 	case "memory_test":
 		start := time.Now()
 		for i := 0; i < 1_000_000; i++ {
@@ -338,17 +235,18 @@ func (c *DebugCommand) Execute(n *NetState) error {
 			shirt := world.New("FancyShirt")
 			shirt.SetLocation(uo.RandomContainerLocation)
 			if !world.Map().SetNewParent(shirt, backpack) {
-				return errors.New("failed to add an item to the backpack")
+				n.Speech(nil, "failed to add an item to the backpack")
+				break
 			}
 		}
 	case "splat":
-		start := time.Now().UnixMilli()
+		start := time.Now()
 		count := 0
 		for iy := n.m.Location().Y - 50; iy < n.m.Location().Y+50; iy++ {
 			for ix := n.m.Location().X - 50; ix < n.m.Location().X+50; ix++ {
-				o := world.New(c.args[2])
+				o := world.New(args[2])
 				if o == nil {
-					return fmt.Errorf("debug splat failed to create object %s", c.args[2])
+					n.Speech(nil, "debug splat failed to create object with template %s", args[2])
 				}
 				o.SetLocation(uo.Location{
 					X: ix,
@@ -359,50 +257,29 @@ func (c *DebugCommand) Execute(n *NetState) error {
 				count++
 			}
 		}
-		end := time.Now().UnixMilli()
-		n.Speech(nil, "generated %d items in %d milliseconds\n", count, end-start)
-	}
-	return nil
-}
-
-// BankCommand opens a mobile's bank box if it exists
-type BankCommand struct {
-	BaseCommand
-}
-
-// newBankCommand constructs a new BankCommand
-func newBankCommand(args CommandArgs) Command {
-	return &BankCommand{
-		BaseCommand: BaseCommand{
-			args: args,
-		},
+		end := time.Now()
+		n.Speech(nil, "generated %d items in %d milliseconds\n", count, end.Sub(start).Milliseconds())
 	}
 }
 
-// Compile implements the Command interface
-func (c *BankCommand) Compile() error {
-	return nil
-}
-
-// Execute implements the Command interface
-func (c *BankCommand) Execute(n *NetState) error {
-	if n == nil {
-		return nil
+func commandBank(n *NetState, args CommandArgs) {
+	if n == nil || n.m == nil {
+		return
 	}
 	n.TargetSendCursor(uo.TargetTypeObject, func(r *clientpacket.TargetResponse) {
 		o := world.Find(r.TargetObject)
 		if o == nil {
-			n.Speech(nil, "object %s not found", r.TargetObject)
+			n.Speech(nil, "object %s not found", r.TargetObject.String())
 			return
 		}
 		m, ok := o.(game.Mobile)
 		if !ok {
-			n.Speech(nil, "object %s not a mobile", r.TargetObject)
+			n.Speech(nil, "object %s not a mobile", r.TargetObject.String())
 			return
 		}
 		bw := m.EquipmentInSlot(uo.LayerBankBox)
 		if bw == nil {
-			n.Speech(nil, "mobile %s does not have a bank box", r.TargetObject)
+			n.Speech(nil, "mobile %s does not have a bank box", r.TargetObject.String())
 			return
 		}
 		box, ok := bw.(game.Container)
@@ -412,47 +289,19 @@ func (c *BankCommand) Execute(n *NetState) error {
 		}
 		box.Open(n.m)
 	})
-	return nil
 }
 
-// StaticCommand creates a StaticItem object at the targeted location with the
-// given graphic.
-type StaticCommand struct {
-	BaseCommand
-	// Graphic of the item to create
-	Graphic uo.Graphic
-}
-
-// newStaticCommand constructs a new StaticCommand
-func newStaticCommand(args CommandArgs) Command {
-	return &StaticCommand{
-		BaseCommand: BaseCommand{
-			args: args,
-		},
-		Graphic: uo.GraphicDefault,
-	}
-}
-
-// Compile implements the Command interface
-func (c *StaticCommand) Compile() error {
-	if len(c.args) != 2 {
-		return errors.New("usage: static item_id")
-	}
-	n, err := strconv.ParseInt(c.args[1], 0, 32)
-	if err != nil {
-		return err
-	}
-	c.Graphic = uo.Graphic(n)
-	if c.Graphic.IsNoDraw() {
-		return fmt.Errorf("refusing to create no-draw static 0x%04X", c.Graphic)
-	}
-	return nil
-}
-
-// Execute implements the Command interface
-func (c *StaticCommand) Execute(n *NetState) error {
+func commandStatic(n *NetState, args CommandArgs) {
 	if n == nil {
-		return nil
+		return
+	}
+	if len(args) != 2 {
+		n.Speech(nil, "usage: static item_id")
+		return
+	}
+	g := uo.Graphic(args.Int(1))
+	if g.IsNoDraw() {
+		n.Speech(nil, "refusing to create no-draw static 0x%04X", g)
 	}
 	n.TargetSendCursor(uo.TargetTypeLocation, func(r *clientpacket.TargetResponse) {
 		o := world.New("StaticItem")
@@ -465,7 +314,7 @@ func (c *StaticCommand) Execute(n *NetState) error {
 			n.Speech(nil, "StaticItem template was not an item")
 			return
 		}
-		i.SetBaseGraphic(c.Graphic)
+		i.SetBaseGraphic(g)
 		i.SetLocation(uo.Location{
 			X: r.X,
 			Y: r.Y,
@@ -473,30 +322,8 @@ func (c *StaticCommand) Execute(n *NetState) error {
 		})
 		world.Map().ForceAddObject(i)
 	})
-	return nil
 }
 
-// SaveCommand saves the state of the game
-type SaveCommand struct {
-	BaseCommand
-}
-
-// newSaveCommand constructs a new SaveCommand
-func newSaveCommand(args CommandArgs) Command {
-	return &SaveCommand{
-		BaseCommand: BaseCommand{
-			args: args,
-		},
-	}
-}
-
-// Compile implements the Command interface
-func (c *SaveCommand) Compile() error {
-	return nil
-}
-
-// Execute implements the Command interface
-func (c *SaveCommand) Execute(n *NetState) error {
+func commandSave(n *NetState, args CommandArgs) {
 	world.Marshal()
-	return nil
 }

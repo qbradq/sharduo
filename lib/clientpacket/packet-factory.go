@@ -34,10 +34,21 @@ func (f *packetFactory) Ignore(id byte) {
 
 // New creates a new client packet.
 func (f *packetFactory) New(id uo.Serial, in []byte) Packet {
-	if p := f.New(id, in); p != nil {
-		return p
+	if id > 0xFF {
+		log.Printf("error: packet id %08X out of range", id)
+		return nil
 	}
-	up := NewUnsupportedPacket("client-packets", in)
-	up.SetSerial(id)
-	return up
+	ctor := f.ctors[id]
+	if ctor == nil {
+		up := NewUnsupportedPacket("client-packets", in)
+		up.SetSerial(id)
+		return up
+	}
+	p := ctor(in)
+	if p == nil {
+		up := NewUnsupportedPacket("client-packets", in)
+		up.SetSerial(id)
+		return up
+	}
+	return p
 }

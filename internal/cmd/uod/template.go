@@ -270,34 +270,27 @@ func (m *TemplateManager) newObject(templateName string) game.Object {
 		return nil
 	}
 	// Create the object
-	s := game.ObjectFactory.New(t.typeName, nil)
+	s := game.ObjectFactory.New(t.typeName)
 	if s == nil {
 		log.Printf("error while creating object for type %s", t.typeName)
 		return nil
 	}
 	// If we've gotten here we at least have an uninitialized object of the
 	// proper type. We can return it in case of error.
-	if o, ok := s.(game.Object); ok {
-		o.SetObjectType(o.ObjectType())
-	}
+	s.SetObjectType(s.ObjectType())
 	// Deserialize the object.
 	s.Deserialize(tfo)
 	for _, err := range tfo.Errors() {
 		log.Println(err)
 	}
-
 	// Call the deserialization hook.
 	s.OnAfterDeserialize(tfo)
 	for _, err := range tfo.Errors() {
 		log.Println(err)
 	}
-
-	if o, ok := s.(game.Object); ok {
-		o.RecalculateStats()
-		return o
-	}
-
-	return nil
+	// Recalculate stats
+	s.RecalculateStats()
+	return s
 }
 
 func randomBool() bool {

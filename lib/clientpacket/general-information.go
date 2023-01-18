@@ -1,7 +1,7 @@
 package clientpacket
 
 import (
-	. "github.com/qbradq/sharduo/lib/dataconv"
+	dc "github.com/qbradq/sharduo/lib/dataconv"
 	"github.com/qbradq/sharduo/lib/uo"
 )
 
@@ -14,7 +14,7 @@ func init() {
 var giFactory = &packetFactory{}
 
 func newGeneralInformation(in []byte) Packet {
-	scid := uo.Serial(GetUint16(in[0:2]))
+	scid := uo.Serial(dc.GetUint16(in[0:2]))
 	data := in[2:]
 	return giFactory.New(scid, data)
 }

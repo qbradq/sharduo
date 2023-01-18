@@ -59,9 +59,9 @@ type World struct {
 func NewWorld(savePath string, rng uo.RandomSource) *World {
 	return &World{
 		m:             game.NewMap(),
-		ads:           util.NewDataStore[*game.Account]("accounts", rng, game.ObjectFactory),
+		ads:           util.NewDataStore[*game.Account]("accounts", rng),
 		aidx:          make(map[string]uo.Serial),
-		ods:           util.NewDataStore[game.Object]("objects", rng, game.ObjectFactory),
+		ods:           util.NewDataStore[game.Object]("objects", rng),
 		rng:           rng,
 		requestQueue:  make(chan WorldRequest, 1024*16),
 		savePath:      savePath,
@@ -96,176 +96,30 @@ func (w *World) latestSavePath() string {
 	return path.Join(w.savePath, e.Name())
 }
 
-// reportErrors logs all errors in the slice, then returns a single error with
-// a summary report.
-func (w *World) reportErrors(errs []error) error {
-	if len(errs) == 0 {
-		return nil
-	}
-	for _, err := range errs {
-		log.Println(err)
-	}
-	return fmt.Errorf("%d errors reported", len(errs))
-}
-
-// loadGlobalData loads all global data for the world.
-func (w *World) loadGlobalData(r io.Reader) []error {
-	tfr := &util.TagFileReader{}
-	tfr.StartReading(r)
-	tfo := tfr.ReadObject()
-	if tfo == nil {
-		return append(tfr.Errors(), errors.New("unable to load world object"))
-	}
-	w.time = uo.Time(tfo.GetULong("Time", uint64(uo.TimeEpoch)))
-	return tfo.Errors()
-}
-
-// Load loads all of the data stores that the world is responsible for.
-// ErrSaveFileLocked is returned when another goroutine is trying to save or
-// load. os.ErrNotExist is returned when there are no saves available to load.
-// nil is returned on success. An error describing how many errors were
-// encountered is returned if there are any.
-func (w *World) Load() error {
-	var errs []error
-	start := time.Now()
-
-	pf, err := os.Create("load.cpu.pprof")
-	if err != nil {
-		return err
-	}
-	if err := pprof.StartCPUProfile(pf); err != nil {
-		return err
-	}
-	defer pprof.StopCPUProfile()
-
+// Unmarshal reads in all of the data stores we are responsible for.
+func (w *World) Unmarshal() error {
 	if !w.lock.TryLock() {
 		return ErrSaveFileLocked
 	}
 	defer w.lock.Unlock()
 
-	filePath := w.latestSavePath()
-	sfr, err := util.NewSaveFileReaderByPath(filePath)
-	if err != nil {
-		return err
-	}
-	if err := sfr.Open(filePath); err != nil {
-		return err
-	}
-	log.Println("loading data stores from", filePath)
-
-	// Load global data
-	r, err := sfr.GetReader("world.ini")
-	if err != nil {
-		errs = append(errs, err)
-	} else {
-		errs = append(errs, w.loadGlobalData(r)...)
-	}
-	r.Close()
-
-	// Load account objects
-	r, err = sfr.GetReader("accounts.ini")
-	if err != nil {
-		errs = append(errs, err)
-	} else {
-		errs = append(errs, w.ads.Read(r)...)
-	}
-	r.Close()
-
-	// Load game objects
-	r, err = sfr.GetReader("objects.ini")
-	if err != nil {
-		errs = append(errs, err)
-	} else {
-		errs = append(errs, w.ods.Read(r)...)
-	}
-	r.Close()
-
-	// Load timers
-	r, err = sfr.GetReader("timers.ini")
-	if err != nil {
-		errs = append(errs, err)
-	} else {
-		errs = append(errs, game.ReadTimers(r)...)
-	}
-
-	// If there were errors trying to load objects into the data stores we
-	// should just stop now. There will be tons of dereferencing errors if we
-	// try to continue with deserialization.
-	if len(errs) > 0 {
-		for _, err := range errs {
-			log.Println(err)
-		}
-		log.Fatalf("found %d errors while allocating data store objects", len(errs))
-	}
-
-	// Deserialize all data stores
-	errs = append(errs, w.ods.Deserialize()...)
-	errs = append(errs, w.ads.Deserialize()...)
-
-	// If there were errors trying to deserialize any of our objects we need to
-	// report and bail.
-	if len(errs) > 0 {
-		for _, err := range errs {
-			log.Println(err)
-		}
-		log.Fatalf("found %d errors while deserializing data store objects", len(errs))
-	}
-
-	// Place all objects on the map
-	r, err = sfr.GetReader("map.ini")
-	if err != nil {
-		errs = append(errs, err)
-	} else {
-		errs = append(errs, w.m.Read(r)...)
-	}
-	r.Close()
-
-	// Call the deserialize hooks for all data stores
-	errs = append(errs, w.ods.OnAfterDeserialize()...)
-	errs = append(errs, w.ads.OnAfterDeserialize()...)
-
-	// If there were errors during the deserialize hooks we need to report and
-	// bail.
-	if len(errs) > 0 {
-		for _, err := range errs {
-			log.Println(err)
-		}
-		log.Fatalf("found %d errors while running deserialization hooks", len(errs))
-	}
-
-	// Call RecalculateStats for every object in the object data store
-	w.ods.Map(func(o game.Object) error {
-		o.RecalculateStats()
-		return nil
-	})
-
-	// Rebuild accounts index
-	w.ads.Map(func(a *game.Account) error {
-		w.aidx[a.Username()] = a.Serial()
-		return nil
-	})
-
-	if len(errs) == 0 {
-		end := time.Now()
-		elapsed := end.Sub(start).Round(time.Millisecond)
-		log.Printf("load operation complete in %ds%dms",
-			elapsed.Milliseconds()/1000, elapsed.Milliseconds()%1000)
-	}
-
-	return w.reportErrors(errs)
-}
-
-// Unmarshal reads in all of the data stores we are responsible for.
-func (w *World) Unmarshal() error {
 	start := time.Now()
 	filePath := w.latestSavePath()
-	d, err := os.ReadFile(filePath)
-	if d == nil {
-		return os.ErrNotExist
-	} else if err != nil {
+	gzf, err := os.Open(filePath)
+	if err != nil {
 		if strings.Contains(err.Error(), "handle is invalid") {
 			return os.ErrNotExist
 		}
+		return err
+	}
+	gz, err := gzip.NewReader(gzf)
+	if err != nil {
+		return err
+	}
+	d, err := io.ReadAll(gz)
+	if d == nil {
+		return os.ErrNotExist
+	} else if err != nil {
 		return err
 	}
 	end := time.Now()
@@ -314,111 +168,6 @@ func (w *World) Unmarshal() error {
 // getFileName returns the file name portion of the save path without extension.
 func (w *World) getFileName() string {
 	return time.Now().Format("2006-01-02_15-04-05")
-}
-
-// saveGlobalData saves all global data in tag file format.
-func (w *World) saveGlobalData(writer io.WriteCloser) []error {
-	tfw := util.NewTagFileWriter(writer)
-	tfw.WriteComment("global world data")
-	tfw.WriteBlankLine()
-	tfw.WriteSegmentHeader("Globals")
-	tfw.WriteULong("Time", uint64(w.time))
-	tfw.WriteBlankLine()
-	tfw.WriteComment("END OF FILE")
-	return nil
-}
-
-// Save saves all of the data stores that the world is responsible for
-func (w *World) Save() error {
-	var errs []error
-	start := time.Now()
-
-	pf, err := os.Create("save.cpu.pprof")
-	if err != nil {
-		return err
-	}
-	if err := pprof.StartCPUProfile(pf); err != nil {
-		return err
-	}
-	defer pprof.StopCPUProfile()
-
-	if !w.lock.TryLock() {
-		return ErrSaveFileLocked
-	}
-	defer w.lock.Unlock()
-
-	sfw, err := util.NewSaveFileWriter(configuration.GameSaveType)
-	if err != nil {
-		return err
-	}
-	filePath := path.Join(w.savePath, w.getFileName())
-	if err := sfw.Open(filePath); err != nil {
-		return err
-	}
-	log.Println("saving data stores to", filePath)
-
-	// Save global data
-	f, err := sfw.GetWriter("world.ini")
-	if err != nil {
-		errs = append(errs, err)
-	} else {
-		errs = append(errs, w.saveGlobalData(f)...)
-	}
-	f.Close()
-
-	// Save accounts
-	f, err = sfw.GetWriter("accounts.ini")
-	if err != nil {
-		errs = append(errs, err)
-	} else {
-		errs = append(errs, w.ads.Write(f)...)
-	}
-	f.Close()
-
-	// Save objects
-	f, err = sfw.GetWriter("objects.ini")
-	if err != nil {
-		errs = append(errs, err)
-	} else {
-		errs = append(errs, w.ods.Write(f)...)
-	}
-	f.Close()
-
-	// Save timers
-	f, err = sfw.GetWriter("timers.ini")
-	if err != nil {
-		errs = append(errs, err)
-	} else {
-		errs = append(errs, game.WriteTimers(f)...)
-	}
-	f.Close()
-
-	// Save the map
-	f, err = sfw.GetWriter("map.ini")
-	if err != nil {
-		errs = append(errs, err)
-	} else {
-		errs = append(errs, w.m.Write(f)...)
-	}
-	f.Close()
-
-	if len(errs) == 0 {
-		end := time.Now()
-		elapsed := end.Sub(start).Round(time.Millisecond)
-		log.Printf("save operation complete in %ds%dms",
-			elapsed.Milliseconds()/1000, elapsed.Milliseconds()%1000)
-	}
-
-	sfw.Close()
-
-	if len(errs) == 0 {
-		end := time.Now()
-		elapsed := end.Sub(start).Round(time.Millisecond)
-		log.Printf("save operation with flush to disk complete in %ds%dms",
-			elapsed.Milliseconds()/1000, elapsed.Milliseconds()%1000)
-	}
-
-	return w.reportErrors(errs)
 }
 
 // Marshal writes all of the data stores that the world is responsible for. A
@@ -470,8 +219,12 @@ func (w *World) Marshal() (*sync.WaitGroup, error) {
 	s = tf.Segment(marshal.SegmentAccounts)
 	wg.Add(1)
 	go func(s *marshal.TagFileSegment) {
-		// Accounting data in TagCollection format
-		w.ads.Marshal(s, 1, 0)
+		// Accounting data
+		for _, a := range w.ads.Data() {
+			a.Marshal(s)
+			s.PutTag(marshal.TagEndOfList, marshal.TagValueBool, true)
+			s.IncrementRecordCount()
+		}
 		wg.Done()
 	}(s)
 	saveGoroutines := 4

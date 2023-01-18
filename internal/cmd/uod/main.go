@@ -43,9 +43,13 @@ func trap() {
 			world.Stop()
 		} else {
 			// Last-ditch save attempt
-			log.Println("attempting last-ditch save from signal handler...")
-			if err := world.Save(); err != nil {
+			log.Println("attempting last-ditch save from signal handler")
+			wg, err := world.Marshal()
+			if err != nil {
 				log.Printf("last-ditch save from signal handler failed: %s", err.Error())
+			} else {
+				log.Printf("writing last-ditch save to disk")
+				wg.Wait()
 			}
 			os.Exit(0)
 		}
