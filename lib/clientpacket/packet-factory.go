@@ -2,8 +2,6 @@ package clientpacket
 
 import (
 	"log"
-
-	"github.com/qbradq/sharduo/lib/uo"
 )
 
 // packetFactory creates client packets from slices of bytes
@@ -26,14 +24,15 @@ func (f *packetFactory) Add(id byte, ctor func([]byte) Packet) {
 // Ignore ignores the given packet ID
 func (f *packetFactory) Ignore(id byte) {
 	f.Add(id, func(in []byte) Packet {
-		p := &IgnoredPacket{}
-		p.SetSerial(uo.Serial(id))
+		p := &IgnoredPacket{
+			basePacket: basePacket{id: id},
+		}
 		return p
 	})
 }
 
 // New creates a new client packet.
-func (f *packetFactory) New(id uo.Serial, in []byte) Packet {
+func (f *packetFactory) New(id byte, in []byte) Packet {
 	if id > 0xFF {
 		log.Printf("error: packet id %08X out of range", id)
 		return nil
@@ -41,13 +40,13 @@ func (f *packetFactory) New(id uo.Serial, in []byte) Packet {
 	ctor := f.ctors[id]
 	if ctor == nil {
 		up := NewUnsupportedPacket("client-packets", in)
-		up.SetSerial(id)
+		up.basePacket.id = id
 		return up
 	}
 	p := ctor(in)
 	if p == nil {
 		up := NewUnsupportedPacket("client-packets", in)
-		up.SetSerial(id)
+		up.basePacket.id = id
 		return up
 	}
 	return p

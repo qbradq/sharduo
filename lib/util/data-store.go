@@ -40,11 +40,6 @@ func (s *DataStore[K]) Data() map[uo.Serial]K {
 	return s.SerialPool.objects
 }
 
-// SetData throws away the underlying data store and replaces it.
-func (s *DataStore[K]) SetData(data map[uo.Serial]K) {
-	s.SerialPool.SetData(data)
-}
-
 // LoadMarshalData loads all of the object data from the given segment and
 // rebuilds the database with those objects. UnmarsahlObjects and
 // AfterUnmarshalObjects should be called afterwards to complete the load and

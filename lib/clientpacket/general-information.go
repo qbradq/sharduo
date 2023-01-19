@@ -1,10 +1,5 @@
 package clientpacket
 
-import (
-	dc "github.com/qbradq/sharduo/lib/dataconv"
-	"github.com/qbradq/sharduo/lib/uo"
-)
-
 func init() {
 	giFactory.Ignore(0x0005) // Client screen dimensions
 	giFactory.Ignore(0x000b) // Client language
@@ -14,7 +9,7 @@ func init() {
 var giFactory = &packetFactory{}
 
 func newGeneralInformation(in []byte) Packet {
-	scid := uo.Serial(dc.GetUint16(in[0:2]))
+	scid := in[0] // This field is two bytes long but never uses the second
 	data := in[2:]
 	return giFactory.New(scid, data)
 }

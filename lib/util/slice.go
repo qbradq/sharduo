@@ -1,7 +1,13 @@
 package util
 
+import "github.com/qbradq/sharduo/lib/uo"
+
+type SliceElement interface {
+	Serial() uo.Serial
+}
+
 // Slice is a generic wrapper around slices of objects
-type Slice[T Serialer] []T
+type Slice[T SliceElement] []T
 
 // Append appends a value to the slice and returns the slice
 func (s Slice[T]) Append(v T) Slice[T] {
@@ -33,11 +39,4 @@ func (s Slice[T]) Remove(v T) Slice[T] {
 // Contains returns true if the value v is found in the slice
 func (s Slice[T]) Contains(v T) bool {
 	return s.IndexOf(v) >= 0
-}
-
-// Copy returns a copy of the slice
-func (s Slice[T]) Copy() Slice[T] {
-	r := make([]T, len(s))
-	copy(r, s)
-	return r
 }

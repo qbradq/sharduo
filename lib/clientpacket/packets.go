@@ -3,7 +3,6 @@ package clientpacket
 import (
 	dc "github.com/qbradq/sharduo/lib/dataconv"
 	"github.com/qbradq/sharduo/lib/uo"
-	"github.com/qbradq/sharduo/lib/util"
 )
 
 // Global packet registry
@@ -34,7 +33,7 @@ func init() {
 
 // Packet is the interface all client packets implement.
 type Packet interface {
-	util.Serialer
+	ID() byte
 }
 
 // New creates a new client packet based on data.
@@ -46,67 +45,81 @@ func New(data []byte) Packet {
 		length = int(dc.GetUint16(data[1:3]))
 		pdat = data[3:length]
 	} else if length == 0 {
-		return newUnknownPacket("client-packets", uo.Serial(data[0]))
+		return newUnknownPacket("client-packets", data[0])
 	} else {
 		pdat = data[1:length]
 	}
-	return pf.New(uo.Serial(data[0]), pdat)
+	return pf.New(data[0], pdat)
 }
+
+// basePacket provides common functionality to all client packets.
+type basePacket struct {
+	id byte
+}
+
+// ID implements the Packet interface.
+func (p *basePacket) ID() byte { return p.id }
 
 // UnsupportedPacket is sent when the packet being decoded does not have a
 // constructor function yet.
 type UnsupportedPacket struct {
-	util.BaseSerialer
+	basePacket
 	PType string
 }
 
 // NewUnsupportedPacket creates a new UnsupportedPacket properly initialized.
 func NewUnsupportedPacket(ptype string, in []byte) *UnsupportedPacket {
-
 	p := &UnsupportedPacket{
-		PType: ptype,
+		basePacket: basePacket{id: in[0]},
+		PType:      ptype,
 	}
-	p.SetSerial(uo.Serial(in[0]))
 	return p
 }
 
 // UnknownPacket is sent when the packet being decoded has no length
 // information. This dc.Puts the packet stream in an inconsistent state.
 type UnknownPacket struct {
-	util.BaseSerialer
+	basePacket
 	PType string
 }
 
-func newUnknownPacket(ptype string, id uo.Serial) Packet {
+func newUnknownPacket(ptype string, id byte) Packet {
 	p := &UnknownPacket{
-		PType: ptype,
+		basePacket: basePacket{id: id},
+		PType:      ptype,
 	}
-	p.SetSerial(id)
 	return p
 }
 
 // MalformedPacket is sent when there is a non-specific decoding error.
 type MalformedPacket struct {
-	util.BaseSerialer
+	basePacket
 }
 
 // newMalformedPacket returns a new initialized MalformedPacket
-func newMalformedPacket(id uo.Serial) *MalformedPacket {
-	p := &MalformedPacket{}
-	p.SetSerial(id)
-	return p
+func newMalformedPacket(id byte) *MalformedPacket {
+	return &MalformedPacket{
+		basePacket: basePacket{id: id},
+	}
 }
 
 // IgnoredPacket is a packet that we could fetch all the data for, but we do
 // not have a struct nor a constructor, but it's OK for the server to ignore
 // this.
 type IgnoredPacket struct {
-	util.BaseSerialer
+	basePacket
+}
+
+// newIgnoredPacket constructs a new IgnoredPacket struct
+func newIgnoredPacket(id byte) *IgnoredPacket {
+	return &IgnoredPacket{
+		basePacket: basePacket{id: id},
+	}
 }
 
 // LoginSeed is the first packet sent to the login server
 type LoginSeed struct {
-	util.BaseSerialer
+	basePacket
 	// Connection seed
 	Seed uint32
 	// Version major part
@@ -120,21 +133,20 @@ type LoginSeed struct {
 }
 
 func newLoginSeed(in []byte) Packet {
-	p := &LoginSeed{
+	return &LoginSeed{
+		basePacket:   basePacket{id: in[0]},
 		Seed:         dc.GetUint32(in[0:4]),
 		VersionMajor: int(dc.GetUint32(in[4:8])),
 		VersionMinor: int(dc.GetUint32(in[8:12])),
 		VersionPatch: int(dc.GetUint32(in[12:16])),
 		VersionExtra: int(dc.GetUint32(in[16:20])),
 	}
-	p.SetSerial(0xEF)
-	return p
 }
 
 // AccountLogin is the second packet sent to the login server and attempts to
 // authenticate with a clear-text username and password o_O
 type AccountLogin struct {
-	util.BaseSerialer
+	basePacket
 	// Account username
 	Username string
 	// Account password in plain-text
@@ -142,33 +154,31 @@ type AccountLogin struct {
 }
 
 func newAccountLogin(in []byte) Packet {
-	p := &AccountLogin{
-		Username: dc.NullString(in[0:30]),
-		Password: dc.NullString(in[30:60]),
+	return &AccountLogin{
+		basePacket: basePacket{id: in[0]},
+		Username:   dc.NullString(in[0:30]),
+		Password:   dc.NullString(in[30:60]),
 	}
-	p.SetSerial(0x80)
-	return p
 }
 
 // SelectServer is used during the login process to request the connection
 // details of one of the servers on the list.
 type SelectServer struct {
-	util.BaseSerialer
+	basePacket
 	// Index is the index of the server on the list.
 	Index int
 }
 
 func newSelectServer(in []byte) Packet {
-	p := &SelectServer{
-		Index: int(dc.GetUint16(in[0:2])),
+	return &SelectServer{
+		basePacket: basePacket{id: in[0]},
+		Index:      int(dc.GetUint16(in[0:2])),
 	}
-	p.SetSerial(0xA0)
-	return p
 }
 
 // GameServerLogin is used to authenticate to the game server in clear text.
 type GameServerLogin struct {
-	util.BaseSerialer
+	basePacket
 	// Account username
 	Username string
 	// Account password in plain-text
@@ -178,33 +188,32 @@ type GameServerLogin struct {
 }
 
 func newGameServerLogin(in []byte) Packet {
-	p := &GameServerLogin{
-		Key:      uo.Serial(dc.GetUint32(in[:4])),
-		Username: dc.NullString(in[4:34]),
-		Password: dc.NullString(in[34:64]),
+	return &GameServerLogin{
+		basePacket: basePacket{id: in[0]},
+		Key:        uo.Serial(dc.GetUint32(in[:4])),
+		Username:   dc.NullString(in[4:34]),
+		Password:   dc.NullString(in[34:64]),
 	}
-	p.SetSerial(0x91)
-	return p
 }
 
 // CharacterLogin is used to request a character login.
 type CharacterLogin struct {
-	util.BaseSerialer
+	basePacket
 	// Character slot chosen
 	Slot int
 }
 
 func newCharacterLogin(in []byte) Packet {
 	p := &CharacterLogin{
-		Slot: int(dc.GetUint32(in[64:68])),
+		basePacket: basePacket{id: in[0]},
+		Slot:       int(dc.GetUint32(in[64:68])),
 	}
-	p.SetSerial(0x5D)
 	return p
 }
 
 // Version is used to communicate to the server the client's version string.
 type Version struct {
-	util.BaseSerialer
+	basePacket
 	// Version string
 	String string
 }
@@ -212,30 +221,30 @@ type Version struct {
 func newVersion(in []byte) Packet {
 	// Length check not required, it can be nil
 	p := &Version{
-		String: dc.NullString(in),
+		basePacket: basePacket{id: in[0]},
+		String:     dc.NullString(in),
 	}
-	p.SetSerial(0xBD)
 	return p
 }
 
 // Ping is used for TCP keepalive and possibly latency determination.
 type Ping struct {
-	util.BaseSerialer
+	basePacket
 	// Don't know what this is used for
 	Key byte
 }
 
 func newPing(in []byte) Packet {
 	p := &Ping{
-		Key: in[0],
+		basePacket: basePacket{id: in[0]},
+		Key:        in[0],
 	}
-	p.SetSerial(0x73)
 	return p
 }
 
 // Speech is sent by the client to request speech.
 type Speech struct {
-	util.BaseSerialer
+	basePacket
 	// Type of speech
 	Type uo.SpeechType
 	// Hue of the text
@@ -251,11 +260,11 @@ func newSpeech(in []byte) Packet {
 		return newMalformedPacket(0xAD)
 	}
 	s := &Speech{
-		Type: uo.SpeechType(in[0]),
-		Hue:  uo.Hue(dc.GetUint16(in[1:3])),
-		Font: uo.Font(dc.GetUint16(in[3:5])),
+		basePacket: basePacket{id: in[0]},
+		Type:       uo.SpeechType(in[0]),
+		Hue:        uo.Hue(dc.GetUint16(in[1:3])),
+		Font:       uo.Font(dc.GetUint16(in[3:5])),
 	}
-	s.SetSerial(0xAD)
 	if s.Type >= uo.SpeechTypeClientParsed {
 		if len(in) < 13 {
 			return newMalformedPacket(0xAD)
@@ -276,24 +285,24 @@ func newSpeech(in []byte) Packet {
 
 // SingleClick is sent by the client when the player single-clicks an object
 type SingleClick struct {
-	util.BaseSerialer
+	basePacket
 	// Object ID clicked on
-	ID uo.Serial
+	Object uo.Serial
 }
 
 func newSingleClick(in []byte) Packet {
 	p := &SingleClick{
-		ID: uo.Serial(dc.GetUint32(in)),
+		basePacket: basePacket{id: in[0]},
+		Object:     uo.Serial(dc.GetUint32(in)),
 	}
-	p.SetSerial(0x09)
 	return p
 }
 
 // DoubleClick is sent by the client when the player double-clicks an object
 type DoubleClick struct {
-	util.BaseSerialer
+	basePacket
 	// Object ID clicked on
-	ID uo.Serial
+	Object uo.Serial
 	// WantPaperDoll is true if this is a request for our own paper doll
 	WantPaperDoll bool
 }
@@ -303,17 +312,17 @@ func newDoubleClick(in []byte) Packet {
 	isPaperDoll := s.IsSelf()
 	s = s.StripSelfFlag()
 	p := &DoubleClick{
-		ID:            s,
+		basePacket:    basePacket{id: in[0]},
+		Object:        s,
 		WantPaperDoll: isPaperDoll,
 	}
-	p.SetSerial(0x06)
 	return p
 }
 
 // PlayerStatusRequest is sent by the client to request status and skills
 // updates.
 type PlayerStatusRequest struct {
-	util.BaseSerialer
+	basePacket
 	// Type of the request
 	StatusRequestType uo.StatusRequestType
 	// ID of the player's mobile
@@ -322,16 +331,16 @@ type PlayerStatusRequest struct {
 
 func newPlayerStatusRequest(in []byte) Packet {
 	p := &PlayerStatusRequest{
+		basePacket:        basePacket{id: in[0]},
 		StatusRequestType: uo.StatusRequestType(in[4]),
 		PlayerMobileID:    uo.Serial(dc.GetUint32(in[5:])),
 	}
-	p.SetSerial(0x34)
 	return p
 }
 
 // ClientViewRange is sent by the client to request a new view range.
 type ClientViewRange struct {
-	util.BaseSerialer
+	basePacket
 	// Requested view range, clamped to between 4 and 18 inclusive
 	Range int
 }
@@ -345,16 +354,16 @@ func newClientViewRange(in []byte) Packet {
 		r = 18
 	}
 	p := &ClientViewRange{
-		Range: r,
+		basePacket: basePacket{id: in[0]},
+		Range:      r,
 	}
-	p.SetSerial(0xC8)
 	return p
 }
 
 // WalkRequest is sent by the client to request walking or running in a
 // direction.
 type WalkRequest struct {
-	util.BaseSerialer
+	basePacket
 	// Direction to walk
 	Direction uo.Direction
 	// If true this is a run request
@@ -370,18 +379,18 @@ func newWalkRequest(in []byte) Packet {
 	r := d.IsRunning()
 	d = d.StripRunningFlag()
 	p := &WalkRequest{
+		basePacket:  basePacket{id: in[0]},
 		Direction:   d,
 		IsRunning:   r,
 		Sequence:    int(in[1]),
 		FastWalkKey: dc.GetUint32(in[2:]),
 	}
-	p.SetSerial(0x02)
 	return p
 }
 
 // TargetResponse is sent by the client to respond to a tardc.Geting cursor
 type TargetResponse struct {
-	util.BaseSerialer
+	basePacket
 	// Tardc.Get type
 	TargetType uo.TargetType
 	// Serial of this tardc.Geting request
@@ -403,6 +412,7 @@ type TargetResponse struct {
 
 func newTargetResponse(in []byte) Packet {
 	p := &TargetResponse{
+		basePacket:   basePacket{id: in[0]},
 		TargetType:   uo.TargetType(in[0]),
 		TargetSerial: uo.Serial(dc.GetUint32(in[1:5])),
 		CursorType:   uo.CursorType(in[5]),
@@ -412,13 +422,12 @@ func newTargetResponse(in []byte) Packet {
 		Z:            int(in[15]),
 		Graphic:      uo.Graphic(dc.GetUint16(in[16:18])),
 	}
-	p.SetSerial(0x6C)
 	return p
 }
 
 // LiftRequest is sent when the player lifts an item with the cursor.
 type LiftRequest struct {
-	util.BaseSerialer
+	basePacket
 	// Serial of the object to lift
 	Item uo.Serial
 	// Amount to lift
@@ -427,16 +436,16 @@ type LiftRequest struct {
 
 func newLiftRequest(in []byte) Packet {
 	p := &LiftRequest{
-		Item:   uo.Serial(dc.GetUint32(in[0:4])),
-		Amount: int(dc.GetUint16(in[4:6])),
+		basePacket: basePacket{id: in[0]},
+		Item:       uo.Serial(dc.GetUint32(in[0:4])),
+		Amount:     int(dc.GetUint16(in[4:6])),
 	}
-	p.SetSerial(0x07)
 	return p
 }
 
 // DropRequest is sent when the player drops an item from the cursor.
 type DropRequest struct {
-	util.BaseSerialer
+	basePacket
 	// Serial of the object to drop
 	Item uo.Serial
 	// X location to drop the item
@@ -452,20 +461,20 @@ type DropRequest struct {
 
 func newDropRequest(in []byte) Packet {
 	p := &DropRequest{
-		Item: uo.Serial(dc.GetUint32(in[0:4])),
-		X:    int(dc.GetUint16(in[4:6])),
-		Y:    int(dc.GetUint16(in[6:8])),
-		Z:    int(int8(in[8])),
+		basePacket: basePacket{id: in[0]},
+		Item:       uo.Serial(dc.GetUint32(in[0:4])),
+		X:          int(dc.GetUint16(in[4:6])),
+		Y:          int(dc.GetUint16(in[6:8])),
+		Z:          int(int8(in[8])),
 		// Skip one byte for the grid index
 		Container: uo.Serial(dc.GetUint32(in[10:14])),
 	}
-	p.SetSerial(0x08)
 	return p
 }
 
 // WearItemRequest is sent when the player drops an item onto a paper doll
 type WearItemRequest struct {
-	util.BaseSerialer
+	basePacket
 	// Serial of the item to wear
 	Item uo.Serial
 	// Serial of the mobile to equip the item to
@@ -474,10 +483,10 @@ type WearItemRequest struct {
 
 func newWearItemRequest(in []byte) Packet {
 	p := &WearItemRequest{
-		Item:   uo.Serial(dc.GetUint32(in[0:4])),
-		Wearer: uo.Serial(dc.GetUint32(in[5:9])),
+		basePacket: basePacket{id: in[0]},
+		Item:       uo.Serial(dc.GetUint32(in[0:4])),
+		Wearer:     uo.Serial(dc.GetUint32(in[5:9])),
 	}
-	p.SetSerial(0x13)
 	return p
 }
 
@@ -485,15 +494,15 @@ func newWearItemRequest(in []byte) Packet {
 // positions for the built-in world map. I think the latest versions of Razor,
 // UO Steam, and UOAM/UOPS do this as well.
 type ProtocolExtension struct {
-	util.BaseSerialer
+	basePacket
 	// Type of request
 	RequestType uo.ProtocolExtensionRequest
 }
 
 func newProtocolExtension(in []byte) Packet {
 	p := &ProtocolExtension{
+		basePacket:  basePacket{id: in[0]},
 		RequestType: uo.ProtocolExtensionRequest(in[0]),
 	}
-	p.SetSerial(0xF0)
 	return p
 }

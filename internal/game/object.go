@@ -8,26 +8,24 @@ import (
 	"github.com/qbradq/sharduo/lib/util"
 )
 
-var ObjectFactory = util.NewFactory[string, Object]("object")
+var objctors = make(map[string]func() Object)
 
 func init() {
-	ObjectFactory.Add("BaseObject", func() Object { return &BaseObject{} })
+	objctors["BaseObject"] = func() Object { return &BaseObject{} }
 	marshal.RegisterCtor(marshal.ObjectTypeObject, func() interface{} { return &BaseObject{} })
 }
 
 // Object is the interface every object in the game implements
 type Object interface {
-	util.Serializeable
-	marshal.Marshaler
-	marshal.Unmarshaler
-
-	// List of all events supported by basic Objects
+	// List of all events supported by all Objects
 	// OnDoubleClick....................Player double-clicks on object
 
 	//
 	// Parent / child relationships
 	//
 
+	// The serial of the object
+	Serial() uo.Serial
 	// Parent returns a pointer to the parent object of this object, or nil
 	// if the object is attached directly to the world
 	Parent() Object
@@ -38,8 +36,6 @@ type Object interface {
 	SetParent(Object)
 	// ObjectType returns the marshal.ObjectType associated with this struct.
 	ObjectType() marshal.ObjectType
-	// SetObjectType sets the marshal.ObjectType associated with this struct.
-	SetObjectType(marshal.ObjectType)
 	// TemplateName returns the name of the template used to create this object.
 	TemplateName() string
 
@@ -52,7 +48,7 @@ type Object interface {
 	LinkEvent(string, string)
 	// GetEventHandler returns the named link function or nil.
 	GetEventHandler(string) *func(Object, Object)
-	// RecalculateStats is called after an object has been deserialized and
+	// RecalculateStats is called after an object has been unmarshaled and
 	// should be used to recalculate dynamic attributes.
 	RecalculateStats()
 	// RemoveObject removes an object from this object. This is called when
@@ -110,9 +106,8 @@ type Object interface {
 // BaseObject is the base of all game objects and implements the Object
 // interface
 type BaseObject struct {
-	util.BaseSerializeable
-	// Object type code
-	otype marshal.ObjectType
+	// Unique serial of the object
+	serial uo.Serial
 	// Name of the template this object was constructed from
 	templateName string
 	// Parent object
@@ -138,13 +133,15 @@ type BaseObject struct {
 // ObjectType implements the Object interface.
 func (o *BaseObject) ObjectType() marshal.ObjectType { return marshal.ObjectTypeObject }
 
-// SetObjectType implements the Object interface.
-func (o *BaseObject) SetObjectType(t marshal.ObjectType) { o.otype = t }
-
 // SerialType implements the util.Serializeable interface.
 func (o *BaseObject) SerialType() uo.SerialType {
 	return uo.SerialTypeItem
 }
+
+// Serial implements the Object interface.
+func (o *BaseObject) Serial() uo.Serial { return o.serial }
+
+func whatAmI(o Object) marshal.ObjectType { return o.ObjectType() }
 
 // Marshal implements the marshal.Marshaler interface.
 func (o *BaseObject) Marshal(s *marshal.TagFileSegment) {
@@ -198,8 +195,7 @@ func (o *BaseObject) Deserialize(f *util.TagFileObject) {
 
 // Unmarshal implements the marshal.Unmarshaler interface.
 func (o *BaseObject) Unmarshal(to *marshal.TagObject) {
-	o.SetSerial(to.Serial)
-	o.otype = to.Type
+	o.serial = to.Serial
 	o.templateName = to.Template
 	o.name = to.Name
 	o.hue = to.Hue

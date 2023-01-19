@@ -6,33 +6,24 @@ import (
 	"github.com/qbradq/sharduo/lib/uo"
 )
 
-// SerialPool manages a pool of objects that implement the Serialer interface.
-type SerialPool[K Serialer] struct {
+type SerialPoolElement interface {
+	Serial() uo.Serial
+	SetSerial(uo.Serial)
+}
+
+// SerialPool manages a pool of objects
+type SerialPool[K SerialPoolElement] struct {
 	objects map[uo.Serial]K
 	sm      *uo.SerialManager
 	name    string
 }
 
 // NewSerialPool returns a new SerializeablePool object ready for use.
-func NewSerialPool[K Serialer](name string, rng uo.RandomSource) *SerialPool[K] {
+func NewSerialPool[K SerialPoolElement](name string, rng uo.RandomSource) *SerialPool[K] {
 	return &SerialPool[K]{
 		objects: make(map[uo.Serial]K),
 		sm:      uo.NewSerialManager(rng),
 		name:    name,
-	}
-}
-
-// SetData sets the underlying data store.
-func (p *SerialPool[K]) SetData(data map[uo.Serial]K) {
-	var zero K
-	// Don't leak objects
-	for k := range p.objects {
-		p.objects[k] = zero
-	}
-	p.objects = data
-	p.sm.Clear()
-	for k := range p.objects {
-		p.sm.Add(k)
 	}
 }
 
@@ -55,7 +46,9 @@ func (p *SerialPool[K]) Insert(o K, s uo.Serial) {
 
 // Remove removes the object from the pool, assigning it uo.SerialZero.
 func (p *SerialPool[K]) Remove(o K) {
+	var zero K
 	p.sm.Remove(o.Serial())
+	p.objects[o.Serial()] = zero
 	delete(p.objects, o.Serial())
 	o.SetSerial(uo.SerialZero)
 }
@@ -67,16 +60,4 @@ func (p *SerialPool[K]) Get(id uo.Serial) K {
 		return o
 	}
 	return zero
-}
-
-// Map executes fn on every object in the pool and returns a slice of all
-// non-nil return values.
-func (p *SerialPool[K]) Map(fn func(K) error) []error {
-	var ret []error
-	for _, o := range p.objects {
-		if err := fn(o); err != nil {
-			ret = append(ret, err)
-		}
-	}
-	return ret
 }

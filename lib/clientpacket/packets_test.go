@@ -47,7 +47,7 @@ func TestPackets(t *testing.T) {
 		if _, ok := p.(*UnsupportedPacket); ok {
 			t.Fatalf("Unsupported packet %X", test.id)
 		}
-		if test.id != int(p.Serial()) {
+		if test.id != int(p.ID()) {
 			t.Fatalf("Packet %X ID mismatch", test.id)
 		}
 		if test.testfn != nil {
