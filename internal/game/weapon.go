@@ -7,7 +7,7 @@ import (
 )
 
 func init() {
-	ObjectFactory.Add("BaseWeapon", func() Object { return &BaseWeapon{} })
+	objctors["BaseWeapon"] = func() Object { return &BaseWeapon{} }
 	marshal.RegisterCtor(marshal.ObjectTypeWeapon, func() interface{} { return &BaseWeapon{} })
 }
 

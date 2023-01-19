@@ -18,7 +18,7 @@ type Marshaler interface {
 type Unmarshaler interface {
 	// Unmarshal reads the binary representation of the object from the tag
 	// object.
-	Unmarshal(*TagObject)
+	Unmarshal(*TagFileSegment) *TagCollection
 	// AfterUnmarshal is called after Unmarshal.
-	AfterUnmarshal(*TagObject)
+	AfterUnmarshal(*TagCollection)
 }

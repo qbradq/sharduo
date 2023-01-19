@@ -261,35 +261,6 @@ func (s *TagFileSegment) PutBounds(b uo.Bounds) {
 	s.buf.Write(s.tbuf[0:10])
 }
 
-// PutObjectHeader writes an object header to the segment. See documentation for
-// TagFile for format description.
-func (s *TagFileSegment) PutObjectHeader(
-	otype ObjectType,
-	serial uo.Serial,
-	template string,
-	parent uo.Serial,
-	name string,
-	hue uo.Hue,
-	location uo.Location,
-	events map[string]string) {
-	buf := make([]byte, 7)
-	s.buf.WriteByte(byte(otype))
-	binary.LittleEndian.PutUint32(buf[0:4], uint32(serial))
-	s.buf.Write(buf[0:4])
-	s.buf.WriteString(template)
-	s.buf.WriteByte(0)
-	binary.LittleEndian.PutUint32(buf[0:4], uint32(parent))
-	s.buf.Write(buf[0:4])
-	s.buf.WriteString(name)
-	s.buf.WriteByte(0)
-	binary.LittleEndian.PutUint16(buf[0:2], uint16(hue))
-	binary.LittleEndian.PutUint16(buf[2:4], uint16(location.X))
-	binary.LittleEndian.PutUint16(buf[4:6], uint16(location.Y))
-	buf[6] = byte(int8(location.Z))
-	s.buf.Write(buf[0:7])
-	s.PutStringsMap(events)
-}
-
 // PutTag writes a tagged value to the segment. Please note that to write a
 // reference slice please use PutByte(byte(tag)), PutObjectReferences[I].
 func (s *TagFileSegment) PutTag(t Tag, tv TagValue, value interface{}) {
@@ -467,34 +438,6 @@ func (s *TagFileSegment) Bounds() uo.Bounds {
 		W: int(binary.LittleEndian.Uint16(s.tbuf[5:7])),
 		H: int(binary.LittleEndian.Uint16(s.tbuf[7:9])),
 		D: int(int8(s.tbuf[9])),
-	}
-}
-
-// TagObject returns the data of the next object encoded into the segment.
-func (s *TagFileSegment) TagObject() *TagObject {
-	otype := ObjectType(s.Byte())
-	serial := uo.Serial(s.Int())
-	template := s.String()
-	parent := uo.Serial(s.Int())
-	name := s.String()
-	hue := uo.Hue(s.Short())
-	location := uo.Location{
-		X: int(s.Short()),
-		Y: int(s.Short()),
-		Z: int(int8(s.Byte())),
-	}
-	events := s.StringMap()
-	tags := s.Tags()
-	return &TagObject{
-		Type:     otype,
-		Serial:   serial,
-		Template: template,
-		Parent:   parent,
-		Name:     name,
-		Hue:      hue,
-		Location: location,
-		Events:   events,
-		Tags:     tags,
 	}
 }
 

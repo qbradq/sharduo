@@ -7,14 +7,15 @@ import (
 )
 
 func init() {
-	ObjectFactory.Add("StaticItem", func() Object { return &StaticItem{} })
+	objctors["StaticItem"] = func() Object { return &StaticItem{} }
 	marshal.RegisterCtor(marshal.ObjectTypeStatic, func() interface{} { return &StaticItem{} })
 }
 
 // StaticItem is a light-weight Item implementation intended to be used for
 // non-functional decorative items.
 type StaticItem struct {
-	util.BaseSerializeable
+	// Serial of the item
+	serial uo.Serial
 	// Graphic of the item
 	graphic uo.Graphic
 	// Item definition
@@ -31,10 +32,13 @@ func (o *StaticItem) ObjectType() marshal.ObjectType { return marshal.ObjectType
 // SetObjectType implements the Object interface.
 func (o *StaticItem) SetObjectType(t marshal.ObjectType) {}
 
-// SerialType implements the util.Serializeable interface.
+// SerialType implements the Object interface.
 func (o *StaticItem) SerialType() uo.SerialType {
 	return uo.SerialTypeItem
 }
+
+// Serial implements the Object interface.
+func (o *StaticItem) Serial() uo.Serial { return o.serial }
 
 // Item interface
 // BaseGraphic implements the Item interface.

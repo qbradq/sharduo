@@ -134,14 +134,20 @@ func (w *World) Unmarshal() error {
 	// Timers
 	game.UnmarshalTimers(tf.Segment(marshal.SegmentTimers))
 	// Create objects in data stores
-	seg := marshal.SegmentObjectsStart
-	for {
-		s := tf.Segment(seg)
-		if s.IsEmpty() {
-			break
+	s = tf.Segment(marshal.SegmentObjectList)
+	for i := uint32(0); i < s.RecordCount(); i++ {
+		serial := uo.Serial(s.Int())
+		otype := marshal.ObjectType(s.Byte())
+		ctor := marshal.Constructor(otype)
+		if ctor == nil {
+			return fmt.Errorf("error: object %s of type %d constructor not found", serial.String(), otype)
 		}
-		w.ods.LoadMarshalData(s)
-		seg++
+		v := ctor()
+		o, ok := v.(game.Object)
+		if !ok {
+			return fmt.Errorf("error: object %s of type %d does not implement the Object interface", serial.String(), otype)
+		}
+		w.ods.Insert(o, o.Serial())
 	}
 	// Unmarshal objects in the datastores
 	w.ods.UnmarshalObjects()
@@ -205,7 +211,7 @@ func (w *World) Marshal() (*sync.WaitGroup, error) {
 	s := tf.Segment(marshal.SegmentWorld)
 	wg.Add(1)
 	go func(s *marshal.TagFileSegment) {
-		// Raw data for globals, treat this with kid gloves
+		// Global data
 		s.PutLong(uint64(w.time))
 		wg.Done()
 	}(s)
@@ -226,6 +232,16 @@ func (w *World) Marshal() (*sync.WaitGroup, error) {
 			s.IncrementRecordCount()
 		}
 		wg.Done()
+	}(s)
+	s = tf.Segment(marshal.SegmentObjectList)
+	wg.Add(1)
+	go func(s *marshal.TagFileSegment) {
+		// Object list
+		for _, o := range objects {
+			s.PutInt(uint32(o.Serial()))
+			s.PutByte(byte(o.ObjectType()))
+			s.IncrementRecordCount()
+		}
 	}(s)
 	saveGoroutines := 4
 	for i := 0; i < saveGoroutines; i++ {

@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	ObjectFactory.Add("WearableContainer", func() Object { return &WearableContainer{} })
+	objctors["WearableContainer"] = func() Object { return &WearableContainer{} }
 	marshal.RegisterCtor(marshal.ObjectTypeWearableContainer, func() interface{} { return &WearableContainer{} })
 }
 
@@ -45,11 +45,6 @@ func (s *WearableContainer) Deserialize(f *util.TagFileObject) {
 func (i *WearableContainer) Unmarshal(to *marshal.TagObject) {
 	i.BaseContainer.Unmarshal(to)
 	i.layer = uo.Layer(to.Tags.Byte(marshal.TagLayer))
-}
-
-// OnAfterDeserialize implements the util.Serializeable interface.
-func (s *WearableContainer) OnAfterDeserialize(f *util.TagFileObject) {
-	s.BaseContainer.OnAfterDeserialize(f)
 }
 
 // Layer implements the Layerer interface.

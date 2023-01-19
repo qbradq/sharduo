@@ -1,13 +1,10 @@
 package game
 
 import (
-	"errors"
-	"fmt"
-	"io"
+	"log"
 
 	"github.com/qbradq/sharduo/internal/marshal"
 	"github.com/qbradq/sharduo/lib/uo"
-	"github.com/qbradq/sharduo/lib/util"
 )
 
 func init() {
@@ -94,69 +91,6 @@ func UpdateTimers(now uo.Time) {
 	fn(timerPools[1+mediumSpeedTimerPoolsCount+(int(now)%lowSpeedTimerPoolsCount)])
 }
 
-// WriteTimers writes all timers to an io.WriteCloser in list file format. This
-// function always returns a nil slice. This is for compatibility with other
-// similar functions.
-func WriteTimers(w io.WriteCloser) []error {
-	lfw := util.NewListFileWriter(w)
-	defer lfw.Close()
-
-	lfw.WriteComment("compact timer data")
-	lfw.WriteBlankLine()
-	lfw.WriteSegmentHeader("Timers")
-	for pool, timers := range timerPools {
-		for s, t := range timers {
-			lfw.WriteLine(fmt.Sprintf("%d,%d,%d,%d,%d,%s", s, pool, t.deadline, t.receiver, t.source, t.event))
-		}
-	}
-	lfw.WriteBlankLine()
-	lfw.WriteComment("END OF FILE")
-	return nil
-}
-
-// ReadTimers reads all timers from an io.Reader in list file format
-func ReadTimers(r io.Reader) []error {
-	var ret []error
-	lfr := &util.ListFileReader{}
-	lfr.StartReading(r)
-	header := lfr.StreamNextSegmentHeader()
-	if header == "" {
-		return append(lfr.Errors(), errors.New("expected segment header while reading timers"))
-	}
-	for {
-		line := lfr.StreamNextEntry()
-		if line == "" {
-			break
-		}
-		var serial, pool, receiver, source int
-		var deadline uint64
-		var event string
-		if n, err := fmt.Sscanf(line+"\n", "%d,%d,%d,%d,%d,%s",
-			&serial, &pool, &deadline, &receiver, &source, &event); n != 6 || err != nil {
-			if err != nil {
-				ret = append(ret, err)
-			}
-			continue
-		}
-		s := uo.Serial(serial)
-		if pool < 0 || pool >= len(timerPools) {
-			ret = append(ret, fmt.Errorf("timer %s pool %d out of range", s.String(), pool))
-			continue
-		}
-		if _, duplicate := timerPools[pool][s]; duplicate {
-			ret = append(ret, fmt.Errorf("timer %s is a duplicate in pool %d", s.String(), pool))
-			continue
-		}
-		timerPools[pool][s] = &Timer{
-			deadline: uo.Time(deadline),
-			event:    event,
-			receiver: uo.Serial(receiver),
-			source:   uo.Serial(source),
-		}
-	}
-	return append(ret, lfr.Errors()...)
-}
-
 // MarshalTimers writes all timers to the segment.
 func MarshalTimers(s *marshal.TagFileSegment) {
 	for pool, timers := range timerPools {
@@ -181,6 +115,15 @@ func UnmarshalTimers(s *marshal.TagFileSegment) {
 		receiver := uo.Serial(s.Int())
 		source := uo.Serial(s.Int())
 		event := s.String()
+		s := uo.Serial(serial)
+		if pool < 0 || pool >= len(timerPools) {
+			log.Printf("timer %s pool %d out of range", s.String(), pool)
+			continue
+		}
+		if _, duplicate := timerPools[pool][s]; duplicate {
+			log.Printf("timer %s is a duplicate in pool %d", s.String(), pool)
+			continue
+		}
 		timerPools[pool][serial] = &Timer{
 			deadline: deadline,
 			event:    event,

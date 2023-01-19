@@ -9,6 +9,7 @@ const (
 	SegmentMap          Segment = 1
 	SegmentTimers       Segment = 2
 	SegmentWorld        Segment = 3
+	SegmentObjectList   Segment = 4
 	SegmentObjectsStart Segment = 0x7F // THIS MUST BE THE LAST ENTRY!
 )
 

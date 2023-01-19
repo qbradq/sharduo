@@ -17,6 +17,9 @@ func init() {
 
 // Object is the interface every object in the game implements
 type Object interface {
+	marshal.Marshaler
+	marshal.Unmarshaler
+
 	// List of all events supported by all Objects
 	// OnDoubleClick....................Player double-clicks on object
 
@@ -149,24 +152,28 @@ func (o *BaseObject) Marshal(s *marshal.TagFileSegment) {
 	if o.parent != nil {
 		ps = o.parent.Serial()
 	}
-	s.PutObjectHeader(
-		o.otype,
-		o.Serial(),
-		o.templateName,
-		ps,
-		o.name,
-		o.hue,
-		o.location,
-		o.eventHandlers)
+	s.PutString(o.templateName)
+	s.PutInt(uint32(ps))
+	s.PutString(o.name)
+	s.PutShort(uint16(o.hue))
+	s.PutLocation(o.location)
+	s.PutStringsMap(o.eventHandlers)
 	s.PutTag(marshal.TagArticleA, marshal.TagValueBool, o.articleA)
 	s.PutTag(marshal.TagArticleAn, marshal.TagValueBool, o.articleAn)
 	s.PutTag(marshal.TagFacing, marshal.TagValueByte, byte(o.facing))
 }
 
+// deserializeEvent attempts to deserialize the named event handler
+func (o *BaseObject) deserializeEvent(which string, tfo *util.TagFileObject) {
+	eventName := tfo.GetString(which, "")
+	if eventName == "" {
+		return
+	}
+	o.LinkEvent(which, eventName)
+}
+
 // Deserialize implements the util.Serializeable interface.
 func (o *BaseObject) Deserialize(f *util.TagFileObject) {
-	o.BaseSerializeable.Deserialize(f)
-	// Owned properties
 	o.templateName = f.GetString("TemplateName", "")
 	if o.templateName == "" {
 		// Something is very wrong
@@ -194,16 +201,26 @@ func (o *BaseObject) Deserialize(f *util.TagFileObject) {
 }
 
 // Unmarshal implements the marshal.Unmarshaler interface.
-func (o *BaseObject) Unmarshal(to *marshal.TagObject) {
-	o.serial = to.Serial
-	o.templateName = to.Template
-	o.name = to.Name
-	o.hue = to.Hue
-	o.location = to.Location
-	o.articleA = to.Tags.Bool(marshal.TagArticleA)
-	o.articleAn = to.Tags.Bool(marshal.TagArticleAn)
-	o.facing = uo.Direction(to.Tags.Byte(marshal.TagFacing))
-	o.eventHandlers = to.Events
+func (o *BaseObject) Unmarshal(s *marshal.TagFileSegment) *marshal.TagCollection {
+	o.templateName = s.String()
+	ps := uo.Serial(s.Int())
+	if ps == uo.SerialSystem {
+		o.parent = nil
+	} else if ps == uo.SerialZero {
+		log.Printf("warning: object %s has no parent", o.Serial().String())
+		o.parent = nil
+	} else {
+		o.parent = world.Find(ps)
+	}
+	o.name = s.String()
+	o.hue = uo.Hue(s.Short())
+	o.location = s.Location()
+	o.eventHandlers = s.StringMap()
+	tags := s.Tags()
+	o.articleA = tags.Bool(marshal.TagArticleA)
+	o.articleAn = tags.Bool(marshal.TagArticleAn)
+	o.facing = uo.Direction(tags.Byte(marshal.TagFacing))
+	return tags
 }
 
 // AfterUnmarshal implements the marshal.Unmarshaler interface.
@@ -321,15 +338,6 @@ func (o *BaseObject) Facing() uo.Direction { return o.facing }
 // SetFacing implements the Object interface
 func (o *BaseObject) SetFacing(f uo.Direction) {
 	o.facing = f.Bound()
-}
-
-// deserializeEvent attempts to deserialize the named event handler
-func (o *BaseObject) deserializeEvent(which string, tfo *util.TagFileObject) {
-	eventName := tfo.GetString(which, "")
-	if eventName == "" {
-		return
-	}
-	o.LinkEvent(which, eventName)
 }
 
 // LinkEvent implements the Object interface

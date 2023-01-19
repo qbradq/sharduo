@@ -7,7 +7,7 @@ import (
 )
 
 func init() {
-	ObjectFactory.Add("BaseWearable", func() Object { return &BaseWearable{} })
+	objctors["BaseWearable"] = func() Object { return &BaseWearable{} }
 	marshal.RegisterCtor(marshal.ObjectTypeWearable, func() interface{} { return &BaseWearable{} })
 }
 
