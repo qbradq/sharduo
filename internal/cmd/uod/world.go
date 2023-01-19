@@ -149,10 +149,21 @@ func (w *World) Unmarshal() error {
 		}
 		w.ods.Insert(o, o.Serial())
 	}
-	// Unmarshal objects in the datastores
-	w.ods.UnmarshalObjects()
-	// Call the AfterUnmarshal hook on all objects in the datastores
+	// Unmarshal objects in the datastore
+	seg := marshal.SegmentObjectsStart
+	for {
+		s := tf.Segment(seg)
+		if s.IsEmpty() {
+			break
+		}
+		w.ods.UnmarshalObjects(s)
+	}
+	// Call the AfterUnmarshal hook on all objects in the datastore
 	w.ods.AfterUnmarshalObjects()
+	// Call RecalculateStats on all objects in the datastore
+	for _, o := range w.ods.Data() {
+		o.RecalculateStats()
+	}
 	// Let the map accumulate all of it's child objects
 	w.m.Unmarshal(tf.Segment(marshal.SegmentMap))
 	// Rebuild accounts dataset
@@ -245,7 +256,7 @@ func (w *World) Marshal() (*sync.WaitGroup, error) {
 	}(s)
 	saveGoroutines := 4
 	for i := 0; i < saveGoroutines; i++ {
-		// Object data in TagObject format
+		// Object data
 		s = tf.Segment(marshal.SegmentObjectsStart + marshal.Segment(i))
 		wg.Add(1)
 		go func(s *marshal.TagFileSegment, pool int) {
@@ -262,10 +273,11 @@ func (w *World) Marshal() (*sync.WaitGroup, error) {
 	s = tf.Segment(marshal.SegmentMap)
 	go func(s *marshal.TagFileSegment) {
 		// Raw data for map object list
-		for i := 0; i < len(objects); i++ {
-			o := objects[i]
-			s.PutInt(uint32(o.Serial()))
-			s.IncrementRecordCount()
+		for _, o := range objects {
+			if o.Parent() == nil {
+				s.PutInt(uint32(o.Serial()))
+				s.IncrementRecordCount()
+			}
 		}
 		wg.Done()
 	}(s)

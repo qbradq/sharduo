@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	ObjectFactory.Add("BaseContainer", func() Object { return &BaseContainer{} })
+	objctors["BaseContainer"] = func() Object { return &BaseContainer{} }
 	marshal.RegisterCtor(marshal.ObjectTypeContainer, func() interface{} { return &BaseContainer{} })
 }
 
@@ -91,21 +91,7 @@ func (c *BaseContainer) Deserialize(f *util.TagFileObject) {
 	c.maxContainerWeight = f.GetFloat("MaxContainerWeight", float32(uo.DefaultMaxContainerWeight))
 	c.maxContainerItems = f.GetNumber("MaxContainerItems", uo.DefaultMaxContainerItems)
 	c.bounds = f.GetBounds("Bounds", uo.Bounds{X: 44, Y: 65, W: 142, H: 94})
-}
-
-// Unmarshal implements the marshal.Unmarshaler interface.
-func (c *BaseContainer) Unmarshal(o *marshal.TagObject) {
-	c.BaseItem.Unmarshal(o)
-	c.gump = uo.Gump(o.Tags.Short(marshal.TagGump))
-	c.maxContainerWeight = float32(o.Tags.Int(marshal.TagWeight)) / float32(1000.0)
-	c.maxContainerItems = int(o.Tags.Short(marshal.TagAmount))
-	c.bounds = o.Tags.Bounds(marshal.TagBounds)
-}
-
-// OnAfterDeserialize implements the util.Serializeable interface.
-func (c *BaseContainer) OnAfterDeserialize(t *util.TagFileObject) {
-	c.BaseItem.OnAfterDeserialize(t)
-	for _, serial := range t.GetObjectReferences("Contents") {
+	for _, serial := range f.GetObjectReferences("Contents") {
 		o := world.Find(serial)
 		if o == nil {
 			log.Printf("failed to link object 0x%X into container", serial)
@@ -118,10 +104,20 @@ func (c *BaseContainer) OnAfterDeserialize(t *util.TagFileObject) {
 	}
 }
 
+// Unmarshal implements the marshal.Unmarshaler interface.
+func (c *BaseContainer) Unmarshal(s *marshal.TagFileSegment) *marshal.TagCollection {
+	tags := c.BaseItem.Unmarshal(s)
+	c.gump = uo.Gump(tags.Short(marshal.TagGump))
+	c.maxContainerWeight = float32(tags.Int(marshal.TagWeight)) / float32(1000.0)
+	c.maxContainerItems = int(tags.Short(marshal.TagAmount))
+	c.bounds = tags.Bounds(marshal.TagBounds)
+	return tags
+}
+
 // AfterUnmarshal implements the marshal.Unmarshaler interface.
-func (c *BaseContainer) AfterUnmarshal(to *marshal.TagObject) {
-	c.BaseItem.AfterUnmarshal(to)
-	serials := to.Tags.ReferenceSlice(marshal.TagContents)
+func (c *BaseContainer) AfterUnmarshal(tags *marshal.TagCollection) {
+	c.BaseItem.AfterUnmarshal(tags)
+	serials := tags.ReferenceSlice(marshal.TagContents)
 	for _, s := range serials {
 		o := world.Find(s)
 		if o == nil {
@@ -143,6 +139,7 @@ func (c *BaseContainer) RecalculateStats() {
 	c.contentItems = len(c.contents)
 	for _, item := range c.contents {
 		c.contentWeight += item.Weight()
+		c.contentItems++
 		if container, ok := item.(Container); ok {
 			container.RecalculateStats()
 			c.contentItems += container.ItemCount()

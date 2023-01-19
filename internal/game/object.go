@@ -27,8 +27,10 @@ type Object interface {
 	// Parent / child relationships
 	//
 
-	// The serial of the object
+	// Serial returns the serial of the object
 	Serial() uo.Serial
+	// SetSerial sets the serial of the object, only used during object creation
+	SetSerial(uo.Serial)
 	// Parent returns a pointer to the parent object of this object, or nil
 	// if the object is attached directly to the world
 	Parent() Object
@@ -144,7 +146,8 @@ func (o *BaseObject) SerialType() uo.SerialType {
 // Serial implements the Object interface.
 func (o *BaseObject) Serial() uo.Serial { return o.serial }
 
-func whatAmI(o Object) marshal.ObjectType { return o.ObjectType() }
+// SetSerial implements the Object interface.
+func (o *BaseObject) SetSerial(s uo.Serial) { o.serial = s }
 
 // Marshal implements the marshal.Marshaler interface.
 func (o *BaseObject) Marshal(s *marshal.TagFileSegment) {
@@ -224,15 +227,7 @@ func (o *BaseObject) Unmarshal(s *marshal.TagFileSegment) *marshal.TagCollection
 }
 
 // AfterUnmarshal implements the marshal.Unmarshaler interface.
-func (o *BaseObject) AfterUnmarshal(to *marshal.TagObject) {
-	if to.Parent == uo.SerialSystem {
-		o.parent = nil
-	} else if to.Parent == uo.SerialZero {
-		log.Printf("warning: object %s has no parent", o.Serial().String())
-	} else {
-		o.parent = world.Find(to.Parent)
-	}
-}
+func (o *BaseObject) AfterUnmarshal(tags *marshal.TagCollection) {}
 
 // Parent implements the Object interface
 func (o *BaseObject) Parent() Object { return o.parent }

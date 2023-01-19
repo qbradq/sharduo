@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	ObjectFactory.Add("BaseMobile", func() Object { return &BaseMobile{} })
+	objctors["BaseMobile"] = func() Object { return &BaseMobile{} }
 	marshal.RegisterCtor(marshal.ObjectTypeMobile, func() interface{} { return &BaseMobile{} })
 }
 
@@ -306,35 +306,6 @@ func (m *BaseMobile) Deserialize(f *util.TagFileObject) {
 	for s := uo.SkillFirst; s <= uo.SkillLast; s++ {
 		m.skills[s] = int16(f.GetNumber("Skill"+uo.SkillNames[s], 0))
 	}
-}
-
-// Unmarshal implements the marshal.Unmarshaler interface.
-func (m *BaseMobile) Unmarshal(to *marshal.TagObject) {
-	m.BaseObject.Unmarshal(to)
-	m.cursor = &Cursor{}
-	m.viewRange = uo.BoundViewRange(int(to.Tags.Byte(marshal.TagViewRange)))
-	m.isPlayerCharacter = to.Tags.Bool(marshal.TagIsPlayerCharacter)
-	m.isFemale = to.Tags.Bool(marshal.TagIsFemale)
-	m.body = uo.Body(to.Tags.Short(marshal.TagBody))
-	m.notoriety = uo.Notoriety(to.Tags.Byte(marshal.TagNotoriety))
-	m.baseStrength = int(to.Tags.Short(marshal.TagStrength))
-	m.baseDexterity = int(to.Tags.Short(marshal.TagDexterity))
-	m.baseIntelligence = int(to.Tags.Short(marshal.TagIntelligence))
-	m.hitPoints = int(to.Tags.Short(marshal.TagStrength))
-	m.stamina = int(to.Tags.Short(marshal.TagStrength))
-	m.mana = int(to.Tags.Short(marshal.TagStrength))
-	m.skills = to.Tags.ShortSlice(marshal.TagSkills)
-	if len(m.skills) < int(uo.SkillCount) {
-		s := make([]int16, uo.SkillCount)
-		copy(s, m.skills)
-	} else if len(m.skills) > int(uo.SkillCount) {
-		m.skills = m.skills[0:uo.SkillCount]
-	}
-}
-
-// OnAfterDeserialize implements the util.Serializeable interface.
-func (m *BaseMobile) OnAfterDeserialize(f *util.TagFileObject) {
-	m.BaseObject.OnAfterDeserialize(f)
 	m.equipment = NewEquipmentCollectionWith(f.GetObjectReferences("Equipment"), m)
 	// If we had an item on the cursor at the time of the save we drop it at
 	// our feet just so we don't leak it.
@@ -358,13 +329,38 @@ func (m *BaseMobile) OnAfterDeserialize(f *util.TagFileObject) {
 	}
 }
 
+// Unmarshal implements the marshal.Unmarshaler interface.
+func (m *BaseMobile) Unmarshal(s *marshal.TagFileSegment) *marshal.TagCollection {
+	tags := m.BaseObject.Unmarshal(s)
+	m.cursor = &Cursor{}
+	m.viewRange = uo.BoundViewRange(int(tags.Byte(marshal.TagViewRange)))
+	m.isPlayerCharacter = tags.Bool(marshal.TagIsPlayerCharacter)
+	m.isFemale = tags.Bool(marshal.TagIsFemale)
+	m.body = uo.Body(tags.Short(marshal.TagBody))
+	m.notoriety = uo.Notoriety(tags.Byte(marshal.TagNotoriety))
+	m.baseStrength = int(tags.Short(marshal.TagStrength))
+	m.baseDexterity = int(tags.Short(marshal.TagDexterity))
+	m.baseIntelligence = int(tags.Short(marshal.TagIntelligence))
+	m.hitPoints = int(tags.Short(marshal.TagStrength))
+	m.stamina = int(tags.Short(marshal.TagStrength))
+	m.mana = int(tags.Short(marshal.TagStrength))
+	m.skills = tags.ShortSlice(marshal.TagSkills)
+	if len(m.skills) < int(uo.SkillCount) {
+		s := make([]int16, uo.SkillCount)
+		copy(s, m.skills)
+	} else if len(m.skills) > int(uo.SkillCount) {
+		m.skills = m.skills[0:uo.SkillCount]
+	}
+	return tags
+}
+
 // AfterUnmarshal implements the marshal.Unmarshaler interface.
-func (m *BaseMobile) AfterUnmarshal(to *marshal.TagObject) {
-	m.BaseObject.AfterUnmarshal(to)
-	m.equipment = NewEquipmentCollectionWith(to.Tags.ReferenceSlice(marshal.TagEquipment), m)
+func (m *BaseMobile) AfterUnmarshal(tags *marshal.TagCollection) {
+	m.BaseObject.AfterUnmarshal(tags)
+	m.equipment = NewEquipmentCollectionWith(tags.ReferenceSlice(marshal.TagEquipment), m)
 	// If we had an item on the cursor at the time of the save we drop it at
 	// our feet just so we don't leak it.
-	incs := uo.Serial(to.Tags.Int(marshal.TagCursor))
+	incs := uo.Serial(tags.Int(marshal.TagCursor))
 	if incs != 0 {
 		o := world.Find(incs)
 		if o != nil {
@@ -511,7 +507,6 @@ func (m *BaseMobile) RecalculateStats() {
 		log.Printf("error: mobile %s backpack was not a container", m.Serial().String())
 		return
 	}
-
 	m.gold = 0
 	var fn func(Container)
 	fn = func(c Container) {

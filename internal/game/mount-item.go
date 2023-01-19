@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	ObjectFactory.Add("MountItem", func() Object { return &MountItem{} })
+	objctors["MountItem"] = func() Object { return &MountItem{} }
 	marshal.RegisterCtor(marshal.ObjectTypeMountItem, func() interface{} { return &MountItem{} })
 }
 
@@ -52,9 +52,9 @@ func (i *MountItem) Deserialize(f *util.TagFileObject) {
 }
 
 // Unmarshal implements the marshal.Unmarshaler interface.
-func (i *MountItem) Unmarshal(to *marshal.TagObject) {
-	i.BaseWearable.Unmarshal(to)
-	ms := uo.Serial(to.Tags.Int(marshal.TagManagedObject))
+func (i *MountItem) Unmarshal(s *marshal.TagFileSegment) *marshal.TagCollection {
+	tags := i.BaseWearable.Unmarshal(s)
+	ms := uo.Serial(tags.Int(marshal.TagManagedObject))
 	if ms != 0 {
 		o := world.Find(ms)
 		if o == nil {
@@ -72,6 +72,7 @@ func (i *MountItem) Unmarshal(to *marshal.TagObject) {
 	} else {
 		i.m = nil
 	}
+	return tags
 }
 
 // RemoveObject implements the Object interface

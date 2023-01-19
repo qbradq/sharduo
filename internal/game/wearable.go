@@ -46,9 +46,10 @@ func (i *BaseWearable) Deserialize(f *util.TagFileObject) {
 }
 
 // Unmarshal implements the marshal.Unmarshaler interface.
-func (i *BaseWearable) Unmarshal(to *marshal.TagObject) {
-	i.BaseItem.Unmarshal(to)
-	i.layer = uo.Layer(to.Tags.Byte(marshal.TagLayer))
+func (i *BaseWearable) Unmarshal(s *marshal.TagFileSegment) *marshal.TagCollection {
+	tags := i.BaseItem.Unmarshal(s)
+	i.layer = uo.Layer(tags.Byte(marshal.TagLayer))
+	return tags
 }
 
 // Layer implements the Item interface.

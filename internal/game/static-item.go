@@ -40,6 +40,9 @@ func (o *StaticItem) SerialType() uo.SerialType {
 // Serial implements the Object interface.
 func (o *StaticItem) Serial() uo.Serial { return o.serial }
 
+// SetSerial implements the Object interface.
+func (o *StaticItem) SetSerial(s uo.Serial) { o.serial = s }
+
 // Item interface
 // BaseGraphic implements the Item interface.
 func (i *StaticItem) BaseGraphic() uo.Graphic { return i.graphic }
@@ -87,27 +90,16 @@ func (i *StaticItem) SetFacing(d uo.Direction)                          {}
 func (i *StaticItem) DisplayName() string                               { return i.def.Name }
 func (i *StaticItem) Weight() float32                                   { return 255.0 }
 
-// An empty event map so we don't have to allocate one every time.
-var _emptyEventHandlers = make(map[string]string)
-
 // Marshal implements the marshal.Marshaler interface.
 func (i *StaticItem) Marshal(s *marshal.TagFileSegment) {
-	s.PutObjectHeader(
-		marshal.ObjectTypeStatic,
-		i.Serial(),
-		"StaticItem",
-		uo.SerialSystem,
-		"",
-		i.hue,
-		i.location,
-		_emptyEventHandlers)
+	s.PutInt(uint32(i.serial))
 	s.PutShort(uint16(i.graphic))
+	s.PutLocation(i.location)
+	s.PutShort(uint16(i.hue))
 }
 
 // Deserialize implements the util.Serializeable interface.
 func (i *StaticItem) Deserialize(f *util.TagFileObject) {
-	i.BaseSerializeable.Deserialize(f)
-	// Owned properties
 	i.graphic = uo.Graphic(f.GetNumber("Graphic", int(uo.GraphicDefault)))
 	i.def = world.GetItemDefinition(i.graphic)
 	i.hue = uo.Hue(f.GetNumber("Hue", int(uo.HueDefault)))
@@ -119,16 +111,17 @@ func (i *StaticItem) Deserialize(f *util.TagFileObject) {
 }
 
 // Unmarshal implements the marshal.Unmarshaler interface.
-func (i *StaticItem) Unmarshal(to *marshal.TagObject) {
-	i.SetSerial(to.Serial)
-	i.hue = to.Hue
-	i.location = to.Location
-	i.graphic = uo.Graphic(to.Tags.Short(marshal.TagGraphic))
+func (i *StaticItem) Unmarshal(s *marshal.TagFileSegment) *marshal.TagCollection {
+	i.serial = uo.Serial(s.Int())
+	i.graphic = uo.Graphic(s.Short())
+	i.location = s.Location()
+	i.hue = uo.Hue(s.Short())
 	i.def = world.GetItemDefinition(i.graphic)
+	return s.Tags() // Should always be empty, but this reads one byte
 }
 
 // AfterUnmarshal implements the marshal.Unmarshaler interface.
-func (i *StaticItem) AfterUnmarshal(to *marshal.TagObject) {}
+func (i *StaticItem) AfterUnmarshal(tags *marshal.TagCollection) {}
 
 // Flag accessors
 func (i *StaticItem) Background() bool   { return i.def.TileFlags&uo.TileFlagsBackground != 0 }

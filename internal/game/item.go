@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	ObjectFactory.Add("BaseItem", func() Object { return &BaseItem{} })
+	objctors["BaseItem"] = func() Object { return &BaseItem{} }
 	marshal.RegisterCtor(marshal.ObjectTypeItem, func() interface{} { return &BaseItem{} })
 }
 
@@ -171,22 +171,23 @@ func (i *BaseItem) Deserialize(f *util.TagFileObject) {
 }
 
 // Unmarshal implements the marshal.Unmarshaler interface.
-func (i *BaseItem) Unmarshal(to *marshal.TagObject) {
-	i.BaseObject.Unmarshal(to)
-	i.graphic = uo.Graphic(to.Tags.Short(marshal.TagGraphic))
+func (i *BaseItem) Unmarshal(s *marshal.TagFileSegment) *marshal.TagCollection {
+	tags := i.BaseObject.Unmarshal(s)
+	i.graphic = uo.Graphic(tags.Short(marshal.TagGraphic))
 	i.def = world.GetItemDefinition(i.graphic)
-	i.flippedGraphic = uo.Graphic(to.Tags.Short(marshal.TagFlippedGraphic))
-	i.dyable = to.Tags.Bool(marshal.TagDyable)
-	i.weight = float32(to.Tags.Int(marshal.TagWeight)) / float32(1000.0)
+	i.flippedGraphic = uo.Graphic(tags.Short(marshal.TagFlippedGraphic))
+	i.dyable = tags.Bool(marshal.TagDyable)
+	i.weight = float32(tags.Int(marshal.TagWeight)) / float32(1000.0)
 	if i.weight < 0.0001 {
 		i.weight = 1.0
 	}
-	i.stackable = to.Tags.Bool(marshal.TagStackable)
-	i.amount = int(to.Tags.Short(marshal.TagAmount))
+	i.stackable = tags.Bool(marshal.TagStackable)
+	i.amount = int(tags.Short(marshal.TagAmount))
 	if i.amount < 1 {
 		i.amount = 1
 	}
-	i.plural = to.Tags.String(marshal.TagPlural)
+	i.plural = tags.String(marshal.TagPlural)
+	return tags
 }
 
 // BaseGraphic implements the Item interface.

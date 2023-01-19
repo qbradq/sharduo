@@ -283,11 +283,6 @@ func (m *TemplateManager) newObject(templateName string) game.Object {
 	for _, err := range tfo.Errors() {
 		log.Println(err)
 	}
-	// Call the deserialization hook.
-	s.OnAfterDeserialize(tfo)
-	for _, err := range tfo.Errors() {
-		log.Println(err)
-	}
 	// Recalculate stats
 	s.RecalculateStats()
 	return s
