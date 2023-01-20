@@ -35,6 +35,8 @@ type World struct {
 	ods *util.DataStore[game.Object]
 	// Collection of all accounts
 	accounts map[string]*game.Account
+	// Account access mutex
+	alock sync.Mutex
 	// The random number generator for the world
 	rng uo.RandomSource
 	// Inbound requests
@@ -56,6 +58,7 @@ func NewWorld(savePath string, rng uo.RandomSource) *World {
 	return &World{
 		m:             game.NewMap(),
 		ods:           util.NewDataStore[game.Object](rng),
+		accounts:      make(map[string]*game.Account),
 		rng:           rng,
 		requestQueue:  make(chan WorldRequest, 1024*16),
 		savePath:      savePath,
@@ -141,7 +144,7 @@ func (w *World) Unmarshal() error {
 		if !ok {
 			return fmt.Errorf("error: object %s of type %d does not implement the Object interface", serial.String(), otype)
 		}
-		w.ods.Insert(o, o.Serial())
+		w.ods.Insert(o)
 	}
 	// Unmarshal objects in the datastore
 	seg := marshal.SegmentObjectsStart
@@ -165,7 +168,7 @@ func (w *World) Unmarshal() error {
 	for i := uint32(0); i < s.RecordCount(); i++ {
 		a := &game.Account{}
 		a.Unmarshal(s)
-		accounts[a.Username()] = a
+		w.accounts[a.Username()] = a
 	}
 	// Done
 	end = time.Now()
@@ -230,7 +233,7 @@ func (w *World) Marshal() (*sync.WaitGroup, error) {
 	wg.Add(1)
 	go func(s *marshal.TagFileSegment) {
 		// Accounting data
-		for _, a := range accounts {
+		for _, a := range w.accounts {
 			a.Marshal(s)
 			s.IncrementRecordCount()
 		}
@@ -370,38 +373,20 @@ func (w *World) Remove(o game.Object) {
 // created for the user. If an account is found but the password hashes do not
 // match nil is returned. Otherwise the account is returned.
 func (w *World) AuthenticateAccount(username, passwordHash string) *game.Account {
-	a := w.getOrCreateAccount(username, passwordHash)
+	w.alock.Lock()
+	defer w.alock.Unlock()
+
+	a := w.accounts[username]
+	newAccount := false
+	if a == nil {
+		a = game.NewAccount(username, passwordHash)
+		newAccount = true
+	}
 	if !a.ComparePasswordHash(passwordHash) {
 		return nil
 	}
-	return a
-}
-
-// getOrCreateAccount adds a new account to the world, or returns the existing
-// account for that username.
-func (w *World) getOrCreateAccount(username, passwordHash string) *game.Account {
-	w.alock.Lock()
-	defer w.alock.Unlock()
-
-	if s, ok := w.aidx[username]; ok {
-		return w.ads.Get(s)
-	}
-	a := game.NewAccount(username, passwordHash)
-	w.ads.Add(a, uo.SerialTypeUnbound)
-	w.aidx[username] = a.Serial()
-	return a
-}
-
-// AuthenticateLoginSession attempts to find and authenticate the account
-// associated with the username and serial. nil is returned if the account is
-// not found or the password hashes do not match.
-func (w *World) AuthenticateLoginSession(username, passwordHash string, id uo.Serial) *game.Account {
-	w.alock.Lock()
-	defer w.alock.Unlock()
-
-	a := w.ads.Get(id)
-	if a == nil || a.Username() != username || !a.ComparePasswordHash(passwordHash) {
-		return nil
+	if newAccount {
+		w.accounts[username] = a
 	}
 	return a
 }
@@ -447,7 +432,6 @@ func (w *World) Main(wg *sync.WaitGroup) {
 			}
 			w.updateList = make(map[uo.Serial]game.Object)
 		case r := <-w.requestQueue:
-			// TODO Graceful shutdown signal (outside this struct)
 			// Handle graceful shutdown
 			if r == nil {
 				ticker.Stop()

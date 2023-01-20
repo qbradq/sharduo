@@ -50,10 +50,19 @@ func (s *DataStore[K]) Add(k K, t uo.SerialType) {
 		}
 		_, used := s.objects[serial]
 		if !used {
+			k.SetSerial(serial)
 			s.objects[serial] = k
 			break
 		}
 	}
+}
+
+// Remove blindly removes the object from the datastore that is indexed by this
+// object's serial.
+func (s *DataStore[K]) Remove(o dsobj) {
+	var zero K
+	s.objects[o.Serial()] = zero
+	delete(s.objects, o.Serial())
 }
 
 // Insert inserts the object into the datastore with its current serial and will
@@ -61,6 +70,11 @@ func (s *DataStore[K]) Add(k K, t uo.SerialType) {
 // rebuilding the dataset from an external data source.
 func (s *DataStore[K]) Insert(k K) {
 	s.objects[k.Serial()] = k
+}
+
+// Get returns the identified object or nil.
+func (s *DataStore[K]) Get(serial uo.Serial) K {
+	return s.objects[serial]
 }
 
 // Data returns the underlying data store.

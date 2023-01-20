@@ -134,9 +134,9 @@ func (n *NetState) Service() {
 		log.Printf("error: %s", err.Error())
 		return
 	}
-	account := world.AuthenticateLoginSession(gslp.Username, game.HashPassword(gslp.Password), gslp.Key)
+	account := world.AuthenticateAccount(gslp.Username, game.HashPassword(gslp.Password))
 	if account == nil {
-		log.Printf("error: %s", err.Error())
+		log.Println("error: failed to create new account, reason unknown")
 		return
 	}
 	n.account = account
@@ -211,7 +211,9 @@ func (n *NetState) readLoop(r *clientpacket.Reader) {
 		// interruptions, very long save times, etc.
 		n.deadline = world.Time() + uo.DurationMinute*5
 
+		log.Println(hex.Dump(data))
 		cp := clientpacket.New(data)
+		log.Printf("%+v", cp)
 		switch p := cp.(type) {
 		case nil:
 			log.Printf("error: unknown packet 0x%02X", data[0])

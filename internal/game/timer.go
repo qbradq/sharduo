@@ -42,10 +42,7 @@ type Timer struct {
 
 // NewTimer creates a new timer with the given options, then adds the timer to
 // the update pool most suitable for it.
-func NewTimer(delay uo.Time, oneShot bool, event string, receiver, source Object) *Timer {
-	if timerSerialManager == nil {
-		timerSerialManager = uo.NewSerialManager(world.Random())
-	}
+func NewTimer(delay uo.Time, event string, receiver, source Object) {
 	receiverSerial := uo.SerialZero
 	sourceSerial := uo.SerialZero
 	if receiver != nil {
@@ -54,21 +51,26 @@ func NewTimer(delay uo.Time, oneShot bool, event string, receiver, source Object
 	if source != nil {
 		sourceSerial = source.Serial()
 	}
-	serial := timerSerialManager.New(uo.SerialTypeUnbound)
 	t := &Timer{
 		deadline: world.Time() + delay,
 		event:    event,
 		receiver: receiverSerial,
 		source:   sourceSerial,
 	}
-	pool := 0
-	if delay > uo.DurationSecond && delay < uo.DurationMinute {
-		pool = 1 + (int(serial) % mediumSpeedTimerPoolsCount)
-	} else {
-		pool = 1 + mediumSpeedTimerPoolsCount + (int(serial) % lowSpeedTimerPoolsCount)
+	for {
+		serial := uo.RandomMobileSerial(world.Random())
+		pool := 0
+		if delay > uo.DurationSecond && delay < uo.DurationMinute {
+			pool = 1 + (int(serial) % mediumSpeedTimerPoolsCount)
+		} else {
+			pool = 1 + mediumSpeedTimerPoolsCount + (int(serial) % lowSpeedTimerPoolsCount)
+		}
+		if timerPools[pool][serial] == nil {
+			timerPools[pool][serial] = t
+			break
+		}
+		// Duplicate serial in pool, try another
 	}
-	timerPools[pool][serial] = t
-	return t
 }
 
 // UpdateTimers updates every timer within the update pools suitable for time.

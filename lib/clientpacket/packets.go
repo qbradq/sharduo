@@ -110,13 +110,6 @@ type IgnoredPacket struct {
 	basePacket
 }
 
-// newIgnoredPacket constructs a new IgnoredPacket struct
-func newIgnoredPacket(id byte) *IgnoredPacket {
-	return &IgnoredPacket{
-		basePacket: basePacket{id: id},
-	}
-}
-
 // LoginSeed is the first packet sent to the login server
 type LoginSeed struct {
 	basePacket

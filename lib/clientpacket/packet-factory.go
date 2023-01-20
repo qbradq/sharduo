@@ -39,7 +39,7 @@ func (f *packetFactory) New(id byte, in []byte) Packet {
 	}
 	ctor := f.ctors[id]
 	if ctor == nil {
-		up := NewUnsupportedPacket("client-packets", in)
+		up := NewUnsupportedPacket("client", in)
 		up.basePacket.id = id
 		return up
 	}

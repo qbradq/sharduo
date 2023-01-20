@@ -26,7 +26,7 @@ type PacketContext struct {
 	Packet clientpacket.Packet
 }
 
-var embeddedHandlers = util.NewRegistry[byte, func(*PacketContext)]("client-packets")
+var embeddedHandlers = util.NewRegistry[byte, func(*PacketContext)]("client")
 
 func handleClientPing(c *PacketContext) {
 	p := c.Packet.(*clientpacket.Ping)
