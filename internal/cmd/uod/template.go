@@ -270,18 +270,25 @@ func (m *TemplateManager) newObject(templateName string) game.Object {
 		return nil
 	}
 	// Create the object
-	s := game.ObjectFactory.New(t.typeName)
-	if s == nil {
-		log.Printf("error while creating object for type %s", t.typeName)
+	ctor := game.Constructor(t.typeName)
+	if ctor == nil {
+		log.Printf("error: constructor not found for type %s", t.typeName)
 		return nil
 	}
-	// If we've gotten here we at least have an uninitialized object of the
-	// proper type. We can return it in case of error.
-	s.SetObjectType(s.ObjectType())
+	s := ctor()
+	if s == nil {
+		log.Printf("error: constructor for type %s returned nil", t.typeName)
+		return nil
+	}
 	// Deserialize the object.
 	s.Deserialize(tfo)
-	for _, err := range tfo.Errors() {
+	errs := tfo.Errors()
+	for _, err := range errs {
 		log.Println(err)
+	}
+	if len(errs) > 0 {
+		// Do not return a bad object
+		return nil
 	}
 	// Recalculate stats
 	s.RecalculateStats()

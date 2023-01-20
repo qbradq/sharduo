@@ -14,8 +14,7 @@ func init() {
 	}
 }
 
-// Serial manager for timers
-var timerSerialManager *uo.SerialManager
+// There is always only 1 high-speed timer pool
 
 // Number of pools in the low-speed timer pool
 const lowSpeedTimerPoolsCount = int(uo.DurationMinute)

@@ -5,7 +5,6 @@ import (
 
 	"github.com/qbradq/sharduo/lib/clientpacket"
 	"github.com/qbradq/sharduo/lib/serverpacket"
-	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
 )
 
@@ -27,7 +26,7 @@ type PacketContext struct {
 	Packet clientpacket.Packet
 }
 
-var embeddedHandlers = util.NewRegistry[uo.Serial, func(*PacketContext)]("client-packets")
+var embeddedHandlers = util.NewRegistry[byte, func(*PacketContext)]("client-packets")
 
 func handleClientPing(c *PacketContext) {
 	p := c.Packet.(*clientpacket.Ping)

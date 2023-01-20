@@ -2,12 +2,11 @@ package uo
 
 import (
 	"fmt"
-	"strconv"
 )
 
-// A Serial is a 31-bit value with the following characteristics:
-// The zero value is also the "invalid value" value
-// No Serial will have a value greater than 2^31-1
+// Serial is a 31-bit value with the following characteristics: The zero value
+// is also the "invalid value" value No Serial will have a value greater than
+// 2^31-1
 type Serial uint32
 
 // Pre-defined values of Serial
@@ -26,14 +25,14 @@ const (
 	SerialSystem          Serial = 0xffffffff
 )
 
-// NewSerialFromString returns a new Serial parsed as a hex number.
-func NewSerialFromString(in string) Serial {
-	s, err := strconv.ParseUint(in, 0, 31)
-	if err != nil {
-		panic(err)
-	}
-	return Serial(s)
-}
+// SerialType is a classification code for serial values
+type SerialType byte
+
+// All valid values for SerialType
+const (
+	SerialTypeItem   SerialType = 0
+	SerialTypeMobile SerialType = 1
+)
 
 // String returns the string representation of the serial.
 func (s Serial) String() string {
@@ -66,4 +65,14 @@ func (s Serial) StripSelfFlag() Serial {
 // IsNull returns true if the serial refers to a null mobile or item
 func (s Serial) IsNil() bool {
 	return s == SerialZero || s == SerialMobileNil || s == SerialItemNil || s == SerialMobileSelfNil
+}
+
+// RandomMobileSerial returns a randomized Serial fit for a mobile
+func RandomMobileSerial(rng RandomSource) Serial {
+	return Serial(rng.Random(int(SerialFirstMobile), int(SerialLastMobile)))
+}
+
+// RandomItemSerial returns a randomized Serial fit for an item
+func RandomItemSerial(rng RandomSource) Serial {
+	return Serial(rng.Random(int(SerialFirstItem), int(SerialLastItem)))
 }

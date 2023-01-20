@@ -41,9 +41,9 @@ type ClientPacketRequest struct {
 
 // Execute implements the WorldRequest interface
 func (r *ClientPacketRequest) Execute() error {
-	handler, found := worldHandlers.Get(r.Packet.Serial())
+	handler, found := worldHandlers.Get(r.Packet.ID())
 	if !found || handler == nil {
-		return fmt.Errorf("unhandled packet %s", r.Packet.Serial().String())
+		return fmt.Errorf("unhandled packet 0x%02X", r.Packet.ID())
 	}
 	handler(r.GetNetState(), r.Packet)
 	return nil

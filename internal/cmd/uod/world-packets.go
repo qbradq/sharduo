@@ -23,7 +23,7 @@ func init() {
 }
 
 // Registry of packet handler functions
-var worldHandlers = util.NewRegistry[uo.Serial, func(*NetState, clientpacket.Packet)]("world-handlers")
+var worldHandlers = util.NewRegistry[byte, func(*NetState, clientpacket.Packet)]("world-handlers")
 
 func handleTargetResponse(n *NetState, cp clientpacket.Packet) {
 	p := cp.(*clientpacket.TargetResponse)
@@ -65,7 +65,7 @@ func handleSingleClickRequest(n *NetState, cp clientpacket.Packet) {
 		return
 	}
 	p := cp.(*clientpacket.SingleClick)
-	o := world.Find(p.ID)
+	o := world.Find(p.Object)
 	if o == nil {
 		return
 	}
@@ -84,7 +84,7 @@ func handleDoubleClickRequest(n *NetState, cp clientpacket.Packet) {
 		}
 		return
 	}
-	o := world.Find(p.ID.StripSelfFlag())
+	o := world.Find(p.Object.StripSelfFlag())
 	if o == nil {
 		return
 	}

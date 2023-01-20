@@ -31,14 +31,10 @@ var ErrSaveFileExists = errors.New("refusing to truncate existing save file")
 type World struct {
 	// The world map
 	m *game.Map
-	// The data store of the user accounts
-	ads *util.DataStore[*game.Account]
-	// Index of usernames to account serials
-	aidx map[string]uo.Serial
-	// Accounting access lock
-	alock sync.Mutex
 	// The object data store for the entire world
 	ods *util.DataStore[game.Object]
+	// Collection of all accounts
+	accounts map[string]*game.Account
 	// The random number generator for the world
 	rng uo.RandomSource
 	// Inbound requests
@@ -59,9 +55,7 @@ type World struct {
 func NewWorld(savePath string, rng uo.RandomSource) *World {
 	return &World{
 		m:             game.NewMap(),
-		ads:           util.NewDataStore[*game.Account]("accounts", rng),
-		aidx:          make(map[string]uo.Serial),
-		ods:           util.NewDataStore[game.Object]("objects", rng),
+		ods:           util.NewDataStore[game.Object](rng),
 		rng:           rng,
 		requestQueue:  make(chan WorldRequest, 1024*16),
 		savePath:      savePath,
@@ -170,9 +164,8 @@ func (w *World) Unmarshal() error {
 	s = tf.Segment(marshal.SegmentAccounts)
 	for i := uint32(0); i < s.RecordCount(); i++ {
 		a := &game.Account{}
-		a.Read(s)
-		w.ads.Add(a, uo.SerialTypeUnbound)
-		w.aidx[a.Username()] = a.Serial()
+		a.Unmarshal(s)
+		accounts[a.Username()] = a
 	}
 	// Done
 	end = time.Now()
@@ -237,9 +230,8 @@ func (w *World) Marshal() (*sync.WaitGroup, error) {
 	wg.Add(1)
 	go func(s *marshal.TagFileSegment) {
 		// Accounting data
-		for _, a := range w.ads.Data() {
+		for _, a := range accounts {
 			a.Marshal(s)
-			s.PutTag(marshal.TagEndOfList, marshal.TagValueBool, true)
 			s.IncrementRecordCount()
 		}
 		wg.Done()
@@ -263,6 +255,8 @@ func (w *World) Marshal() (*sync.WaitGroup, error) {
 			for i := pool; i < len(objects); i += saveGoroutines {
 				o := objects[i]
 				o.Marshal(s)
+				// We have to terminate the tag list outside of Marshal() due to
+				// how the unmarshaling chain works.
 				s.PutTag(marshal.TagEndOfList, marshal.TagValueBool, true)
 				s.IncrementRecordCount()
 			}

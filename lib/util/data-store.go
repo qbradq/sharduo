@@ -9,6 +9,8 @@ import (
 
 type dsobj interface {
 	Serial() uo.Serial
+	SetSerial(uo.Serial)
+	SerialType() uo.SerialType
 	marshal.Marshaler
 	marshal.Unmarshaler
 }
@@ -19,6 +21,8 @@ type DataStore[K dsobj] struct {
 	objects map[uo.Serial]K
 	// Pool of deserialization data for rebuilding the objects
 	tagsPool map[uo.Serial]*marshal.TagCollection
+	// Random number source for serials
+	rng uo.RandomSource
 }
 
 // NewDataStore initializes and returns a new DataStore object.
@@ -26,24 +30,42 @@ func NewDataStore[K dsobj](rng uo.RandomSource) *DataStore[K] {
 	return &DataStore[K]{
 		objects:  make(map[uo.Serial]K),
 		tagsPool: make(map[uo.Serial]*marshal.TagCollection),
+		rng:      rng,
 	}
 }
 
 // Add adds a new object to the datastore assigning it a new serial of the
 // correct type.
+func (s *DataStore[K]) Add(k K, t uo.SerialType) {
+	for {
+		var serial uo.Serial
+		switch t {
+		case uo.SerialTypeItem:
+			serial = uo.RandomItemSerial(s.rng)
+		case uo.SerialTypeMobile:
+			serial = uo.RandomMobileSerial(s.rng)
+		default:
+			log.Println("error: DataStore.Add(K, SerialType) SerialType was an invalid value")
+			return
+		}
+		_, used := s.objects[serial]
+		if !used {
+			s.objects[serial] = k
+			break
+		}
+	}
+}
+
+// Insert inserts the object into the datastore with its current serial and will
+// overwrite existing values without warning. This is typically only used when
+// rebuilding the dataset from an external data source.
+func (s *DataStore[K]) Insert(k K) {
+	s.objects[k.Serial()] = k
+}
 
 // Data returns the underlying data store.
 func (s *DataStore[K]) Data() map[uo.Serial]K {
 	return s.objects
-}
-
-// MarshalObjects marshals objects to raw data
-func (s *DataStore[K]) MarshalObjects(seg *marshal.TagFileSegment) {
-	for serial, k := range s.objects {
-		seg.PutInt(uint32(serial))
-		k.Marshal(seg)
-		seg.IncrementRecordCount()
-	}
 }
 
 // UnmarshalObjects unmarshals objects from raw data. AfterUnmarshalObjects must

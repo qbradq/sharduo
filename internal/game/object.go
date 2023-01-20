@@ -15,8 +15,14 @@ func init() {
 	marshal.RegisterCtor(marshal.ObjectTypeObject, func() interface{} { return &BaseObject{} })
 }
 
+// Constructor returns the constructor for the given type string or nil
+func Constructor(which string) func() Object {
+	return objctors[which]
+}
+
 // Object is the interface every object in the game implements
 type Object interface {
+	Deserialize(*util.TagFileObject)
 	marshal.Marshaler
 	marshal.Unmarshaler
 
@@ -31,6 +37,9 @@ type Object interface {
 	Serial() uo.Serial
 	// SetSerial sets the serial of the object, only used during object creation
 	SetSerial(uo.Serial)
+	// SerialType returns what kind of serial should be generated for this type
+	// of object.
+	SerialType() uo.SerialType
 	// Parent returns a pointer to the parent object of this object, or nil
 	// if the object is attached directly to the world
 	Parent() Object

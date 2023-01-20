@@ -171,7 +171,7 @@ func handleLoginConnection(conn *net.TCPConn) {
 		time.Sleep(time.Second * 5)
 		return
 	}
-	log.Printf("user login successful for %s %s", account.Username(), account.Serial().String())
+	log.Printf("user login successful for %s", account.Username())
 
 	// Server list packet
 	var sp serverpacket.Packet
@@ -205,7 +205,7 @@ func handleLoginConnection(conn *net.TCPConn) {
 	sp = &serverpacket.ConnectToGameServer{
 		IP:   net.ParseIP("127.0.0.1"),
 		Port: 7777,
-		Key:  account.Serial(),
+		Key:  0xBAADF00D,
 	}
 	sp.Write(pw)
 	if err := pw.Flush(); err != nil {
