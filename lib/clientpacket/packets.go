@@ -127,7 +127,7 @@ type LoginSeed struct {
 
 func newLoginSeed(in []byte) Packet {
 	return &LoginSeed{
-		basePacket:   basePacket{id: in[0]},
+		basePacket:   basePacket{id: 0xEF},
 		Seed:         dc.GetUint32(in[0:4]),
 		VersionMajor: int(dc.GetUint32(in[4:8])),
 		VersionMinor: int(dc.GetUint32(in[8:12])),
@@ -148,7 +148,7 @@ type AccountLogin struct {
 
 func newAccountLogin(in []byte) Packet {
 	return &AccountLogin{
-		basePacket: basePacket{id: in[0]},
+		basePacket: basePacket{id: 0x80},
 		Username:   dc.NullString(in[0:30]),
 		Password:   dc.NullString(in[30:60]),
 	}
@@ -164,7 +164,7 @@ type SelectServer struct {
 
 func newSelectServer(in []byte) Packet {
 	return &SelectServer{
-		basePacket: basePacket{id: in[0]},
+		basePacket: basePacket{id: 0xA0},
 		Index:      int(dc.GetUint16(in[0:2])),
 	}
 }
@@ -182,7 +182,7 @@ type GameServerLogin struct {
 
 func newGameServerLogin(in []byte) Packet {
 	return &GameServerLogin{
-		basePacket: basePacket{id: in[0]},
+		basePacket: basePacket{id: 91},
 		Key:        uo.Serial(dc.GetUint32(in[:4])),
 		Username:   dc.NullString(in[4:34]),
 		Password:   dc.NullString(in[34:64]),
@@ -198,7 +198,7 @@ type CharacterLogin struct {
 
 func newCharacterLogin(in []byte) Packet {
 	p := &CharacterLogin{
-		basePacket: basePacket{id: in[0]},
+		basePacket: basePacket{id: 0x5D},
 		Slot:       int(dc.GetUint32(in[64:68])),
 	}
 	return p
@@ -214,7 +214,7 @@ type Version struct {
 func newVersion(in []byte) Packet {
 	// Length check not required, it can be nil
 	p := &Version{
-		basePacket: basePacket{id: in[0]},
+		basePacket: basePacket{id: 0xBD},
 		String:     dc.NullString(in),
 	}
 	return p
@@ -229,7 +229,7 @@ type Ping struct {
 
 func newPing(in []byte) Packet {
 	p := &Ping{
-		basePacket: basePacket{id: in[0]},
+		basePacket: basePacket{id: 0x73},
 		Key:        in[0],
 	}
 	return p
@@ -253,7 +253,7 @@ func newSpeech(in []byte) Packet {
 		return newMalformedPacket(0xAD)
 	}
 	s := &Speech{
-		basePacket: basePacket{id: in[0]},
+		basePacket: basePacket{id: 0xAD},
 		Type:       uo.SpeechType(in[0]),
 		Hue:        uo.Hue(dc.GetUint16(in[1:3])),
 		Font:       uo.Font(dc.GetUint16(in[3:5])),
@@ -285,7 +285,7 @@ type SingleClick struct {
 
 func newSingleClick(in []byte) Packet {
 	p := &SingleClick{
-		basePacket: basePacket{id: in[0]},
+		basePacket: basePacket{id: 0x09},
 		Object:     uo.Serial(dc.GetUint32(in)),
 	}
 	return p
@@ -305,7 +305,7 @@ func newDoubleClick(in []byte) Packet {
 	isPaperDoll := s.IsSelf()
 	s = s.StripSelfFlag()
 	p := &DoubleClick{
-		basePacket:    basePacket{id: in[0]},
+		basePacket:    basePacket{id: 0x06},
 		Object:        s,
 		WantPaperDoll: isPaperDoll,
 	}
@@ -324,7 +324,7 @@ type PlayerStatusRequest struct {
 
 func newPlayerStatusRequest(in []byte) Packet {
 	p := &PlayerStatusRequest{
-		basePacket:        basePacket{id: in[0]},
+		basePacket:        basePacket{id: 0x34},
 		StatusRequestType: uo.StatusRequestType(in[4]),
 		PlayerMobileID:    uo.Serial(dc.GetUint32(in[5:])),
 	}
@@ -347,7 +347,7 @@ func newClientViewRange(in []byte) Packet {
 		r = 18
 	}
 	p := &ClientViewRange{
-		basePacket: basePacket{id: in[0]},
+		basePacket: basePacket{id: 0xC8},
 		Range:      r,
 	}
 	return p
@@ -372,7 +372,7 @@ func newWalkRequest(in []byte) Packet {
 	r := d.IsRunning()
 	d = d.StripRunningFlag()
 	p := &WalkRequest{
-		basePacket:  basePacket{id: in[0]},
+		basePacket:  basePacket{id: 0x02},
 		Direction:   d,
 		IsRunning:   r,
 		Sequence:    int(in[1]),
@@ -405,7 +405,7 @@ type TargetResponse struct {
 
 func newTargetResponse(in []byte) Packet {
 	p := &TargetResponse{
-		basePacket:   basePacket{id: in[0]},
+		basePacket:   basePacket{id: 0x6C},
 		TargetType:   uo.TargetType(in[0]),
 		TargetSerial: uo.Serial(dc.GetUint32(in[1:5])),
 		CursorType:   uo.CursorType(in[5]),
@@ -429,7 +429,7 @@ type LiftRequest struct {
 
 func newLiftRequest(in []byte) Packet {
 	p := &LiftRequest{
-		basePacket: basePacket{id: in[0]},
+		basePacket: basePacket{id: 0x07},
 		Item:       uo.Serial(dc.GetUint32(in[0:4])),
 		Amount:     int(dc.GetUint16(in[4:6])),
 	}
@@ -454,7 +454,7 @@ type DropRequest struct {
 
 func newDropRequest(in []byte) Packet {
 	p := &DropRequest{
-		basePacket: basePacket{id: in[0]},
+		basePacket: basePacket{id: 0x08},
 		Item:       uo.Serial(dc.GetUint32(in[0:4])),
 		X:          int(dc.GetUint16(in[4:6])),
 		Y:          int(dc.GetUint16(in[6:8])),
@@ -476,7 +476,7 @@ type WearItemRequest struct {
 
 func newWearItemRequest(in []byte) Packet {
 	p := &WearItemRequest{
-		basePacket: basePacket{id: in[0]},
+		basePacket: basePacket{id: 0x13},
 		Item:       uo.Serial(dc.GetUint32(in[0:4])),
 		Wearer:     uo.Serial(dc.GetUint32(in[5:9])),
 	}
@@ -494,7 +494,7 @@ type ProtocolExtension struct {
 
 func newProtocolExtension(in []byte) Packet {
 	p := &ProtocolExtension{
-		basePacket:  basePacket{id: in[0]},
+		basePacket:  basePacket{id: 0xF0},
 		RequestType: uo.ProtocolExtensionRequest(in[0]),
 	}
 	return p

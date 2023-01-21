@@ -30,6 +30,13 @@ var templateManager *TemplateManager
 // The configuration
 var configuration *Configuration
 
+// gracefullShutdown initiates a graceful systems shutdown
+func gracefullShutdown() {
+	StopLoginService()
+	StopGameService()
+	world.Stop()
+}
+
 // trap is used to trap all of the system signals.
 func trap() {
 	sigs := make(chan os.Signal, 1)
@@ -37,10 +44,7 @@ func trap() {
 	go func() {
 		sig := <-sigs
 		if sig == syscall.SIGINT || sig == syscall.SIGQUIT {
-			// Try graceful shutdown
-			StopLoginService()
-			StopGameService()
-			world.Stop()
+			gracefullShutdown()
 		} else {
 			// Last-ditch save attempt
 			log.Println("attempting last-ditch save from signal handler")

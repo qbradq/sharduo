@@ -92,7 +92,6 @@ func (i *StaticItem) Weight() float32                                   { return
 
 // Marshal implements the marshal.Marshaler interface.
 func (i *StaticItem) Marshal(s *marshal.TagFileSegment) {
-	s.PutInt(uint32(i.serial))
 	s.PutShort(uint16(i.graphic))
 	s.PutLocation(i.location)
 	s.PutShort(uint16(i.hue))

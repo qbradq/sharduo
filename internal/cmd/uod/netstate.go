@@ -211,9 +211,7 @@ func (n *NetState) readLoop(r *clientpacket.Reader) {
 		// interruptions, very long save times, etc.
 		n.deadline = world.Time() + uo.DurationMinute*5
 
-		log.Println(hex.Dump(data))
 		cp := clientpacket.New(data)
-		log.Printf("%+v", cp)
 		switch p := cp.(type) {
 		case nil:
 			log.Printf("error: unknown packet 0x%02X", data[0])

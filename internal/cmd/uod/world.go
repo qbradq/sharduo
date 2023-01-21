@@ -144,6 +144,7 @@ func (w *World) Unmarshal() error {
 		if !ok {
 			return fmt.Errorf("error: object %s of type %d does not implement the Object interface", serial.String(), otype)
 		}
+		o.SetSerial(serial)
 		w.ods.Insert(o)
 	}
 	// Unmarshal objects in the datastore
@@ -154,6 +155,7 @@ func (w *World) Unmarshal() error {
 			break
 		}
 		w.ods.UnmarshalObjects(s)
+		seg++
 	}
 	// Call the AfterUnmarshal hook on all objects in the datastore
 	w.ods.AfterUnmarshalObjects()
@@ -219,30 +221,31 @@ func (w *World) Marshal() (*sync.WaitGroup, error) {
 	wg.Add(1)
 	go func(s *marshal.TagFileSegment) {
 		// Global data
+		defer wg.Done()
 		s.PutLong(uint64(w.time))
-		wg.Done()
 	}(s)
 	s = tf.Segment(marshal.SegmentTimers)
 	wg.Add(1)
 	go func(s *marshal.TagFileSegment) {
 		// Raw data for timers, this shouldn't change anymore
+		defer wg.Done()
 		game.MarshalTimers(s)
-		wg.Done()
 	}(s)
 	s = tf.Segment(marshal.SegmentAccounts)
 	wg.Add(1)
 	go func(s *marshal.TagFileSegment) {
 		// Accounting data
+		defer wg.Done()
 		for _, a := range w.accounts {
 			a.Marshal(s)
 			s.IncrementRecordCount()
 		}
-		wg.Done()
 	}(s)
 	s = tf.Segment(marshal.SegmentObjectList)
 	wg.Add(1)
 	go func(s *marshal.TagFileSegment) {
 		// Object list
+		defer wg.Done()
 		for _, o := range objects {
 			s.PutInt(uint32(o.Serial()))
 			s.PutByte(byte(o.ObjectType()))
@@ -255,28 +258,29 @@ func (w *World) Marshal() (*sync.WaitGroup, error) {
 		s = tf.Segment(marshal.SegmentObjectsStart + marshal.Segment(i))
 		wg.Add(1)
 		go func(s *marshal.TagFileSegment, pool int) {
+			defer wg.Done()
 			for i := pool; i < len(objects); i += saveGoroutines {
 				o := objects[i]
+				s.PutInt(uint32(o.Serial()))
 				o.Marshal(s)
 				// We have to terminate the tag list outside of Marshal() due to
 				// how the unmarshaling chain works.
 				s.PutTag(marshal.TagEndOfList, marshal.TagValueBool, true)
 				s.IncrementRecordCount()
 			}
-			wg.Done()
 		}(s, i)
 	}
 	wg.Add(1)
 	s = tf.Segment(marshal.SegmentMap)
 	go func(s *marshal.TagFileSegment) {
 		// Raw data for map object list
+		defer wg.Done()
 		for _, o := range objects {
 			if o.Parent() == nil {
 				s.PutInt(uint32(o.Serial()))
 				s.IncrementRecordCount()
 			}
 		}
-		wg.Done()
 	}(s)
 	// The main goroutine is blocked at this point
 	wg.Wait()

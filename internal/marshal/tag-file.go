@@ -424,7 +424,7 @@ func (s *TagFileSegment) Location() uo.Location {
 	return uo.Location{
 		X: int(binary.LittleEndian.Uint16(s.tbuf[0:2])),
 		Y: int(binary.LittleEndian.Uint16(s.tbuf[2:4])),
-		Z: int(int8(s.tbuf[5])),
+		Z: int(int8(s.tbuf[4])),
 	}
 }
 

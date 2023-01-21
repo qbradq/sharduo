@@ -13,12 +13,13 @@ import (
 
 func init() {
 	commands["bank"] = commandBank
+	commands["debug"] = commandDebug
 	commands["location"] = commandLocation
 	commands["new"] = commandNew
-	commands["debug"] = commandDebug
-	commands["teleport"] = commandTeleport
-	commands["static"] = commandStatic
 	commands["save"] = commandSave
+	commands["shutdown"] = commandShutdown
+	commands["static"] = commandStatic
+	commands["teleport"] = commandTeleport
 }
 
 // commandFunction is the signature of a command function
@@ -326,4 +327,8 @@ func commandStatic(n *NetState, args CommandArgs) {
 
 func commandSave(n *NetState, args CommandArgs) {
 	world.Marshal()
+}
+
+func commandShutdown(n *NetState, args CommandArgs) {
+	gracefullShutdown()
 }
