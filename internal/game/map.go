@@ -293,12 +293,14 @@ func (m *Map) ForceRemoveObject(o Object) {
 	}
 }
 
-// canMoveTo returns true if the mobile can move from its current location into
-// the new location. If the first return value is true the second return value
-// will be the new Z location of the mobile if it were to move to the new
+// canMoveTo returns true if the mobile can move from its current location in
+// the given direction. If the first return value is true the second return
+// value will be the new location of the mobile if it were to move to the new
 // location.
-func (m *Map) canMoveTo(mob Mobile, l uo.Location) (bool, int) {
+func (m *Map) canMoveTo(mob Mobile, d uo.Direction) (bool, uo.Location) {
 	// TODO consider mobiles that can swim
+	ol := mob.Location()
+	nl := ol.Forward(d.Bound()).WrapAndBound(ol)
 
 }
 

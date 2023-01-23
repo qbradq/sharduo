@@ -60,7 +60,7 @@ func (c *chunk) Remove(o Object) {
 	}
 }
 
-// GetTile reutrns the Tile value for the given chunk-relative location. x and y
+// GetTile returns the Tile value for the given chunk-relative location. x and y
 // must be between 0 and 7 inclusive.
 func (c *chunk) GetTile(x, y int) uo.Tile {
 	return c.tiles[(y%uo.ChunkHeight)*uo.ChunkWidth+(x%uo.ChunkWidth)]
