@@ -188,7 +188,7 @@ func (m *Map) SetNewParent(o, p Object) bool {
 	itemRoot := RootParent(item)
 	newLocation := itemRoot.Location()
 	if itemRoot.Serial().IsMobile() {
-		newLocation.Z += 18
+		newLocation.Z += uo.PlayerHeight
 	}
 	oldLocation := newLocation
 	newParentMobile, _ := p.(Mobile)
@@ -197,7 +197,7 @@ func (m *Map) SetNewParent(o, p Object) bool {
 		oldRoot := RootParent(oldParent)
 		oldLocation = oldRoot.Location()
 		if oldRoot.Serial().IsMobile() {
-			oldLocation.Z += 18
+			oldLocation.Z += uo.PlayerHeight
 		}
 	} else {
 		oldLocation = item.Location()
@@ -293,6 +293,15 @@ func (m *Map) ForceRemoveObject(o Object) {
 	}
 }
 
+// canMoveTo returns true if the mobile can move from its current location into
+// the new location. If the first return value is true the second return value
+// will be the new Z location of the mobile if it were to move to the new
+// location.
+func (m *Map) canMoveTo(mob Mobile, l uo.Location) (bool, int) {
+	// TODO consider mobiles that can swim
+
+}
+
 // MoveMobile moves a mobile in the given direction. Returns true if the
 // movement was successful.
 func (m *Map) MoveMobile(mob Mobile, dir uo.Direction) bool {
@@ -307,9 +316,22 @@ func (m *Map) MoveMobile(mob Mobile, dir uo.Direction) bool {
 	}
 	// Movement request
 	oldLocation := mob.Location()
-	newLocation := mob.Location().Forward(dir).WrapAndBound(oldLocation)
+	newLocation := oldLocation.Forward(dir).WrapAndBound(oldLocation)
+	var leftLocation uo.Location
+	var rightLocation uo.Location
+	if dir.IsDiagonal() {
+		leftLocation = oldLocation.Forward(dir.Left()).WrapAndBound(oldLocation)
+		rightLocation = oldLocation.Forward(dir.Right()).WrapAndBound(oldLocation)
+	}
 	oldChunk := m.getChunk(oldLocation)
 	newChunk := m.getChunk(newLocation)
+	var leftChunk *chunk
+	var rightChunk *chunk
+	if dir.IsDiagonal() {
+		leftChunk = m.getChunk(leftLocation)
+		rightChunk = m.getChunk(rightLocation)
+	}
+	//
 	// If this is a mobile with an attached net state we need to check for
 	// new and old objects.
 	if mob.NetState() != nil {

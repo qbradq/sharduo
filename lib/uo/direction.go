@@ -53,3 +53,12 @@ func (d Direction) StripRunningFlag() Direction {
 func (d Direction) SetRunningFlag() Direction {
 	return d | DirectionRunningFlag
 }
+
+// IsDiagonal returns true if the direction refers to a non-cardinal direction.
+func (d Direction) IsDiagonal() bool { return d&0x01 == 0x01 }
+
+// Left returns the next direction counter-clockwise on the compass rose.
+func (d Direction) Left() Direction { return (d - 1) & 0x07 }
+
+// Right returns the next direction clockwise on the compass rose.
+func (d Direction) Right() Direction { return (d + 1) & 0x07 }

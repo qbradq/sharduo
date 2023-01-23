@@ -32,6 +32,8 @@ const (
 	ContainerOpenLowerLimit   int    = -8
 	ContainerOpenUpperLimit   int    = 16
 	InvalidSkillValue         int    = 0xBAADF00D
+	PlayerHeight              int    = 16
+	StepHeight                int    = 2
 )
 
 // BoundZ bounds a Z value

@@ -339,13 +339,7 @@ type ClientViewRange struct {
 }
 
 func newClientViewRange(in []byte) Packet {
-	r := int(in[0])
-	if r < 4 {
-		r = 4
-	}
-	if r > 18 {
-		r = 18
-	}
+	r := uo.BoundViewRange(int(in[0]))
 	p := &ClientViewRange{
 		basePacket: basePacket{id: 0xC8},
 		Range:      r,
