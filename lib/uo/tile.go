@@ -7,6 +7,8 @@ type CommonObject interface {
 	BaseGraphic() Graphic
 	// Z returns the permanent Z location of the object
 	Z() int
+	// Height returns the height of the object.
+	Height() int
 	// Flag accessors
 	Background() bool
 	Weapon() bool
@@ -84,14 +86,13 @@ func (t Tile) Ignore() bool {
 }
 
 // BaseGraphic returns the graphic of the tile
-func (t Tile) BaseGraphic() Graphic {
-	return t.def.Graphic
-}
+func (t Tile) BaseGraphic() Graphic { return t.def.Graphic }
 
 // Z returns the permanent Z location of the tile
-func (t Tile) Z() int {
-	return BoundZ(t.z)
-}
+func (t Tile) Z() int { return BoundZ(t.z) }
+
+// Height returns the height of the tile, which is always 0
+func (t Tile) Height() int { return 0 }
 
 func (t Tile) Background() bool   { return t.def.TileFlags&TileFlagsBackground != 0 }
 func (t Tile) Weapon() bool       { return t.def.TileFlags&TileFlagsWeapon != 0 }

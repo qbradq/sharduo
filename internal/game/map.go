@@ -299,9 +299,110 @@ func (m *Map) ForceRemoveObject(o Object) {
 // location.
 func (m *Map) canMoveTo(mob Mobile, d uo.Direction) (bool, uo.Location) {
 	// TODO consider mobiles that can swim
+	var blockers []uo.CommonObject
 	ol := mob.Location()
 	nl := ol.Forward(d.Bound()).WrapAndBound(ol)
-
+	floor := uo.MapMinZ
+	ceiling := uo.MapMaxZ
+	footLevel := nl.Z
+	// Consider tile matrix
+	c := m.getChunk(nl)
+	t := c.GetTile(nl.X%uo.ChunkWidth, nl.Y%uo.ChunkHeight)
+	if !t.Ignore() {
+		avgZ := m.GetAverageTerrainZ(nl)
+		if avgZ <= footLevel {
+			// Mobile is above or on the ground
+			floor = avgZ
+		} else {
+			// Mobile is below ground
+			ceiling = avgZ
+		}
+	}
+	// Consider statics
+	for _, static := range c.statics {
+		// Ignore statics that are not at the location
+		if static.Location.X != nl.X || static.Location.Y != nl.Y {
+			continue
+		}
+		// Potentially blocking object
+		if static.Impassable() {
+			blockers = append(blockers, static)
+		}
+		// Only select surfaces
+		if !static.Surface() && !static.Wet() {
+			continue
+		}
+		sz := static.Z()
+		stz := sz + static.Height()
+		if stz > floor && stz <= footLevel {
+			// Static is between the tile matrix and the mob's feet, so consider
+			// it a possible floor.
+			floor = stz
+		} else if sz < ceiling && sz >= floor {
+			// Static is above us so consider it a possible ceiling.
+			ceiling = sz
+		} // Else the static is outside the current gap
+	}
+	// See if the gap is already too small
+	if ceiling-floor < uo.PlayerHeight {
+		return false, ol
+	}
+	// Consider items
+	for _, item := range c.items {
+		// Only look at items at our location
+		if item.Location().X != nl.X || item.Location().Y != nl.Y {
+			continue
+		}
+		// Potentially blocking object
+		if item.Impassable() {
+			blockers = append(blockers, item)
+		}
+		iz := item.Z()
+		itz := iz + item.Height()
+		if itz > floor && itz <= ceiling {
+			// Item is between the static floor and ceiling, consider it a
+			// possible floor.
+			floor = itz
+		}
+		if iz < ceiling && iz > floor {
+			// Item is above us so consider it a possible ceiling
+			ceiling = iz
+		} // Else the item is outside the current gap;
+	}
+	// See if there is still enough room
+	if ceiling-floor < uo.PlayerHeight {
+		return false, ol
+	}
+	// Consider the step height.
+	if floor != t.Z() {
+		// Note that when following the terrain there is no step height
+		// restriction, only when traversing over statics and items.
+		// The step height restriction only applies when going upward. Going
+		// down more than the step height is called falling.
+		if floor-ol.Z > uo.StepHeight {
+			return false, ol
+		}
+	} else {
+		// We are on the tile matrix so consider tile flags
+		if t.Impassable() {
+			return false, ol
+		}
+	}
+	// Cap the required ceiling height so we can consider blockers in the space
+	// that the player would now take up.
+	ceiling = floor + uo.PlayerHeight
+	// Consider blockers
+	for _, blocker := range blockers {
+		bz := blocker.Z()
+		btz := bz + blocker.Height()
+		if btz > floor && bz < ceiling {
+			// This blocker is within the required gap for the mobile
+			return false, ol
+		}
+	}
+	// Success
+	nl.Z = floor
+	return true, nl
 }
 
 // MoveMobile moves a mobile in the given direction. Returns true if the
@@ -318,22 +419,22 @@ func (m *Map) MoveMobile(mob Mobile, dir uo.Direction) bool {
 	}
 	// Movement request
 	oldLocation := mob.Location()
-	newLocation := oldLocation.Forward(dir).WrapAndBound(oldLocation)
-	var leftLocation uo.Location
-	var rightLocation uo.Location
+	// Check movement
+	success, newLocation := m.canMoveTo(mob, dir)
+	if !success {
+		return false
+	}
+	// Check diagonals if required
 	if dir.IsDiagonal() {
-		leftLocation = oldLocation.Forward(dir.Left()).WrapAndBound(oldLocation)
-		rightLocation = oldLocation.Forward(dir.Right()).WrapAndBound(oldLocation)
+		if success, _ := m.canMoveTo(mob, dir.Left()); !success {
+			return false
+		}
+		if success, _ := m.canMoveTo(mob, dir.Right()); !success {
+			return false
+		}
 	}
 	oldChunk := m.getChunk(oldLocation)
 	newChunk := m.getChunk(newLocation)
-	var leftChunk *chunk
-	var rightChunk *chunk
-	if dir.IsDiagonal() {
-		leftChunk = m.getChunk(leftLocation)
-		rightChunk = m.getChunk(rightLocation)
-	}
-	//
 	// If this is a mobile with an attached net state we need to check for
 	// new and old objects.
 	if mob.NetState() != nil {
