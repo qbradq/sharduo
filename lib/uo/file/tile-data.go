@@ -1,6 +1,7 @@
 package file
 
 import (
+	"bytes"
 	"encoding/binary"
 	"os"
 
@@ -30,11 +31,17 @@ func NewTileDataMul(fname string) *TileDataMul {
 	for tileDataChunk := 0; tileDataChunk < 512; tileDataChunk++ {
 		dofs += 4 // Skip header
 		for tileDataI := 0; tileDataI < 32; tileDataI++ {
+			sd := d[dofs+10 : dofs+30]
+			idx := bytes.IndexByte(sd, 0)
+			name := ""
+			if idx > 0 {
+				name = string(sd[:idx])
+			}
 			ret.tileDefinitions[tilei] = uo.TileDefinition{
 				Graphic:   uo.Graphic(tilei),
 				TileFlags: uo.TileFlags(binary.LittleEndian.Uint64(d[dofs+0 : dofs+8])),
 				Texture:   uo.Texture(binary.LittleEndian.Uint16(d[dofs+8 : dofs+10])),
-				Name:      string(d[dofs+10 : dofs+30]),
+				Name:      name,
 			}
 			tilei++
 			dofs += 30

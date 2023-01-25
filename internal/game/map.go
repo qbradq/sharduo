@@ -338,7 +338,7 @@ func (m *Map) canMoveTo(mob Mobile, d uo.Direction) (bool, uo.Location) {
 			// Static is between the tile matrix and the mob's feet, so consider
 			// it a possible floor.
 			floor = stz
-		} else if sz < ceiling && sz >= floor {
+		} else if sz < ceiling && sz > floor {
 			// Static is above us so consider it a possible ceiling.
 			ceiling = sz
 		} // Else the static is outside the current gap
@@ -482,10 +482,14 @@ func (m *Map) TeleportMobile(mob Mobile, l uo.Location) bool {
 		// mobile it will still be in the data set and will be retrieved when
 		// the player logs in again.
 		mob.SetLocation(oldLocation)
-		world.Map().AddObject(mob)
+		world.Map().ForceAddObject(mob)
 		return false
 	}
 	if mob.NetState() != nil {
+		mob.SetLocation(oldLocation)
+		m.RemoveEverything(mob)
+		mob.SetLocation(l)
+		m.SendEverything(mob)
 		mob.NetState().DrawPlayer()
 	}
 	return true
