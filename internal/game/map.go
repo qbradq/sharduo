@@ -298,78 +298,14 @@ func (m *Map) ForceRemoveObject(o Object) {
 // value will be the new location of the mobile if it were to move to the new
 // location.
 func (m *Map) canMoveTo(mob Mobile, d uo.Direction) (bool, uo.Location) {
-	// TODO consider mobiles that can swim
-	var blockers []uo.CommonObject
 	ol := mob.Location()
 	nl := ol.Forward(d.Bound()).WrapAndBound(ol)
-	floor := uo.MapMinZ
-	ceiling := uo.MapMaxZ
-	footLevel := nl.Z
-	// Consider tile matrix
-	c := m.getChunk(nl)
-	t := c.GetTile(nl.X%uo.ChunkWidth, nl.Y%uo.ChunkHeight)
-	if !t.Ignore() {
-		avgZ := m.GetAverageTerrainZ(nl)
-		if avgZ <= footLevel {
-			// Mobile is above or on the ground
-			floor = avgZ
-		} else {
-			// Mobile is below ground
-			ceiling = avgZ
-		}
+	floor, ceiling := m.GetFloorAndCeiling(nl)
+	// No floor to stand on, bail
+	if floor = nil {
+		
 	}
-	// Consider statics
-	for _, static := range c.statics {
-		// Ignore statics that are not at the location
-		if static.Location.X != nl.X || static.Location.Y != nl.Y {
-			continue
-		}
-		// Potentially blocking object
-		if static.Impassable() {
-			blockers = append(blockers, static)
-		}
-		// Only select surfaces
-		if !static.Surface() && !static.Wet() {
-			continue
-		}
-		sz := static.Z()
-		stz := sz + static.Height()
-		if stz > floor && stz <= footLevel {
-			// Static is between the tile matrix and the mob's feet, so consider
-			// it a possible floor.
-			floor = stz
-		} else if sz < ceiling && sz > floor {
-			// Static is above us so consider it a possible ceiling.
-			ceiling = sz
-		} // Else the static is outside the current gap
-	}
-	// See if the gap is already too small
-	if ceiling-floor < uo.PlayerHeight {
-		return false, ol
-	}
-	// Consider items
-	for _, item := range c.items {
-		// Only look at items at our location
-		if item.Location().X != nl.X || item.Location().Y != nl.Y {
-			continue
-		}
-		// Potentially blocking object
-		if item.Impassable() {
-			blockers = append(blockers, item)
-		}
-		iz := item.Z()
-		itz := iz + item.Height()
-		if itz > floor && itz <= ceiling {
-			// Item is between the static floor and ceiling, consider it a
-			// possible floor.
-			floor = itz
-		}
-		if iz < ceiling && iz > floor {
-			// Item is above us so consider it a possible ceiling
-			ceiling = iz
-		} // Else the item is outside the current gap;
-	}
-	// See if there is still enough room
+	// See if there is enough room for the mobile to fit if it took the step
 	if ceiling-floor < uo.PlayerHeight {
 		return false, ol
 	}
@@ -931,4 +867,85 @@ func (m *Map) plopItems(l uo.Location, drop int) {
 			world.Update(item)
 		}
 	}
+}
+
+// GetFloorAndCeiling returns the objects that make up the floor below and the
+// ceiling above a given reference point. These objects may be any of the
+// objects contained within the map such as Mobiles, Items, Statics, and Multis.
+// A nil return value means that there is no floor below the position, or that
+// there is no ceiling above the position. Normally at least one of the return
+// values will be non-nil referencing at least the tile matrix. However there
+// are certain places on the map - such as cave entrances - where the tile
+// matrix is ignored. In these cases both return values may be nil if there are
+// no items or statics to create a surface.
+func (m *Map) GetFloorAndCeiling(l uo.Location) (uo.CommonObject, uo.CommonObject) {
+	floor := uo.MapMinZ
+	var floorObject uo.CommonObject
+	ceiling := uo.MapMaxZ
+	var ceilingObject uo.CommonObject
+	footLevel := l.Z
+	// Consider tile matrix
+	c := m.getChunk(l)
+	t := c.GetTile(l.X%uo.ChunkWidth, l.Y%uo.ChunkHeight)
+	if !t.Ignore() {
+		avgZ := m.GetAverageTerrainZ(l)
+		if avgZ <= footLevel {
+			// Mobile is above or on the ground
+			floor = avgZ
+			floorObject = t
+		} else {
+			// Mobile is below ground
+			ceiling = avgZ
+			ceilingObject = t
+		}
+	}
+	// Consider statics
+	for _, static := range c.statics {
+		// Ignore statics that are not at the location
+		if static.Location.X != l.X || static.Location.Y != l.Y {
+			continue
+		}
+		// Only select solid statics. This ignores things like leaves and stuff
+		if !static.Surface() && !static.Wet() && !static.Impassable() {
+			continue
+		}
+		sz := static.Z()
+		stz := sz + static.Height()
+		if stz > floor && stz <= footLevel {
+			// Static is between the tile matrix and the mob's feet, so consider
+			// it a possible floor.
+			floor = stz
+			floorObject = static
+		} else if sz < ceiling && sz > floor {
+			// Static is above us so consider it a possible ceiling.
+			ceiling = sz
+			ceilingObject = static
+		} // Else the static is outside the current gap
+	}
+	// Consider items
+	for _, item := range c.items {
+		// Only look at items at our location
+		if item.Location().X != l.X || item.Location().Y != l.Y {
+			continue
+		}
+		// Only select solid items. This ignores passible items like gold.
+		if !item.Surface() && !item.Wet() && !item.Impassable() {
+			continue
+		}
+		iz := item.Z()
+		itz := iz + item.Height()
+		if itz > floor && itz <= ceiling {
+			// Item is between the static floor and ceiling, consider it a
+			// possible floor.
+			floor = itz
+			floorObject = item
+		}
+		if iz < ceiling && iz > floor {
+			// Item is between the ceiling and the floor, consider it a possible
+			// ceiling.
+			ceiling = iz
+			ceilingObject = item
+		} // Else the item is outside the current gap;
+	}
+	return floorObject, ceilingObject
 }
