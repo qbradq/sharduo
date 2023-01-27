@@ -9,6 +9,12 @@ type CommonObject interface {
 	Z() int
 	// Height returns the height of the object.
 	Height() int
+	// StandingHeight returns the height at which other objects rest above this
+	// object's position. Absolute elevation is Z()+StandingHeight(). For solid
+	// objects this is equal to Z()+Height(). For Bridge() type objects -
+	// typically stairs - this is Z()+Height()/2 rounded down. For all non-solid
+	// objects the return value will be Z().
+	StandingHeight() int
 	// Flag accessors
 	Background() bool
 	Weapon() bool
@@ -93,6 +99,9 @@ func (t Tile) Z() int { return BoundZ(t.z) }
 
 // Height returns the height of the tile, which is always 0
 func (t Tile) Height() int { return 0 }
+
+// StandingHeight returns the standing height of the tile, which is always 0
+func (t Tile) StandingHeight() int { return 0 }
 
 func (t Tile) Background() bool   { return t.def.TileFlags&TileFlagsBackground != 0 }
 func (t Tile) Weapon() bool       { return t.def.TileFlags&TileFlagsWeapon != 0 }

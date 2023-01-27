@@ -53,6 +53,17 @@ func (s Static) Height() int {
 	return s.def.Height
 }
 
+// StandingHeight returns the standing height based on the object's flags.
+func (s Static) StandingHeight() int {
+	if !s.Surface() && !s.Wet() && !s.Impassable() {
+		return 0
+	}
+	if s.Bridge() {
+		return s.def.Height / 2
+	}
+	return s.def.Height
+}
+
 // Z returns the permanent Z location of the tile
 func (s Static) Z() int {
 	return BoundZ(s.Location.Z)

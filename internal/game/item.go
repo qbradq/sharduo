@@ -63,6 +63,8 @@ type Item interface {
 	CanCombineWith(Item) bool
 	// Height returns the height of the item
 	Height() int
+	// StandingHeight returns the standing height offset of the item, usually 0
+	StandingHeight() int
 	// Z returns the permanent Z location of the object
 	Z() int
 	// DropLocation returns the requested drop location of an item
@@ -357,6 +359,17 @@ func (i *BaseItem) DropObject(obj Object, l uo.Location, from Mobile) bool {
 
 // Height implements the Item interface.
 func (i *BaseItem) Height() int { return i.def.Height }
+
+// StandingHeight returns the standing height based on the object's flags.
+func (i *BaseItem) StandingHeight() int {
+	if !i.Surface() && !i.Wet() && !i.Impassable() {
+		return 0
+	}
+	if i.Bridge() {
+		return i.def.Height / 2
+	}
+	return i.def.Height
+}
 
 // Weight implements the Object interface
 func (i *BaseItem) Weight() float32 {

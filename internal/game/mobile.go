@@ -83,6 +83,10 @@ type Mobile interface {
 	SetFacing(uo.Direction)
 	// SetRunning sets the running flag of the mobile.
 	SetRunning(bool)
+	// StandOn sets the surface that the mobile is standing on.
+	StandOn(uo.CommonObject)
+	// StandingOn returns the surface that the mobile is standing on.
+	StandingOn() uo.CommonObject
 
 	//
 	// Graphics and display
@@ -206,6 +210,8 @@ type BaseMobile struct {
 	body uo.Body
 	// Running flag
 	isRunning bool
+	// Surface we are standing on
+	floor uo.CommonObject
 	// Notoriety of the mobile
 	notoriety uo.Notoriety
 
@@ -416,6 +422,12 @@ func (m *BaseMobile) IsRunning() bool { return m.isRunning }
 func (m *BaseMobile) SetRunning(v bool) {
 	m.isRunning = v
 }
+
+// StandOn implements the Mobile interface.
+func (m *BaseMobile) StandOn(s uo.CommonObject) { m.floor = s }
+
+// StandingOn implements the Mobile interface.
+func (m *BaseMobile) StandingOn() uo.CommonObject { return m.floor }
 
 // Facing implements the Mobile interface.
 func (m *BaseMobile) Facing() uo.Direction { return m.facing }

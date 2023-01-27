@@ -52,6 +52,18 @@ func (i *StaticItem) SetBaseGraphic(g uo.Graphic) {
 	i.graphic = g
 	i.def = world.GetItemDefinition(g)
 }
+
+// StandingHeight returns the standing height based on the object's flags.
+func (i *StaticItem) StandingHeight() int {
+	if !i.Surface() && !i.Wet() && !i.Impassable() {
+		return 0
+	}
+	if i.Bridge() {
+		return i.def.Height / 2
+	}
+	return i.def.Height
+}
+
 func (i *StaticItem) GraphicOffset() int            { return 0 }
 func (i *StaticItem) Dyable() bool                  { return false }
 func (i *StaticItem) Flippable() bool               { return false }
