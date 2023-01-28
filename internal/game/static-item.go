@@ -54,7 +54,7 @@ func (i *StaticItem) SetBaseGraphic(g uo.Graphic) {
 }
 
 // StandingHeight returns the standing height based on the object's flags.
-func (i *StaticItem) StandingHeight() int {
+func (i *StaticItem) StandingHeight() int8 {
 	if !i.Surface() && !i.Wet() && !i.Impassable() {
 		return 0
 	}
@@ -75,8 +75,8 @@ func (i *StaticItem) Consume(n int) bool            { return false }
 func (i *StaticItem) Split(n int) Item              { return nil }
 func (i *StaticItem) Combine(item Item) bool        { return false }
 func (i *StaticItem) CanCombineWith(Item) bool      { return false }
-func (i *StaticItem) Height() int                   { return i.def.Height }
-func (i *StaticItem) Z() int                        { return i.location.Z }
+func (i *StaticItem) Height() int8                  { return i.def.Height }
+func (i *StaticItem) Z() int8                       { return i.location.Z }
 func (i *StaticItem) DropLocation() uo.Location     { return uo.RandomContainerLocation }
 func (i *StaticItem) SetDropLocation(l uo.Location) {}
 

@@ -88,14 +88,17 @@ opened to outside connections.
 This is a list of known issues that do not need to be resolved before the next
 milestone but do need to be resolved sometime.
 
-* Reduce redundancy in save files... somehow
-* Improve client file load time
+* ~~Save system re-write~~
+* Reduce allocations for map query operations
 * Proper coordinate wrapping in uo.Location.XYDistance()
 * Wrapped overworld
 
 ## Feature Packages ##
 Below are tasks that need to be completed to fully implement other feature
 verticals.
+
+### Blacksmithing ###
+
 
 # Shard Administration Advice #
 The ShardUO software and the creative content within were developed to host a

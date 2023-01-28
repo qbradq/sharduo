@@ -17,7 +17,7 @@ const (
 )
 
 // Internal slice of direction offsets for use with GetForwardOffset
-var dirOfs = [][]int{
+var dirOfs = [][]int16{
 	{0, -1},
 	{1, -1},
 	{1, 0},

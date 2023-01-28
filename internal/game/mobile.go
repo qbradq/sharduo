@@ -71,10 +71,10 @@ type Mobile interface {
 	// ViewRange returns the number of tiles this mobile can see and visually
 	// observe objects in the world. If this mobile has an attached NetState,
 	// this value can change at any time at the request of the player.
-	ViewRange() int
+	ViewRange() int16
 	// SetViewRange sets the view range of the mobile, bounding it to sane
 	// values.
-	SetViewRange(int)
+	SetViewRange(int16)
 	// IsRunning returns true if the mobile is running.
 	IsRunning() bool
 	// Facing returns the current facing of the mobile.
@@ -201,7 +201,7 @@ type BaseMobile struct {
 
 	// Current view range of the mobile. Please note that the zero value IS NOT
 	// SANE for this variable!
-	viewRange int
+	viewRange int16
 	// isPlayerCharacter is true if the mobile is attached to a player's account
 	isPlayerCharacter bool
 	// isFemale is true if the mobile is female
@@ -297,7 +297,7 @@ func (m *BaseMobile) Deserialize(f *util.TagFileObject) {
 	m.skills = make([]int16, uo.SkillCount)
 	m.cursor = &Cursor{}
 	m.BaseObject.Deserialize(f)
-	m.viewRange = f.GetNumber("ViewRange", uo.MaxViewRange)
+	m.viewRange = int16(f.GetNumber("ViewRange", int(uo.MaxViewRange)))
 	m.isPlayerCharacter = f.GetBool("IsPlayerCharacter", false)
 	m.isFemale = f.GetBool("IsFemale", false)
 	m.body = uo.Body(f.GetNumber("Body", int(uo.BodyDefault)))
@@ -339,7 +339,7 @@ func (m *BaseMobile) Deserialize(f *util.TagFileObject) {
 func (m *BaseMobile) Unmarshal(s *marshal.TagFileSegment) *marshal.TagCollection {
 	tags := m.BaseObject.Unmarshal(s)
 	m.cursor = &Cursor{}
-	m.viewRange = uo.BoundViewRange(int(tags.Byte(marshal.TagViewRange)))
+	m.viewRange = uo.BoundViewRange(int16(tags.Byte(marshal.TagViewRange)))
 	m.isPlayerCharacter = tags.Bool(marshal.TagIsPlayerCharacter)
 	m.isFemale = tags.Bool(marshal.TagIsFemale)
 	m.body = uo.Body(tags.Short(marshal.TagBody))
@@ -396,10 +396,10 @@ func (m *BaseMobile) SetNetState(n NetState) {
 }
 
 // ViewRange implements the Mobile interface.
-func (m *BaseMobile) ViewRange() int { return m.viewRange }
+func (m *BaseMobile) ViewRange() int16 { return m.viewRange }
 
 // SetViewRange implements the Mobile interface.
-func (m *BaseMobile) SetViewRange(r int) { m.viewRange = uo.BoundViewRange(r) }
+func (m *BaseMobile) SetViewRange(r int16) { m.viewRange = uo.BoundViewRange(r) }
 
 // Body implements the Mobile interface.
 func (m *BaseMobile) Body() uo.Body { return m.body }

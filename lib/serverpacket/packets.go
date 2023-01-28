@@ -127,7 +127,7 @@ type EnterWorld struct {
 	// Body graphic
 	Body uo.Body
 	// Position
-	X, Y, Z int
+	Location uo.Location
 	// Direction the player is facing and if running.
 	Facing uo.Direction
 	// Server dimensions
@@ -140,10 +140,10 @@ func (p *EnterWorld) Write(w io.Writer) {
 	dc.PutUint32(w, uint32(p.Player))
 	dc.Pad(w, 4)
 	dc.PutUint16(w, uint16(p.Body))
-	dc.PutUint16(w, uint16(p.X))
-	dc.PutUint16(w, uint16(p.Y))
+	dc.PutUint16(w, uint16(p.Location.X))
+	dc.PutUint16(w, uint16(p.Location.Y))
 	dc.PutByte(w, 0)
-	dc.PutByte(w, byte(p.Z))
+	dc.PutByte(w, byte(p.Location.Z))
 	dc.PutByte(w, byte(p.Facing))
 	dc.PutByte(w, 0)
 	dc.Fill(w, 0xff, 4)
@@ -239,12 +239,8 @@ type EquippedMobile struct {
 	ID uo.Serial
 	// Body of the mobile
 	Body uo.Body
-	// X position of the mobile
-	X int
-	// Y position of the mobile
-	Y int
-	// Z position of the mobile
-	Z int
+	// Position of the mobile
+	Location uo.Location
 	// Direction the mobile is facing
 	Facing uo.Direction
 	// Running flag
@@ -278,9 +274,9 @@ func (p *EquippedMobile) Write(w io.Writer) {
 	dc.PutUint16(w, uint16(19+len(p.Equipment)*9+4))
 	dc.PutUint32(w, uint32(p.ID))
 	dc.PutUint16(w, uint16(p.Body))
-	dc.PutUint16(w, uint16(p.X))
-	dc.PutUint16(w, uint16(p.Y))
-	dc.PutByte(w, byte(int8(p.Z)))
+	dc.PutUint16(w, uint16(p.Location.X))
+	dc.PutUint16(w, uint16(p.Location.Y))
+	dc.PutByte(w, byte(p.Location.Z))
 	// Facing
 	if p.IsRunning {
 		dc.PutByte(w, byte(p.Facing.SetRunningFlag()))
@@ -398,12 +394,8 @@ type ObjectInfo struct {
 	GraphicIncrement int
 	// Amount, must be at least 1, no greater than 60000 - always 1 for multi
 	Amount int
-	// X location of the item or multi
-	X int
-	// X location of the item or multi
-	Y int
-	// Z location of the item or multi
-	Z int
+	// Location of the item or multi
+	Location uo.Location
 	// Facing of the item - always 0 for multi
 	Facing uo.Direction
 	// Layer of the item or 0 if not equipable or multi
@@ -438,9 +430,9 @@ func (p *ObjectInfo) Write(w io.Writer) {
 	dc.PutUint16(w, uint16(n))
 	dc.PutUint16(w, uint16(n))
 	// Location
-	dc.PutUint16(w, uint16(p.X&0x7FFF))
-	dc.PutUint16(w, uint16(p.Y&0x3FFF))
-	dc.PutByte(w, byte(int8(p.Z)))
+	dc.PutUint16(w, uint16(p.Location.X&0x7FFF))
+	dc.PutUint16(w, uint16(p.Location.Y&0x3FFF))
+	dc.PutByte(w, byte(p.Location.Z))
 	// Facing
 	dc.PutByte(w, 0)
 	// Hue
@@ -691,10 +683,8 @@ type AddItemToContainer struct {
 	GraphicOffset int
 	// Stack amount, truncated to 0-0xFFFF inclusive
 	Amount int
-	// X coordinate of the item in the container, 0xFFFF means random
-	X int
-	// Y coordinate of the item in the container, 0xFFFF means random
-	Y int
+	// Location of the item in the container. X=Y=0xFFFF means random location.
+	Location uo.Location
 	// The ID of the container and container gump to add this item to
 	Container uo.Serial
 	// Hue of the item
@@ -708,8 +698,8 @@ func (p *AddItemToContainer) Write(w io.Writer) {
 	dc.PutUint16(w, uint16(p.Graphic))
 	dc.PutByte(w, byte(p.GraphicOffset))
 	dc.PutUint16(w, uint16(p.Amount))
-	dc.PutUint16(w, uint16(p.X))
-	dc.PutUint16(w, uint16(p.Y))
+	dc.PutUint16(w, uint16(p.Location.X))
+	dc.PutUint16(w, uint16(p.Location.Y))
 	dc.Pad(w, 1) // Grid index
 	dc.PutUint32(w, uint32(p.Container))
 	dc.PutUint16(w, uint16(p.Hue))
@@ -725,10 +715,8 @@ type ContentsItem struct {
 	GraphicOffset int
 	// Stack amount
 	Amount int
-	// X location of the item in the container
-	X int
-	// Y location of the item in the container
-	Y int
+	// Location of the item in the container
+	Location uo.Location
 	// Serial of the container to add the item to
 	Container uo.Serial
 	// Hue of the item
@@ -750,8 +738,8 @@ func (p *Contents) Write(w io.Writer) {
 		dc.PutUint16(w, uint16(item.Graphic))
 		dc.PutByte(w, byte(item.GraphicOffset))
 		dc.PutUint16(w, uint16(item.Amount))
-		dc.PutUint16(w, uint16(item.X))
-		dc.PutUint16(w, uint16(item.Y))
+		dc.PutUint16(w, uint16(item.Location.X))
+		dc.PutUint16(w, uint16(item.Location.Y))
 		dc.Pad(w, 1) // Grid index
 		dc.PutUint32(w, uint32(item.Container))
 		dc.PutUint16(w, uint16(item.Hue))

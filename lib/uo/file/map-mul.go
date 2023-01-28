@@ -46,7 +46,7 @@ func NewMapMulFromFile(fname string, tdmul *TileDataMul) *MapMul {
 			for ty := 0; ty < uo.ChunkHeight; ty++ {
 				for tx := 0; tx < uo.ChunkWidth; tx++ {
 					tileIdx := binary.LittleEndian.Uint16(seg[sofs : sofs+2])
-					z := int(int8(seg[sofs+2]))
+					z := int8(seg[sofs+2])
 					sofs += 3
 					chunk.Tiles[ty*uo.ChunkWidth+tx] = uo.NewTile(z, tdmul.GetTileDefinition(int(tileIdx)))
 				}

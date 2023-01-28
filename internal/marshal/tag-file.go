@@ -257,8 +257,8 @@ func (s *TagFileSegment) PutBounds(b uo.Bounds) {
 	s.tbuf[4] = byte(int8(b.Z))
 	binary.LittleEndian.PutUint16(s.tbuf[5:7], uint16(b.W))
 	binary.LittleEndian.PutUint16(s.tbuf[7:9], uint16(b.H))
-	s.tbuf[9] = byte(int8(b.Z))
-	s.buf.Write(s.tbuf[0:10])
+	binary.LittleEndian.PutUint16(s.tbuf[9:11], uint16(b.D))
+	s.buf.Write(s.tbuf[0:11])
 }
 
 // PutTag writes a tagged value to the segment. Please note that to write a
@@ -303,8 +303,8 @@ func (s *TagFileSegment) PutTag(t Tag, tv TagValue, value interface{}) {
 		s.tbuf[4] = uint8(int8(b.Z))
 		binary.LittleEndian.PutUint16(s.tbuf[5:7], uint16(b.W))
 		binary.LittleEndian.PutUint16(s.tbuf[7:9], uint16(b.H))
-		s.tbuf[9] = uint8(int8(b.Z))
-		s.buf.Write(s.tbuf[0:10])
+		binary.LittleEndian.PutUint16(s.tbuf[9:11], uint16(b.D))
+		s.buf.Write(s.tbuf[0:11])
 	case TagValueShortSlice:
 		v := value.([]int16)
 		if len(v) > 255 {
@@ -422,22 +422,22 @@ func (s *TagFileSegment) ShortSlice() []int16 {
 func (s *TagFileSegment) Location() uo.Location {
 	s.buf.Read(s.tbuf[0:5])
 	return uo.Location{
-		X: int(binary.LittleEndian.Uint16(s.tbuf[0:2])),
-		Y: int(binary.LittleEndian.Uint16(s.tbuf[2:4])),
-		Z: int(int8(s.tbuf[4])),
+		X: int16(binary.LittleEndian.Uint16(s.tbuf[0:2])),
+		Y: int16(binary.LittleEndian.Uint16(s.tbuf[2:4])),
+		Z: int8(s.tbuf[4]),
 	}
 }
 
 // Bounds returns the next uo.Bounds value encoded into the segment.
 func (s *TagFileSegment) Bounds() uo.Bounds {
-	s.buf.Read(s.tbuf[0:10])
+	s.buf.Read(s.tbuf[0:11])
 	return uo.Bounds{
-		X: int(binary.LittleEndian.Uint16(s.tbuf[0:2])),
-		Y: int(binary.LittleEndian.Uint16(s.tbuf[2:4])),
-		Z: int(int8(s.tbuf[4])),
-		W: int(binary.LittleEndian.Uint16(s.tbuf[5:7])),
-		H: int(binary.LittleEndian.Uint16(s.tbuf[7:9])),
-		D: int(int8(s.tbuf[9])),
+		X: int16(binary.LittleEndian.Uint16(s.tbuf[0:2])),
+		Y: int16(binary.LittleEndian.Uint16(s.tbuf[2:4])),
+		Z: int8(s.tbuf[4]),
+		W: int16(binary.LittleEndian.Uint16(s.tbuf[5:7])),
+		H: int16(binary.LittleEndian.Uint16(s.tbuf[7:9])),
+		D: int16(binary.LittleEndian.Uint16(s.tbuf[9:11])),
 	}
 }
 

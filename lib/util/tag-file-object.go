@@ -197,24 +197,24 @@ func (o *TagFileObject) GetLocation(name string, def uo.Location) uo.Location {
 		}
 		hasErrors := false
 		var l uo.Location
-		v, err := strconv.ParseInt(parts[0], 0, 32)
+		v, err := strconv.ParseInt(parts[0], 0, 16)
 		if err != nil {
 			o.errs = append(o.errs, err)
 			hasErrors = true
 		}
-		l.X = int(v)
-		v, err = strconv.ParseInt(parts[1], 0, 32)
+		l.X = int16(v)
+		v, err = strconv.ParseInt(parts[1], 0, 16)
 		if err != nil {
 			o.errs = append(o.errs, err)
 			hasErrors = true
 		}
-		l.Y = int(v)
-		v, err = strconv.ParseInt(parts[2], 0, 32)
+		l.Y = int16(v)
+		v, err = strconv.ParseInt(parts[2], 0, 8)
 		if err != nil {
 			o.errs = append(o.errs, err)
 			hasErrors = true
 		}
-		l.Z = int(v)
+		l.Z = int8(v)
 		if hasErrors {
 			return def
 		}
@@ -234,30 +234,30 @@ func (o *TagFileObject) GetBounds(name string, def uo.Bounds) uo.Bounds {
 		}
 		hasErrors := false
 		var b uo.Bounds
-		v, err := strconv.ParseInt(parts[0], 0, 32)
+		v, err := strconv.ParseInt(parts[0], 0, 16)
 		if err != nil {
 			o.errs = append(o.errs, err)
 			hasErrors = true
 		}
-		b.X = int(v)
-		v, err = strconv.ParseInt(parts[1], 0, 32)
+		b.X = int16(v)
+		v, err = strconv.ParseInt(parts[1], 0, 16)
 		if err != nil {
 			o.errs = append(o.errs, err)
 			hasErrors = true
 		}
-		b.Y = int(v)
-		v, err = strconv.ParseInt(parts[2], 0, 32)
+		b.Y = int16(v)
+		v, err = strconv.ParseInt(parts[2], 0, 16)
 		if err != nil {
 			o.errs = append(o.errs, err)
 			hasErrors = true
 		}
-		b.W = int(v)
-		v, err = strconv.ParseInt(parts[3], 0, 32)
+		b.W = int16(v)
+		v, err = strconv.ParseInt(parts[3], 0, 16)
 		if err != nil {
 			o.errs = append(o.errs, err)
 			hasErrors = true
 		}
-		b.H = int(v)
+		b.H = int16(v)
 		if hasErrors {
 			return def
 		}

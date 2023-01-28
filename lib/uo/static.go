@@ -19,7 +19,7 @@ type StaticDefinition struct {
 	// Light index
 	Light Light
 	// Height
-	Height int
+	Height int8
 	// Name of the static, truncated to 20 characters
 	Name string
 }
@@ -46,7 +46,7 @@ func (s Static) BaseGraphic() Graphic {
 }
 
 // Height returns the height of the static with regards to internal flags
-func (s Static) Height() int {
+func (s Static) Height() int8 {
 	if s.def.TileFlags.Bridge() {
 		return s.def.Height / 2
 	}
@@ -54,7 +54,7 @@ func (s Static) Height() int {
 }
 
 // StandingHeight returns the standing height based on the object's flags.
-func (s Static) StandingHeight() int {
+func (s Static) StandingHeight() int8 {
 	if !s.Surface() && !s.Wet() && !s.Impassable() {
 		return 0
 	}
@@ -65,9 +65,7 @@ func (s Static) StandingHeight() int {
 }
 
 // Z returns the permanent Z location of the tile
-func (s Static) Z() int {
-	return BoundZ(s.Location.Z)
-}
+func (s Static) Z() int8 { return s.Location.Z }
 
 func (s Static) Background() bool   { return s.def.TileFlags&TileFlagsBackground != 0 }
 func (s Static) Weapon() bool       { return s.def.TileFlags&TileFlagsWeapon != 0 }

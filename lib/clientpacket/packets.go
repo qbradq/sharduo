@@ -335,11 +335,11 @@ func newPlayerStatusRequest(in []byte) Packet {
 type ClientViewRange struct {
 	basePacket
 	// Requested view range, clamped to between 4 and 18 inclusive
-	Range int
+	Range int16
 }
 
 func newClientViewRange(in []byte) Packet {
-	r := uo.BoundViewRange(int(in[0]))
+	r := uo.BoundViewRange(int16(in[0]))
 	p := &ClientViewRange{
 		basePacket: basePacket{id: 0xC8},
 		Range:      r,
@@ -378,21 +378,17 @@ func newWalkRequest(in []byte) Packet {
 // TargetResponse is sent by the client to respond to a tardc.Geting cursor
 type TargetResponse struct {
 	basePacket
-	// Tardc.Get type
+	// Target type
 	TargetType uo.TargetType
-	// Serial of this tardc.Geting request
+	// Serial of this targeting request
 	TargetSerial uo.Serial
 	// Cursor type
 	CursorType uo.CursorType
-	// Tardc.GetObject is the serial of the object clicked on, or uo.SerialZero if
-	// no object was tardc.Geted.
+	// TargetObject is the serial of the object clicked on, or uo.SerialZero if
+	// no object was targeted.
 	TargetObject uo.Serial
-	// The X location of the tardc.Get
-	X int
-	// The Y location of the tardc.Get
-	Y int
-	// The Z location of the tardc.Get
-	Z int
+	// Location of the target.
+	Location uo.Location
 	// Graphic of the object clicked, if any
 	Graphic uo.Graphic
 }
@@ -404,10 +400,12 @@ func newTargetResponse(in []byte) Packet {
 		TargetSerial: uo.Serial(dc.GetUint32(in[1:5])),
 		CursorType:   uo.CursorType(in[5]),
 		TargetObject: uo.Serial(dc.GetUint32(in[6:10])),
-		X:            int(dc.GetUint16(in[10:12])),
-		Y:            int(dc.GetUint16(in[12:14])),
-		Z:            int(in[15]),
-		Graphic:      uo.Graphic(dc.GetUint16(in[16:18])),
+		Location: uo.Location{
+			X: int16(dc.GetUint16(in[10:12])),
+			Y: int16(dc.GetUint16(in[12:14])),
+			Z: int8(in[15]),
+		},
+		Graphic: uo.Graphic(dc.GetUint16(in[16:18])),
 	}
 	return p
 }
@@ -435,12 +433,8 @@ type DropRequest struct {
 	basePacket
 	// Serial of the object to drop
 	Item uo.Serial
-	// X location to drop the item
-	X int
-	// Y location to drop the item
-	Y int
-	// Z location to drop the item
-	Z int
+	// Location to drop the item
+	Location uo.Location
 	// Serial of the container to drop the item into. uo.SerialSystem means to
 	// drop to the world.
 	Container uo.Serial
@@ -450,9 +444,11 @@ func newDropRequest(in []byte) Packet {
 	p := &DropRequest{
 		basePacket: basePacket{id: 0x08},
 		Item:       uo.Serial(dc.GetUint32(in[0:4])),
-		X:          int(dc.GetUint16(in[4:6])),
-		Y:          int(dc.GetUint16(in[6:8])),
-		Z:          int(int8(in[8])),
+		Location: uo.Location{
+			X: int16(dc.GetUint16(in[4:6])),
+			Y: int16(dc.GetUint16(in[6:8])),
+			Z: int8(in[8]),
+		},
 		// Skip one byte for the grid index
 		Container: uo.Serial(dc.GetUint32(in[10:14])),
 	}

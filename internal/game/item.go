@@ -62,11 +62,11 @@ type Item interface {
 	// one. This function does not consider max stack count.
 	CanCombineWith(Item) bool
 	// Height returns the height of the item
-	Height() int
+	Height() int8
 	// StandingHeight returns the standing height offset of the item, usually 0
-	StandingHeight() int
+	StandingHeight() int8
 	// Z returns the permanent Z location of the object
-	Z() int
+	Z() int8
 	// DropLocation returns the requested drop location of an item
 	DropLocation() uo.Location
 	// SetDropLocation sets the requested drop location of an item
@@ -358,10 +358,10 @@ func (i *BaseItem) DropObject(obj Object, l uo.Location, from Mobile) bool {
 }
 
 // Height implements the Item interface.
-func (i *BaseItem) Height() int { return i.def.Height }
+func (i *BaseItem) Height() int8 { return i.def.Height }
 
 // StandingHeight returns the standing height based on the object's flags.
-func (i *BaseItem) StandingHeight() int {
+func (i *BaseItem) StandingHeight() int8 {
 	if !i.Surface() && !i.Wet() && !i.Impassable() {
 		return 0
 	}
@@ -372,14 +372,10 @@ func (i *BaseItem) StandingHeight() int {
 }
 
 // Weight implements the Object interface
-func (i *BaseItem) Weight() float32 {
-	return i.weight * float32(i.amount)
-}
+func (i *BaseItem) Weight() float32 { return i.weight * float32(i.amount) }
 
 // Z returns the permanent Z location of the tile
-func (i *BaseItem) Z() int {
-	return uo.BoundZ(i.location.Z)
-}
+func (i *BaseItem) Z() int8 { return i.location.Z }
 
 // DropLocation implements the Item interface
 func (i *BaseItem) DropLocation() uo.Location { return i.dropLocation }

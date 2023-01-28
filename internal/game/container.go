@@ -304,10 +304,10 @@ func (c *BaseContainer) ForceAddObject(o Object) {
 	}
 	// Location bounding
 	if l.X == uo.RandomDropX {
-		l.X = world.Random().Random(c.bounds.X, c.bounds.X+c.bounds.W-1)
+		l.X = int16(world.Random().Random(int(c.bounds.X), int(c.bounds.X+c.bounds.W-1)))
 	}
 	if l.Y == uo.RandomDropY {
-		l.Y = world.Random().Random(c.bounds.Y, c.bounds.Y+c.bounds.H-1)
+		l.Y = int16(world.Random().Random(int(c.bounds.Y), int(c.bounds.Y+c.bounds.H-1)))
 	}
 	if l.X < c.bounds.X {
 		l.X = c.bounds.X

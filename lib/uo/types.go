@@ -4,9 +4,9 @@ package uo
 const (
 	MinStackAmount            uint16 = 1
 	MaxStackAmount            uint16 = 60000
-	MinViewRange              int    = 5
-	MaxViewRange              int    = 18
-	MaxUpdateRange            int    = 24
+	MinViewRange              int16  = 5
+	MaxViewRange              int16  = 18
+	MaxUpdateRange            int16  = 24
 	ChunkWidth                int    = 8
 	ChunkHeight               int    = 8
 	MapWidth                  int    = 6144
@@ -14,40 +14,29 @@ const (
 	MapOverworldWidth         int    = MapHeight
 	MapChunksWidth            int    = MapWidth / ChunkWidth
 	MapChunksHeight           int    = MapHeight / ChunkHeight
-	MapMinZ                   int    = -127
-	MapMaxZ                   int    = 128
+	MapMinZ                   int8   = -128
+	MapMaxZ                   int8   = 127
 	StatsCapDefault           int    = 225
 	MaxFollowers              int    = 5
-	MaxUseRange               int    = 3
-	MaxLiftRange              int    = 3
-	MaxDropRange              int    = 3
-	MaxContainerViewRange     int    = 3
-	MaxItemStackHeight        int    = 18
+	MaxUseRange               int16  = 3
+	MaxLiftRange              int16  = 3
+	MaxDropRange              int16  = 3
+	MaxContainerViewRange     int16  = 3
+	MaxItemStackHeight        int8   = 18
 	DefaultMaxContainerWeight int    = 400
 	DefaultMaxContainerItems  int    = 125
-	RandomDropX               int    = 0xFFFF
-	RandomDropY               int    = 0xFFFF
-	TargetCanceledX           int    = 0xFFFF
-	TargetCanceledY           int    = 0xFFFF
-	ContainerOpenLowerLimit   int    = -8
-	ContainerOpenUpperLimit   int    = 16
-	InvalidSkillValue         int    = 0xBAADF00D
-	PlayerHeight              int    = 16
-	StepHeight                int    = 2
+	RandomDropX               int16  = -1
+	RandomDropY               int16  = -1
+	TargetCanceledX           int16  = -1
+	TargetCanceledY           int16  = -1
+	ContainerOpenLowerLimit   int8   = -8
+	ContainerOpenUpperLimit   int8   = 16
+	PlayerHeight              int8   = 16
+	StepHeight                int8   = 2
 )
 
-// BoundZ bounds a Z value
-func BoundZ(z int) int {
-	if z < MapMinZ {
-		return MapMinZ
-	} else if z > MapMaxZ {
-		return MapMaxZ
-	}
-	return z
-}
-
 // BoundViewRange bounds a view range value
-func BoundViewRange(r int) int {
+func BoundViewRange(r int16) int16 {
 	if r < MinViewRange {
 		return MinViewRange
 	} else if r > MaxViewRange {
@@ -58,7 +47,7 @@ func BoundViewRange(r int) int {
 
 // BoundUpdateRange bounds an update range between MinViewRange and
 // MaxUpdateRange
-func BoundUpdateRange(r int) int {
+func BoundUpdateRange(r int16) int16 {
 	if r < MinViewRange {
 		return MinViewRange
 	} else if r > MaxUpdateRange {

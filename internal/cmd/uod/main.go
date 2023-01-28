@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"path"
+	"runtime"
 	"sync"
 	"syscall"
 
@@ -30,8 +31,16 @@ var templateManager *TemplateManager
 // The configuration
 var configuration *Configuration
 
-// gracefullShutdown initiates a graceful systems shutdown
-func gracefullShutdown() {
+// TODO DEBUG REMOVE should probably remove this entirely before alpha launch
+// logMemStats logs current memory stats
+func logMemStats() {
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+	log.Printf("CURRENT HEAP ALLOC = %d MB", (m.HeapAlloc/1024)/1024)
+}
+
+// gracefulShutdown initiates a graceful systems shutdown
+func gracefulShutdown() {
 	StopLoginService()
 	StopGameService()
 	world.Stop()
@@ -44,7 +53,7 @@ func trap() {
 	go func() {
 		sig := <-sigs
 		if sig == syscall.SIGINT || sig == syscall.SIGQUIT {
-			gracefullShutdown()
+			gracefulShutdown()
 		} else {
 			// Last-ditch save attempt
 			log.Println("attempting last-ditch save from signal handler")
@@ -60,9 +69,9 @@ func trap() {
 	}()
 }
 
-// Initialize takes care of all of the memory-intensive initialization stuff
+// initialize takes care of all of the memory-intensive initialization stuff
 // so the main routine can let go of all the memory.
-func Initialize() {
+func initialize() {
 	// Configure logging
 	log.SetFlags(log.LstdFlags | log.Llongfile)
 
@@ -73,6 +82,7 @@ func Initialize() {
 	}
 
 	// Load client data files
+	logMemStats()
 	log.Println("loading client files...")
 	tiledatamul = file.NewTileDataMul(path.Join(configuration.ClientFilesDirectory, "tiledata.mul"))
 	mapmul := file.NewMapMulFromFile(path.Join(configuration.ClientFilesDirectory, "map0.mul"), tiledatamul)
@@ -92,6 +102,8 @@ func Initialize() {
 		}
 	}
 
+	logMemStats()
+	log.Println("Misc operations...")
 	if configuration.GenerateDebugMaps {
 		log.Println("generating debug map...")
 		rcolmul := file.NewRadarColMulFromFile(path.Join(configuration.ClientFilesDirectory, "radarcol.mul"))
@@ -109,7 +121,7 @@ func Initialize() {
 		}
 		// Add statics
 		for _, static := range staticsmul.Statics() {
-			mapimg.Set(static.Location.X, static.Location.Y, rcols[static.BaseGraphic()+0x4000])
+			mapimg.Set(int(static.Location.X), int(static.Location.Y), rcols[static.BaseGraphic()+0x4000])
 		}
 		// Write out the map
 		mapimgf, err := os.Create("debug-map.png")
@@ -131,6 +143,7 @@ func Initialize() {
 	})
 
 	// Load object templates
+	log.Println("Loading templates...")
 	templateManager = NewTemplateManager("templates")
 	errs := templateManager.LoadAll(configuration.TemplatesDirectory, configuration.ListsDirectory)
 	for _, err := range errs {
@@ -141,11 +154,16 @@ func Initialize() {
 	}
 
 	// Initialize our data structures
+	logMemStats()
+	log.Println("Allocating world data structures...")
 	world = NewWorld(configuration.SaveDirectory, rng)
+	logMemStats()
+	log.Println("Populating map data structures...")
 	world.Map().LoadFromMuls(mapmul, staticsmul)
 	game.RegisterWorld(world)
 
 	// Try to load the most recent save
+	logMemStats()
 	if err := world.Unmarshal(); err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			log.Println("warning: no save files found")
@@ -153,12 +171,14 @@ func Initialize() {
 			log.Fatal("error while trying to load data stores from main goroutine", err)
 		}
 	}
+	logMemStats()
+	log.Println("End of initialization")
 }
 
 // Main is the entry point for uod.
 func Main() {
 	trap()
-	Initialize()
+	initialize()
 
 	wg := &sync.WaitGroup{}
 

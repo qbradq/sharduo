@@ -53,8 +53,8 @@ func makeTestObjects() (*Map, *BaseMobile) {
 		n:         &MockNetState{},
 		viewRange: 18,
 	}
-	for iy := 50; iy <= 150; iy++ {
-		for ix := 50; ix <= 150; ix++ {
+	for iy := int16(50); iy <= 150; iy++ {
+		for ix := int16(50); ix <= 150; ix++ {
 			item := &BaseItem{
 				BaseObject: BaseObject{
 					location: uo.Location{X: ix, Y: iy},
@@ -99,10 +99,10 @@ func TestMapGetChunksInBounds(t *testing.T) {
 	}
 	for _, test := range tests {
 		chunks := uat.getChunksInBounds(uo.Bounds{
-			X: test.X,
-			Y: test.Y,
-			W: test.W,
-			H: test.H,
+			X: int16(test.X),
+			Y: int16(test.Y),
+			W: int16(test.W),
+			H: int16(test.H),
 		})
 		if len(chunks) != test.ExpectedNChunks {
 			t.Errorf("getChunksInBounds returned %d chunks, expected %d at X=%d Y=%d W=%d H=%d",
@@ -134,9 +134,9 @@ func TestMapGetChunksInRange(t *testing.T) {
 	}
 	for _, test := range tests {
 		chunks := uat.getChunksInRange(uo.Location{
-			X: test.X,
-			Y: test.Y,
-		}, test.R)
+			X: int16(test.X),
+			Y: int16(test.Y),
+		}, int16(test.R))
 		if len(chunks) != test.ExpectedNChunks {
 			t.Errorf("getChunksInRange got %d chunks back, expected %d at X=%d Y=%d R=%d",
 				len(chunks), test.ExpectedNChunks, test.X, test.Y, test.R)
@@ -146,11 +146,11 @@ func TestMapGetChunksInRange(t *testing.T) {
 
 func TestMapAddNewMobile(t *testing.T) {
 	uat, mob := makeTestObjects()
-	nExpected := ((mob.viewRange * 2) + 1) * ((mob.viewRange * 2) + 1)
+	nExpected := int(((mob.viewRange * 2) + 1) * ((mob.viewRange * 2) + 1))
 	for iy := 96; iy < 104; iy++ {
 		for ix := 96; ix < 104; ix++ {
-			mob.location.X = ix
-			mob.location.Y = iy
+			mob.location.X = int16(ix)
+			mob.location.Y = int16(iy)
 			mob.n.(*MockNetState).Reset()
 			uat.AddObject(mob)
 			if mob.n.(*MockNetState).ObjectsSeen != nExpected {
@@ -166,8 +166,8 @@ func TestMapMoveMobile(t *testing.T) {
 	tests := []struct {
 		Name            string
 		Direction       uo.Direction
-		ExpectedRemoved int
-		ExpectedShown   int
+		ExpectedRemoved int16
+		ExpectedShown   int16
 	}{
 		// Cardinal directions
 		{
@@ -225,10 +225,10 @@ func TestMapMoveMobile(t *testing.T) {
 		mob.n.(*MockNetState).Reset()
 		mob.facing = test.Direction
 		uat.MoveMobile(mob, test.Direction)
-		if mob.n.(*MockNetState).ObjectsSeen != test.ExpectedShown {
+		if mob.n.(*MockNetState).ObjectsSeen != int(test.ExpectedShown) {
 			t.Errorf("single-step move test %s saw %d new items, expected %d", test.Name, mob.n.(*MockNetState).ObjectsSeen, test.ExpectedShown)
 		}
-		if mob.n.(*MockNetState).ObjectsRemoved != test.ExpectedRemoved {
+		if mob.n.(*MockNetState).ObjectsRemoved != int(test.ExpectedRemoved) {
 			t.Errorf("single-step move test %s removed %d items, expected %d", test.Name, mob.n.(*MockNetState).ObjectsRemoved, test.ExpectedRemoved)
 		}
 	}
@@ -241,10 +241,10 @@ func TestMapMoveMobile(t *testing.T) {
 			mob.location.X = 100
 			mob.location.Y = 100
 			uat.MoveMobile(mob, test.Direction)
-			if mob.n.(*MockNetState).ObjectsSeen != test.ExpectedShown {
+			if mob.n.(*MockNetState).ObjectsSeen != int(test.ExpectedShown) {
 				t.Errorf("multi-step move test %s saw %d new items, expected %d on step %d", test.Name, mob.n.(*MockNetState).ObjectsSeen, test.ExpectedShown, i)
 			}
-			if mob.n.(*MockNetState).ObjectsRemoved != test.ExpectedRemoved {
+			if mob.n.(*MockNetState).ObjectsRemoved != int(test.ExpectedRemoved) {
 				t.Errorf("multi-step move test %s removed %d items, expected %d on step %d", test.Name, mob.n.(*MockNetState).ObjectsRemoved, test.ExpectedRemoved, i)
 			}
 		}

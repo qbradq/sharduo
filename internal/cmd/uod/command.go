@@ -50,7 +50,7 @@ func commandLocation(n *NetState, args CommandArgs) {
 		return
 	}
 	n.TargetSendCursor(uo.TargetTypeLocation, func(r *clientpacket.TargetResponse) {
-		n.Speech(nil, "Location X=%d Y=%d Z=%d", r.X, r.Y, r.Z)
+		n.Speech(nil, "Location X=%d Y=%d Z=%d", r.Location.X, r.Location.Y, r.Location.Z)
 	})
 }
 
@@ -67,11 +67,7 @@ func commandNew(n *NetState, args CommandArgs) {
 			n.Speech(nil, "failed to create object with template %s", args[1])
 			return
 		}
-		o.SetLocation(uo.Location{
-			X: r.X,
-			Y: r.Y,
-			Z: r.Z,
-		})
+		o.SetLocation(r.Location)
 		if len(args) == 3 {
 			item, ok := o.(game.Item)
 			if !ok {
@@ -109,11 +105,11 @@ func commandTeleport(n *NetState, args CommandArgs) {
 		return
 	}
 	if len(args) == 4 {
-		l.Z = args.Int(3)
+		l.Z = int8(args.Int(3))
 	}
 	if len(args) > 3 {
-		l.Y = args.Int(2)
-		l.X = args.Int(1)
+		l.Y = int16(args.Int(2))
+		l.X = int16(args.Int(1))
 	}
 	if len(args) == 2 {
 		if args[1] == "multi" {
@@ -143,11 +139,7 @@ func commandTeleport(n *NetState, args CommandArgs) {
 		if n.m == nil {
 			return
 		}
-		if !world.Map().TeleportMobile(n.m, uo.Location{
-			X: r.X,
-			Y: r.Y,
-			Z: r.Z,
-		}) {
+		if !world.Map().TeleportMobile(n.m, r.Location) {
 			n.Speech(nil, "something is blocking that location")
 		}
 		if multi {
@@ -194,8 +186,8 @@ func commandDebug(n *NetState, args CommandArgs) {
 		for i := 0; i < 1_000_000; i++ {
 			o := world.New("FancyShirt")
 			o.SetLocation(uo.Location{
-				X: world.Random().Random(100, uo.MapWidth-101),
-				Y: world.Random().Random(100, uo.MapHeight-101),
+				X: int16(world.Random().Random(100, uo.MapWidth-101)),
+				Y: int16(world.Random().Random(100, uo.MapHeight-101)),
 				Z: 65,
 			})
 			world.Map().ForceAddObject(o)
@@ -203,8 +195,8 @@ func commandDebug(n *NetState, args CommandArgs) {
 		for i := 0; i < 150_000; i++ {
 			o := world.New("Player")
 			o.SetLocation(uo.Location{
-				X: world.Random().Random(100, uo.MapWidth-101),
-				Y: world.Random().Random(100, uo.MapHeight-101),
+				X: int16(world.Random().Random(100, uo.MapWidth-101)),
+				Y: int16(world.Random().Random(100, uo.MapHeight-101)),
 				Z: 65,
 			})
 			world.Map().ForceAddObject(o)
@@ -316,11 +308,7 @@ func commandStatic(n *NetState, args CommandArgs) {
 			return
 		}
 		i.SetBaseGraphic(g)
-		i.SetLocation(uo.Location{
-			X: r.X,
-			Y: r.Y,
-			Z: r.Z,
-		})
+		i.SetLocation(r.Location)
 		world.Map().ForceAddObject(i)
 	})
 }
@@ -330,5 +318,5 @@ func commandSave(n *NetState, args CommandArgs) {
 }
 
 func commandShutdown(n *NetState, args CommandArgs) {
-	gracefullShutdown()
+	gracefulShutdown()
 }

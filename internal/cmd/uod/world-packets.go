@@ -178,7 +178,7 @@ func handleDropRequest(n *NetState, cp clientpacket.Packet) {
 	n.m.RequestCursorState(game.CursorStateDrop)
 	if p.Container == uo.SerialSystem {
 		// Drop to map request
-		newLocation := uo.Location{X: p.X, Y: p.Y, Z: p.Z}
+		newLocation := p.Location
 		if n.m.Location().XYDistance(newLocation) > uo.MaxDropRange {
 			n.m.DropItemInCursor()
 			n.DropReject(uo.MoveItemRejectReasonOutOfRange)
@@ -215,11 +215,7 @@ func handleDropRequest(n *NetState, cp clientpacket.Packet) {
 			return
 		}
 		// TODO Line of sight check
-		dropTarget := uo.Location{
-			X: p.X,
-			Y: p.Y,
-		}
-		if !target.DropObject(item, dropTarget, n.m) {
+		if !target.DropObject(item, p.Location, n.m) {
 			n.m.PickUp(nil)
 			n.DropReject(uo.MoveItemRejectReasonUnspecified)
 			return

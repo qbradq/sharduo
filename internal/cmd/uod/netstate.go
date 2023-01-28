@@ -290,8 +290,7 @@ func (n *NetState) itemInfo(item game.Item) {
 			Graphic:       item.BaseGraphic(),
 			GraphicOffset: item.GraphicOffset(),
 			Amount:        item.Amount(),
-			X:             item.Location().X,
-			Y:             item.Location().Y,
+			Location:      item.Location(),
 			Container:     container.Serial(),
 			Hue:           item.Hue(),
 		})
@@ -302,9 +301,7 @@ func (n *NetState) itemInfo(item game.Item) {
 			Graphic:          item.BaseGraphic(),
 			GraphicIncrement: item.GraphicOffset(),
 			Amount:           item.Amount(),
-			X:                item.Location().X,
-			Y:                item.Location().Y,
-			Z:                item.Location().Z,
+			Location:         item.Location(),
 			Layer:            layer,
 			Hue:              item.Hue(),
 		})
@@ -320,9 +317,7 @@ func (n *NetState) sendMobile(mobile game.Mobile) {
 	p := &serverpacket.EquippedMobile{
 		ID:        mobile.Serial(),
 		Body:      mobile.Body(),
-		X:         mobile.Location().X,
-		Y:         mobile.Location().Y,
-		Z:         mobile.Location().Z,
+		Location:  mobile.Location(),
 		Facing:    mobile.Facing(),
 		IsRunning: mobile.IsRunning(),
 		Hue:       mobile.Hue(),
@@ -516,8 +511,7 @@ func (n *NetState) ContainerOpen(c game.Container) {
 				Graphic:       item.BaseGraphic(),
 				GraphicOffset: item.GraphicOffset(),
 				Amount:        item.Amount(),
-				X:             item.Location().X,
-				Y:             item.Location().Y,
+				Location:      item.Location(),
 				Container:     c.Serial(),
 				Hue:           item.Hue(),
 			})
@@ -553,8 +547,7 @@ func (n *NetState) ContainerItemAdded(c game.Container, item game.Item) {
 		Graphic:       item.BaseGraphic(),
 		GraphicOffset: item.GraphicOffset(),
 		Amount:        item.Amount(),
-		X:             item.Location().X,
-		Y:             item.Location().Y,
+		Location:      item.Location(),
 		Container:     c.Serial(),
 		Hue:           item.Hue(),
 	})
@@ -683,7 +676,7 @@ func (n *NetState) TargetResponse(r *clientpacket.TargetResponse) {
 		return
 	}
 	// Target cursor canceled
-	if r.X == uo.TargetCanceledX && r.Y == uo.TargetCanceledY {
+	if r.Location.X == uo.TargetCanceledX && r.Location.Y == uo.TargetCanceledY {
 		return
 	}
 	// Execute callback

@@ -37,7 +37,7 @@ func (m *Map) LoadFromMuls(mapmul *file.MapMul, staticsmul *file.StaticsMul) {
 	// Load the tiles
 	for iy := 0; iy < uo.MapHeight; iy++ {
 		for ix := 0; ix < uo.MapWidth; ix++ {
-			m.getChunk(uo.Location{X: ix, Y: iy}).setTile(ix, iy, mapmul.GetTile(ix, iy))
+			m.getChunk(uo.Location{X: int16(ix), Y: int16(iy)}).setTile(ix, iy, mapmul.GetTile(ix, iy))
 		}
 	}
 	// Load the statics
@@ -116,17 +116,17 @@ func (m *Map) Unmarshal(s *marshal.TagFileSegment) {
 // getChunk returns a pointer to the chunk for the given location.
 func (m *Map) getChunk(l uo.Location) *chunk {
 	l = l.Bound()
-	cx := l.X / uo.ChunkWidth
-	cy := l.Y / uo.ChunkHeight
+	cx := int(l.X) / uo.ChunkWidth
+	cy := int(l.Y) / uo.ChunkHeight
 	return m.chunks[cy*uo.MapChunksWidth+cx]
 }
 
 // GetTile returns the Tile value for the location
-func (m *Map) GetTile(x, y int) uo.Tile {
+func (m *Map) GetTile(x, y int16) uo.Tile {
 	return m.getChunk(uo.Location{
 		X: x,
 		Y: y,
-	}).GetTile(x%uo.ChunkWidth, y%uo.ChunkHeight)
+	}).GetTile(x, y)
 }
 
 // SetNewParent sets the parent object of this object. It properly removes
@@ -296,8 +296,13 @@ func (m *Map) ForceRemoveObject(o Object) {
 // canMoveTo returns true if the mobile can move from its current location in
 // the given direction. If the first return value is true the second return
 // value will be the new location of the mobile if it were to move to the new
-// location.
-func (m *Map) canMoveTo(mob Mobile, d uo.Direction) (bool, uo.Location) {
+// location, and the third return value is a description of the surface they
+// would be standing on. This method enforces rules about surfaces that block
+// movement and minimum height clearance. Note that the required clearance for
+// all mobiles is uo.PlayerHeight. Many places in Britannia - especially in and
+// around dungeons - that would block monster movement if they were given
+// heights greater than this value.
+func (m *Map) canMoveTo(mob Mobile, d uo.Direction) (bool, uo.Location, uo.CommonObject) {
 	/*	ol := mob.Location()
 		nl := ol.Forward(d.Bound()).WrapAndBound(ol)
 		floor, ceiling := m.GetFloorAndCeiling(nl)
@@ -338,7 +343,7 @@ func (m *Map) canMoveTo(mob Mobile, d uo.Direction) (bool, uo.Location) {
 		}
 		// Success
 		nl.Z = floor*/
-	return true, uo.Location{}
+	return true, uo.Location{}, nil
 }
 
 // MoveMobile moves a mobile in the given direction. Returns true if the
@@ -356,16 +361,16 @@ func (m *Map) MoveMobile(mob Mobile, dir uo.Direction) bool {
 	// Movement request
 	oldLocation := mob.Location()
 	// Check movement
-	success, floor := m.canMoveTo(mob, dir)
+	success, newLocation, floor := m.canMoveTo(mob, dir)
 	if !success {
 		return false
 	}
 	// Check diagonals if required
 	if dir.IsDiagonal() {
-		if success, _ := m.canMoveTo(mob, dir.Left()); !success {
+		if success, _, _ := m.canMoveTo(mob, dir.Left()); !success {
 			return false
 		}
-		if success, _ := m.canMoveTo(mob, dir.Right()); !success {
+		if success, _, _ := m.canMoveTo(mob, dir.Right()); !success {
 			return false
 		}
 	}
@@ -454,7 +459,7 @@ func (m *Map) TeleportMobile(mob Mobile, l uo.Location) bool {
 
 // Query returns true if there is a static or dynamic item within range of the
 // given location who's BaseGraphic property is contained within the given set.
-func (m *Map) Query(center uo.Location, queryRange int, set map[uo.Graphic]struct{}) bool {
+func (m *Map) Query(center uo.Location, queryRange int16, set map[uo.Graphic]struct{}) bool {
 	b := uo.Bounds{
 		X: center.X - queryRange,
 		Y: center.Y - queryRange,
@@ -465,18 +470,18 @@ func (m *Map) Query(center uo.Location, queryRange int, set map[uo.Graphic]struc
 		X: b.X,
 		Y: b.Y,
 	}
-	scx := b.X / uo.ChunkWidth
-	scy := b.Y / uo.ChunkHeight
-	ecx := (b.X + b.W - 1) / uo.ChunkWidth
-	ecy := (b.Y + b.H - 1) / uo.ChunkHeight
+	scx := int(b.X) / uo.ChunkWidth
+	scy := int(b.Y) / uo.ChunkHeight
+	ecx := int(b.X+b.W-1) / uo.ChunkWidth
+	ecy := int(b.Y+b.H-1) / uo.ChunkHeight
 	for cy := scy; cy <= ecy; cy++ {
 		for cx := scx; cx <= ecx; cx++ {
 			l := uo.Location{
-				X: cx * uo.ChunkWidth,
-				Y: cy * uo.ChunkHeight,
+				X: int16(cx * uo.ChunkWidth),
+				Y: int16(cy * uo.ChunkHeight),
 			}.WrapAndBound(tl)
-			ccx := l.X / uo.ChunkWidth
-			ccy := l.Y / uo.ChunkHeight
+			ccx := int(l.X) / uo.ChunkWidth
+			ccy := int(l.Y) / uo.ChunkHeight
 			c := m.chunks[ccy*uo.MapChunksWidth+ccx]
 			for _, s := range c.statics {
 				if _, ok := set[s.BaseGraphic()]; ok && center.XYDistance(s.Location) <= queryRange {
@@ -499,18 +504,18 @@ func (m *Map) getChunksInBounds(b uo.Bounds) []*chunk {
 		X: b.X,
 		Y: b.Y,
 	}
-	scx := b.X / uo.ChunkWidth
-	scy := b.Y / uo.ChunkHeight
-	ecx := (b.X + b.W - 1) / uo.ChunkWidth
-	ecy := (b.Y + b.H - 1) / uo.ChunkHeight
+	scx := int(b.X) / uo.ChunkWidth
+	scy := int(b.Y) / uo.ChunkHeight
+	ecx := int(b.X+b.W-1) / uo.ChunkWidth
+	ecy := int(b.Y+b.H-1) / uo.ChunkHeight
 	for cy := scy; cy <= ecy; cy++ {
 		for cx := scx; cx <= ecx; cx++ {
 			l := uo.Location{
-				X: cx * uo.ChunkWidth,
-				Y: cy * uo.ChunkHeight,
+				X: int16(cx * uo.ChunkWidth),
+				Y: int16(cy * uo.ChunkHeight),
 			}.WrapAndBound(tl)
-			ccx := l.X / uo.ChunkWidth
-			ccy := l.Y / uo.ChunkHeight
+			ccx := int(l.X) / uo.ChunkWidth
+			ccy := int(l.Y) / uo.ChunkHeight
 			ret = append(ret, m.chunks[ccy*uo.MapChunksWidth+ccx])
 		}
 	}
@@ -518,7 +523,7 @@ func (m *Map) getChunksInBounds(b uo.Bounds) []*chunk {
 }
 
 // getChunksInRange gets chunks in the given range of a reference point.
-func (m *Map) getChunksInRange(l uo.Location, r int) []*chunk {
+func (m *Map) getChunksInRange(l uo.Location, r int16) []*chunk {
 	return m.getChunksInBounds(uo.Bounds{
 		X: l.X - r,
 		Y: l.Y - r,
@@ -529,7 +534,7 @@ func (m *Map) getChunksInRange(l uo.Location, r int) []*chunk {
 
 // GetItemsInRange returns a slice of all items within the given range of the
 // given location.
-func (m *Map) GetItemsInRange(l uo.Location, r int) []Item {
+func (m *Map) GetItemsInRange(l uo.Location, r int16) []Item {
 	var ret []Item
 	for _, c := range m.getChunksInRange(l, r) {
 		for _, item := range c.items {
@@ -545,7 +550,7 @@ func (m *Map) GetItemsInRange(l uo.Location, r int) []Item {
 
 // GetMobilesInRange returns a slice of all items within the given range of the
 // given location.
-func (m *Map) GetMobilesInRange(l uo.Location, r int) []Mobile {
+func (m *Map) GetMobilesInRange(l uo.Location, r int16) []Mobile {
 	var ret []Mobile
 	for _, c := range m.getChunksInRange(l, r) {
 		for _, mob := range c.mobiles {
@@ -562,7 +567,7 @@ func (m *Map) GetMobilesInRange(l uo.Location, r int) []Mobile {
 // GetNetStatesInRange returns a slice of all mobiles in range of the given
 // location with attached net states. Mobile.n / Mobile.NetState() will always
 // be non-null.
-func (m *Map) GetNetStatesInRange(l uo.Location, r int) []Mobile {
+func (m *Map) GetNetStatesInRange(l uo.Location, r int16) []Mobile {
 	var ret []Mobile
 	for _, c := range m.getChunksInRange(l, r) {
 		for _, mob := range c.mobiles {
@@ -581,7 +586,7 @@ func (m *Map) GetNetStatesInRange(l uo.Location, r int) []Mobile {
 
 // GetObjectsInRange returns a slice of all objects within the given range of
 // the given location.
-func (m *Map) GetObjectsInRange(l uo.Location, r int) []Object {
+func (m *Map) GetObjectsInRange(l uo.Location, r int16) []Object {
 	var ret []Object
 	for _, c := range m.getChunksInRange(l, r) {
 		for _, item := range c.items {
@@ -604,7 +609,7 @@ func (m *Map) GetObjectsInRange(l uo.Location, r int) []Object {
 
 // UpdateViewRangeForMobile handles an update of the mobiles ViewRange value
 // in a way that sends the correct packets to the attached NetState, if any.
-func (m *Map) UpdateViewRangeForMobile(mob Mobile, r int) {
+func (m *Map) UpdateViewRangeForMobile(mob Mobile, r int16) {
 	r = uo.BoundViewRange(r)
 	if r == mob.ViewRange() {
 		return
@@ -629,12 +634,11 @@ func (m *Map) UpdateViewRangeForMobile(mob Mobile, r int) {
 
 // GetTopSurface returns the highest solid object at the given location that has
 // a Z altitude less than or equal to zLimit.
-func (m *Map) GetTopSurface(l uo.Location, zLimit int) uo.CommonObject {
+func (m *Map) GetTopSurface(l uo.Location, zLimit int8) uo.CommonObject {
 	var topObj uo.CommonObject
-	zLimit = uo.BoundZ(zLimit)
 	topZ := uo.MapMinZ
 	c := m.getChunk(l)
-	t := c.GetTile(l.X%uo.ChunkWidth, l.Y%uo.ChunkHeight)
+	t := c.GetTile(l.X, l.Y)
 	topObj = t
 	if !t.Ignore() {
 		_, avgZ, _ := m.GetTerrainElevations(l)
@@ -689,7 +693,7 @@ func (m *Map) GetTopSurface(l uo.Location, zLimit int) uo.CommonObject {
 
 // GetTerrainElevations returns the bottom, average, and top Z coordinate of the
 // tile matrix at the location.
-func (m *Map) GetTerrainElevations(l uo.Location) (lowest, average, highest int) {
+func (m *Map) GetTerrainElevations(l uo.Location) (lowest, average, highest int8) {
 	zTop := m.GetTile(l.X, l.Y).Z()
 	zLeft := m.GetTile(l.X, l.Y+1).Z()
 	zRight := m.GetTile(l.X+1, l.Y).Z()
@@ -761,7 +765,7 @@ func (m *Map) plop(toPlop Item) bool {
 	floor := l.Z
 	c := m.getChunk(l)
 	// Consider the tile matrix
-	t := c.GetTile(l.X%uo.ChunkWidth, l.Y%uo.ChunkHeight)
+	t := c.GetTile(l.X, l.Y)
 	if !t.Ignore() {
 		_, avgZ, _ := m.GetTerrainElevations(l)
 		if avgZ < floor {
@@ -845,12 +849,12 @@ func (m *Map) plop(toPlop Item) bool {
 //  2. Process all items in the location:
 //     a. If the item's Z position is under the ceiling apply the offset.
 //     b. Make sure no item's Z position is set lower than the static floor.
-func (m *Map) plopItems(l uo.Location, drop int) {
+func (m *Map) plopItems(l uo.Location, drop int8) {
 	ceiling := uo.MapMaxZ
 	floor := l.Z
 	c := m.getChunk(l)
 	// Consider the tile matrix
-	t := c.GetTile(l.X%uo.ChunkWidth, l.Y%uo.ChunkHeight)
+	t := c.GetTile(l.X, l.Y)
 	if !t.Ignore() {
 		_, avgZ, _ := m.GetTerrainElevations(l)
 		if avgZ > floor {
@@ -907,7 +911,7 @@ func (m *Map) GetFloorAndCeiling(l uo.Location) (uo.CommonObject, uo.CommonObjec
 	footLevel := l.Z
 	// Consider tile matrix
 	c := m.getChunk(l)
-	t := c.GetTile(l.X%uo.ChunkWidth, l.Y%uo.ChunkHeight)
+	t := c.GetTile(l.X, l.Y)
 	if !t.Ignore() {
 		bottom, avg, _ := m.GetTerrainElevations(l)
 		if footLevel < bottom {

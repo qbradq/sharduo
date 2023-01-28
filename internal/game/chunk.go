@@ -23,12 +23,12 @@ type chunk struct {
 func newChunk(x, y int) *chunk {
 	return &chunk{
 		bounds: uo.Bounds{
-			X: x,
-			Y: y,
+			X: int16(x),
+			Y: int16(y),
 			Z: uo.MapMinZ,
-			W: uo.ChunkWidth,
-			H: uo.ChunkHeight,
-			D: uo.MapMaxZ - uo.MapMinZ,
+			W: int16(uo.ChunkWidth),
+			H: int16(uo.ChunkHeight),
+			D: int16(uo.MapMaxZ) - int16(uo.MapMinZ),
 		},
 		tiles: make([]uo.Tile, uo.ChunkWidth*uo.ChunkHeight),
 	}
@@ -62,8 +62,8 @@ func (c *chunk) Remove(o Object) {
 
 // GetTile returns the Tile value for the given chunk-relative location. x and y
 // must be between 0 and 7 inclusive.
-func (c *chunk) GetTile(x, y int) uo.Tile {
-	return c.tiles[(y%uo.ChunkHeight)*uo.ChunkWidth+(x%uo.ChunkWidth)]
+func (c *chunk) GetTile(x, y int16) uo.Tile {
+	return c.tiles[(int(y)%uo.ChunkHeight)*uo.ChunkWidth+(int(x)%uo.ChunkWidth)]
 }
 
 // setTile sets the tile value at the given chunk-relative location. x and y

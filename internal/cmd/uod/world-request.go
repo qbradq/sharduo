@@ -96,14 +96,12 @@ func (r *CharacterLoginRequest) Execute() error {
 		facing = facing.StripRunningFlag()
 	}
 	r.NetState.Send(&serverpacket.EnterWorld{
-		Player: r.NetState.m.Serial(),
-		Body:   r.NetState.m.Body(),
-		X:      r.NetState.m.Location().X,
-		Y:      r.NetState.m.Location().Y,
-		Z:      r.NetState.m.Location().Z,
-		Facing: facing,
-		Width:  uo.MapWidth,
-		Height: uo.MapHeight,
+		Player:   r.NetState.m.Serial(),
+		Body:     r.NetState.m.Body(),
+		Location: r.NetState.m.Location(),
+		Facing:   facing,
+		Width:    uo.MapWidth,
+		Height:   uo.MapHeight,
 	})
 	r.NetState.Send(&serverpacket.LoginComplete{})
 	world.Map().SendEverything(r.NetState.m)

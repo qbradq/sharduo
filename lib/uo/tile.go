@@ -5,16 +5,16 @@ package uo
 type CommonObject interface {
 	// BaseGraphic returns the item graphic of the object
 	BaseGraphic() Graphic
-	// Z returns the permanent Z location of the object
-	Z() int
+	// Z returns the permanent Z location of the lowest point of the object
+	Z() int8
 	// Height returns the height of the object.
-	Height() int
+	Height() int8
 	// StandingHeight returns the height at which other objects rest above this
 	// object's position. Absolute elevation is Z()+StandingHeight(). For solid
 	// objects this is equal to Z()+Height(). For Bridge() type objects -
 	// typically stairs - this is Z()+Height()/2 rounded down. For all non-solid
 	// objects the return value will be Z().
-	StandingHeight() int
+	StandingHeight() int8
 	// Flag accessors
 	Background() bool
 	Weapon() bool
@@ -72,12 +72,18 @@ type TileDefinition struct {
 type Tile struct {
 	// Pointer to the tile definition for this tile
 	def *TileDefinition
-	// Altitude of the tile
-	z int
+	// Altitude of the tile's North West corner
+	z int8
+	// Altitude of the tile's lowest point
+	lowest int8
+	// Height of the tile
+	height int8
+	// Height of the standing point
+	avg int8
 }
 
 // NewTile returns a Tile value with the given properties
-func NewTile(z int, def *TileDefinition) Tile {
+func NewTile(z int8, def *TileDefinition) Tile {
 	return Tile{
 		def: def,
 		z:   z,
@@ -95,13 +101,13 @@ func (t Tile) Ignore() bool {
 func (t Tile) BaseGraphic() Graphic { return t.def.Graphic }
 
 // Z returns the permanent Z location of the tile
-func (t Tile) Z() int { return BoundZ(t.z) }
+func (t Tile) Z() int8 { return t.lowest }
 
 // Height returns the height of the tile, which is always 0
-func (t Tile) Height() int { return 0 }
+func (t Tile) Height() int8 { return t.height }
 
 // StandingHeight returns the standing height of the tile, which is always 0
-func (t Tile) StandingHeight() int { return 0 }
+func (t Tile) StandingHeight() int8 { return t.avg }
 
 func (t Tile) Background() bool   { return t.def.TileFlags&TileFlagsBackground != 0 }
 func (t Tile) Weapon() bool       { return t.def.TileFlags&TileFlagsWeapon != 0 }
