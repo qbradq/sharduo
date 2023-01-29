@@ -41,7 +41,16 @@ func (c *chunk) Add(o Object) bool {
 		return false
 	}
 	if item, ok := o.(Item); ok {
-		c.items = c.items.Append(item)
+		// Keep items Z-sorted
+		insertPoint := len(c.items)
+		for idx, otherItem := range c.items {
+			if item.Z() < otherItem.Z() {
+				insertPoint = idx
+			} else {
+				break
+			}
+		}
+		c.items = c.items.Insert(insertPoint, item)
 	} else if mobile, ok := o.(Mobile); ok {
 		c.mobiles = c.mobiles.Append(mobile)
 	} else {

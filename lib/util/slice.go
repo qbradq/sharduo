@@ -40,3 +40,13 @@ func (s Slice[T]) Remove(v T) Slice[T] {
 func (s Slice[T]) Contains(v T) bool {
 	return s.IndexOf(v) >= 0
 }
+
+// Insert inserts a value at the given index
+func (s Slice[T]) Insert(idx int, v T) Slice[T] {
+	if idx == len(s) {
+		return append(s, v)
+	}
+	s = append(s[:idx+1], s[idx:]...)
+	s[idx] = v
+	return s
+}

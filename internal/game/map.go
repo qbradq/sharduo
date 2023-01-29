@@ -1,14 +1,12 @@
 package game
 
 import (
-	"io"
 	"log"
-	"strconv"
+	"sort"
 
 	"github.com/qbradq/sharduo/internal/marshal"
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/uo/file"
-	"github.com/qbradq/sharduo/lib/util"
 )
 
 // Map contains the tile matrix, static items, and all dynamic objects of a map.
@@ -51,45 +49,18 @@ func (m *Map) LoadFromMuls(mapmul *file.MapMul, staticsmul *file.StaticsMul) {
 	}
 	// Load the statics
 	for _, static := range staticsmul.Statics() {
-		m.getChunk(static.Location).statics = append(m.getChunk(static.Location).statics, static)
+		c := m.getChunk(static.Location)
+		c.statics = append(c.statics, static)
 	}
-}
-
-// Read reads all map properties and object references from the file. This uses
-// streaming to avoid allocating a large amount of memory all at once.
-func (m *Map) Read(r io.Reader) []error {
-	var errs []error
-	lfr := &util.ListFileReader{}
-	lfr.StartReading(r)
-	for {
-		sname := lfr.StreamNextSegmentHeader()
-		// End of file or error condition
-		if sname == "" {
-			break
-		} else if sname == "MapChildren" {
-			// Object references to all of the child objects of the map
-			for {
-				e := lfr.StreamNextEntry()
-				// End of segment
-				if e == "" {
-					break
-				}
-				n, err := strconv.ParseInt(e, 0, 32)
-				if err != nil {
-					errs = append(errs, err)
-					continue
-				}
-				o := world.Find(uo.Serial(n))
-				m.getChunk(o.Location()).Add(o)
-			}
-		} else {
-			// End of file or error
-			if !lfr.SkipCurrentSegment() {
-				break
-			}
+	// Z-sort statics
+	for iy := int16(0); iy < int16(uo.MapChunksHeight); iy++ {
+		for ix := int16(0); ix < int16(uo.MapChunksWidth); ix++ {
+			c := m.getChunk(uo.Location{X: ix, Y: iy})
+			sort.Slice(c.statics, func(i, j int) bool {
+				return c.statics[i].Location.Z < c.statics[j].Location.Z
+			})
 		}
 	}
-	return append(lfr.Errors(), errs...)
 }
 
 // Marshal writes out all object references of objects that are directly on the
@@ -913,22 +884,21 @@ func (m *Map) plopItems(l uo.Location, drop int8) {
 // matrix is ignored. In these cases both return values may be nil if there are
 // no items or statics to create a surface.
 func (m *Map) GetFloorAndCeiling(l uo.Location) (uo.CommonObject, uo.CommonObject) {
-	floor := uo.MapMinZ
+	floor := l.Z
 	var floorObject uo.CommonObject
 	ceiling := uo.MapMaxZ
 	var ceilingObject uo.CommonObject
-	footLevel := l.Z
 	// Consider tile matrix
 	c := m.getChunk(l)
 	t := c.GetTile(l.X, l.Y)
 	if !t.Ignore() {
 		bottom := t.Z()
 		avg := bottom + t.StandingHeight()
-		if footLevel < bottom {
+		if floor < bottom {
 			// Mobile is below ground
 			ceiling = avg
 			ceilingObject = t
-		} else if footLevel >= avg {
+		} else if floor >= avg {
 			// Mobile is above or on the ground
 			floor = avg
 			floorObject = t
@@ -936,7 +906,6 @@ func (m *Map) GetFloorAndCeiling(l uo.Location) (uo.CommonObject, uo.CommonObjec
 			// Mobile is down inside a tile in the tile matrix
 			floor = avg
 			floorObject = t
-			footLevel = floor
 		}
 	}
 	// Consider statics
@@ -951,16 +920,18 @@ func (m *Map) GetFloorAndCeiling(l uo.Location) (uo.CommonObject, uo.CommonObjec
 		}
 		sz := static.Z()
 		stz := sz + static.Height()
-		if stz > floor && stz <= footLevel {
-			// Static is between the tile matrix and the mob's feet, so consider
-			// it a possible floor.
-			floor = stz
-			floorObject = static
-		} else if sz < ceiling && sz > floor {
-			// Static is above us so consider it a possible ceiling.
+		if sz > floor {
+			// Static is above the current floor so we have found the ceiling
 			ceiling = sz
 			ceilingObject = static
-		} // Else the static is outside the current gap
+			break
+		}
+		if stz >= floor {
+			// No gap between the floor and the static, consider it a new floor
+			floor = stz
+			floorObject = static
+			continue
+		}
 	}
 	// Consider items
 	for _, item := range c.items {
@@ -974,18 +945,21 @@ func (m *Map) GetFloorAndCeiling(l uo.Location) (uo.CommonObject, uo.CommonObjec
 		}
 		iz := item.Z()
 		itz := iz + item.Height()
-		if itz > floor && itz <= ceiling {
+		if iz > floor {
+			// Item is above the current floor
+			if iz <= ceiling {
+				// Item is also below the static ceiling so it is the new one
+				ceilingObject = item
+			}
+			break
+		}
+		if itz > floor {
 			// Item is between the static floor and ceiling, consider it a
 			// possible floor.
 			floor = itz
 			floorObject = item
+			continue
 		}
-		if iz < ceiling && iz > floor {
-			// Item is between the ceiling and the floor, consider it a possible
-			// ceiling.
-			ceiling = iz
-			ceilingObject = item
-		} // Else the item is outside the current gap;
 	}
 	return floorObject, ceilingObject
 }
