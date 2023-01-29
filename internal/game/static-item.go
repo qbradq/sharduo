@@ -53,6 +53,11 @@ func (i *StaticItem) SetBaseGraphic(g uo.Graphic) {
 	i.def = world.GetItemDefinition(g)
 }
 
+// Highest returns the highest elevation of the object
+func (i *StaticItem) Highest() int8 {
+	return i.location.Z + i.def.Height
+}
+
 // StandingHeight returns the standing height based on the object's flags.
 func (i *StaticItem) StandingHeight() int8 {
 	if !i.Surface() && !i.Wet() && !i.Impassable() {

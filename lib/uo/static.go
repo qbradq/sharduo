@@ -47,21 +47,23 @@ func (s Static) BaseGraphic() Graphic {
 
 // Height returns the height of the static with regards to internal flags
 func (s Static) Height() int8 {
-	if s.def.TileFlags.Bridge() {
-		return s.def.Height / 2
-	}
 	return s.def.Height
+}
+
+// Highest returns the highest elevation of the object
+func (s Static) Highest() int8 {
+	return s.Location.Z + s.def.Height
 }
 
 // StandingHeight returns the standing height based on the object's flags.
 func (s Static) StandingHeight() int8 {
 	if !s.Surface() && !s.Wet() && !s.Impassable() {
-		return 0
+		return s.Location.Z
 	}
 	if s.Bridge() {
-		return s.def.Height / 2
+		return s.Location.Z + s.def.Height/2
 	}
-	return s.def.Height
+	return s.Location.Z + s.def.Height
 }
 
 // Z returns the permanent Z location of the tile

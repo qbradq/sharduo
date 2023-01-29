@@ -55,7 +55,7 @@ func (m *Map) LoadFromMuls(mapmul *file.MapMul, staticsmul *file.StaticsMul) {
 	// Z-sort statics
 	for iy := int16(0); iy < int16(uo.MapChunksHeight); iy++ {
 		for ix := int16(0); ix < int16(uo.MapChunksWidth); ix++ {
-			c := m.getChunk(uo.Location{X: ix, Y: iy})
+			c := m.getChunk(uo.Location{X: ix * int16(uo.ChunkWidth), Y: iy * int16(uo.ChunkHeight)})
 			sort.Slice(c.statics, func(i, j int) bool {
 				return c.statics[i].Location.Z < c.statics[j].Location.Z
 			})
@@ -304,16 +304,18 @@ func (m *Map) canMoveTo(mob Mobile, d uo.Direction) (bool, uo.Location, uo.Commo
 	if floor == nil {
 		return false, ol, nil
 	}
-	fz := floor.Z() + floor.StandingHeight()
-	cz := ceiling.Z()
-	// See if there is enough room for the mobile to fit if it took the step
-	if cz-fz < uo.PlayerHeight {
-		return false, ol, floor
+	fz := floor.StandingHeight()
+	if ceiling != nil {
+		// See if there is enough room for the mobile to fit if it took the step
+		cz := ceiling.Z()
+		if cz-fz < uo.PlayerHeight {
+			return false, ol, floor
+		}
 	}
 	// Consider the step height
 	if tile, ok := floor.(uo.Tile); ok {
 		// The mobile is standing on the tile matrix
-		if (!tile.Surface() && !tile.Wet()) || tile.Impassable() {
+		if tile.Impassable() {
 			// Check tile flags
 			return false, ol, floor
 		}
@@ -327,7 +329,7 @@ func (m *Map) canMoveTo(mob Mobile, d uo.Direction) (bool, uo.Location, uo.Commo
 		}
 		// Consider step height
 		oldFloor := mob.StandingOn()
-		oldTop := oldFloor.Z() + oldFloor.Height()
+		oldTop := oldFloor.Highest()
 		if fz-oldTop > uo.StepHeight {
 			// Can't go up that much in one step
 			return false, ol, floor
@@ -400,21 +402,19 @@ func (m *Map) MoveMobile(mob Mobile, dir uo.Direction) bool {
 		newChunk.Add(mob)
 	}
 	mob.AfterMove()
-	log.Printf("%+v", mob.Location())
 	return true
 }
 
 // TeleportMobile moves a mobile from where it is now to the new location. This
 // returns false if there is not enough room at that location for the mobile.
 // This will also trigger all events as if the mobile left the tile normally,
-// and arrived at the new tile normally. As a special case this function skips
-// attempting to remove the mobile from its current location if the mobile's
-// current parent is TheVoid. This is the case when the mobile is being created.
+// and arrived at the new tile normally.
 func (m *Map) TeleportMobile(mob Mobile, l uo.Location) bool {
 	oldLocation := mob.Location()
 	world.Map().RemoveObject(mob) // This triggers on leave events
 	mob.SetLocation(l)
-	if !world.Map().AddObject(mob) { // This triggers on enter events
+	if !world.Map().AddObject(mob) {
+		// Map.AddObject() checks height
 		// Don't leak the mobile, just force it back where it came from.
 		mob.SetLocation(oldLocation)
 		world.Map().ForceAddObject(mob)
@@ -674,10 +674,10 @@ func (m *Map) GetTopSurface(l uo.Location, zLimit int8) uo.CommonObject {
 // getTerrainElevations returns the bottom, average, and top Z coordinate of the
 // tile matrix at the location.
 func (m *Map) getTerrainElevations(x, y int16) (lowest, average, highest int8) {
-	zTop := m.GetTile(x, y).Z()
-	zLeft := m.GetTile(x, y+1).Z()
-	zRight := m.GetTile(x+1, y).Z()
-	zBottom := m.GetTile(x+1, y+1).Z()
+	zTop := m.GetTile(x, y).RawZ()
+	zLeft := m.GetTile(x, y+1).RawZ()
+	zRight := m.GetTile(x+1, y).RawZ()
+	zBottom := m.GetTile(x+1, y+1).RawZ()
 	lowest = zTop
 	if zLeft < lowest {
 		lowest = zLeft
@@ -883,22 +883,26 @@ func (m *Map) plopItems(l uo.Location, drop int8) {
 // are certain places on the map - such as cave entrances - where the tile
 // matrix is ignored. In these cases both return values may be nil if there are
 // no items or statics to create a surface.
+//
+// NOTE: This function requires that all statics and items are z-sorted bottom
+// to top.
 func (m *Map) GetFloorAndCeiling(l uo.Location) (uo.CommonObject, uo.CommonObject) {
-	floor := l.Z
 	var floorObject uo.CommonObject
-	ceiling := uo.MapMaxZ
 	var ceilingObject uo.CommonObject
+	floor := uo.MapMinZ
+	ceiling := uo.MapMaxZ
+	footHeight := l.Z
 	// Consider tile matrix
 	c := m.getChunk(l)
 	t := c.GetTile(l.X, l.Y)
 	if !t.Ignore() {
 		bottom := t.Z()
-		avg := bottom + t.StandingHeight()
-		if floor < bottom {
+		avg := t.StandingHeight()
+		if footHeight < bottom {
 			// Mobile is below ground
 			ceiling = avg
 			ceilingObject = t
-		} else if floor >= avg {
+		} else if footHeight >= avg {
 			// Mobile is above or on the ground
 			floor = avg
 			floorObject = t
@@ -906,6 +910,9 @@ func (m *Map) GetFloorAndCeiling(l uo.Location) (uo.CommonObject, uo.CommonObjec
 			// Mobile is down inside a tile in the tile matrix
 			floor = avg
 			floorObject = t
+			if floor > footHeight {
+				footHeight = floor
+			}
 		}
 	}
 	// Consider statics
@@ -919,19 +926,25 @@ func (m *Map) GetFloorAndCeiling(l uo.Location) (uo.CommonObject, uo.CommonObjec
 			continue
 		}
 		sz := static.Z()
-		stz := sz + static.Height()
-		if sz > floor {
-			// Static is above the current floor so we have found the ceiling
-			ceiling = sz
-			ceilingObject = static
-			break
-		}
-		if stz >= floor {
-			// No gap between the floor and the static, consider it a new floor
+		stz := static.Highest()
+		if stz <= footHeight {
+			// Static is underfoot, consider it a possible floor
 			floor = stz
 			floorObject = static
 			continue
 		}
+		if sz <= footHeight {
+			// Feet are inside or resting on this static so project upward
+			floor = stz
+			footHeight = floor
+			floorObject = static
+			continue
+		}
+		// Underside of the static is above the foot position so that is the
+		// ceiling
+		ceiling = sz
+		ceilingObject = static
+		break
 	}
 	// Consider items
 	for _, item := range c.items {
@@ -944,22 +957,32 @@ func (m *Map) GetFloorAndCeiling(l uo.Location) (uo.CommonObject, uo.CommonObjec
 			continue
 		}
 		iz := item.Z()
-		itz := iz + item.Height()
-		if iz > floor {
-			// Item is above the current floor
-			if iz <= ceiling {
-				// Item is also below the static ceiling so it is the new one
-				ceilingObject = item
-			}
-			break
+		itz := item.Highest()
+		if itz <= footHeight {
+			// Item is underfoot, consider it a possible floor
+			if itz >= floor {
+				// Surface of item is between the static floor and the foot
+				// height so consider it a possible floor
+				floor = itz
+				floorObject = item
+			} // Else the item is below the static floor so ignore it
+			continue
 		}
-		if itz > floor {
-			// Item is between the static floor and ceiling, consider it a
-			// possible floor.
+		if iz <= footHeight {
+			// Feet are inside or resting on this item so project upward
 			floor = itz
+			footHeight = floor
 			floorObject = item
 			continue
 		}
+		// Underside of the item is above the foot position so this is the last
+		// item we need to check
+		if iz < ceiling {
+			// Underside of item is below the static ceiling so this item is the
+			// ceiling
+			ceilingObject = item
+		}
+		break
 	}
 	return floorObject, ceilingObject
 }

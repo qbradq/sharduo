@@ -9,11 +9,12 @@ type CommonObject interface {
 	Z() int8
 	// Height returns the height of the object.
 	Height() int8
+	// Highest returns the highest elevation of the object.
+	Highest() int8
 	// StandingHeight returns the height at which other objects rest above this
-	// object's position. Absolute elevation is Z()+StandingHeight(). For solid
-	// objects this is equal to Z()+Height(). For Bridge() type objects -
-	// typically stairs - this is Z()+Height()/2 rounded down. For all non-solid
-	// objects the return value will be Z().
+	// object's position. For solid objects this is equal to Z()+Height(). For
+	// Bridge() type objects - typically stairs - this is Z()+Height()/2 rounded
+	// down. For all non-solid objects the return value will be Z().
 	StandingHeight() int8
 	// Flag accessors
 	Background() bool
@@ -77,7 +78,7 @@ type Tile struct {
 	// Altitude of the tile's lowest point
 	lowest int8
 	// Height of the tile
-	height int8
+	highest int8
 	// Height of the standing point
 	avg int8
 }
@@ -100,11 +101,17 @@ func (t Tile) Ignore() bool {
 // BaseGraphic returns the graphic of the tile
 func (t Tile) BaseGraphic() Graphic { return t.def.Graphic }
 
-// Z returns the permanent Z location of the tile
+// RawZ returns the elevation of the tile from map0.mul
+func (t Tile) RawZ() int8 { return t.z }
+
+// Z returns the elevation of the lowest corder of the tile
 func (t Tile) Z() int8 { return t.lowest }
 
-// Height returns the height of the tile, which is always 0
-func (t Tile) Height() int8 { return t.height }
+// Height returns the height of the tile
+func (t Tile) Height() int8 { return t.highest - t.lowest }
+
+// Highest returns the highest point of the tile
+func (t Tile) Highest() int8 { return t.highest }
 
 // StandingHeight returns the standing height of the tile, which is always 0
 func (t Tile) StandingHeight() int8 { return t.avg }
@@ -113,7 +120,7 @@ func (t Tile) StandingHeight() int8 { return t.avg }
 func (t Tile) SetElevations(lowest, avg, height int8) Tile {
 	t.lowest = lowest
 	t.avg = avg
-	t.height = height
+	t.highest = height
 	return t
 }
 

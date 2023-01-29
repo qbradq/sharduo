@@ -63,6 +63,8 @@ type Item interface {
 	CanCombineWith(Item) bool
 	// Height returns the height of the item
 	Height() int8
+	// Highest returns the highest elevation of the object.
+	Highest() int8
 	// StandingHeight returns the standing height offset of the item, usually 0
 	StandingHeight() int8
 	// Z returns the permanent Z location of the object
@@ -359,6 +361,11 @@ func (i *BaseItem) DropObject(obj Object, l uo.Location, from Mobile) bool {
 
 // Height implements the Item interface.
 func (i *BaseItem) Height() int8 { return i.def.Height }
+
+// Highest returns the highest elevation of the object
+func (i *BaseItem) Highest() int8 {
+	return i.location.Z + i.def.Height
+}
 
 // StandingHeight returns the standing height based on the object's flags.
 func (i *BaseItem) StandingHeight() int8 {

@@ -52,6 +52,12 @@ func NewTileDataMul(fname string) *TileDataMul {
 	for staticDataChunk := 0; dofs < len(d); staticDataChunk++ {
 		dofs += 4
 		for staticDataI := 0; staticDataI < 32; staticDataI++ {
+			sd := d[dofs+21 : dofs+41]
+			idx := bytes.IndexByte(sd, 0)
+			name := ""
+			if idx > 0 {
+				name = string(sd[:idx])
+			}
 			ret.staticDefinitions[statici] = uo.StaticDefinition{
 				Graphic:   uo.Graphic(statici),
 				TileFlags: uo.TileFlags(binary.LittleEndian.Uint64(d[dofs+0 : dofs+8])),
@@ -62,7 +68,7 @@ func NewTileDataMul(fname string) *TileDataMul {
 				Hue:       uo.Hue(binary.LittleEndian.Uint16(d[dofs+16 : dofs+18])),
 				Light:     uo.Light(binary.LittleEndian.Uint16(d[dofs+18 : dofs+20])),
 				Height:    int8(d[dofs+20]),
-				Name:      string(d[dofs+21 : dofs+41]),
+				Name:      name,
 			}
 			statici++
 			dofs += 41
