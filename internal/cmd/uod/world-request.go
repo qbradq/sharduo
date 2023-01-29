@@ -81,7 +81,7 @@ func (r *CharacterLoginRequest) Execute() error {
 	if player == nil {
 		player = world.New("Player").(game.Mobile)
 		// TODO New player setup
-		world.Map().SetNewParent(player, nil)
+		world.Map().AddObject(player)
 	}
 	r.NetState.m = player
 	r.NetState.account.SetPlayer(player.Serial())

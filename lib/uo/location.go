@@ -68,7 +68,7 @@ func (l Location) Bound() Location {
 	for l.X < 0 {
 		l.X += int16(MapWidth)
 	}
-	for l.X > int16(MapWidth) {
+	for l.X >= int16(MapWidth) {
 		l.X -= int16(MapWidth)
 	}
 	for l.Y < 0 {

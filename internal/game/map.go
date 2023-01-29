@@ -22,7 +22,6 @@ func NewMap() *Map {
 	m := &Map{
 		chunks: make([]*chunk, uo.MapChunksWidth*uo.MapChunksHeight),
 	}
-
 	for cx := 0; cx < uo.MapChunksWidth; cx++ {
 		for cy := 0; cy < uo.MapChunksHeight; cy++ {
 			m.chunks[cy*uo.MapChunksWidth+cx] = newChunk(cx*uo.ChunkWidth, cy*uo.ChunkHeight)
@@ -38,6 +37,16 @@ func (m *Map) LoadFromMuls(mapmul *file.MapMul, staticsmul *file.StaticsMul) {
 	for iy := 0; iy < uo.MapHeight; iy++ {
 		for ix := 0; ix < uo.MapWidth; ix++ {
 			m.getChunk(uo.Location{X: int16(ix), Y: int16(iy)}).setTile(ix, iy, mapmul.GetTile(ix, iy))
+		}
+	}
+	// Pre-calculate tile elevations
+	for iy := int16(0); iy < int16(uo.MapHeight); iy++ {
+		for ix := int16(0); ix < int16(uo.MapWidth); ix++ {
+			c := m.getChunk(uo.Location{X: ix, Y: iy})
+			t := c.GetTile(ix, iy)
+			lowest, avg, height := m.getTerrainElevations(ix, iy)
+			t = t.SetElevations(lowest, avg, height)
+			c.setTile(int(ix), int(iy), t)
 		}
 	}
 	// Load the statics
@@ -250,8 +259,15 @@ func (m *Map) RemoveObject(o Object) bool {
 // is an item it will be stacked on top of any other items at the location. It
 // returns false only if the object is an item and could not fit on the map.
 func (m *Map) AddObject(o Object) bool {
+	op := o.Parent()
+	isVoid := op != nil && op.Serial() == TheVoid.serial
 	// Make sure there is enough room for items
 	if item, ok := o.(Item); ok && !m.plop(item) {
+		if isVoid {
+			// New item coming from the void, don't leak it
+			m.ForceAddObject(item)
+			return true
+		}
 		return false
 	}
 	m.ForceAddObject(o)
@@ -272,8 +288,15 @@ func (m *Map) ForceAddObject(o Object) {
 	}
 	// If this is a mobile with a NetState we have to send all of the items
 	// and mobiles in range.
-	if mob, ok := o.(Mobile); ok && mob.NetState() != nil {
+	mob, ok := o.(Mobile)
+	if ok && mob.NetState() != nil {
 		m.SendEverything(mob)
+	}
+	// If this is a mobile that doesn't know what it's standing on we need to
+	// tell it. This is the case when a mobile is first created from template.
+	if ok && mob.StandingOn() == nil {
+		floor, _ := m.GetFloorAndCeiling(o.Location())
+		mob.StandOn(floor)
 	}
 }
 
@@ -303,47 +326,44 @@ func (m *Map) ForceRemoveObject(o Object) {
 // around dungeons - that would block monster movement if they were given
 // heights greater than this value.
 func (m *Map) canMoveTo(mob Mobile, d uo.Direction) (bool, uo.Location, uo.CommonObject) {
-	/*	ol := mob.Location()
-		nl := ol.Forward(d.Bound()).WrapAndBound(ol)
-		floor, ceiling := m.GetFloorAndCeiling(nl)
-		// No floor to stand on, bail
-		if floor = nil {
-
+	ol := mob.Location()
+	nl := ol.Forward(d.Bound()).WrapAndBound(ol)
+	floor, ceiling := m.GetFloorAndCeiling(nl)
+	// No floor to stand on, bail
+	if floor == nil {
+		return false, ol, nil
+	}
+	fz := floor.Z() + floor.StandingHeight()
+	cz := ceiling.Z()
+	// See if there is enough room for the mobile to fit if it took the step
+	if cz-fz < uo.PlayerHeight {
+		return false, ol, floor
+	}
+	// Consider the step height
+	if tile, ok := floor.(uo.Tile); ok {
+		// The mobile is standing on the tile matrix
+		if (!tile.Surface() && !tile.Wet()) || tile.Impassable() {
+			// Check tile flags
+			return false, ol, floor
 		}
-		// See if there is enough room for the mobile to fit if it took the step
-		if ceiling-floor < uo.PlayerHeight {
-			return false, ol
+		// There are no step height restrictions when following the terrain
+		nl.Z = fz
+	} else {
+		// The mobile is standing on an item, either static or dynamic
+		if !floor.Surface() && !floor.Wet() {
+			// Check tile flags
+			return false, ol, floor
 		}
-		// Consider the step height.
-		if floor != t.Z() {
-			// Note that when following the terrain there is no step height
-			// restriction, only when traversing over statics and items.
-			// The step height restriction only applies when going upward. Going
-			// down more than the step height is called falling.
-			if floor-ol.Z > uo.StepHeight {
-				return false, ol
-			}
-		} else {
-			// We are on the tile matrix so consider tile flags
-			if t.Impassable() {
-				return false, ol
-			}
+		// Consider step height
+		oldFloor := mob.StandingOn()
+		oldTop := oldFloor.Z() + oldFloor.Height()
+		if fz-oldTop > uo.StepHeight {
+			// Can't go up that much in one step
+			return false, ol, floor
 		}
-		// Cap the required ceiling height so we can consider blockers in the space
-		// that the player would now take up.
-		ceiling = floor + uo.PlayerHeight
-		// Consider blockers
-		for _, blocker := range blockers {
-			bz := blocker.Z()
-			btz := bz + blocker.Height()
-			if btz > floor && bz < ceiling {
-				// This blocker is within the required gap for the mobile
-				return false, ol
-			}
-		}
-		// Success
-		nl.Z = floor*/
-	return true, uo.Location{}, nil
+		nl.Z = fz
+	}
+	return true, nl, floor
 }
 
 // MoveMobile moves a mobile in the given direction. Returns true if the
@@ -409,6 +429,7 @@ func (m *Map) MoveMobile(mob Mobile, dir uo.Direction) bool {
 		newChunk.Add(mob)
 	}
 	mob.AfterMove()
+	log.Printf("%+v", mob.Location())
 	return true
 }
 
@@ -420,23 +441,11 @@ func (m *Map) MoveMobile(mob Mobile, dir uo.Direction) bool {
 // current parent is TheVoid. This is the case when the mobile is being created.
 func (m *Map) TeleportMobile(mob Mobile, l uo.Location) bool {
 	oldLocation := mob.Location()
-	voidParent := false
-	if mob.Parent().Serial() == TheVoid.serial {
-		voidParent = true
-	}
-	if !voidParent {
-		world.Map().RemoveObject(mob) // This triggers on leave events
-	}
+	world.Map().RemoveObject(mob) // This triggers on leave events
 	mob.SetLocation(l)
 	if !world.Map().AddObject(mob) { // This triggers on enter events
-		// Don't leak the mobile, just force it back where it came from or if
-		// it is being create - coming from the void - then just force it down
-		// onto the map.
-		if voidParent {
-			mob.SetLocation(l)
-		} else {
-			mob.SetLocation(oldLocation)
-		}
+		// Don't leak the mobile, just force it back where it came from.
+		mob.SetLocation(oldLocation)
 		world.Map().ForceAddObject(mob)
 		floor, _ := m.GetFloorAndCeiling(mob.Location())
 		mob.StandOn(floor)
@@ -641,7 +650,7 @@ func (m *Map) GetTopSurface(l uo.Location, zLimit int8) uo.CommonObject {
 	t := c.GetTile(l.X, l.Y)
 	topObj = t
 	if !t.Ignore() {
-		_, avgZ, _ := m.GetTerrainElevations(l)
+		avgZ := t.Z() + t.StandingHeight()
 		if avgZ == zLimit {
 			return t
 		} else if avgZ < zLimit {
@@ -691,13 +700,13 @@ func (m *Map) GetTopSurface(l uo.Location, zLimit int8) uo.CommonObject {
 	return topObj
 }
 
-// GetTerrainElevations returns the bottom, average, and top Z coordinate of the
+// getTerrainElevations returns the bottom, average, and top Z coordinate of the
 // tile matrix at the location.
-func (m *Map) GetTerrainElevations(l uo.Location) (lowest, average, highest int8) {
-	zTop := m.GetTile(l.X, l.Y).Z()
-	zLeft := m.GetTile(l.X, l.Y+1).Z()
-	zRight := m.GetTile(l.X+1, l.Y).Z()
-	zBottom := m.GetTile(l.X+1, l.Y+1).Z()
+func (m *Map) getTerrainElevations(x, y int16) (lowest, average, highest int8) {
+	zTop := m.GetTile(x, y).Z()
+	zLeft := m.GetTile(x, y+1).Z()
+	zRight := m.GetTile(x+1, y).Z()
+	zBottom := m.GetTile(x+1, y+1).Z()
 	lowest = zTop
 	if zLeft < lowest {
 		lowest = zLeft
@@ -767,7 +776,7 @@ func (m *Map) plop(toPlop Item) bool {
 	// Consider the tile matrix
 	t := c.GetTile(l.X, l.Y)
 	if !t.Ignore() {
-		_, avgZ, _ := m.GetTerrainElevations(l)
+		avgZ := t.Z() + t.StandingHeight()
 		if avgZ < floor {
 			// Object is above the ground
 			floor = avgZ
@@ -856,7 +865,7 @@ func (m *Map) plopItems(l uo.Location, drop int8) {
 	// Consider the tile matrix
 	t := c.GetTile(l.X, l.Y)
 	if !t.Ignore() {
-		_, avgZ, _ := m.GetTerrainElevations(l)
+		avgZ := t.Z() + t.StandingHeight()
 		if avgZ > floor {
 			// Location is below the ground
 			ceiling = avgZ
@@ -913,7 +922,8 @@ func (m *Map) GetFloorAndCeiling(l uo.Location) (uo.CommonObject, uo.CommonObjec
 	c := m.getChunk(l)
 	t := c.GetTile(l.X, l.Y)
 	if !t.Ignore() {
-		bottom, avg, _ := m.GetTerrainElevations(l)
+		bottom := t.Z()
+		avg := bottom + t.StandingHeight()
 		if footLevel < bottom {
 			// Mobile is below ground
 			ceiling = avg

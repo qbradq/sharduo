@@ -109,6 +109,14 @@ func (t Tile) Height() int8 { return t.height }
 // StandingHeight returns the standing height of the tile, which is always 0
 func (t Tile) StandingHeight() int8 { return t.avg }
 
+// SetElevations sets the three pre-calculated elevation parameters
+func (t Tile) SetElevations(lowest, avg, height int8) Tile {
+	t.lowest = lowest
+	t.avg = avg
+	t.height = height
+	return t
+}
+
 func (t Tile) Background() bool   { return t.def.TileFlags&TileFlagsBackground != 0 }
 func (t Tile) Weapon() bool       { return t.def.TileFlags&TileFlagsWeapon != 0 }
 func (t Tile) Transparent() bool  { return t.def.TileFlags&TileFlagsTransparent != 0 }
