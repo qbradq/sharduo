@@ -612,65 +612,6 @@ func (m *Map) UpdateViewRangeForMobile(mob Mobile, r int16) {
 	mob.SetViewRange(r)
 }
 
-// GetTopSurface returns the highest solid object at the given location that has
-// a Z altitude less than or equal to zLimit.
-func (m *Map) GetTopSurface(l uo.Location, zLimit int8) uo.CommonObject {
-	var topObj uo.CommonObject
-	topZ := uo.MapMinZ
-	c := m.getChunk(l)
-	t := c.GetTile(l.X, l.Y)
-	topObj = t
-	if !t.Ignore() {
-		avgZ := t.Z() + t.StandingHeight()
-		if avgZ == zLimit {
-			return t
-		} else if avgZ < zLimit {
-			topZ = avgZ
-		}
-		// Else topz is still uo.MapMinZ and we are looking for statics and
-		// items underground.
-	}
-	for _, static := range c.statics {
-		// Ignore statics that are not at the location
-		if static.Location.X != l.X || static.Location.Y != l.Y {
-			continue
-		}
-		// Only select surfaces
-		if !static.Surface() && !static.Wet() {
-			continue
-		}
-		staticTopZ := static.Z() + static.Height()
-		if staticTopZ > topZ && staticTopZ <= zLimit {
-			if staticTopZ == zLimit {
-				return static
-			} else {
-				topZ = staticTopZ
-				topObj = static
-			}
-		}
-	}
-	for _, item := range c.items {
-		// Ignore items that are not at the location
-		if item.Location().X != l.X || item.Location().Y != l.Y {
-			continue
-		}
-		// Only consider surface items
-		if !item.Surface() && !item.Wet() {
-			continue
-		}
-		itemTopZ := item.Z() + item.Height()
-		if itemTopZ > topZ && itemTopZ <= zLimit {
-			if itemTopZ == zLimit {
-				return item
-			} else {
-				topZ = itemTopZ
-				topObj = item
-			}
-		}
-	}
-	return topObj
-}
-
 // getTerrainElevations returns the bottom, average, and top Z coordinate of the
 // tile matrix at the location.
 func (m *Map) getTerrainElevations(x, y int16) (lowest, average, highest int8) {
@@ -731,87 +672,56 @@ func (m *Map) getTerrainElevations(x, y int16) (lowest, average, highest int8) {
 //	function will fail.
 //
 // Explanation
-//  1. Determine the floor altitude considering the tile matrix and statics.
-//  2. Determine the ceiling altitude considering the tile matrix and statics.
-//  3. If the gap between the floor and ceiling is less than the object
-//     height the object is untouched and we return false.
-//  4. Process all items to adjust floor and ceiling values.
-//  5. If the gap between the floor and ceiling is less than the object height\
-//     the object is untouched and we return false. Otherwise the object's Z
-//     position is updated to rest on the calculated floor.
+//  1. Query floor and ceiling
+//  2. Process all items to find top of stack relative to the floor
+//  3. If the gap between the top of the stack and either the ceiling or the
+//     stack height limit is less than the object height the object is untouched
+//     and we return false. Otherwise the object's Z position is updated to rest
+//     on top of the stack.
 func (m *Map) plop(toPlop Item) bool {
 	l := toPlop.Location()
-	ceiling := uo.MapMaxZ
-	floor := l.Z
-	c := m.getChunk(l)
-	// Consider the tile matrix
-	t := c.GetTile(l.X, l.Y)
-	if !t.Ignore() {
-		avgZ := t.Z() + t.StandingHeight()
-		if avgZ < floor {
-			// Object is above the ground
-			floor = avgZ
-		} else if avgZ > floor {
-			// Object is below the ground
-			ceiling = avgZ
-		} // Else the object is already on the ground
-	} else {
-		// This is a cave entrance or other ignorable tile, so we'll need to
-		// select the static surface below the object
-		floor = uo.MapMinZ
-	}
-	// Process statics to find the static floor and ceiling
-	for _, static := range c.statics {
-		// Ignore statics that are not at the location
-		if static.Location.X != l.X || static.Location.Y != l.Y {
-			continue
-		}
-		// Only select surfaces
-		if !static.Surface() && !static.Wet() {
-			continue
-		}
-		staticTopZ := static.Z() + static.Height()
-		if staticTopZ > floor && staticTopZ <= l.Z {
-			// This static is between the tile matrix and the object's starting
-			// location so consider it a possible floor
-			floor = staticTopZ
-		} else if static.Z() < ceiling && static.Z() >= floor {
-			// This static is above us so consider it a possible ceiling
-			ceiling = static.Z()
-		} // Else the static is outside the current gap
-	}
-	// See if there is enough room to begin with
-	if ceiling-floor < toPlop.Height() {
+	floor, ceiling := m.GetFloorAndCeiling(l)
+	if floor == nil {
+		// No floor to place item on, bail
 		return false
 	}
-	// Limit item stack height to the max
-	if ceiling-floor > uo.MaxItemStackHeight {
-		ceiling = floor + uo.MaxItemStackHeight
+	fz := floor.StandingHeight()
+	cz := uo.MapMaxZ
+	if ceiling != nil {
+		cz = ceiling.Z()
 	}
-	// Process items to adjust floor and ceiling values
+	// Find the Z level that would make this item set on top of other non-solid
+	// items at the same location
+	tz := fz
+	c := m.getChunk(l)
 	for _, item := range c.items {
 		// Only look at items at our location
 		if item.Location().X != l.X || item.Location().Y != l.Y {
 			continue
 		}
-		itemTopZ := item.Z() + item.Height()
-		if itemTopZ > floor && itemTopZ <= ceiling {
-			// The item is between the static floor and the current ceiling so
-			// consider it a possible floor
-			floor = itemTopZ
+		iz := item.Z()
+		itz := item.Highest()
+		if itz >= tz && iz < cz {
+			// The item is between the current stack top and the current ceiling
+			// so it is the new top item
+			tz = itz
+			continue
 		}
-		if item.Z() < ceiling && item.Z() > floor {
-			// This item is above us so consider it a possible ceiling
-			ceiling = item.Z()
-		} // Else the item is outside the current gap
+		// Else the item's underside is above the current stack top, so we have
+		// hit the end of the stack
+		break
 	}
-	// See if there is still enough room
-	if ceiling-floor < toPlop.Height() {
+	// Limit item stack height to the max
+	if cz-tz > uo.MaxItemStackHeight {
+		cz = tz + uo.MaxItemStackHeight
+	}
+	// See if there is enough room
+	if cz-tz < toPlop.Height() {
 		return false
 	}
 	// Note this will move the item upward when ploping under a solid stack of
 	// items which is the intended behavior
-	l.Z = floor
+	l.Z = tz
 	toPlop.SetLocation(l)
 	return true
 }
@@ -830,47 +740,36 @@ func (m *Map) plop(toPlop Item) bool {
 //     a. If the item's Z position is under the ceiling apply the offset.
 //     b. Make sure no item's Z position is set lower than the static floor.
 func (m *Map) plopItems(l uo.Location, drop int8) {
-	ceiling := uo.MapMaxZ
-	floor := l.Z
-	c := m.getChunk(l)
-	// Consider the tile matrix
-	t := c.GetTile(l.X, l.Y)
-	if !t.Ignore() {
-		avgZ := t.Z() + t.StandingHeight()
-		if avgZ > floor {
-			// Location is below the ground
-			ceiling = avgZ
-		} // Else the location is already on the ground or above it
-	}
-	// Process statics to find the static ceiling
-	for _, static := range c.statics {
-		// Ignore statics that are not at the location
-		if static.Location.X != l.X || static.Location.Y != l.Y {
-			continue
-		}
-		// Only select surfaces
-		if !static.Surface() && !static.Wet() {
-			continue
-		}
-		if static.Z() < ceiling && static.Z() >= floor {
-			ceiling = static.Z()
-		}
+	_, ceiling := m.GetFloorAndCeiling(l)
+	fz := l.Z
+	cz := uo.MapMaxZ
+	if ceiling != nil {
+		cz = ceiling.Z()
 	}
 	// Process items to adjust Z position
+	c := m.getChunk(l)
 	for _, item := range c.items {
 		// Only look at items at our location
 		if item.Location().X != l.X || item.Location().Y != l.Y {
 			continue
 		}
-		if item.Z() > floor && item.Z() < ceiling {
-			il := item.Location()
-			il.Z -= drop
-			if il.Z < floor {
-				il.Z = floor
-			}
-			item.SetLocation(il)
-			world.Update(item)
+		iz := item.Z()
+		if iz < fz {
+			// Item is below the reference point, ignore it
+			continue
 		}
+		if iz >= cz {
+			// Item is on or above the ceiling so we are done
+			break
+		}
+		// Item is in the stack
+		il := item.Location()
+		il.Z -= drop
+		if il.Z < fz {
+			il.Z = fz
+		}
+		item.SetLocation(il)
+		world.Update(item)
 	}
 }
 
