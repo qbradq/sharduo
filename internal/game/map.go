@@ -820,7 +820,7 @@ func (m *Map) GetFloorAndCeiling(l uo.Location) (uo.CommonObject, uo.CommonObjec
 		if static.Location.X != l.X || static.Location.Y != l.Y {
 			continue
 		}
-		// Only select solid statics. This ignores things like leaves and stuff
+		// Only select solid statics ignoring things like leaves
 		if !static.Surface() && !static.Wet() && !static.Impassable() {
 			continue
 		}
