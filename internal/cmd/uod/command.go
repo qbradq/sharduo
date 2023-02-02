@@ -126,7 +126,7 @@ func commandTeleport(n *NetState, args CommandArgs) {
 	l = l.Bound()
 	if !targeted {
 		if l.Z == uo.MapMaxZ {
-			floor, _ := world.Map().GetFloorAndCeiling(l)
+			floor, _ := world.Map().GetFloorAndCeiling(l, false)
 			if floor == nil {
 				n.Speech(nil, "location has no floor")
 				return

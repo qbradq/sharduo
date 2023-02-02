@@ -264,9 +264,10 @@ func (m *Map) ForceAddObject(o Object) {
 		m.SendEverything(mob)
 	}
 	// If this is a mobile that doesn't know what it's standing on we need to
-	// tell it. This is the case when a mobile is first created from template.
+	// tell it. This is the case when a mobile is first created from template
+	// and when loading from save.
 	if ok && mob.StandingOn() == nil {
-		floor, _ := m.GetFloorAndCeiling(o.Location())
+		floor, _ := m.GetFloorAndCeiling(o.Location(), false)
 		mob.StandOn(floor)
 	}
 }
@@ -299,7 +300,7 @@ func (m *Map) ForceRemoveObject(o Object) {
 func (m *Map) canMoveTo(mob Mobile, d uo.Direction) (bool, uo.Location, uo.CommonObject) {
 	ol := mob.Location()
 	nl := ol.Forward(d.Bound()).WrapAndBound(ol)
-	floor, ceiling := m.GetFloorAndCeiling(nl)
+	floor, ceiling := m.GetFloorAndCeiling(nl, false)
 	// No floor to stand on, bail
 	if floor == nil {
 		return false, ol, nil
@@ -418,12 +419,12 @@ func (m *Map) TeleportMobile(mob Mobile, l uo.Location) bool {
 		// Don't leak the mobile, just force it back where it came from.
 		mob.SetLocation(oldLocation)
 		world.Map().ForceAddObject(mob)
-		floor, _ := m.GetFloorAndCeiling(mob.Location())
+		floor, _ := m.GetFloorAndCeiling(mob.Location(), false)
 		mob.StandOn(floor)
 		return false
 	}
 	// Update standing
-	floor, _ := m.GetFloorAndCeiling(mob.Location())
+	floor, _ := m.GetFloorAndCeiling(mob.Location(), false)
 	mob.StandOn(floor)
 	// If this mobile has a net state attached we need to fully refresh the
 	// client's object collection.
@@ -680,7 +681,7 @@ func (m *Map) getTerrainElevations(x, y int16) (lowest, average, highest int8) {
 //     on top of the stack.
 func (m *Map) plop(toPlop Item) bool {
 	l := toPlop.Location()
-	floor, ceiling := m.GetFloorAndCeiling(l)
+	floor, ceiling := m.GetFloorAndCeiling(l, true)
 	if floor == nil {
 		// No floor to place item on, bail
 		return false
@@ -740,7 +741,7 @@ func (m *Map) plop(toPlop Item) bool {
 //     a. If the item's Z position is under the ceiling apply the offset.
 //     b. Make sure no item's Z position is set lower than the static floor.
 func (m *Map) plopItems(l uo.Location, drop int8) {
-	_, ceiling := m.GetFloorAndCeiling(l)
+	_, ceiling := m.GetFloorAndCeiling(l, true)
 	fz := l.Z
 	cz := uo.MapMaxZ
 	if ceiling != nil {
@@ -781,11 +782,12 @@ func (m *Map) plopItems(l uo.Location, drop int8) {
 // values will be non-nil referencing at least the tile matrix. However there
 // are certain places on the map - such as cave entrances - where the tile
 // matrix is ignored. In these cases both return values may be nil if there are
-// no items or statics to create a surface.
+// no items or statics to create a surface. If the ignoreDynamicItems argument
+// is true then only Items of concrete type *StaticItem are considered.
 //
 // NOTE: This function requires that all statics and items are z-sorted bottom
 // to top.
-func (m *Map) GetFloorAndCeiling(l uo.Location) (uo.CommonObject, uo.CommonObject) {
+func (m *Map) GetFloorAndCeiling(l uo.Location, ignoreDynamicItems bool) (uo.CommonObject, uo.CommonObject) {
 	var floorObject uo.CommonObject
 	var ceilingObject uo.CommonObject
 	floor := uo.MapMinZ
@@ -847,6 +849,13 @@ func (m *Map) GetFloorAndCeiling(l uo.Location) (uo.CommonObject, uo.CommonObjec
 	}
 	// Consider items
 	for _, item := range c.items {
+		// Ignore dynamic items if requested
+		if ignoreDynamicItems {
+			_, isStatic := item.(*StaticItem)
+			if !isStatic {
+				continue
+			}
+		}
 		// Only look at items at our location
 		if item.Location().X != l.X || item.Location().Y != l.Y {
 			continue
