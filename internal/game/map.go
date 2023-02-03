@@ -713,11 +713,7 @@ func (m *Map) plop(toPlop Item) bool {
 		break
 	}
 	// Limit item stack height to the max
-	if cz-tz > uo.MaxItemStackHeight {
-		cz = tz + uo.MaxItemStackHeight
-	}
-	// See if there is enough room
-	if cz-tz < toPlop.Height() {
+	if (tz-fz)+toPlop.Height() > uo.MaxItemStackHeight {
 		return false
 	}
 	// Note this will move the item upward when ploping under a solid stack of
