@@ -702,14 +702,18 @@ func (m *Map) plop(toPlop Item) bool {
 		}
 		iz := item.Z()
 		itz := item.Highest()
-		if itz >= tz && iz < cz {
+		if itz < tz {
+			// Item is below the stack so go to the next item
+			continue
+		}
+		if iz < cz {
 			// The item is between the current stack top and the current ceiling
 			// so it is the new top item
 			tz = itz
 			continue
 		}
-		// Else the item's underside is above the current stack top, so we have
-		// hit the end of the stack
+		// Else the item's underside is above the ceiling so we have hit the end
+		// of the stack
 		break
 	}
 	// Limit item stack height to the max
