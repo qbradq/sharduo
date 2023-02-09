@@ -13,7 +13,7 @@ including all features required to mine ore and smelt it into ingots.
 ### Required Features ###
 * ~~Map loading~~
 * ~~Map tile query~~
-* Following the map during movement
+* ~~Following the map during movement~~
 * ~~Stats~~
 * ~~Running~~
 * ~~Picking up and dropping items on the ground~~
