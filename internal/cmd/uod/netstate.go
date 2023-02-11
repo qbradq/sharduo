@@ -277,6 +277,33 @@ func (n *NetState) Speech(speaker game.Object, fmtstr string, args ...interface{
 	})
 }
 
+// Cliloc sends a localized client message packet to the attached client.
+func (n *NetState) Cliloc(speaker game.Object, cliloc uo.Cliloc, args ...string) {
+	sid := uo.SerialSystem
+	body := uo.BodySystem
+	font := uo.FontNormal
+	hue := uo.Hue(1153)
+	name := ""
+	if speaker != nil {
+		sid = speaker.Serial()
+		name = speaker.DisplayName()
+		if item, ok := speaker.(game.Item); ok {
+			body = uo.Body(item.BaseGraphic())
+		} else if mob, ok := speaker.(game.Mobile); ok {
+			body = mob.Body()
+		}
+	}
+	n.Send(&serverpacket.ClilocMessage{
+		Speaker:   sid,
+		Body:      body,
+		Font:      font,
+		Hue:       hue,
+		Name:      name,
+		Cliloc:    cliloc,
+		Arguments: []string(args),
+	})
+}
+
 // itemInfo sends ObjectInfo or AddItemToContainer packets for the item
 func (n *NetState) itemInfo(item game.Item) {
 	var layer uo.Layer

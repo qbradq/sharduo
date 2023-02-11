@@ -27,7 +27,7 @@ var forgeItemSet = map[uo.Graphic]struct{}{
 
 func SmeltOre(receiver, source game.Object) {
 	smelter, ok := source.(game.Mobile)
-	if !ok {
+	if !ok || smelter.NetState() == nil {
 		// Something is very wrong
 		return
 	}
@@ -53,7 +53,7 @@ func SmeltOre(receiver, source game.Object) {
 	}
 	if !smelter.SkillCheck(uo.SkillMining, 0, 750) {
 		// Skill check failed, burn some ore
-		// TODO send cliloc 501989
+		smelter.NetState().Cliloc(nil, 501989)
 		ore.Consume(1)
 		return
 	}
@@ -68,5 +68,5 @@ func SmeltOre(receiver, source game.Object) {
 	if !smelter.DropToBackpack(ingot, false) {
 		smelter.DropToFeet(ingot)
 	}
-	// TODO send cliloc 501988
+	smelter.NetState().Cliloc(nil, 501988)
 }

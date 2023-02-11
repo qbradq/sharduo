@@ -27,6 +27,7 @@ func (n *MockNetState) Reset() {
 // Required for interface compliance
 func (n *MockNetState) SystemMessage(fmtstr string, args ...interface{})         {}
 func (n *MockNetState) Speech(from Object, fmtstr string, args ...interface{})   {}
+func (n *MockNetState) Cliloc(from Object, cliloc uo.Cliloc, args ...string)     {}
 func (n *MockNetState) DrawPlayer()                                              {}
 func (n *MockNetState) MoveMobile(mob Mobile)                                    {}
 func (n *MockNetState) UpdateObject(Object)                                      {}

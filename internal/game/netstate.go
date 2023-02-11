@@ -13,6 +13,8 @@ type NetState interface {
 
 	// Speech sends a speech packet
 	Speech(Object, string, ...interface{})
+	// Cliloc sends a localized client message packet
+	Cliloc(Object, uo.Cliloc, ...string)
 
 	//
 	// Item management and updates

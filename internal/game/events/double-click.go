@@ -81,12 +81,12 @@ func OpenContainer(receiver, source game.Object) {
 		return
 	}
 	sm, ok := source.(game.Mobile)
-	if !ok {
+	if !ok || sm.NetState() == nil {
 		return
 	}
 	dz := rc.Location().Z - sm.Location().Z
 	if dz < uo.ContainerOpenLowerLimit || dz > uo.ContainerOpenUpperLimit {
-		// TODO send cliloc 500312
+		sm.NetState().Cliloc(nil, 500312)
 		return
 	}
 	rc.Open(sm)

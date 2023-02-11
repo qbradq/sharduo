@@ -155,7 +155,6 @@ func (c *BaseContainer) GumpGraphic() uo.Gump { return c.gump }
 func (c *BaseContainer) SingleClick(from Mobile) {
 	// Default action is to send the name as over-head text
 	if from.NetState() != nil {
-		// TODO send cliloc 1050044
 		str := fmt.Sprintf("%s\n%d/%d items, %d/%d stones", c.DisplayName(),
 			c.ItemCount(), c.maxContainerItems,
 			int(c.contentWeight), int(c.maxContainerWeight))

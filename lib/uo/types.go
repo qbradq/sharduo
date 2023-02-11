@@ -331,3 +331,6 @@ const (
 	SkillUpdateSingle       SkillUpdate = 0xDF
 	SkillUpdateLegacySingle SkillUpdate = 0xFF
 )
+
+// Cliloc is a code for the localized client messages
+type Cliloc uint32

@@ -3,6 +3,7 @@ package serverpacket
 import (
 	"io"
 	"net"
+	"strings"
 
 	dc "github.com/qbradq/sharduo/lib/dataconv"
 	"github.com/qbradq/sharduo/lib/uo"
@@ -824,4 +825,42 @@ func (p *FullSkillUpdate) Write(w io.Writer) {
 		dc.PutByte(w, byte(uo.SkillLockUp)) // Skill lock
 		dc.PutUint16(w, 1000)               // Skill cap
 	}
+}
+
+// ClilocMessage sends a localized message to the client.
+type ClilocMessage struct {
+	// Serial of the speaker
+	Speaker uo.Serial
+	// Body of the speaker
+	Body uo.Body
+	// Hue of the text
+	Hue uo.Hue
+	// Font of the text
+	Font uo.Font
+	// Cliloc message number
+	Cliloc uo.Cliloc
+	// Name of the speaker
+	Name string
+	// List of arguments for the message
+	Arguments []string
+}
+
+// Write implements the Packet interface.
+func (p *ClilocMessage) Write(w io.Writer) {
+	args := strings.Join(p.Arguments, "\t")
+	dc.PutByte(w, 0xC1)                           // Packet ID
+	dc.PutUint16(w, uint16(50+len([]rune(args)))) // Packet length
+	dc.PutUint32(w, uint32(p.Speaker))            // Speaker's ID
+	dc.PutUint16(w, uint16(p.Body))               // Speaker's body graphic
+	// Message type handling
+	if p.Speaker == uo.SerialSystem {
+		dc.PutByte(w, byte(0x06))
+	} else {
+		dc.PutByte(w, byte(0x07))
+	}
+	dc.PutUint16(w, uint16(p.Hue))    // Message hue
+	dc.PutUint16(w, uint16(p.Font))   // Message font
+	dc.PutUint32(w, uint32(p.Cliloc)) // Message index number
+	dc.PutStringN(w, p.Name, 30)
+	dc.PutUTF16String(w, args)
 }
