@@ -40,7 +40,7 @@ including all features required to mine ore and smelt it into ingots.
 * Animations
 * Sounds
 * Music
-* Clilocs
+* ~~Clilocs~~
 * Auto-saves
 
 ### Nice to Haves ###

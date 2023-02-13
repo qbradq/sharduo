@@ -81,6 +81,7 @@ func (m *Map) Marshal(s *marshal.TagFileSegment) {
 // Unmarshal reads all object references of the objects that are parented
 // directly to the map.
 func (m *Map) Unmarshal(s *marshal.TagFileSegment) {
+	// Place all map objects onto the map
 	for i := uint32(0); i < s.RecordCount(); i++ {
 		serial := uo.Serial(s.Int())
 		o := world.Find(serial)
@@ -90,6 +91,15 @@ func (m *Map) Unmarshal(s *marshal.TagFileSegment) {
 		}
 		c := m.getChunk(o.Location())
 		c.Add(o)
+	}
+	// Call AfterUnmarshalOntoMap for all map objects
+	for _, c := range m.chunks {
+		for _, item := range c.items {
+			item.AfterUnmarshalOntoMap()
+		}
+		for _, mobile := range c.mobiles {
+			mobile.AfterUnmarshalOntoMap()
+		}
 	}
 }
 

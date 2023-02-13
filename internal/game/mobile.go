@@ -387,6 +387,18 @@ func (m *BaseMobile) AfterUnmarshal(tags *marshal.TagCollection) {
 	}
 }
 
+// AfterUnmarshalOntoMap implements the Object interface.
+func (m *BaseMobile) AfterUnmarshalOntoMap() {
+	// Find what we are standing on.
+	floor, _ := world.Map().GetFloorAndCeiling(m.location, false)
+	if floor == nil {
+		// We are below the ground or in the void which is an invalid state
+		log.Printf("error: mobile %s below the world or in the void, removing", m.serial.String())
+		world.Remove(m)
+	}
+	m.floor = floor
+}
+
 // NetState implements the Mobile interface.
 func (m *BaseMobile) NetState() NetState { return m.n }
 

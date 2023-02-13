@@ -128,7 +128,6 @@ func (i *StaticItem) Deserialize(f *util.TagFileObject) {
 
 // Unmarshal implements the marshal.Unmarshaler interface.
 func (i *StaticItem) Unmarshal(s *marshal.TagFileSegment) *marshal.TagCollection {
-	i.serial = uo.Serial(s.Int())
 	i.graphic = uo.Graphic(s.Short())
 	i.location = s.Location()
 	i.hue = uo.Hue(s.Short())
@@ -138,6 +137,9 @@ func (i *StaticItem) Unmarshal(s *marshal.TagFileSegment) *marshal.TagCollection
 
 // AfterUnmarshal implements the marshal.Unmarshaler interface.
 func (i *StaticItem) AfterUnmarshal(tags *marshal.TagCollection) {}
+
+// AfterUnmarshalOntoMap implements the Object interface.
+func (i *StaticItem) AfterUnmarshalOntoMap() {}
 
 // Flag accessors
 func (i *StaticItem) Background() bool   { return i.def.TileFlags&uo.TileFlagsBackground != 0 }

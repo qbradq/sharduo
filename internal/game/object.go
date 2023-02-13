@@ -78,6 +78,13 @@ type Object interface {
 	// ForceRemoveObject is like RemoveObject but should not fail for any
 	// reason.
 	ForceRemoveObject(Object)
+	// AfterUnmarshalOntoMap is called only when 1) The object has just been
+	// reconstructed from a save file 2) The object's parent is nil - the map
+	// If these conditions are true, then this function will be called for all
+	// objects after all objects have been placed into the map data structure.
+	// This is used for recalculating dynamic values that require spatial
+	// awareness, such as the surface a mobile is standing on.
+	AfterUnmarshalOntoMap()
 	// DropObject is called when another object is dropped onto / into this
 	// object by a mobile. A nil mobile usually means a script is generating
 	// items directly into a container. This returns false if the drop action
@@ -289,6 +296,9 @@ func (o *BaseObject) ForceAddObject(obj Object) {
 func (o *BaseObject) ForceRemoveObject(obj Object) {
 	// BaseObject has no child references
 }
+
+// AfterUnmarshalOntoMap implements the Object interface.
+func (o *BaseObject) AfterUnmarshalOntoMap() {}
 
 // DropObject implements the Object interface
 func (o *BaseObject) DropObject(obj Object, l uo.Location, from Mobile) bool {
