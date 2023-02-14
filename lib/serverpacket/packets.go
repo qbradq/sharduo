@@ -884,3 +884,15 @@ func (p *Sound) Write(w io.Writer) {
 	dc.PutByte(w, 0x00)                     // Facing byte? Always 0
 	dc.PutByte(w, byte(int8(p.Location.Z))) // Z position
 }
+
+// Music tells the client to start playing the given song.
+type Music struct {
+	// Which song to play
+	Song uo.Song
+}
+
+// Write implements the Packet interface.
+func (p *Music) Write(w io.Writer) {
+	dc.PutByte(w, 0x6D)             // Packet ID
+	dc.PutUint16(w, uint16(p.Song)) // Song ID
+}

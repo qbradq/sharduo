@@ -8,7 +8,6 @@ import (
 	"log"
 	"os"
 	"path"
-	"runtime/pprof"
 	"strings"
 	"sync"
 	"time"
@@ -198,14 +197,6 @@ func (w *World) Marshal() (*sync.WaitGroup, error) {
 	os.MkdirAll(path.Dir(filePath), 0777)
 	log.Printf("saving data stores to %s", filePath)
 
-	pf, err := os.Create("marshal.cpu.pprof")
-	if err != nil {
-		return nil, err
-	}
-	if err := pprof.StartCPUProfile(pf); err != nil {
-		return nil, err
-	}
-
 	start := time.Now()
 	// We have to build a slice of all of our objects so we don't have
 	// concurrency issues on the data store map during the multi-goroutine save
@@ -287,7 +278,6 @@ func (w *World) Marshal() (*sync.WaitGroup, error) {
 	end := time.Now()
 	elapsed := end.Sub(start)
 	log.Printf("generated save data in %ds%03dms", elapsed.Milliseconds()/1000, elapsed.Milliseconds()%1000)
-	pprof.StopCPUProfile()
 
 	// Kick off another goroutine to persist the save to disk and let the main
 	// goroutine continue.

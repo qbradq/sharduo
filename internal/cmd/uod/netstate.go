@@ -736,3 +736,10 @@ func (n *NetState) Sound(which uo.Sound, from uo.Location) {
 		Location: from,
 	})
 }
+
+// Music makes the client play a song.
+func (n *NetState) Music(song uo.Song) {
+	n.Send(&serverpacket.Music{
+		Song: song,
+	})
+}

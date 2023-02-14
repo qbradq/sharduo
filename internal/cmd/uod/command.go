@@ -175,7 +175,10 @@ func commandDebug(n *NetState, args CommandArgs) {
 			n.Speech(nil, "debug %s command requires 0 arguments", args[1])
 			return
 		}
+	case "music":
+		fallthrough
 	case "sound":
+		fallthrough
 	case "splat":
 		if len(args) != 3 {
 			n.Speech(nil, "debug %s command requires 1 arguments", args[1])
@@ -187,6 +190,9 @@ func commandDebug(n *NetState, args CommandArgs) {
 	}
 	// Execute command
 	switch args[1] {
+	case "music":
+		which := uo.Song(args.Int(2))
+		n.Music(which)
 	case "sound":
 		which := uo.Sound(args.Int(2))
 		world.Map().PlaySound(which, n.m.Location())

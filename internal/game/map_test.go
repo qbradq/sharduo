@@ -29,6 +29,7 @@ func (n *MockNetState) SystemMessage(fmtstr string, args ...interface{})        
 func (n *MockNetState) Speech(from Object, fmtstr string, args ...interface{})   {}
 func (n *MockNetState) Cliloc(from Object, cliloc uo.Cliloc, args ...string)     {}
 func (n *MockNetState) Sound(sound uo.Sound, from uo.Location)                   {}
+func (n *MockNetState) Music(song uo.Song)                                       {}
 func (n *MockNetState) DrawPlayer()                                              {}
 func (n *MockNetState) MoveMobile(mob Mobile)                                    {}
 func (n *MockNetState) UpdateObject(Object)                                      {}

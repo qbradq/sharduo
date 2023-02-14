@@ -22,6 +22,8 @@ type NetState interface {
 
 	// Sound sends a sound to the client from the specified location
 	Sound(uo.Sound, uo.Location)
+	// Music sends a song to the client
+	Music(uo.Song)
 
 	//
 	// Item management and updates

@@ -337,3 +337,6 @@ type Cliloc uint32
 
 // Sound is a code referencing a sound effect on the client side
 type Sound uint16
+
+// Song is a code referencing a song on the client side
+type Song uint16

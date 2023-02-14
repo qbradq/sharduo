@@ -38,8 +38,8 @@ including all features required to mine ore and smelt it into ingots.
 * ~~Stackable items~~
 * Respond to status closed messages
 * Animations
-* Sounds
-* Music
+* ~~Sounds~~
+* ~~Music~~
 * ~~Clilocs~~
 * Auto-saves
 
