@@ -17,6 +17,13 @@ type NetState interface {
 	Cliloc(Object, uo.Cliloc, ...string)
 
 	//
+	// Effects and random stuff
+	//
+
+	// Sound sends a sound to the client from the specified location
+	Sound(uo.Sound, uo.Location)
+
+	//
 	// Item management and updates
 	//
 

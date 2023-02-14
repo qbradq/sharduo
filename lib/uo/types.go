@@ -334,3 +334,6 @@ const (
 
 // Cliloc is a code for the localized client messages
 type Cliloc uint32
+
+// Sound is a code referencing a sound effect on the client side
+type Sound uint16

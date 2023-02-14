@@ -728,3 +728,11 @@ func (n *NetState) SendAllSkills() {
 		SkillValues: n.m.Skills(),
 	})
 }
+
+// Sound makes the client play a sound.
+func (n *NetState) Sound(which uo.Sound, from uo.Location) {
+	n.Send(&serverpacket.Sound{
+		Sound:    which,
+		Location: from,
+	})
+}

@@ -904,3 +904,10 @@ func (m *Map) GetFloorAndCeiling(l uo.Location, ignoreDynamicItems bool) (uo.Com
 	}
 	return floorObject, ceilingObject
 }
+
+// PlaySound plays a sound at the given location for all clients in range.
+func (m *Map) PlaySound(which uo.Sound, from uo.Location) {
+	for _, m := range m.GetNetStatesInRange(from, uo.MaxUpdateRange) {
+		m.NetState().Sound(which, from)
+	}
+}

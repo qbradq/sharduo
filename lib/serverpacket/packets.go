@@ -864,3 +864,23 @@ func (p *ClilocMessage) Write(w io.Writer) {
 	dc.PutStringN(w, p.Name, 30)
 	dc.PutUTF16String(w, args)
 }
+
+// Sound tells the client to play a sound from a specific location.
+type Sound struct {
+	// Which sound to play
+	Sound uo.Sound
+	// Where the sound is coming from
+	Location uo.Location
+}
+
+// Write implements the Packet interface.
+func (p *Sound) Write(w io.Writer) {
+	dc.PutByte(w, 0x54)                     // Packet ID
+	dc.PutByte(w, 0x01)                     // Sound type, 0=quiet, 1=normal
+	dc.PutUint16(w, uint16(p.Sound))        // Sound ID
+	dc.PutUint16(w, 0x00)                   // Volume, ServUO always sets this to 0
+	dc.PutUint16(w, uint16(p.Location.X))   // X position
+	dc.PutUint16(w, uint16(p.Location.Y))   // Y position
+	dc.PutByte(w, 0x00)                     // Facing byte? Always 0
+	dc.PutByte(w, byte(int8(p.Location.Z))) // Z position
+}

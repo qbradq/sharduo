@@ -175,9 +175,10 @@ func commandDebug(n *NetState, args CommandArgs) {
 			n.Speech(nil, "debug %s command requires 0 arguments", args[1])
 			return
 		}
+	case "sound":
 	case "splat":
 		if len(args) != 3 {
-			n.Speech(nil, "debug splat command requires 1 arguments")
+			n.Speech(nil, "debug %s command requires 1 arguments", args[1])
 			return
 		}
 	default:
@@ -186,6 +187,9 @@ func commandDebug(n *NetState, args CommandArgs) {
 	}
 	// Execute command
 	switch args[1] {
+	case "sound":
+		which := uo.Sound(args.Int(2))
+		world.Map().PlaySound(which, n.m.Location())
 	case "memory_test":
 		start := time.Now()
 		for i := 0; i < 1_000_000; i++ {
