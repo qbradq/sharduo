@@ -66,6 +66,7 @@ including all features required to mine ore and smelt it into ingots.
 
 ### Nerdy Things I Might Do for Fun ###
 * Global light levels
+* Personal light levels
 * Day/Night cycles
 
 ## Outstanding Issues ##
