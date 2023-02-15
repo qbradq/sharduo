@@ -325,6 +325,7 @@ const (
 // SkillUpdate is a code for the types of skill updates
 type SkillUpdate byte
 
+// SkillUpdate values
 const (
 	SkillUpdateLegacyAll    SkillUpdate = 0x00
 	SkillUpdateAll          SkillUpdate = 0x02
@@ -340,3 +341,30 @@ type Sound uint16
 
 // Song is a code referencing a song on the client side
 type Song uint16
+
+// AnimationType indicates which animation type to play on the client side
+type AnimationType uint16
+
+// AnimationType values
+const (
+	AnimationTypeAttack      AnimationType = 0
+	AnimationTypeParry       AnimationType = 1
+	AnimationTypeBlock       AnimationType = 2
+	AnimationTypeDie         AnimationType = 3
+	AnimationTypeImpact      AnimationType = 4
+	AnimationTypeFidget      AnimationType = 5
+	AnimationTypeEat         AnimationType = 6
+	AnimationTypeEmote       AnimationType = 7
+	AnimationTypeAlert       AnimationType = 8
+	AnimationTypeTakeOff     AnimationType = 9
+	AnimationTypeLand        AnimationType = 10
+	AnimationTypeSpell       AnimationType = 11
+	AnimationTypeStartCombat AnimationType = 12
+	AnimationTypeEndCombat   AnimationType = 13
+	AnimationTypePillage     AnimationType = 14
+	AnimationTypeSpawn       AnimationType = 15
+)
+
+// AnimationAction is a second parameter to animations which selects between
+// different sub-animations.
+type AnimationAction uint16

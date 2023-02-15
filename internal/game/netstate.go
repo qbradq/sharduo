@@ -24,6 +24,8 @@ type NetState interface {
 	Sound(uo.Sound, uo.Location)
 	// Music sends a song to the client
 	Music(uo.Song)
+	// Animate make the client animate the given mobile
+	Animate(Mobile, uo.AnimationType, uo.AnimationAction)
 
 	//
 	// Item management and updates

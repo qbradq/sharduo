@@ -896,3 +896,22 @@ func (p *Music) Write(w io.Writer) {
 	dc.PutByte(w, 0x6D)             // Packet ID
 	dc.PutUint16(w, uint16(p.Song)) // Song ID
 }
+
+// Animation tells the client to animate a mobile.
+type Animation struct {
+	// Serial of the mobile to animate
+	Serial uo.Serial
+	// Animation type
+	AnimationType uo.AnimationType
+	// Animation action
+	AnimationAction uo.AnimationAction
+}
+
+// Write implements the Packet interface.
+func (p *Animation) Write(w io.Writer) {
+	dc.PutByte(w, 0xE2)                        // Packet ID
+	dc.PutUint32(w, uint32(p.Serial))          // Mobile to animate
+	dc.PutUint16(w, uint16(p.AnimationType))   // Animation to play
+	dc.PutUint16(w, uint16(p.AnimationAction)) // Sub-animation to play
+	dc.PutByte(w, 0)                           // Delay
+}

@@ -184,12 +184,21 @@ func commandDebug(n *NetState, args CommandArgs) {
 			n.Speech(nil, "debug %s command requires 1 arguments", args[1])
 			return
 		}
+	case "animate":
+		if len(args) != 4 {
+			n.Speech(nil, "debug %s command requires 2 arguments", args[1])
+			return
+		}
 	default:
 		n.Speech(nil, "unknown debug command %s", args[1])
 		return
 	}
 	// Execute command
 	switch args[1] {
+	case "animate":
+		at := uo.AnimationType(args.Int(2))
+		aa := uo.AnimationAction(args.Int(2))
+		n.Animate(n.m, at, aa)
 	case "music":
 		which := uo.Song(args.Int(2))
 		n.Music(which)

@@ -743,3 +743,15 @@ func (n *NetState) Music(song uo.Song) {
 		Song: song,
 	})
 }
+
+// Animate animates a mobile on the client side
+func (n *NetState) Animate(mob game.Mobile, at uo.AnimationType, aa uo.AnimationAction) {
+	if mob == nil {
+		return
+	}
+	n.Send(&serverpacket.Animation{
+		Serial:          mob.Serial(),
+		AnimationType:   at,
+		AnimationAction: aa,
+	})
+}
