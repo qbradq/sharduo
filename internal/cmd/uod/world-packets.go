@@ -1,6 +1,8 @@
 package uod
 
 import (
+	"log"
+
 	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/lib/clientpacket"
 	"github.com/qbradq/sharduo/lib/serverpacket"
@@ -19,11 +21,50 @@ func init() {
 	worldHandlers.Add(0x13, handleWearItemRequest)
 	worldHandlers.Add(0x34, handleStatusRequest)
 	worldHandlers.Add(0x6C, handleTargetResponse)
-	worldHandlers.Add(0xC8, handleClientViewRange)
+	worldHandlers.Add(0x73, handlePing)
+	worldHandlers.Add(0xAD, handleSpeech)
+	worldHandlers.Add(0xBD, handleVersion)
+	worldHandlers.Add(0xC8, handleViewRange)
 }
 
 // Registry of packet handler functions
 var worldHandlers = util.NewRegistry[byte, func(*NetState, clientpacket.Packet)]("world-handlers")
+
+func handlePing(n *NetState, cp clientpacket.Packet) {
+	p := cp.(*clientpacket.Ping)
+	n.Send(&serverpacket.Ping{
+		Key: p.Key,
+	})
+}
+
+func handleSpeech(n *NetState, cp clientpacket.Packet) {
+	p := cp.(*clientpacket.Speech)
+	if len(p.Text) == 0 {
+		return
+	}
+	if len(p.Text) > 1 {
+		if p.Text[0] == '[' {
+			world.SendRequest(&SpeechCommandRequest{
+				BaseWorldRequest: BaseWorldRequest{
+					NetState: n,
+				},
+				CommandLine: p.Text[1:],
+			})
+			return
+		}
+	}
+	if n.m != nil {
+		GlobalChat(n.m.DisplayName(), p.Text)
+	}
+}
+
+func handleVersion(n *NetState, cp clientpacket.Packet) {
+	p := cp.(*clientpacket.Version)
+	if p.String != "7.0.15.1" {
+		log.Printf("error: bad client version %s: disconnecting client", p.String)
+		n.Disconnect()
+	}
+}
 
 func handleTargetResponse(n *NetState, cp clientpacket.Packet) {
 	p := cp.(*clientpacket.TargetResponse)
@@ -111,11 +152,11 @@ func handleDoubleClickRequest(n *NetState, cp clientpacket.Packet) {
 	game.DynamicDispatch("OnDoubleClick", o, n.m)
 }
 
-func handleClientViewRange(n *NetState, cp clientpacket.Packet) {
+func handleViewRange(n *NetState, cp clientpacket.Packet) {
 	if n.m == nil {
 		return
 	}
-	p := cp.(*clientpacket.ClientViewRange)
+	p := cp.(*clientpacket.ViewRange)
 	world.Map().UpdateViewRangeForMobile(n.m, p.Range)
 	n.Send(&serverpacket.ClientViewRange{
 		Range: byte(n.m.ViewRange()),

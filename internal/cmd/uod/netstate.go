@@ -225,24 +225,13 @@ func (n *NetState) readLoop(r *clientpacket.Reader) {
 		case *clientpacket.IgnoredPacket:
 			// Do nothing
 		default:
-			handler, ok := embeddedHandlers.Get(cp.ID())
-			if !ok || handler == nil {
-				// This packet is handled by the world goroutine, so forward it
-				// on.
-				world.SendRequest(&ClientPacketRequest{
-					BaseWorldRequest: BaseWorldRequest{
-						NetState: n,
-					},
-					Packet: cp,
-				})
-			} else {
-				// This packet is handled inside the net state goroutine, go
-				// ahead and handle it.
-				handler(&PacketContext{
+			// Let the world goroutine handle the packet
+			world.SendRequest(&ClientPacketRequest{
+				BaseWorldRequest: BaseWorldRequest{
 					NetState: n,
-					Packet:   cp,
-				})
-			}
+				},
+				Packet: cp,
+			})
 		}
 	}
 }

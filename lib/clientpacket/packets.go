@@ -331,8 +331,8 @@ func newPlayerStatusRequest(in []byte) Packet {
 	return p
 }
 
-// ClientViewRange is sent by the client to request a new view range.
-type ClientViewRange struct {
+// ViewRange is sent by the client to request a new view range.
+type ViewRange struct {
 	basePacket
 	// Requested view range, clamped to between 4 and 18 inclusive
 	Range int16
@@ -340,7 +340,7 @@ type ClientViewRange struct {
 
 func newClientViewRange(in []byte) Packet {
 	r := uo.BoundViewRange(int16(in[0]))
-	p := &ClientViewRange{
+	p := &ViewRange{
 		basePacket: basePacket{id: 0xC8},
 		Range:      r,
 	}

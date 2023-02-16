@@ -10,7 +10,10 @@ programming language.
 The next milestone set for ShardUO is to implement the Mining skill vertical,
 including all features required to mine ore and smelt it into ingots.
 
-### Required Features ###
+### Required Features and Tasks ###
+* Player movement packet throttling
+* Restrict command usage to access levels
+* Reduce or remove map usage in performance-critical areas
 * ~~Map loading~~
 * ~~Map tile query~~
 * ~~Following the map during movement~~
@@ -37,7 +40,7 @@ including all features required to mine ore and smelt it into ingots.
 * ~~Stat gains~~
 * ~~Stackable items~~
 * Respond to status closed messages
-* Animations
+* ~~Animations~~
 * ~~Sounds~~
 * ~~Music~~
 * ~~Clilocs~~
@@ -71,19 +74,18 @@ including all features required to mine ore and smelt it into ingots.
 
 ## Outstanding Issues ##
 
-### Go-Live Issues ###
-This is a list of known issues that must be resolved before the server may be
+### Go-Live Tasks ###
+This is a list of known tasks that must be completed before the server may be
 opened to outside connections.
 
-* Player movement packet throttling
 * ~~Removal of stale NetStates in the game service goroutine~~
 * ~~Removal of stale connections in the login service goroutine~~
 * ~~Integration of the game service into a single self-managed structure~~
-* Restrict command usage to access levels
 * ~~Do not allow items within the bank box to be used unless the bank box is open~~
 * ~~Proper coordinate wrapping in game.Map.getChunksInBounds()~~
-* Pretty sure we are leaking objects during world.Remove(), fix it
-* Reduce or remove map usage in performance-critical areas
+* Evaluate all TODO tags remaining in the source code, create tasks for them and assign them to milestones
+* Make client available for download somehow
+* Create homepage site and service
 
 ### Miscellaneous Issues ###
 This is a list of known issues that do not need to be resolved before the next
