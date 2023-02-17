@@ -33,6 +33,10 @@ const (
 	ContainerOpenUpperLimit   int8   = 16
 	PlayerHeight              int8   = 16
 	StepHeight                int8   = 2
+	SpeechWhisperRange        int16  = 1
+	SpeechNormalRange         int16  = 12
+	SpeechEmoteRange          int16  = SpeechNormalRange
+	SpeechYellRange           int16  = MaxViewRange
 )
 
 // BoundViewRange bounds a view range value

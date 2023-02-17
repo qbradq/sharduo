@@ -30,8 +30,8 @@ including all features required to mine ore and smelt it into ingots.
 * ~~Smelting~~
 * ~~Backpack and inventory~~
 * ~~Container handling~~
-* Spacial chat with speaking, yelling, whispering, and emotes
-* Global chat
+* ~~Spacial chat with speaking, yelling, whispering, and emotes~~
+* ~~Global chat~~
 * Mobile weight limit and stamina
 * ~~Stat updates~~
 * ~~Skill system~~

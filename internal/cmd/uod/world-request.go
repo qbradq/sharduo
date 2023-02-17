@@ -49,19 +49,6 @@ func (r *ClientPacketRequest) Execute() error {
 	return nil
 }
 
-// SpeechCommandRequest is sent by a player using the speech packet with the
-// message starting with the '[' character
-type SpeechCommandRequest struct {
-	BaseWorldRequest
-	CommandLine string
-}
-
-// Execute implements the WorldRequest interface
-func (r *SpeechCommandRequest) Execute() error {
-	ExecuteCommand(r.NetState, r.CommandLine)
-	return nil
-}
-
 // CharacterLoginRequest is sent by the server accepting a character login
 type CharacterLoginRequest struct {
 	BaseWorldRequest

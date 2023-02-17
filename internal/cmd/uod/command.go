@@ -13,7 +13,11 @@ import (
 
 func init() {
 	commands["bank"] = commandBank
+	commands["c"] = commandChat
+	commands["chat"] = commandChat
 	commands["debug"] = commandDebug
+	commands["g"] = commandChat
+	commands["global"] = commandChat
 	commands["location"] = commandLocation
 	commands["new"] = commandNew
 	commands["save"] = commandSave
@@ -23,7 +27,7 @@ func init() {
 }
 
 // commandFunction is the signature of a command function
-type commandFunction func(*NetState, CommandArgs)
+type commandFunction func(*NetState, CommandArgs, string)
 
 // commands is the mapping of command strings to commandFunction's
 var commands = make(map[string]commandFunction)
@@ -41,11 +45,22 @@ func ExecuteCommand(n *NetState, line string) {
 	}
 	fn := commands[c[0]]
 	if fn != nil {
-		fn(n, c)
+		fn(n, c, line)
 	}
 }
 
-func commandLocation(n *NetState, args CommandArgs) {
+func commandChat(n *NetState, args CommandArgs, cl string) {
+	if n.m == nil {
+		return
+	}
+	parts := strings.SplitN(cl, " ", 2)
+	if len(parts) != 2 {
+		return
+	}
+	GlobalChat(n.m.DisplayName(), parts[1])
+}
+
+func commandLocation(n *NetState, args CommandArgs, cl string) {
 	if n == nil {
 		return
 	}
@@ -54,7 +69,7 @@ func commandLocation(n *NetState, args CommandArgs) {
 	})
 }
 
-func commandNew(n *NetState, args CommandArgs) {
+func commandNew(n *NetState, args CommandArgs, cl string) {
 	if n == nil {
 		return
 	}
@@ -92,7 +107,7 @@ func commandNew(n *NetState, args CommandArgs) {
 	})
 }
 
-func commandTeleport(n *NetState, args CommandArgs) {
+func commandTeleport(n *NetState, args CommandArgs, cl string) {
 	if n.m == nil {
 		return
 	}
@@ -154,7 +169,7 @@ func commandTeleport(n *NetState, args CommandArgs) {
 	n.TargetSendCursor(uo.TargetTypeLocation, fn)
 }
 
-func commandDebug(n *NetState, args CommandArgs) {
+func commandDebug(n *NetState, args CommandArgs, cl string) {
 	if n == nil || n.m == nil {
 		return
 	}
@@ -279,7 +294,7 @@ func commandDebug(n *NetState, args CommandArgs) {
 	}
 }
 
-func commandBank(n *NetState, args CommandArgs) {
+func commandBank(n *NetState, args CommandArgs, cl string) {
 	if n == nil || n.m == nil {
 		return
 	}
@@ -308,7 +323,7 @@ func commandBank(n *NetState, args CommandArgs) {
 	})
 }
 
-func commandStatic(n *NetState, args CommandArgs) {
+func commandStatic(n *NetState, args CommandArgs, cl string) {
 	if n == nil {
 		return
 	}
@@ -337,10 +352,10 @@ func commandStatic(n *NetState, args CommandArgs) {
 	})
 }
 
-func commandSave(n *NetState, args CommandArgs) {
+func commandSave(n *NetState, args CommandArgs, cl string) {
 	world.Marshal()
 }
 
-func commandShutdown(n *NetState, args CommandArgs) {
+func commandShutdown(n *NetState, args CommandArgs, cl string) {
 	gracefulShutdown()
 }
