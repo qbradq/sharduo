@@ -8,6 +8,7 @@ import (
 
 	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/lib/clientpacket"
+	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/uo"
 )
 
@@ -190,7 +191,11 @@ func commandDebug(n *NetState, args CommandArgs, cl string) {
 			n.Speech(nil, "debug %s command requires 0 arguments", args[1])
 			return
 		}
+	case "global_light":
+		fallthrough
 	case "music":
+		fallthrough
+	case "personal_light":
 		fallthrough
 	case "sound":
 		fallthrough
@@ -210,6 +215,17 @@ func commandDebug(n *NetState, args CommandArgs, cl string) {
 	}
 	// Execute command
 	switch args[1] {
+	case "global_light":
+		ll := uo.LightLevel(args.Int(2))
+		n.Send(&serverpacket.GlobalLightLevel{
+			LightLevel: ll,
+		})
+	case "personal_light":
+		ll := uo.LightLevel(args.Int(2))
+		n.Send(&serverpacket.PersonalLightLevel{
+			Serial:     n.m.Serial(),
+			LightLevel: ll,
+		})
 	case "animate":
 		at := uo.AnimationType(args.Int(2))
 		aa := uo.AnimationAction(args.Int(2))

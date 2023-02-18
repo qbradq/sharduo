@@ -372,3 +372,13 @@ const (
 // AnimationAction is a second parameter to animations which selects between
 // different sub-animations.
 type AnimationAction uint16
+
+// LightLevel indicates how bright a light is.
+type LightLevel byte
+
+// Reference values for LightLevel.
+const (
+	LightLevelDay   LightLevel = 0
+	LightLevelNight LightLevel = 9
+	LightLevelBlack LightLevel = 0x1F
+)

@@ -4,6 +4,7 @@ import (
 	"io"
 	"net"
 	"strings"
+	"time"
 
 	dc "github.com/qbradq/sharduo/lib/dataconv"
 	"github.com/qbradq/sharduo/lib/uo"
@@ -914,4 +915,45 @@ func (p *Animation) Write(w io.Writer) {
 	dc.PutUint16(w, uint16(p.AnimationType))   // Animation to play
 	dc.PutUint16(w, uint16(p.AnimationAction)) // Sub-animation to play
 	dc.PutByte(w, 0)                           // Delay
+}
+
+// Time tells the client the server time.
+type Time struct {
+	// Server time
+	Time time.Time
+}
+
+// Write implements the Packet interface.
+func (p *Time) Write(w io.Writer) {
+	dc.PutByte(w, 0x5B) // Packet ID
+	dc.PutByte(w, byte(p.Time.Hour()))
+	dc.PutByte(w, byte(p.Time.Minute()))
+	dc.PutByte(w, byte(p.Time.Second()))
+}
+
+// GlobalLightLevel sets the overall light level for the client.
+type GlobalLightLevel struct {
+	// Light level to set
+	LightLevel uo.LightLevel
+}
+
+// Write implements the Packet interface.
+func (p *GlobalLightLevel) Write(w io.Writer) {
+	dc.PutByte(w, 0x4F) // Packet ID
+	dc.PutByte(w, byte(p.LightLevel))
+}
+
+// PersonalLightLevel sets the personal light level for the mobile.
+type PersonalLightLevel struct {
+	// Serial of the mobile
+	Serial uo.Serial
+	// Light level to set
+	LightLevel uo.LightLevel
+}
+
+// Write implements the Packet interface.
+func (p *PersonalLightLevel) Write(w io.Writer) {
+	dc.PutByte(w, 0x4E) // Packet ID
+	dc.PutUint32(w, uint32(p.Serial))
+	dc.PutByte(w, byte(p.LightLevel))
 }

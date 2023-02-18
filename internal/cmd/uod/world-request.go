@@ -2,6 +2,7 @@ package uod
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/lib/clientpacket"
@@ -91,6 +92,9 @@ func (r *CharacterLoginRequest) Execute() error {
 		Height:   uo.MapHeight,
 	})
 	r.NetState.Send(&serverpacket.LoginComplete{})
+	r.NetState.Send(&serverpacket.Time{
+		Time: time.Now(),
+	})
 	world.Map().SendEverything(r.NetState.m)
 	r.NetState.SendObject(r.NetState.m)
 
