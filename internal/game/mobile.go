@@ -17,6 +17,9 @@ func init() {
 type Mobile interface {
 	Object
 
+	// List of events supported by Mobiles
+	// OnSpeech.........................Triggered when someone speaks near them.
+
 	//
 	// NetState
 	//
@@ -308,6 +311,8 @@ func (m *BaseMobile) Deserialize(f *util.TagFileObject) {
 	m.hitPoints = f.GetNumber("HitPoints", 1)
 	m.mana = f.GetNumber("Mana", 1)
 	m.stamina = f.GetNumber("Stamina", 1)
+	// Events
+	m.deserializeEvent("OnSpeech", f)
 	// Load skills
 	for s := uo.SkillFirst; s <= uo.SkillLast; s++ {
 		m.skills[s] = int16(f.GetNumber("Skill"+uo.SkillNames[s], 0))

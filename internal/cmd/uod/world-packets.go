@@ -44,9 +44,7 @@ func handleSpeech(n *NetState, cp clientpacket.Packet) {
 	}
 	switch p.Type {
 	case uo.SpeechTypeWhisper:
-		for _, mob := range world.Map().GetNetStatesInRange(n.m.Location(), uo.SpeechWhisperRange) {
-			mob.NetState().Speech(n.m, p.Text)
-		}
+		world.Map().SendSpeech(n.m, uo.SpeechWhisperRange, p.Text)
 	case uo.SpeechTypeNormal:
 		if p.Text[0] == '[' {
 			// Server command request
@@ -57,24 +55,12 @@ func handleSpeech(n *NetState, cp clientpacket.Packet) {
 			ExecuteCommand(n, cl)
 		} else {
 			// Normal speech request
-			for _, mob := range world.Map().GetNetStatesInRange(n.m.Location(), uo.SpeechNormalRange) {
-				if n.m.Location().XYDistance(mob.Location()) <= mob.ViewRange() {
-					mob.NetState().Speech(n.m, p.Text)
-				}
-			}
+			world.Map().SendSpeech(n.m, uo.SpeechNormalRange, p.Text)
 		}
 	case uo.SpeechTypeEmote:
-		for _, mob := range world.Map().GetNetStatesInRange(n.m.Location(), uo.SpeechEmoteRange) {
-			if n.m.Location().XYDistance(mob.Location()) <= mob.ViewRange() {
-				mob.NetState().Speech(n.m, p.Text)
-			}
-		}
+		world.Map().SendSpeech(n.m, uo.SpeechEmoteRange, p.Text)
 	case uo.SpeechTypeYell:
-		for _, mob := range world.Map().GetNetStatesInRange(n.m.Location(), uo.SpeechYellRange) {
-			if n.m.Location().XYDistance(mob.Location()) <= mob.ViewRange() {
-				mob.NetState().Speech(n.m, p.Text)
-			}
-		}
+		world.Map().SendSpeech(n.m, uo.SpeechYellRange, p.Text)
 	}
 }
 
@@ -157,7 +143,7 @@ func handleDoubleClickRequest(n *NetState, cp clientpacket.Packet) {
 		if n.m.Location().XYDistance(targetLocation) > n.m.ViewRange() {
 			return
 		}
-		game.DynamicDispatch("OnDoubleClick", o, n.m)
+		game.DynamicDispatch("OnDoubleClick", o, n.m, nil)
 		return
 	}
 	if !n.m.CanAccess(o) {
@@ -169,7 +155,7 @@ func handleDoubleClickRequest(n *NetState, cp clientpacket.Packet) {
 		return
 	}
 	// TODO Line of sight check
-	game.DynamicDispatch("OnDoubleClick", o, n.m)
+	game.DynamicDispatch("OnDoubleClick", o, n.m, nil)
 }
 
 func handleViewRange(n *NetState, cp clientpacket.Packet) {

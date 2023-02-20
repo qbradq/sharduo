@@ -25,7 +25,7 @@ var forgeItemSet = map[uo.Graphic]struct{}{
 	0x19A6: {},
 }
 
-func SmeltOre(receiver, source game.Object) {
+func SmeltOre(receiver, source game.Object, v any) {
 	smelter, ok := source.(game.Mobile)
 	if !ok || smelter.NetState() == nil {
 		// Something is very wrong
