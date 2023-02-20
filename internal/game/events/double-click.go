@@ -17,7 +17,7 @@ func init() {
 
 // PlayerDoubleClick selects between the open paper doll and dismount actions
 // based on the identity of the source.
-func PlayerDoubleClick(receiver, source game.Object) {
+func PlayerDoubleClick(receiver, source game.Object, v any) {
 	rm, ok := receiver.(game.Mobile)
 	if !ok {
 		return
@@ -58,7 +58,7 @@ func PlayerDoubleClick(receiver, source game.Object) {
 }
 
 // OpenPaperDoll opens the paper doll of the receiver mobile to the source.
-func OpenPaperDoll(receiver, source game.Object) {
+func OpenPaperDoll(receiver, source game.Object, v any) {
 	rm, ok := receiver.(game.Mobile)
 	if !ok {
 		return
@@ -75,7 +75,7 @@ func OpenPaperDoll(receiver, source game.Object) {
 
 // OpenContainer opens this container for the mobile. As an additional
 // restriction it checks the Z distance against the uo.ContainerOpen* limits.
-func OpenContainer(receiver, source game.Object) {
+func OpenContainer(receiver, source game.Object, v any) {
 	rc, ok := receiver.(game.Container)
 	if !ok {
 		return
@@ -93,7 +93,7 @@ func OpenContainer(receiver, source game.Object) {
 }
 
 // Mount attempts to mount the source mobile onto the receiver.
-func Mount(receiver, source game.Object) {
+func Mount(receiver, source game.Object, v any) {
 	rm, ok := receiver.(game.Mobile)
 	if !ok {
 		return
@@ -131,7 +131,7 @@ func Mount(receiver, source game.Object) {
 
 // OpenBackpack attempts to open the backpack of the receiver as in snooping or
 // pack animals.
-func OpenBackpack(reciever, source game.Object) {
+func OpenBackpack(reciever, source game.Object, v any) {
 	sm, ok := source.(game.Mobile)
 	if !ok {
 		return

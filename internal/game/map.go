@@ -1,6 +1,7 @@
 package game
 
 import (
+	"fmt"
 	"log"
 	"sort"
 
@@ -909,5 +910,18 @@ func (m *Map) GetFloorAndCeiling(l uo.Location, ignoreDynamicItems bool) (uo.Com
 func (m *Map) PlaySound(which uo.Sound, from uo.Location) {
 	for _, m := range m.GetNetStatesInRange(from, uo.MaxUpdateRange) {
 		m.NetState().Sound(which, from)
+	}
+}
+
+// SendSpeech sends speech to all mobiles in range.
+func (m *Map) SendSpeech(from Object, r int16, format string, args ...any) {
+	text := fmt.Sprintf(format, args...)
+	for _, mob := range m.GetMobilesInRange(from.Location(), r) {
+		if from.Location().XYDistance(mob.Location()) <= mob.ViewRange() {
+			if mob.NetState() != nil {
+				mob.NetState().Speech(from, text)
+			}
+			DynamicDispatch("OnSpeech", mob, from, text)
+		}
 	}
 }

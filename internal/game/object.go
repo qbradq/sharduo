@@ -61,7 +61,7 @@ type Object interface {
 	// the global function ExecuteEventHandler.
 	LinkEvent(string, string)
 	// GetEventHandler returns the named link function or nil.
-	GetEventHandler(string) *func(Object, Object)
+	GetEventHandler(string) *EventHandler
 	// RecalculateStats is called after an object has been unmarshaled and
 	// should be used to recalculate dynamic attributes.
 	RecalculateStats()
@@ -373,7 +373,7 @@ func (o *BaseObject) LinkEvent(event, handler string) {
 }
 
 // GetEventHandler implements the Object interface
-func (o *BaseObject) GetEventHandler(which string) *func(Object, Object) {
+func (o *BaseObject) GetEventHandler(which string) *EventHandler {
 	if o.eventHandlers == nil {
 		return nil
 	}

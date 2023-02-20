@@ -138,8 +138,8 @@ func initialize() {
 	rng := util.NewRNG()
 
 	// Event system initialization
-	game.SetEventHandlerGetter(func(which string) *func(game.Object, game.Object) {
-		return events.GetEventHandler(which)
+	game.SetEventHandlerGetter(func(which string) *game.EventHandler {
+		return (*game.EventHandler)(events.GetEventHandler(which))
 	})
 
 	// Load object templates

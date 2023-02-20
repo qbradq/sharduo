@@ -150,5 +150,5 @@ func (t *Timer) Execute() {
 			return
 		}
 	}
-	ExecuteEventHandler(t.event, receiver, source)
+	ExecuteEventHandler(t.event, receiver, source, nil)
 }

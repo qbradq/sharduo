@@ -7,7 +7,7 @@ func init() {
 }
 
 // WhisperTime whispers the current Sossarian time to the receiver.
-func WhisperTime(receiver, source game.Object) {
+func WhisperTime(receiver, source game.Object, v any) {
 	m, ok := receiver.(game.Mobile)
 	if !ok {
 		return
