@@ -60,11 +60,13 @@ including all features required to mine ore and smelt it into ingots.
 * Walk Random AI
 * Follow Master AI
 * ~~Pack Horses and Llamas~~
-* Banker NPC
+* ~~Banker NPC~~
 * ~~Bank box~~
 * Line of sight checks
 * ~~Paper Dolls for others~~
 * Item durability
+* Context menus
+* MegaCliloc roll-over info
 
 ### Nerdy Things I Might Do for Fun ###
 * ~~Global light levels~~
