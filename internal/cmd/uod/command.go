@@ -13,32 +13,33 @@ import (
 )
 
 func init() {
-	commands["bank"] = commandBank
-	commands["c"] = commandChat
-	commands["chat"] = commandChat
-	commands["debug"] = commandDebug
-	commands["g"] = commandChat
-	commands["global"] = commandChat
-	commands["location"] = commandLocation
-	commands["new"] = commandNew
-	commands["save"] = commandSave
-	commands["shutdown"] = commandShutdown
-	commands["static"] = commandStatic
-	commands["teleport"] = commandTeleport
+	commands["bank"] = &cmdesc{commandBank, game.RoleGameMaster, "bank", "Opens the bank box of the targeted mobile, if any"}
+	commands["c"] = &cmdesc{commandChat, game.RolePlayer, "c", "Sends global chat speech"}
+	commands["chat"] = &cmdesc{commandChat, game.RolePlayer, "chat", "Sends global chat speech"}
+	commands["debug"] = &cmdesc{commandDebug, game.RoleGameMaster, "debug command [arguments]", "Executes debug commands"}
+	commands["g"] = &cmdesc{commandChat, game.RolePlayer, "g", "Sends global chat speech"}
+	commands["global"] = &cmdesc{commandChat, game.RolePlayer, "global", "Sends global chat speech"}
+	commands["location"] = &cmdesc{commandLocation, game.RoleAdministrator, "location", "Tells the absolute location of the targeted location or object"}
+	commands["new"] = &cmdesc{commandNew, game.RoleGameMaster, "new template_name [stack_amount]", "Creates a new item with an optional stack amount"}
+	commands["save"] = &cmdesc{commandSave, game.RoleAdministrator, "save", "Executes a world save immediately"}
+	commands["shutdown"] = &cmdesc{commandShutdown, game.RoleAdministrator, "shutdown", "Shuts down the server immediately"}
+	commands["static"] = &cmdesc{commandStatic, game.RoleGameMaster, "static graphic_number", "Creates a new static object with the given graphic number"}
+	commands["teleport"] = &cmdesc{commandTeleport, game.RoleGameMaster, "teleport [x y|x y z|multi]", "Teleports you to the targeted location - optionally multiple times, or to the top Z of the given X/Y location, or to the absolute location"}
 }
 
 // commandFunction is the signature of a command function
 type commandFunction func(*NetState, CommandArgs, string)
 
-// commandDescription describes a command
-type commandDescription struct {
-	fn    commandFunction
-	roles game.Role
-	usage string
+// cmdesc describes a command
+type cmdesc struct {
+	fn          commandFunction
+	roles       game.Role
+	usage       string
+	description string
 }
 
 // commands is the mapping of command strings to commandFunction's
-var commands = make(map[string]commandFunction)
+var commands = make(map[string]*cmdesc)
 
 // ExecuteCommand executes the command for the given command line
 func ExecuteCommand(n *NetState, line string) {
@@ -51,9 +52,9 @@ func ExecuteCommand(n *NetState, line string) {
 	if len(c) == 0 {
 		return
 	}
-	fn := commands[c[0]]
-	if fn != nil {
-		fn(n, c, line)
+	desc := commands[c[0]]
+	if desc != nil {
+		desc.fn(n, c, line)
 	}
 }
 
