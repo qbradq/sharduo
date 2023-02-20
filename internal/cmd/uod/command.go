@@ -30,6 +30,13 @@ func init() {
 // commandFunction is the signature of a command function
 type commandFunction func(*NetState, CommandArgs, string)
 
+// commandDescription describes a command
+type commandDescription struct {
+	fn    commandFunction
+	roles game.Role
+	usage string
+}
+
 // commands is the mapping of command strings to commandFunction's
 var commands = make(map[string]commandFunction)
 

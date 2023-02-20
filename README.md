@@ -12,8 +12,8 @@ including all features required to mine ore and smelt it into ingots.
 
 ### Required Features and Tasks ###
 * Player movement packet throttling
+* Action rate-limiting
 * Restrict command usage to access levels
-* Reduce or remove map usage in performance-critical areas
 * ~~Map loading~~
 * ~~Map tile query~~
 * ~~Following the map during movement~~
@@ -23,7 +23,6 @@ including all features required to mine ore and smelt it into ingots.
 * ~~Player persistance~~
 * ~~Removing equipment~~
 * ~~Equipping equipment~~
-* Action rate-limiting
 * ~~Using equipment~~
 * ~~Timers~~
 * Mining skill
@@ -68,9 +67,10 @@ including all features required to mine ore and smelt it into ingots.
 * Item durability
 
 ### Nerdy Things I Might Do for Fun ###
-* Global light levels
-* Personal light levels
+* ~~Global light levels~~
+* ~~Personal light levels~~
 * Day/Night cycles
+* Weather patterns
 
 ## Outstanding Issues ##
 
@@ -93,6 +93,7 @@ milestone but do need to be resolved sometime.
 
 * ~~Save system re-write~~
 * Reduce allocations for map query operations
+* Reduce or remove golang map usage in performance-critical areas
 * Proper coordinate wrapping in uo.Location.XYDistance()
 * Wrapped overworld
 
