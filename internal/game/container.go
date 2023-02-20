@@ -78,7 +78,7 @@ func (i *BaseContainer) Marshal(s *marshal.TagFileSegment) {
 		contentSerials[idx] = o.Serial()
 	}
 	s.PutTag(marshal.TagGump, marshal.TagValueShort, uint16(i.gump))
-	s.PutTag(marshal.TagMaxWeight, marshal.TagValueInt, uint32(i.maxContainerWeight*1000))
+	s.PutTag(marshal.TagMaxWeight, marshal.TagValueInt, uint32(i.maxContainerWeight))
 	s.PutTag(marshal.TagMaxItems, marshal.TagValueShort, uint16(i.maxContainerItems))
 	s.PutTag(marshal.TagBounds, marshal.TagValueBounds, i.bounds)
 	s.PutTag(marshal.TagContents, marshal.TagValueReferenceSlice, contentSerials)
@@ -108,7 +108,7 @@ func (c *BaseContainer) Deserialize(f *util.TagFileObject) {
 func (c *BaseContainer) Unmarshal(s *marshal.TagFileSegment) *marshal.TagCollection {
 	tags := c.BaseItem.Unmarshal(s)
 	c.gump = uo.Gump(tags.Short(marshal.TagGump))
-	c.maxContainerWeight = float32(tags.Int(marshal.TagWeight)) / float32(1000.0)
+	c.maxContainerWeight = float32(tags.Int(marshal.TagWeight))
 	c.maxContainerItems = int(tags.Short(marshal.TagAmount))
 	c.bounds = tags.Bounds(marshal.TagBounds)
 	return tags
