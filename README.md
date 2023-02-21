@@ -65,7 +65,7 @@ including all features required to mine ore and smelt it into ingots.
 * Line of sight checks
 * ~~Paper Dolls for others~~
 * Item durability
-* Context menus
+* ~~Context menus~~
 * MegaCliloc roll-over info
 
 ### Nerdy Things I Might Do for Fun ###
