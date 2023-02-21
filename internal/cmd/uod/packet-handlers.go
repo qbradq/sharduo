@@ -13,22 +13,23 @@ import (
 // These functions handle client packets within the world process with direct
 // access to the memory model.
 func init() {
-	worldHandlers.Add(0x02, handleWalkRequest)
-	worldHandlers.Add(0x06, handleDoubleClickRequest)
-	worldHandlers.Add(0x07, handleLiftRequest)
-	worldHandlers.Add(0x08, handleDropRequest)
-	worldHandlers.Add(0x09, handleSingleClickRequest)
-	worldHandlers.Add(0x13, handleWearItemRequest)
-	worldHandlers.Add(0x34, handleStatusRequest)
-	worldHandlers.Add(0x6C, handleTargetResponse)
-	worldHandlers.Add(0x73, handlePing)
-	worldHandlers.Add(0xAD, handleSpeech)
-	worldHandlers.Add(0xBD, handleVersion)
-	worldHandlers.Add(0xC8, handleViewRange)
+	packetHandlers.Add(0x02, handleWalkRequest)
+	packetHandlers.Add(0x06, handleDoubleClickRequest)
+	packetHandlers.Add(0x07, handleLiftRequest)
+	packetHandlers.Add(0x08, handleDropRequest)
+	packetHandlers.Add(0x09, handleSingleClickRequest)
+	packetHandlers.Add(0x13, handleWearItemRequest)
+	packetHandlers.Add(0x34, handleStatusRequest)
+	packetHandlers.Add(0x6C, handleTargetResponse)
+	packetHandlers.Add(0x73, handlePing)
+	packetHandlers.Add(0xAD, handleSpeech)
+	packetHandlers.Add(0xBD, handleVersion)
+	packetHandlers.Add(0xBF, handleGeneralInformation)
+	packetHandlers.Add(0xC8, handleViewRange)
 }
 
 // Registry of packet handler functions
-var worldHandlers = util.NewRegistry[byte, func(*NetState, clientpacket.Packet)]("world-handlers")
+var packetHandlers = util.NewRegistry[byte, func(*NetState, clientpacket.Packet)]("packet-handlers")
 
 func handlePing(n *NetState, cp clientpacket.Packet) {
 	p := cp.(*clientpacket.Ping)
@@ -116,7 +117,15 @@ func handleSingleClickRequest(n *NetState, cp clientpacket.Packet) {
 	if o == nil {
 		return
 	}
-	o.SingleClick(n.m)
+	// Build the context menu
+	menu := game.BuildContextMenu(o)
+	if menu.IsEmpty() {
+		// No context menu entries so just display the object's name
+		n.Speech(o, o.DisplayName())
+	} else {
+		// Send the context menu
+		n.Send((*serverpacket.ContextMenu)(menu))
+	}
 }
 
 func handleDoubleClickRequest(n *NetState, cp clientpacket.Packet) {

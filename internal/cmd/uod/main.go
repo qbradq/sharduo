@@ -141,6 +141,12 @@ func initialize() {
 	game.SetEventHandlerGetter(func(which string) *game.EventHandler {
 		return (*game.EventHandler)(events.GetEventHandler(which))
 	})
+	game.SetEventHandlerByIndexGetter(func(which uint16) *game.EventHandler {
+		return (*game.EventHandler)(events.GetEventHandlerByIndex(which))
+	})
+	game.SetEventIndexGetter(func(which string) uint16 {
+		return events.GetEventHandlerIndex(which)
+	})
 
 	// Load object templates
 	log.Println("Loading templates...")
@@ -188,6 +194,7 @@ func Main() {
 	go LoginServerMain(wg)
 	go GameServerMain(wg)
 	wg.Wait()
+
 	// Always save right before we go down
 	wg, err := world.Marshal()
 	if err != nil {

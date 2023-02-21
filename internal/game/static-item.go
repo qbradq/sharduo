@@ -86,6 +86,12 @@ func (i *StaticItem) DropLocation() uo.Location     { return uo.RandomContainerL
 func (i *StaticItem) SetDropLocation(l uo.Location) {}
 
 // Object interface
+func (i *StaticItem) SingleClick(m Mobile) {
+	if m.NetState() != nil {
+		m.NetState().Speech(m, i.DisplayName())
+	}
+}
+func (i *StaticItem) AppendContextMenuEntries(m *ContextMenu)           {}
 func (i *StaticItem) Parent() Object                                    { return nil }
 func (i *StaticItem) HasParent(o Object) bool                           { return o == nil }
 func (i *StaticItem) SetParent(o Object)                                {}
@@ -98,7 +104,6 @@ func (i *StaticItem) AddObject(o Object) bool                           { return
 func (i *StaticItem) ForceAddObject(o Object)                           {}
 func (i *StaticItem) ForceRemoveObject(o Object)                        {}
 func (i *StaticItem) DropObject(o Object, l uo.Location, m Mobile) bool { return false }
-func (i *StaticItem) SingleClick(m Mobile)                              { defaultSingleClickHandler(i, m) }
 func (i *StaticItem) Location() uo.Location                             { return i.location }
 func (i *StaticItem) SetLocation(l uo.Location)                         { i.location = l }
 func (i *StaticItem) Hue() uo.Hue                                       { return i.hue }

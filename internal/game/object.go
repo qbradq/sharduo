@@ -90,8 +90,10 @@ type Object interface {
 	// items directly into a container. This returns false if the drop action
 	// is rejected for any reason.
 	DropObject(Object, uo.Location, Mobile) bool
-	// SingleClick is called when a client single-clicks the object
-	SingleClick(Mobile)
+	// AppendContextMenuEntries is called when building the context menu of an
+	// object. The function may append any entries it needs with the
+	// ContextMenu.Append function.
+	AppendContextMenuEntries(*ContextMenu)
 
 	//
 	// Generic accessors
@@ -306,17 +308,8 @@ func (o *BaseObject) DropObject(obj Object, l uo.Location, from Mobile) bool {
 	return false
 }
 
-func defaultSingleClickHandler(o Object, from Mobile) {
-	// Default action is to send the name as over-head text
-	if from.NetState() != nil {
-		from.NetState().Speech(o, o.DisplayName())
-	}
-}
-
-// SingleClick implements the Object interface
-func (o *BaseObject) SingleClick(from Mobile) {
-	defaultSingleClickHandler(o, from)
-}
+// AppendContextMenuEntries implements the Object interface
+func (o *BaseObject) AppendContextMenuEntries(m *ContextMenu) {}
 
 // Location implements the Object interface
 func (o *BaseObject) Location() uo.Location { return o.location }

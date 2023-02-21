@@ -957,3 +957,42 @@ func (p *PersonalLightLevel) Write(w io.Writer) {
 	dc.PutUint32(w, uint32(p.Serial))
 	dc.PutByte(w, byte(p.LightLevel))
 }
+
+// ctxMenuEntry is an entry for a context menu.
+type ctxMenuEntry struct {
+	// Unique ID of the entry
+	ID uint16
+	// Cliloc ID - 3,000,000
+	Cliloc uint16
+}
+
+// ContextMenu sends a context menu to the client.
+type ContextMenu struct {
+	// Serial of the object this context menu is to appear over
+	Serial uo.Serial
+	// Entries of the menu
+	Entries []ctxMenuEntry
+}
+
+// Add adds an entry to the context menu. The cliloc parameter must be in the
+// range 3,000,000 - 3,060,000 inclusive.
+func (p *ContextMenu) Add(id uint16, cliloc uo.Cliloc) {
+	cl := uint16(uint32(cliloc) - 3_000_000)
+	p.Entries = append(p.Entries, ctxMenuEntry{id, cl})
+}
+
+// Write implements the Packet interface.
+func (p *ContextMenu) Write(w io.Writer) {
+	dc.PutByte(w, 0xBF)                          // General packet ID
+	dc.PutUint16(w, uint16(12+len(p.Entries)*6)) // Packet length
+	dc.PutUint16(w, 0x0014)                      // Subcommand ID
+	dc.Pad(w, 1)
+	dc.PutByte(w, 0x01) // Subsubcommand
+	dc.PutUint32(w, uint32(p.Serial))
+	dc.PutByte(w, byte(len(p.Entries)))
+	for _, e := range p.Entries {
+		dc.PutUint16(w, uint16(e.ID))
+		dc.PutUint16(w, uint16(e.Cliloc))
+		dc.PutUint16(w, 0x0000) // Enabled
+	}
+}

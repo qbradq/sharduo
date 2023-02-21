@@ -1,9 +1,15 @@
 package game
 
+import (
+	"github.com/qbradq/sharduo/lib/serverpacket"
+)
+
 // EventHandler is the function signature of event handlers
 type EventHandler func(Object, Object, any)
 
 var eventHandlerGetter func(string) *EventHandler
+var eventHandlerByIndexGetter func(uint16) *EventHandler
+var eventIndexGetter func(string) uint16
 
 // RootParent returns the top-most parent of the object who's parent is the map.
 // If this object's parent is the map this object is returned.
@@ -41,8 +47,28 @@ func ExecuteEventHandler(which string, receiver, source Object, v any) {
 	}
 }
 
+// BuildContextMenu builds the context menu for the given object.
+func BuildContextMenu(o Object) *ContextMenu {
+	p := &ContextMenu{}
+	(*serverpacket.ContextMenu)(p).Serial = o.Serial()
+	o.AppendContextMenuEntries(p)
+	return p
+}
+
 // SetEventHandlerGetter sets the function used to get event handler functions
 // by name.
 func SetEventHandlerGetter(fn func(string) *EventHandler) {
 	eventHandlerGetter = fn
+}
+
+// SetEventHandlerByIndexGetter sets the function used to get event handler
+// functions by index number.
+func SetEventHandlerByIndexGetter(fn func(uint16) *EventHandler) {
+	eventHandlerByIndexGetter = fn
+}
+
+// SetEventIndexGetter sets the function used to get event handler index numbers
+// by name.
+func SetEventIndexGetter(fn func(string) uint16) {
+	eventIndexGetter = fn
 }

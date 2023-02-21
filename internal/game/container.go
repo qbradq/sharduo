@@ -406,3 +406,8 @@ func (c *BaseContainer) RemoveObserver(o ContainerObserver) {
 		}
 	}
 }
+
+// AppendContextMenuEntries implements the Object interface.
+func (c *BaseContainer) AppendContextMenuEntries(m *ContextMenu) {
+	m.Append("OpenContainer", 3000362)
+}
