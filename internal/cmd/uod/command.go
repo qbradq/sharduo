@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/qbradq/sharduo/internal/game"
+	"github.com/qbradq/sharduo/internal/game/events"
 	"github.com/qbradq/sharduo/lib/clientpacket"
 	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/uo"
@@ -323,27 +324,7 @@ func commandBank(n *NetState, args CommandArgs, cl string) {
 		return
 	}
 	n.TargetSendCursor(uo.TargetTypeObject, func(r *clientpacket.TargetResponse) {
-		o := world.Find(r.TargetObject)
-		if o == nil {
-			n.Speech(nil, "object %s not found", r.TargetObject.String())
-			return
-		}
-		m, ok := o.(game.Mobile)
-		if !ok {
-			n.Speech(nil, "object %s not a mobile", r.TargetObject.String())
-			return
-		}
-		bw := m.EquipmentInSlot(uo.LayerBankBox)
-		if bw == nil {
-			n.Speech(nil, "mobile %s does not have a bank box", r.TargetObject.String())
-			return
-		}
-		box, ok := bw.(game.Container)
-		if !ok {
-			n.Speech(nil, "mobile %s bank box was not a container", r.TargetObject)
-			return
-		}
-		box.Open(n.m)
+		events.OpenBankBox(nil, n.m, nil)
 	})
 }
 

@@ -10,6 +10,10 @@ programming language.
 The next milestone set for ShardUO is to implement the Mining skill vertical,
 including all features required to mine ore and smelt it into ingots.
 
+### Current Defects ###
+* Stair behavior for East-to-West marble stair is wrong, see throne room.
+* Some items are immoveable that should not be, see LargeCrate
+
 ### Required Features and Tasks ###
 * Player movement packet throttling
 * Action rate-limiting

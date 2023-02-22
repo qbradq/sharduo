@@ -2,6 +2,8 @@ package game
 
 import (
 	"log"
+	"strconv"
+	"strings"
 
 	"github.com/qbradq/sharduo/internal/marshal"
 	"github.com/qbradq/sharduo/lib/uo"
@@ -90,6 +92,9 @@ type Object interface {
 	// items directly into a container. This returns false if the drop action
 	// is rejected for any reason.
 	DropObject(Object, uo.Location, Mobile) bool
+	// AppendTemplateContextMenuEntry is used to add a context menu entry to the
+	// list of context menu entries from the template's Events line.
+	AppendTemplateContextMenuEntry(string, uo.Cliloc)
 	// AppendContextMenuEntries is called when building the context menu of an
 	// object. The function may append any entries it needs with the
 	// ContextMenu.Append function.
@@ -151,6 +156,8 @@ type BaseObject struct {
 	facing uo.Direction
 	// Collection of all event handler names
 	eventHandlers map[string]string
+	// List of all the context menu entries from the template
+	templateContextMenuEntries []ContextMenuEntry
 }
 
 // ObjectType implements the Object interface.
@@ -219,6 +226,25 @@ func (o *BaseObject) Deserialize(f *util.TagFileObject) {
 	o.facing = uo.Direction(f.GetNumber("Facing", int(uo.DirectionSouth)))
 	// Events
 	o.deserializeEvent("OnDoubleClick", f)
+	// Context menu handling
+	events := f.GetString("ContextMenu", "")
+	pairs := strings.Split(events, ",")
+	for idx, pair := range pairs {
+		if pair == "" {
+			continue
+		}
+		parts := strings.Split(pair, "=")
+		if len(parts) != 2 {
+			log.Printf("warning: object %s event %d malformed pair", o.Serial().String(), idx)
+			continue
+		}
+		cliloc, err := strconv.ParseUint(parts[0], 0, 32)
+		if err != nil {
+			log.Printf("warning: object %s event %d malformed cliloc number", o.Serial().String(), idx)
+			continue
+		}
+		o.AppendTemplateContextMenuEntry(parts[1], uo.Cliloc(cliloc))
+	}
 }
 
 // Unmarshal implements the marshal.Unmarshaler interface.
@@ -308,8 +334,20 @@ func (o *BaseObject) DropObject(obj Object, l uo.Location, from Mobile) bool {
 	return false
 }
 
+// AppendTemplateContextMenuEntry implements the Object interface
+func (o *BaseObject) AppendTemplateContextMenuEntry(event string, cl uo.Cliloc) {
+	o.templateContextMenuEntries = append(o.templateContextMenuEntries, ContextMenuEntry{
+		Event:  event,
+		Cliloc: cl,
+	})
+}
+
 // AppendContextMenuEntries implements the Object interface
-func (o *BaseObject) AppendContextMenuEntries(m *ContextMenu) {}
+func (o *BaseObject) AppendContextMenuEntries(m *ContextMenu) {
+	for _, e := range o.templateContextMenuEntries {
+		m.Append(e.Event, e.Cliloc)
+	}
+}
 
 // Location implements the Object interface
 func (o *BaseObject) Location() uo.Location { return o.location }

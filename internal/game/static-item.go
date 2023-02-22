@@ -91,26 +91,27 @@ func (i *StaticItem) SingleClick(m Mobile) {
 		m.NetState().Speech(m, i.DisplayName())
 	}
 }
-func (i *StaticItem) AppendContextMenuEntries(m *ContextMenu)           {}
-func (i *StaticItem) Parent() Object                                    { return nil }
-func (i *StaticItem) HasParent(o Object) bool                           { return o == nil }
-func (i *StaticItem) SetParent(o Object)                                {}
-func (i *StaticItem) TemplateName() string                              { return "StaticItem" }
-func (i *StaticItem) LinkEvent(event, handler string)                   {}
-func (i *StaticItem) GetEventHandler(s string) *EventHandler            { return nil }
-func (i *StaticItem) RecalculateStats()                                 {}
-func (i *StaticItem) RemoveObject(o Object) bool                        { return false }
-func (i *StaticItem) AddObject(o Object) bool                           { return false }
-func (i *StaticItem) ForceAddObject(o Object)                           {}
-func (i *StaticItem) ForceRemoveObject(o Object)                        {}
-func (i *StaticItem) DropObject(o Object, l uo.Location, m Mobile) bool { return false }
-func (i *StaticItem) Location() uo.Location                             { return i.location }
-func (i *StaticItem) SetLocation(l uo.Location)                         { i.location = l }
-func (i *StaticItem) Hue() uo.Hue                                       { return i.hue }
-func (i *StaticItem) Facing() uo.Direction                              { return uo.DirectionNorth }
-func (i *StaticItem) SetFacing(d uo.Direction)                          {}
-func (i *StaticItem) DisplayName() string                               { return i.def.Name }
-func (i *StaticItem) Weight() float32                                   { return 255.0 }
+func (i *StaticItem) AppendTemplateContextMenuEntry(event string, cl uo.Cliloc) {}
+func (i *StaticItem) AppendContextMenuEntries(m *ContextMenu)                   {}
+func (i *StaticItem) Parent() Object                                            { return nil }
+func (i *StaticItem) HasParent(o Object) bool                                   { return o == nil }
+func (i *StaticItem) SetParent(o Object)                                        {}
+func (i *StaticItem) TemplateName() string                                      { return "StaticItem" }
+func (i *StaticItem) LinkEvent(event, handler string)                           {}
+func (i *StaticItem) GetEventHandler(s string) *EventHandler                    { return nil }
+func (i *StaticItem) RecalculateStats()                                         {}
+func (i *StaticItem) RemoveObject(o Object) bool                                { return false }
+func (i *StaticItem) AddObject(o Object) bool                                   { return false }
+func (i *StaticItem) ForceAddObject(o Object)                                   {}
+func (i *StaticItem) ForceRemoveObject(o Object)                                {}
+func (i *StaticItem) DropObject(o Object, l uo.Location, m Mobile) bool         { return false }
+func (i *StaticItem) Location() uo.Location                                     { return i.location }
+func (i *StaticItem) SetLocation(l uo.Location)                                 { i.location = l }
+func (i *StaticItem) Hue() uo.Hue                                               { return i.hue }
+func (i *StaticItem) Facing() uo.Direction                                      { return uo.DirectionNorth }
+func (i *StaticItem) SetFacing(d uo.Direction)                                  {}
+func (i *StaticItem) DisplayName() string                                       { return i.def.Name }
+func (i *StaticItem) Weight() float32                                           { return 255.0 }
 
 // Marshal implements the marshal.Marshaler interface.
 func (i *StaticItem) Marshal(s *marshal.TagFileSegment) {

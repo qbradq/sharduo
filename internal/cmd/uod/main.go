@@ -141,9 +141,6 @@ func initialize() {
 	game.SetEventHandlerGetter(func(which string) *game.EventHandler {
 		return (*game.EventHandler)(events.GetEventHandler(which))
 	})
-	game.SetEventHandlerByIndexGetter(func(which uint16) *game.EventHandler {
-		return (*game.EventHandler)(events.GetEventHandlerByIndex(which))
-	})
 	game.SetEventIndexGetter(func(which string) uint16 {
 		return events.GetEventHandlerIndex(which)
 	})

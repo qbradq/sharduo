@@ -16,3 +16,11 @@ func (m *ContextMenu) Append(handler string, cl uo.Cliloc) {
 func (m *ContextMenu) IsEmpty() bool {
 	return len((*serverpacket.ContextMenu)(m).Entries) == 0
 }
+
+// ContextMenuEntry abstracts an entry for a ContextMenu.
+type ContextMenuEntry struct {
+	// Event name to execute
+	Event string
+	// Cliloc of the label, must be in the range 3_000_000 - 3_060_000 inclusive
+	Cliloc uo.Cliloc
+}

@@ -8,7 +8,6 @@ import (
 type EventHandler func(Object, Object, any)
 
 var eventHandlerGetter func(string) *EventHandler
-var eventHandlerByIndexGetter func(uint16) *EventHandler
 var eventIndexGetter func(string) uint16
 
 // RootParent returns the top-most parent of the object who's parent is the map.
@@ -59,12 +58,6 @@ func BuildContextMenu(o Object) *ContextMenu {
 // by name.
 func SetEventHandlerGetter(fn func(string) *EventHandler) {
 	eventHandlerGetter = fn
-}
-
-// SetEventHandlerByIndexGetter sets the function used to get event handler
-// functions by index number.
-func SetEventHandlerByIndexGetter(fn func(uint16) *EventHandler) {
-	eventHandlerByIndexGetter = fn
 }
 
 // SetEventIndexGetter sets the function used to get event handler index numbers

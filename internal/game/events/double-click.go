@@ -10,6 +10,7 @@ import (
 func init() {
 	reg("Mount", Mount)
 	reg("OpenBackpack", OpenBackpack)
+	reg("OpenBankBox", OpenBankBox)
 	reg("OpenContainer", OpenContainer)
 	reg("OpenPaperDoll", OpenPaperDoll)
 	reg("PlayerDoubleClick", PlayerDoubleClick)
@@ -151,19 +152,19 @@ func OpenBackpack(receiver, source game.Object, v any) {
 	if !ok {
 		return
 	}
-	sm.NetState().ContainerOpen(bp)
+	bp.Open(sm)
 }
 
-// OpenBankBox attempts to open the bank box of the receiver.
+// OpenBankBox attempts to open the bank box of the source.
 func OpenBankBox(receiver, source game.Object, v any) {
-	rm, ok := receiver.(game.Mobile)
+	m, ok := source.(game.Mobile)
 	if !ok {
 		return
 	}
-	if rm.NetState() == nil {
+	if m.NetState() == nil {
 		return
 	}
-	bbo := rm.EquipmentInSlot(uo.LayerBankBox)
+	bbo := m.EquipmentInSlot(uo.LayerBankBox)
 	if bbo == nil {
 		return
 	}
@@ -171,5 +172,5 @@ func OpenBankBox(receiver, source game.Object, v any) {
 	if !ok {
 		return
 	}
-	rm.NetState().ContainerOpen(bb)
+	bb.Open(m)
 }
