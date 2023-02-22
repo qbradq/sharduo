@@ -131,7 +131,7 @@ func Mount(receiver, source game.Object, v any) {
 
 // OpenBackpack attempts to open the backpack of the receiver as in snooping or
 // pack animals.
-func OpenBackpack(reciever, source game.Object, v any) {
+func OpenBackpack(receiver, source game.Object, v any) {
 	sm, ok := source.(game.Mobile)
 	if !ok {
 		return
@@ -139,7 +139,7 @@ func OpenBackpack(reciever, source game.Object, v any) {
 	if sm.NetState() == nil {
 		return
 	}
-	rm, ok := reciever.(game.Mobile)
+	rm, ok := receiver.(game.Mobile)
 	if !ok {
 		return
 	}
@@ -152,4 +152,24 @@ func OpenBackpack(reciever, source game.Object, v any) {
 		return
 	}
 	sm.NetState().ContainerOpen(bp)
+}
+
+// OpenBankBox attempts to open the bank box of the receiver.
+func OpenBankBox(receiver, source game.Object, v any) {
+	rm, ok := receiver.(game.Mobile)
+	if !ok {
+		return
+	}
+	if rm.NetState() == nil {
+		return
+	}
+	bbo := rm.EquipmentInSlot(uo.LayerBankBox)
+	if bbo == nil {
+		return
+	}
+	bb, ok := bbo.(game.Container)
+	if !ok {
+		return
+	}
+	rm.NetState().ContainerOpen(bb)
 }
