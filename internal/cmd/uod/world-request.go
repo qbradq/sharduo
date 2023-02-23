@@ -69,6 +69,7 @@ func (r *CharacterLoginRequest) Execute() error {
 	if player == nil {
 		player = world.New("Player").(game.Mobile)
 		// TODO New player setup
+		player.SetLocation(uo.Location{X: 1324, Y: 1624, Z: 55})
 		world.Map().AddObject(player)
 	}
 	r.NetState.m = player

@@ -2,6 +2,7 @@ package game
 
 import (
 	"github.com/qbradq/sharduo/lib/serverpacket"
+	"github.com/qbradq/sharduo/lib/util"
 )
 
 // EventHandler is the function signature of event handlers
@@ -9,6 +10,7 @@ type EventHandler func(Object, Object, any)
 
 var eventHandlerGetter func(string) *EventHandler
 var eventIndexGetter func(string) uint16
+var templateObjectGetter func(string) *util.TagFileObject
 
 // RootParent returns the top-most parent of the object who's parent is the map.
 // If this object's parent is the map this object is returned.
@@ -54,6 +56,12 @@ func BuildContextMenu(o Object) *ContextMenu {
 	return p
 }
 
+// DispatchDeserialize executes the Deserialize method through the Object
+// interface.
+func DispatchDeserialize(o Object, tfo *util.TagFileObject) {
+	o.Deserialize(tfo)
+}
+
 // SetEventHandlerGetter sets the function used to get event handler functions
 // by name.
 func SetEventHandlerGetter(fn func(string) *EventHandler) {
@@ -64,4 +72,10 @@ func SetEventHandlerGetter(fn func(string) *EventHandler) {
 // by name.
 func SetEventIndexGetter(fn func(string) uint16) {
 	eventIndexGetter = fn
+}
+
+// SetTemplateObjectGetter sets the function used to get template objects by
+// name.
+func SetTemplateObjectGetter(fn func(string) *util.TagFileObject) {
+	templateObjectGetter = fn
 }

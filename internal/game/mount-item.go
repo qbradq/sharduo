@@ -5,7 +5,6 @@ import (
 
 	"github.com/qbradq/sharduo/internal/marshal"
 	"github.com/qbradq/sharduo/lib/uo"
-	"github.com/qbradq/sharduo/lib/util"
 )
 
 func init() {
@@ -28,27 +27,12 @@ func (i *MountItem) ObjectType() marshal.ObjectType {
 
 // Marshal implements the marshal.Marshaler interface.
 func (i *MountItem) Marshal(s *marshal.TagFileSegment) {
-	i.BaseWearable.Marshal(s)
 	ms := uo.SerialZero
 	if i.m != nil {
 		ms = i.m.Serial()
 	}
 	i.BaseWearable.Marshal(s)
 	s.PutTag(marshal.TagManagedObject, marshal.TagValueInt, uint32(ms))
-}
-
-// Deserialize implements the util.Serializeable interface.
-func (i *MountItem) Deserialize(f *util.TagFileObject) {
-	i.BaseWearable.Deserialize(f)
-	ms := uo.Serial(f.GetHex("Mount", uint32(uo.SerialSystem)))
-	if ms != uo.SerialSystem {
-		o := world.Find(ms)
-		if o == nil {
-			log.Printf("error: mount item %s referenced non-existent mobile %s", i.Serial().String(), ms.String())
-		} else if m, ok := o.(Mobile); ok {
-			i.m = m
-		}
-	}
 }
 
 // Unmarshal implements the marshal.Unmarshaler interface.

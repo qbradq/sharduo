@@ -311,22 +311,12 @@ func (m *BaseMobile) Deserialize(f *util.TagFileObject) {
 	m.hitPoints = f.GetNumber("HitPoints", 1)
 	m.mana = f.GetNumber("Mana", 1)
 	m.stamina = f.GetNumber("Stamina", 1)
-	// Events
-	m.deserializeEvent("OnSpeech", f)
 	// Load skills
 	for s := uo.SkillFirst; s <= uo.SkillLast; s++ {
 		m.skills[s] = int16(f.GetNumber("Skill"+uo.SkillNames[s], 0))
 	}
 	m.equipment = NewEquipmentCollectionWith(f.GetObjectReferences("Equipment"), m)
-	// If we had an item on the cursor at the time of the save we drop it at
-	// our feet just so we don't leak it.
-	incs := uo.Serial(f.GetHex("ItemInCursor", uint32(uo.SerialItemNil)))
-	if incs != uo.SerialItemNil {
-		o := world.Find(incs)
-		if o != nil {
-			m.DropToFeet(o)
-		}
-	}
+	// Make sure everyone has a backpack
 	if !m.equipment.IsLayerOccupied(uo.LayerBackpack) {
 		log.Printf("error: mobile %s does not have a backpack, removing", m.Serial().String())
 		world.Remove(m)

@@ -150,12 +150,7 @@ func (i *BaseItem) ObjectType() marshal.ObjectType { return marshal.ObjectTypeIt
 // Marshal implements the marshal.Marshaler interface.
 func (i *BaseItem) Marshal(s *marshal.TagFileSegment) {
 	i.BaseObject.Marshal(s)
-	s.PutTag(marshal.TagGraphic, marshal.TagValueShort, uint16(i.graphic))
-	s.PutTag(marshal.TagFlippedGraphic, marshal.TagValueShort, uint16(i.flippedGraphic))
 	s.PutTag(marshal.TagFlipped, marshal.TagValueBool, i.flipped)
-	s.PutTag(marshal.TagDyable, marshal.TagValueBool, i.dyable)
-	s.PutTag(marshal.TagWeight, marshal.TagValueInt, uint32(i.weight*1000))
-	s.PutTag(marshal.TagStackable, marshal.TagValueBool, i.stackable)
 	s.PutTag(marshal.TagAmount, marshal.TagValueShort, uint16(i.amount))
 	s.PutTag(marshal.TagPlural, marshal.TagValueString, i.plural)
 }
@@ -166,7 +161,6 @@ func (i *BaseItem) Deserialize(f *util.TagFileObject) {
 	i.graphic = uo.Graphic(f.GetNumber("Graphic", int(uo.GraphicDefault)))
 	i.def = world.GetItemDefinition(i.graphic)
 	i.flippedGraphic = uo.Graphic(f.GetNumber("FlippedGraphic", int(uo.GraphicNone)))
-	i.flipped = f.GetBool("Flipped", false)
 	i.dyable = f.GetBool("Dyable", false)
 	i.weight = f.GetFloat("Weight", 255.0)
 	i.stackable = f.GetBool("Stackable", false)
@@ -177,15 +171,7 @@ func (i *BaseItem) Deserialize(f *util.TagFileObject) {
 // Unmarshal implements the marshal.Unmarshaler interface.
 func (i *BaseItem) Unmarshal(s *marshal.TagFileSegment) *marshal.TagCollection {
 	tags := i.BaseObject.Unmarshal(s)
-	i.graphic = uo.Graphic(tags.Short(marshal.TagGraphic))
-	i.def = world.GetItemDefinition(i.graphic)
-	i.flippedGraphic = uo.Graphic(tags.Short(marshal.TagFlippedGraphic))
-	i.dyable = tags.Bool(marshal.TagDyable)
-	i.weight = float32(tags.Int(marshal.TagWeight)) / float32(1000.0)
-	if i.weight < 0.0001 {
-		i.weight = 1.0
-	}
-	i.stackable = tags.Bool(marshal.TagStackable)
+	i.flipped = tags.Bool(marshal.TagFlipped)
 	i.amount = int(tags.Short(marshal.TagAmount))
 	if i.amount < 1 {
 		i.amount = 1

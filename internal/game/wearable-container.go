@@ -26,12 +26,6 @@ func (i *WearableContainer) ObjectType() marshal.ObjectType {
 	return marshal.ObjectTypeWearableContainer
 }
 
-// Marshal implements the marshal.Marshaler interface.
-func (i *WearableContainer) Marshal(s *marshal.TagFileSegment) {
-	i.BaseContainer.Marshal(s)
-	s.PutTag(marshal.TagLayer, marshal.TagValueByte, byte(i.layer))
-}
-
 // Deserialize implements the util.Serializeable interface.
 func (s *WearableContainer) Deserialize(f *util.TagFileObject) {
 	s.BaseContainer.Deserialize(f)
@@ -39,13 +33,6 @@ func (s *WearableContainer) Deserialize(f *util.TagFileObject) {
 	if s.layer == uo.LayerInvalid {
 		log.Printf("error: wearable container %s no layer given", s.Serial().String())
 	}
-}
-
-// Unmarshal implements the marshal.Unmarshaler interface.
-func (i *WearableContainer) Unmarshal(s *marshal.TagFileSegment) *marshal.TagCollection {
-	tags := i.BaseContainer.Unmarshal(s)
-	i.layer = uo.Layer(tags.Byte(marshal.TagLayer))
-	return tags
 }
 
 // Layer implements the Layerer interface.

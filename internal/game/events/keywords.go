@@ -13,6 +13,6 @@ func init() {
 // KeywordsBanker handles banker speech triggers.
 func KeywordsBanker(receiver, source game.Object, v any) {
 	if strings.Contains(strings.ToLower(v.(string)), "bank") {
-		OpenBankBox(source, nil, v)
+		OpenBankBox(receiver, source, v)
 	}
 }

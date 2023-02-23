@@ -29,21 +29,8 @@ func (w *BaseWeapon) ObjectType() marshal.ObjectType {
 	return marshal.ObjectTypeWeapon
 }
 
-// Marshal implements the marshal.Marshaler interface.
-func (w *BaseWeapon) Marshal(s *marshal.TagFileSegment) {
-	w.BaseWearable.Marshal(s)
-	s.PutTag(marshal.TagRequiredSkill, marshal.TagValueByte, byte(w.skill))
-}
-
 // Deserialize implements the util.Serializeable interface.
 func (w *BaseWeapon) Deserialize(f *util.TagFileObject) {
 	w.BaseWearable.Deserialize(f)
 	w.skill = uo.Skill(f.GetNumber("Skill", int(uo.SkillWrestling)))
-}
-
-// Unmarshal implements the marshal.Unmarshaler interface.
-func (w *BaseWeapon) Unmarshal(s *marshal.TagFileSegment) *marshal.TagCollection {
-	tags := w.BaseWearable.Unmarshal(s)
-	w.skill = uo.Skill(tags.Byte(marshal.TagRequiredSkill))
-	return tags
 }

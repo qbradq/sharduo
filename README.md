@@ -77,6 +77,7 @@ including all features required to mine ore and smelt it into ingots.
 * ~~Personal light levels~~
 * Day/Night cycles
 * Weather patterns
+* Fall damage
 
 ## Outstanding Issues ##
 
@@ -92,6 +93,7 @@ opened to outside connections.
 * Evaluate all TODO tags remaining in the source code, create tasks for them and assign them to milestones
 * Make client available for download somehow
 * Create homepage site and service
+* Automatically archive and clean old save files
 
 ### Miscellaneous Issues ###
 This is a list of known issues that do not need to be resolved before the next

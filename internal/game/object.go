@@ -185,19 +185,7 @@ func (o *BaseObject) Marshal(s *marshal.TagFileSegment) {
 	s.PutString(o.name)
 	s.PutShort(uint16(o.hue))
 	s.PutLocation(o.location)
-	s.PutStringsMap(o.eventHandlers)
-	s.PutTag(marshal.TagArticleA, marshal.TagValueBool, o.articleA)
-	s.PutTag(marshal.TagArticleAn, marshal.TagValueBool, o.articleAn)
 	s.PutTag(marshal.TagFacing, marshal.TagValueByte, byte(o.facing))
-}
-
-// deserializeEvent attempts to deserialize the named event handler
-func (o *BaseObject) deserializeEvent(which string, tfo *util.TagFileObject) {
-	eventName := tfo.GetString(which, "")
-	if eventName == "" {
-		return
-	}
-	o.LinkEvent(which, eventName)
 }
 
 // Deserialize implements the util.Serializeable interface.
@@ -208,28 +196,13 @@ func (o *BaseObject) Deserialize(f *util.TagFileObject) {
 		log.Printf("warning: object %s has no TemplateName property", o.Serial().String())
 		return
 	}
-	ps := uo.Serial(f.GetHex("Parent", uint32(uo.SerialSystem)))
-	if ps == uo.SerialSystem {
-		o.parent = nil
-	} else {
-		o.parent = world.Find(ps)
-	}
 	o.name = f.GetString("Name", "unknown entity")
 	o.articleA = f.GetBool("ArticleA", false)
 	o.articleAn = f.GetBool("ArticleAn", false)
 	o.hue = uo.Hue(f.GetNumber("Hue", int(uo.HueDefault)))
-	o.location = f.GetLocation("Location", uo.Location{
-		X: 1324,
-		Y: 1624,
-		Z: 55,
-	})
-	o.facing = uo.Direction(f.GetNumber("Facing", int(uo.DirectionSouth)))
-	// Events
-	o.deserializeEvent("OnDoubleClick", f)
-	// Context menu handling
-	events := f.GetString("ContextMenu", "")
-	pairs := strings.Split(events, ",")
-	for idx, pair := range pairs {
+	// Event handling
+	events := f.GetString("Events", "")
+	for idx, pair := range strings.Split(events, ",") {
 		if pair == "" {
 			continue
 		}
@@ -238,9 +211,22 @@ func (o *BaseObject) Deserialize(f *util.TagFileObject) {
 			log.Printf("warning: object %s event %d malformed pair", o.Serial().String(), idx)
 			continue
 		}
+		o.LinkEvent(parts[0], parts[1])
+	}
+	// Context menu handling
+	contextMenu := f.GetString("ContextMenu", "")
+	for idx, pair := range strings.Split(contextMenu, ",") {
+		if pair == "" {
+			continue
+		}
+		parts := strings.Split(pair, "=")
+		if len(parts) != 2 {
+			log.Printf("warning: object %s menu entry %d malformed pair", o.Serial().String(), idx)
+			continue
+		}
 		cliloc, err := strconv.ParseUint(parts[0], 0, 32)
 		if err != nil {
-			log.Printf("warning: object %s event %d malformed cliloc number", o.Serial().String(), idx)
+			log.Printf("warning: object %s menu entry %d malformed cliloc number", o.Serial().String(), idx)
 			continue
 		}
 		o.AppendTemplateContextMenuEntry(parts[1], uo.Cliloc(cliloc))
@@ -249,7 +235,17 @@ func (o *BaseObject) Deserialize(f *util.TagFileObject) {
 
 // Unmarshal implements the marshal.Unmarshaler interface.
 func (o *BaseObject) Unmarshal(s *marshal.TagFileSegment) *marshal.TagCollection {
-	o.templateName = s.String()
+	// Load the template so we can deserialize the default and static values
+	tn := s.String()
+	tfo := templateObjectGetter(tn)
+	if tfo == nil {
+		// The template getter should have already logged the error
+		world.Remove(o)
+	} else {
+		// Deserialize the template data so we pick up static values
+		DispatchDeserialize(o, tfo)
+	}
+	// Parent object resolution
 	ps := uo.Serial(s.Int())
 	if ps == uo.SerialSystem {
 		o.parent = nil
@@ -259,13 +255,11 @@ func (o *BaseObject) Unmarshal(s *marshal.TagFileSegment) *marshal.TagCollection
 	} else {
 		o.parent = world.Find(ps)
 	}
+	// Unmarshal all dynamic values
 	o.name = s.String()
 	o.hue = uo.Hue(s.Short())
 	o.location = s.Location()
-	o.eventHandlers = s.StringMap()
 	tags := s.Tags()
-	o.articleA = tags.Bool(marshal.TagArticleA)
-	o.articleAn = tags.Bool(marshal.TagArticleAn)
 	o.facing = uo.Direction(tags.Byte(marshal.TagFacing))
 	return tags
 }

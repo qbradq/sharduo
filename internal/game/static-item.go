@@ -118,6 +118,7 @@ func (i *StaticItem) Marshal(s *marshal.TagFileSegment) {
 	s.PutShort(uint16(i.graphic))
 	s.PutLocation(i.location)
 	s.PutShort(uint16(i.hue))
+	s.PutTag(marshal.TagEndOfList, marshal.TagValueBool, true)
 }
 
 // Deserialize implements the util.Serializeable interface.
@@ -125,11 +126,6 @@ func (i *StaticItem) Deserialize(f *util.TagFileObject) {
 	i.graphic = uo.Graphic(f.GetNumber("Graphic", int(uo.GraphicDefault)))
 	i.def = world.GetItemDefinition(i.graphic)
 	i.hue = uo.Hue(f.GetNumber("Hue", int(uo.HueDefault)))
-	i.location = f.GetLocation("Location", uo.Location{
-		X: 1324,
-		Y: 1624,
-		Z: 55,
-	})
 }
 
 // Unmarshal implements the marshal.Unmarshaler interface.

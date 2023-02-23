@@ -247,15 +247,14 @@ func (m *TemplateManager) resolveInheritance() []error {
 	return errs
 }
 
-// newObject creates a new object with the given template name, or nil if the
-// template was not found, there was an error executing the template, or there
-// was an error deserializing the object.
-func (m *TemplateManager) newObject(templateName string) game.Object {
+// GetTemplateObject returns the util.TagFileObject generated from the named
+// template, or nil if the template was not found.
+func (m *TemplateManager) GetTemplateObject(templateName string) (*ObjectTemplate, *util.TagFileObject) {
 	// Find the template
 	t, found := m.templates.Get(templateName)
 	if !found {
 		log.Printf("template %s not found\n", templateName)
-		return nil
+		return nil, nil
 	}
 	// Inject dynamic values into the template context
 	if world.Random().RandomBool() {
@@ -267,6 +266,18 @@ func (m *TemplateManager) newObject(templateName string) game.Object {
 	tfo, err := t.generateTagFileObject(m, templateContext)
 	if err != nil {
 		log.Printf("error while processing template %s", t.templateName)
+		return t, nil
+	}
+	return t, tfo
+}
+
+// newObject creates a new object with the given template name, or nil if the
+// template was not found, there was an error executing the template, or there
+// was an error deserializing the object.
+func (m *TemplateManager) newObject(templateName string) game.Object {
+	// Fetch the template
+	t, tfo := m.GetTemplateObject(templateName)
+	if t == nil || tfo == nil {
 		return nil
 	}
 	// Create the object
