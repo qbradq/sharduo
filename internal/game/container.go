@@ -87,17 +87,6 @@ func (c *BaseContainer) Deserialize(f *util.TagFileObject) {
 	c.maxContainerWeight = f.GetFloat("MaxContainerWeight", float32(uo.DefaultMaxContainerWeight))
 	c.maxContainerItems = f.GetNumber("MaxContainerItems", uo.DefaultMaxContainerItems)
 	c.bounds = f.GetBounds("Bounds", uo.Bounds{X: 44, Y: 65, W: 142, H: 94})
-	for _, serial := range f.GetObjectReferences("Contents") {
-		o := world.Find(serial)
-		if o == nil {
-			log.Printf("failed to link object 0x%X into container", serial)
-		}
-		item, ok := o.(Item)
-		if !ok {
-			log.Printf("failed to link object 0x%X into container, it is not an item", serial)
-		}
-		c.contents = c.contents.Append(item)
-	}
 }
 
 // AfterUnmarshal implements the marshal.Unmarshaler interface.

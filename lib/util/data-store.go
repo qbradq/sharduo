@@ -2,6 +2,7 @@ package util
 
 import (
 	"log"
+	"sync"
 
 	"github.com/qbradq/sharduo/internal/marshal"
 	"github.com/qbradq/sharduo/lib/uo"
@@ -11,6 +12,9 @@ type dsobj interface {
 	Serial() uo.Serial
 	SetSerial(uo.Serial)
 	SerialType() uo.SerialType
+	Deserialize(*TagFileObject)
+	TemplateName() string
+	SetTemplateName(string)
 	marshal.Marshaler
 	marshal.Unmarshaler
 }
@@ -82,12 +86,50 @@ func (s *DataStore[K]) Data() map[uo.Serial]K {
 	return s.objects
 }
 
+// MarshalObjects marshals objects to raw data.
+func (s *DataStore[K]) MarshalObjects(tf *marshal.TagFile, goroutines int, wg *sync.WaitGroup) {
+	// We have to build a slice of all of our objects so we don't have
+	// concurrency issues on the data store map during the multi-goroutine save
+	objects := make([]K, len(s.objects))
+	idx := 0
+	for _, obj := range s.objects {
+		objects[idx] = obj
+		idx++
+	}
+	for i := 0; i < goroutines; i++ {
+		// Object data
+		seg := tf.Segment(marshal.SegmentObjectsStart + marshal.Segment(i))
+		wg.Add(1)
+		go func(seg *marshal.TagFileSegment, pool int) {
+			defer wg.Done()
+			for i := pool; i < len(objects); i += goroutines {
+				o := objects[i]
+				seg.PutInt(uint32(o.Serial()))
+				seg.PutString(o.TemplateName())
+				o.Marshal(seg)
+				// We have to terminate the tag list outside of Marshal() due to
+				// how the unmarshaling chain works.
+				seg.PutTag(marshal.TagEndOfList, marshal.TagValueBool, true)
+				seg.IncrementRecordCount()
+			}
+		}(seg, i)
+	}
+}
+
 // UnmarshalObjects unmarshals objects from raw data. AfterUnmarshalObjects must
 // be called after this to complete the load process and free internal memory.
 func (s *DataStore[K]) UnmarshalObjects(seg *marshal.TagFileSegment) {
 	for i := uint32(0); i < seg.RecordCount(); i++ {
+		// Grab the object's serial
 		serial := uo.Serial(seg.Int())
+		// Load the template so we can deserialize the default and static values
+		tn := seg.String()
+		tfo := templateObjectGetter(tn)
 		if k, ok := s.objects[serial]; ok {
+			if tfo != nil {
+				// Deserialize the template data so we pick up static values
+				k.Deserialize(tfo)
+			}
 			tags := k.Unmarshal(seg)
 			s.tagsPool[serial] = tags
 		} else {

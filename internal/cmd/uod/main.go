@@ -144,7 +144,7 @@ func initialize() {
 	game.SetEventIndexGetter(func(which string) uint16 {
 		return events.GetEventHandlerIndex(which)
 	})
-	game.SetTemplateObjectGetter(func(which string) *util.TagFileObject {
+	util.SetTemplateObjectGetter(func(which string) *util.TagFileObject {
 		_, tfo := templateManager.GetTemplateObject(which)
 		return tfo
 	})

@@ -311,23 +311,12 @@ func (m *BaseMobile) Deserialize(f *util.TagFileObject) {
 	m.hitPoints = f.GetNumber("HitPoints", 1)
 	m.mana = f.GetNumber("Mana", 1)
 	m.stamina = f.GetNumber("Stamina", 1)
-	// Load skills
+	// Load default skill values
 	for s := uo.SkillFirst; s <= uo.SkillLast; s++ {
 		m.skills[s] = int16(f.GetNumber("Skill"+uo.SkillNames[s], 0))
 	}
+	// Load default equipment collection
 	m.equipment = NewEquipmentCollectionWith(f.GetObjectReferences("Equipment"), m)
-	// Make sure everyone has a backpack
-	if !m.equipment.IsLayerOccupied(uo.LayerBackpack) {
-		log.Printf("error: mobile %s does not have a backpack, removing", m.Serial().String())
-		world.Remove(m)
-		return
-	}
-	// Make sure all players have a bank box
-	if m.IsPlayerCharacter() && !m.equipment.IsLayerOccupied(uo.LayerBankBox) {
-		log.Printf("error: player mobile %s does not have a bank box, removing", m.Serial().String())
-		world.Remove(m)
-		return
-	}
 }
 
 // Unmarshal implements the marshal.Unmarshaler interface.

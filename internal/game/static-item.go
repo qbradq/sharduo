@@ -97,6 +97,7 @@ func (i *StaticItem) Parent() Object                                            
 func (i *StaticItem) HasParent(o Object) bool                                   { return o == nil }
 func (i *StaticItem) SetParent(o Object)                                        {}
 func (i *StaticItem) TemplateName() string                                      { return "StaticItem" }
+func (i *StaticItem) SetTemplateName(name string)                               {}
 func (i *StaticItem) LinkEvent(event, handler string)                           {}
 func (i *StaticItem) GetEventHandler(s string) *EventHandler                    { return nil }
 func (i *StaticItem) RecalculateStats()                                         {}
@@ -118,7 +119,6 @@ func (i *StaticItem) Marshal(s *marshal.TagFileSegment) {
 	s.PutShort(uint16(i.graphic))
 	s.PutLocation(i.location)
 	s.PutShort(uint16(i.hue))
-	s.PutTag(marshal.TagEndOfList, marshal.TagValueBool, true)
 }
 
 // Deserialize implements the util.Serializeable interface.

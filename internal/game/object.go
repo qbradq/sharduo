@@ -54,6 +54,9 @@ type Object interface {
 	ObjectType() marshal.ObjectType
 	// TemplateName returns the name of the template used to create this object.
 	TemplateName() string
+	// SetTemplateName sets the name of the template used to create this object.
+	// For internal use only.
+	SetTemplateName(string)
 
 	//
 	// Callbacks
@@ -180,7 +183,6 @@ func (o *BaseObject) Marshal(s *marshal.TagFileSegment) {
 	if o.parent != nil {
 		ps = o.parent.Serial()
 	}
-	s.PutString(o.templateName)
 	s.PutInt(uint32(ps))
 	s.PutString(o.name)
 	s.PutShort(uint16(o.hue))
@@ -235,16 +237,6 @@ func (o *BaseObject) Deserialize(f *util.TagFileObject) {
 
 // Unmarshal implements the marshal.Unmarshaler interface.
 func (o *BaseObject) Unmarshal(s *marshal.TagFileSegment) *marshal.TagCollection {
-	// Load the template so we can deserialize the default and static values
-	tn := s.String()
-	tfo := templateObjectGetter(tn)
-	if tfo == nil {
-		// The template getter should have already logged the error
-		world.Remove(o)
-	} else {
-		// Deserialize the template data so we pick up static values
-		DispatchDeserialize(o, tfo)
-	}
 	// Parent object resolution
 	ps := uo.Serial(s.Int())
 	if ps == uo.SerialSystem {
@@ -289,6 +281,9 @@ func (o *BaseObject) SetParent(p Object) { o.parent = p }
 
 // TemplateName implements the Object interface
 func (o *BaseObject) TemplateName() string { return o.templateName }
+
+// SetTemplateName implements the Object interface
+func (o *BaseObject) SetTemplateName(name string) { o.templateName = name }
 
 // RecalculateStats implements the Object interface
 func (o *BaseObject) RecalculateStats() {}

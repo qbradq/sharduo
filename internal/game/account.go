@@ -6,7 +6,12 @@ import (
 
 	"github.com/qbradq/sharduo/internal/marshal"
 	"github.com/qbradq/sharduo/lib/uo"
+	"github.com/qbradq/sharduo/lib/util"
 )
+
+func init() {
+	marshal.RegisterCtor(marshal.ObjectTypeAccount, func() interface{} { return &Account{} })
+}
 
 // Role describes the roles that an account may have.
 type Role byte
@@ -46,25 +51,31 @@ type Account struct {
 	roles Role
 }
 
+// TemplateName returns the template name for accounts
+func (a *Account) TemplateName() string { return "Account" }
+
+// SetTemplateName does nothing for accounts
+func (a *Account) SetTemplateName(name string) {}
+
 // Marshal writes the account data to a segment
 func (a *Account) Marshal(s *marshal.TagFileSegment) {
 	s.PutInt(uint32(a.player))
 	s.PutString(a.username)
 	s.PutString(a.passwordHash)
 	s.PutByte(byte(a.roles))
-	// Slap a tag collection terminator on here so we can safely expand later if
-	// we need to.
-	s.PutTag(marshal.TagEndOfList, marshal.TagValueBool, true)
+	// NOTE: We can safely add Tag values below
 }
 
+// Deserialize does nothing
+func (a *Account) Deserialize(f *util.TagFileObject) {}
+
 // Unmarshal reads the account data from a segment
-func (a *Account) Unmarshal(s *marshal.TagFileSegment) {
+func (a *Account) Unmarshal(s *marshal.TagFileSegment) *marshal.TagCollection {
 	a.player = uo.Serial(s.Int())
 	a.username = s.String()
 	a.passwordHash = s.String()
 	a.roles = Role(s.Byte())
-	// An empty tags collection exists so we can add stuff later if needed
-	s.Tags()
+	return s.Tags()
 }
 
 // Username returns the username of the account

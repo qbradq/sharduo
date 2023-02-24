@@ -93,6 +93,7 @@ opened to outside connections.
 * Evaluate all TODO tags remaining in the source code, create tasks for them and assign them to milestones
 * Make client available for download somehow
 * Create homepage site and service
+* Make number of marshal goroutines configurable
 * Automatically archive and clean old save files
 
 ### Miscellaneous Issues ###

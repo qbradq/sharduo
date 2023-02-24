@@ -10,7 +10,6 @@ type EventHandler func(Object, Object, any)
 
 var eventHandlerGetter func(string) *EventHandler
 var eventIndexGetter func(string) uint16
-var templateObjectGetter func(string) *util.TagFileObject
 
 // RootParent returns the top-most parent of the object who's parent is the map.
 // If this object's parent is the map this object is returned.
@@ -72,10 +71,4 @@ func SetEventHandlerGetter(fn func(string) *EventHandler) {
 // by name.
 func SetEventIndexGetter(fn func(string) uint16) {
 	eventIndexGetter = fn
-}
-
-// SetTemplateObjectGetter sets the function used to get template objects by
-// name.
-func SetTemplateObjectGetter(fn func(string) *util.TagFileObject) {
-	templateObjectGetter = fn
 }
