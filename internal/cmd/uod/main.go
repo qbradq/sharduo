@@ -14,6 +14,7 @@ import (
 
 	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/internal/game/events"
+	"github.com/qbradq/sharduo/lib/template"
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/uo/file"
 	"github.com/qbradq/sharduo/lib/util"
@@ -24,9 +25,6 @@ var tiledatamul *file.TileDataMul
 
 // The world we are running
 var world *World
-
-// The template manager
-var templateManager *TemplateManager
 
 // The configuration
 var configuration *Configuration
@@ -144,15 +142,17 @@ func initialize() {
 	game.SetEventIndexGetter(func(which string) uint16 {
 		return events.GetEventHandlerIndex(which)
 	})
-	util.SetTemplateObjectGetter(func(which string) *util.TagFileObject {
-		_, tfo := templateManager.GetTemplateObject(which)
-		return tfo
-	})
 
 	// Load object templates
 	log.Println("Loading templates...")
-	templateManager = NewTemplateManager("templates")
-	errs := templateManager.LoadAll(configuration.TemplatesDirectory, configuration.ListsDirectory)
+	errs := template.Initialize(configuration.TemplatesDirectory,
+		configuration.ListsDirectory, configuration.TemplateVariablesFile,
+		world.Random(), func(o game.Object) {
+			if o != nil {
+				world.addNewObjectToDataStores(o)
+				o.SetParent(game.TheVoid)
+			}
+		})
 	for _, err := range errs {
 		log.Println(err)
 	}

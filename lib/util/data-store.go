@@ -4,7 +4,7 @@ import (
 	"log"
 	"sync"
 
-	"github.com/qbradq/sharduo/internal/marshal"
+	"github.com/qbradq/sharduo/lib/marshal"
 	"github.com/qbradq/sharduo/lib/uo"
 )
 

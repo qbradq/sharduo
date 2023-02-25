@@ -3,7 +3,7 @@ package game
 import (
 	"log"
 
-	"github.com/qbradq/sharduo/internal/marshal"
+	"github.com/qbradq/sharduo/lib/marshal"
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
 )

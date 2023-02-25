@@ -10,6 +10,7 @@ import (
 	"github.com/qbradq/sharduo/internal/game/events"
 	"github.com/qbradq/sharduo/lib/clientpacket"
 	"github.com/qbradq/sharduo/lib/serverpacket"
+	"github.com/qbradq/sharduo/lib/template"
 	"github.com/qbradq/sharduo/lib/uo"
 )
 
@@ -87,7 +88,7 @@ func commandNew(n *NetState, args CommandArgs, cl string) {
 		n.Speech(nil, "new command requires 2 or 3 arguments, got %d", len(args))
 	}
 	n.TargetSendCursor(uo.TargetTypeLocation, func(r *clientpacket.TargetResponse) {
-		o := world.New(args[1])
+		o := template.Create(args[1])
 		if o == nil {
 			n.Speech(nil, "failed to create object with template %s", args[1])
 			return
@@ -248,7 +249,7 @@ func commandDebug(n *NetState, args CommandArgs, cl string) {
 	case "memory_test":
 		start := time.Now()
 		for i := 0; i < 1_000_000; i++ {
-			o := world.New("FancyShirt")
+			o := template.Create("FancyShirt")
 			o.SetLocation(uo.Location{
 				X: int16(world.Random().Random(100, uo.MapWidth-101)),
 				Y: int16(world.Random().Random(100, uo.MapHeight-101)),
@@ -257,7 +258,7 @@ func commandDebug(n *NetState, args CommandArgs, cl string) {
 			world.Map().ForceAddObject(o)
 		}
 		for i := 0; i < 150_000; i++ {
-			o := world.New("Player")
+			o := template.Create("Banker")
 			o.SetLocation(uo.Location{
 				X: int16(world.Random().Random(100, uo.MapWidth-101)),
 				Y: int16(world.Random().Random(100, uo.MapHeight-101)),
@@ -282,14 +283,14 @@ func commandDebug(n *NetState, args CommandArgs, cl string) {
 		game.NewTimer(uo.DurationSecond*60, "WhisperTime", n.m, n.m)
 		game.NewTimer(uo.DurationSecond*65, "WhisperTime", n.m, n.m)
 	case "mount":
-		mi := world.New("HorseMountItem")
+		mi := template.Create("HorseMountItem")
 		n.m.ForceEquip(mi.(*game.MountItem))
 	case "shirtbag":
-		backpack := world.New("Backpack").(game.Container)
+		backpack := template.Create("Backpack").(game.Container)
 		backpack.SetLocation(n.m.Location())
 		world.m.SetNewParent(backpack, nil)
 		for i := 0; i < 125; i++ {
-			shirt := world.New("FancyShirt")
+			shirt := template.Create("FancyShirt")
 			shirt.SetLocation(uo.RandomContainerLocation)
 			if !world.Map().SetNewParent(shirt, backpack) {
 				n.Speech(nil, "failed to add an item to the backpack")
@@ -301,7 +302,7 @@ func commandDebug(n *NetState, args CommandArgs, cl string) {
 		count := 0
 		for iy := n.m.Location().Y - 50; iy < n.m.Location().Y+50; iy++ {
 			for ix := n.m.Location().X - 50; ix < n.m.Location().X+50; ix++ {
-				o := world.New(args[2])
+				o := template.Create(args[2])
 				if o == nil {
 					n.Speech(nil, "debug splat failed to create object with template %s", args[2])
 				}
@@ -341,7 +342,7 @@ func commandStatic(n *NetState, args CommandArgs, cl string) {
 		n.Speech(nil, "refusing to create no-draw static 0x%04X", g)
 	}
 	n.TargetSendCursor(uo.TargetTypeLocation, func(r *clientpacket.TargetResponse) {
-		o := world.New("StaticItem")
+		o := template.Create("StaticItem")
 		if o == nil {
 			n.Speech(nil, "StaticItem template not found")
 			return

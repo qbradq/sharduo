@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/qbradq/sharduo/internal/game"
-	"github.com/qbradq/sharduo/internal/marshal"
+	"github.com/qbradq/sharduo/lib/marshal"
 	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
@@ -313,16 +313,6 @@ func (w *World) Random() uo.RandomSource {
 func (w *World) addNewObjectToDataStores(o game.Object) game.Object {
 	if o != nil {
 		w.ods.Add(o, o.SerialType())
-	}
-	return o
-}
-
-// New implements the game.World interface.
-func (w *World) New(templateName string) game.Object {
-	o := templateManager.newObject(templateName)
-	if o != nil {
-		w.addNewObjectToDataStores(o)
-		o.SetParent(game.TheVoid)
 	}
 	return o
 }
