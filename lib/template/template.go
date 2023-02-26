@@ -1,12 +1,22 @@
 package template
 
 import (
+	"bytes"
 	"fmt"
+	"log"
+	"strconv"
 	"strings"
 	"text/template"
 
+	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
 )
+
+// Object is the interface all Template objects must implement.
+type Object interface {
+	// Serial returns the unique ID of the object.
+	Serial() uo.Serial
+}
 
 // T contains all of the property lines of the template.
 type T struct {
@@ -19,16 +29,16 @@ type T struct {
 	// True if the template's inheritance chain has already been satisfied.
 	IsResolved bool
 	// List of all properties
-	properties map[string]interface{}
+	properties map[string]any
 }
 
 // New creates a new template.T object from the provided TagFileObject. The
 // inheritance chain has not been resolved for this object, but all text
-// templates have been pre-compiles and ready to run.
+// templates have been pre-compiled and are ready to run.
 func New(tfo *util.TagFileObject, tm *TemplateManager) (*T, []error) {
 	t := &T{
 		TypeName:   tfo.TypeName(),
-		properties: make(map[string]interface{}),
+		properties: make(map[string]any),
 	}
 	templateName := tfo.GetString("TemplateName", "")
 	if templateName == "" {
@@ -58,6 +68,213 @@ func New(tfo *util.TagFileObject, tm *TemplateManager) (*T, []error) {
 		return nil
 	})
 	return t, errs
+}
+
+// GetString returns the named property as a string or the default if not
+// found.
+func (t *T) GetString(name, def string) string {
+	p := t.properties[name]
+	switch v := p.(type) {
+	case nil:
+		return def
+	case string:
+		if v == "" {
+			return def
+		}
+		return v
+	case *template.Template:
+		buf := bytes.NewBuffer(nil)
+		if err := v.Execute(buf, templateContext); err != nil {
+			log.Println(err)
+			return def
+		}
+		return buf.String()
+	default:
+		panic("unhandled type in generateTagFileObject")
+	}
+}
+
+// GetNumber returns the named property as a number or the default if not
+// found. This function may add errors to the internal error slice.
+func (t *T) GetNumber(name string, def int) int {
+	v := t.GetString(name, "")
+	if v == "" {
+		return def
+	}
+	n, err := strconv.ParseInt(v, 0, 32)
+	if err != nil {
+		log.Println(err)
+		return def
+	}
+	return int(n)
+}
+
+// GetULong returns the named property as a uint64 or the default if not found.
+// This function may add errors to the internal error slice. Only use this for
+// actual 64-bit values, like uo.Time.
+func (t *T) GetULong(name string, def uint64) uint64 {
+	v := t.GetString(name, "")
+	if v == "" {
+		return def
+	}
+	n, err := strconv.ParseUint(v, 0, 64)
+	if err != nil {
+		log.Println(err)
+		return def
+	}
+	return n
+}
+
+// GetFloat returns the named property as a float32 or the default if not
+// found. This function may add errors to the internal error slice.
+func (t *T) GetFloat(name string, def float32) float32 {
+	v := t.GetString(name, "")
+	if v == "" {
+		return def
+	}
+	f, err := strconv.ParseFloat(v, 32)
+	if err != nil {
+		log.Println(err)
+		return def
+	}
+	return float32(f)
+}
+
+// GetHex returns the named property as an unsigned number or the default if not
+// found. This function may add errors to the internal error slice.
+func (t *T) GetHex(name string, def uint32) uint32 {
+	v := t.GetString(name, "")
+	if v == "" {
+		return def
+	}
+	n, err := strconv.ParseInt(v, 0, 64)
+	if err != nil {
+		log.Println(err)
+		return def
+	}
+	return uint32(n)
+}
+
+// GetBool returns the named property as a boolean value or the default if not
+// found. This function may add errors to the internal error slice.
+func (t *T) GetBool(name string, def bool) bool {
+	v := t.GetString(name, "~~NOT~FOUND~~")
+	if v == "~~NOT~FOUND~~" {
+		return def
+	}
+	// This is the naked boolean case
+	if v == "" {
+		return true
+	}
+	var b bool
+	var err error
+	if b, err = strconv.ParseBool(v); err != nil {
+		log.Println(err)
+		return def
+	}
+	return b
+}
+
+// GetObjectReferences returns a slice of uo.Serial values. nil is the default
+// value. This function may add errors to the internal error slice.
+func (t *T) GetObjectReferences(name string) []uo.Serial {
+	v := t.GetString(name, "")
+	if v == "" {
+		return nil
+	}
+	parts := strings.Split(v, ",")
+	ret := make([]uo.Serial, 0, len(parts))
+	for _, str := range parts {
+		n, err := strconv.ParseInt(str, 0, 32)
+		if err != nil {
+			log.Println(err)
+		} else {
+			ret = append(ret, uo.Serial(n))
+		}
+	}
+	return ret
+}
+
+// GetLocation returns a uo.Location value. The default value is returned if the
+// named tag is not found.
+func (t *T) GetLocation(name string, def uo.Location) uo.Location {
+	str := t.GetString(name, "")
+	if str == "" {
+		return def
+	}
+	parts := strings.Split(str, ",")
+	if len(parts) != 3 {
+		log.Printf("GetLocation(%s) did not find three values", name)
+		return def
+	}
+	hasErrors := false
+	var l uo.Location
+	v, err := strconv.ParseInt(parts[0], 0, 16)
+	if err != nil {
+		log.Println(err)
+		hasErrors = true
+	}
+	l.X = int16(v)
+	v, err = strconv.ParseInt(parts[1], 0, 16)
+	if err != nil {
+		log.Println(err)
+		hasErrors = true
+	}
+	l.Y = int16(v)
+	v, err = strconv.ParseInt(parts[2], 0, 8)
+	if err != nil {
+		log.Println(err)
+		hasErrors = true
+	}
+	l.Z = int8(v)
+	if hasErrors {
+		return def
+	}
+	return l
+}
+
+// GetBounds returns a uo.Bounds value. The default value is returned if the
+// named tag is not found.
+func (t *T) GetBounds(name string, def uo.Bounds) uo.Bounds {
+	str := t.GetString(name, "")
+	if str == "" {
+		return def
+	}
+	parts := strings.Split(str, ",")
+	if len(parts) != 3 {
+		log.Printf("GetLocation(%s) did not find four values", name)
+		return def
+	}
+	hasErrors := false
+	var b uo.Bounds
+	v, err := strconv.ParseInt(parts[0], 0, 16)
+	if err != nil {
+		log.Println(err)
+		hasErrors = true
+	}
+	b.X = int16(v)
+	v, err = strconv.ParseInt(parts[1], 0, 16)
+	if err != nil {
+		log.Println(err)
+		hasErrors = true
+	}
+	b.Y = int16(v)
+	v, err = strconv.ParseInt(parts[2], 0, 16)
+	if err != nil {
+		log.Println(err)
+		hasErrors = true
+	}
+	b.W = int16(v)
+	v, err = strconv.ParseInt(parts[3], 0, 16)
+	if err != nil {
+		log.Println(err)
+		hasErrors = true
+	}
+	b.H = int16(v)
+	if hasErrors {
+		return def
+	}
+	return b
 }
 
 // // generateTagFileObject generates a new TagFileObject by executing the

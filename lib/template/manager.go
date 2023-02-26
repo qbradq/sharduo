@@ -7,7 +7,6 @@ import (
 	txtmp "text/template"
 
 	"github.com/qbradq/sharduo/data"
-	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
 )
@@ -30,13 +29,13 @@ type TemplateManager struct {
 	// Source of randomness for randomly generating things
 	rng uo.RandomSource
 	// Adds the object to game datastores
-	storeObject func(game.Object)
+	storeObject func(Object)
 }
 
 // Initialize initializes the template package and must be called prior to all
 // other package calls. The function parameter fn should add the game object to
 // internal data stores when a new object is created by the template engine.
-func Initialize(templatePath, listPath, variablesFilePath string, rng uo.RandomSource, fn func(game.Object)) []error {
+func Initialize(templatePath, listPath, variablesFilePath string, rng uo.RandomSource, fn func(Object)) []error {
 	// Initialize the manager
 	tm = &TemplateManager{
 		templates:   util.NewRegistry[string, *T]("templates"),
@@ -83,7 +82,7 @@ func Initialize(templatePath, listPath, variablesFilePath string, rng uo.RandomS
 // a unique serial of the correct type and added to the data stores. It does not
 // yet have a parent nor has it been placed on the map. One of these things must
 // be done otherwise the data store will leak this object.
-func Create(which string) game.Object {
+func Create(which string) Object {
 	return nil
 }
 

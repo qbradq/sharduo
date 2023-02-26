@@ -123,13 +123,13 @@ func (s *DataStore[K]) UnmarshalObjects(seg *marshal.TagFileSegment) {
 		// Grab the object's serial
 		serial := uo.Serial(seg.Int())
 		// Load the template so we can deserialize the default and static values
-		tn := seg.String()
-		tfo := templateObjectGetter(tn)
+		// tn := seg.String()
+		// tfo := templateObjectGetter(tn)
 		if k, ok := s.objects[serial]; ok {
-			if tfo != nil {
-				// Deserialize the template data so we pick up static values
-				k.Deserialize(tfo)
-			}
+			// if tfo != nil {
+			// 	// Deserialize the template data so we pick up static values
+			// 	k.Deserialize(tfo)
+			// }
 			tags := k.Unmarshal(seg)
 			s.tagsPool[serial] = tags
 		} else {

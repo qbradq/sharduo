@@ -1,10 +1,10 @@
 package game
 
 import (
-	"log"
 	"strconv"
 
 	"github.com/qbradq/sharduo/lib/marshal"
+	"github.com/qbradq/sharduo/lib/template"
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
 )
@@ -263,16 +263,7 @@ func (i *BaseItem) Split(n int) Item {
 		return nil
 	}
 	// Create the new item
-	ni := world.New(i.templateName)
-	if ni == nil {
-		log.Println("error: Item.Split() failed to create duplicate item")
-		return nil
-	}
-	item, ok := ni.(Item)
-	if !ok {
-		log.Println("error: Item.Split() duplicate object was not an item")
-		return nil
-	}
+	item := template.Create(i.templateName).(Item)
 	// Remove this item from its parent
 	failed := false
 	if i.parent == nil {

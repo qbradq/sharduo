@@ -88,7 +88,7 @@ func commandNew(n *NetState, args CommandArgs, cl string) {
 		n.Speech(nil, "new command requires 2 or 3 arguments, got %d", len(args))
 	}
 	n.TargetSendCursor(uo.TargetTypeLocation, func(r *clientpacket.TargetResponse) {
-		o := template.Create(args[1])
+		o := template.Create(args[1]).(game.Object)
 		if o == nil {
 			n.Speech(nil, "failed to create object with template %s", args[1])
 			return
@@ -249,7 +249,7 @@ func commandDebug(n *NetState, args CommandArgs, cl string) {
 	case "memory_test":
 		start := time.Now()
 		for i := 0; i < 1_000_000; i++ {
-			o := template.Create("FancyShirt")
+			o := template.Create("FancyShirt").(game.Object)
 			o.SetLocation(uo.Location{
 				X: int16(world.Random().Random(100, uo.MapWidth-101)),
 				Y: int16(world.Random().Random(100, uo.MapHeight-101)),
@@ -258,7 +258,7 @@ func commandDebug(n *NetState, args CommandArgs, cl string) {
 			world.Map().ForceAddObject(o)
 		}
 		for i := 0; i < 150_000; i++ {
-			o := template.Create("Banker")
+			o := template.Create("Banker").(game.Object)
 			o.SetLocation(uo.Location{
 				X: int16(world.Random().Random(100, uo.MapWidth-101)),
 				Y: int16(world.Random().Random(100, uo.MapHeight-101)),
@@ -290,7 +290,7 @@ func commandDebug(n *NetState, args CommandArgs, cl string) {
 		backpack.SetLocation(n.m.Location())
 		world.m.SetNewParent(backpack, nil)
 		for i := 0; i < 125; i++ {
-			shirt := template.Create("FancyShirt")
+			shirt := template.Create("FancyShirt").(game.Object)
 			shirt.SetLocation(uo.RandomContainerLocation)
 			if !world.Map().SetNewParent(shirt, backpack) {
 				n.Speech(nil, "failed to add an item to the backpack")
@@ -302,7 +302,7 @@ func commandDebug(n *NetState, args CommandArgs, cl string) {
 		count := 0
 		for iy := n.m.Location().Y - 50; iy < n.m.Location().Y+50; iy++ {
 			for ix := n.m.Location().X - 50; ix < n.m.Location().X+50; ix++ {
-				o := template.Create(args[2])
+				o := template.Create(args[2]).(game.Object)
 				if o == nil {
 					n.Speech(nil, "debug splat failed to create object with template %s", args[2])
 				}

@@ -147,11 +147,16 @@ func initialize() {
 	log.Println("Loading templates...")
 	errs := template.Initialize(configuration.TemplatesDirectory,
 		configuration.ListsDirectory, configuration.TemplateVariablesFile,
-		world.Random(), func(o game.Object) {
-			if o != nil {
-				world.addNewObjectToDataStores(o)
-				o.SetParent(game.TheVoid)
+		rng, func(o template.Object) {
+			if o == nil {
+				return
 			}
+			obj, ok := o.(game.Object)
+			if !ok {
+				return
+			}
+			world.addNewObjectToDataStores(obj)
+			obj.SetParent(game.TheVoid)
 		})
 	for _, err := range errs {
 		log.Println(err)

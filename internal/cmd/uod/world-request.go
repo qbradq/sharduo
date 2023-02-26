@@ -7,6 +7,7 @@ import (
 	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/lib/clientpacket"
 	"github.com/qbradq/sharduo/lib/serverpacket"
+	"github.com/qbradq/sharduo/lib/template"
 	"github.com/qbradq/sharduo/lib/uo"
 )
 
@@ -67,7 +68,7 @@ func (r *CharacterLoginRequest) Execute() error {
 	}
 	// Create a new character if needed
 	if player == nil {
-		player = world.New("Player").(game.Mobile)
+		player = template.Create("Player").(game.Mobile)
 		// TODO New player setup
 		player.SetLocation(uo.Location{X: 1324, Y: 1624, Z: 55})
 		world.Map().AddObject(player)

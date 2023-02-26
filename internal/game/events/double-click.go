@@ -4,6 +4,7 @@ package events
 
 import (
 	"github.com/qbradq/sharduo/internal/game"
+	"github.com/qbradq/sharduo/lib/template"
 	"github.com/qbradq/sharduo/lib/uo"
 )
 
@@ -103,25 +104,18 @@ func Mount(receiver, source game.Object, v any) {
 	if !ok {
 		return
 	}
-	mio := game.GetWorld().New("MountItem")
-	if mio == nil {
-		return
-	}
-	mi, ok := mio.(*game.MountItem)
-	if !ok {
-		return
-	}
+	mi := template.Create("MountItem").(*game.MountItem)
 	switch rm.Body() {
 	case 0xC8:
 		mi.SetBaseGraphic(0x3E9F)
-	case 0xE2:
-		mi.SetBaseGraphic(0x3EA0)
-	case 0xE4:
-		mi.SetBaseGraphic(0x3EA1)
 	case 0xCC:
 		mi.SetBaseGraphic(0x3EA2)
 	case 0xDC:
 		mi.SetBaseGraphic(0x3EA6)
+	case 0xE2:
+		mi.SetBaseGraphic(0x3EA0)
+	case 0xE4:
+		mi.SetBaseGraphic(0x3EA1)
 	}
 	if !sm.Equip(mi) {
 		return

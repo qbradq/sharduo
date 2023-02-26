@@ -2,6 +2,7 @@ package events
 
 import (
 	"github.com/qbradq/sharduo/internal/game"
+	"github.com/qbradq/sharduo/lib/template"
 	"github.com/qbradq/sharduo/lib/uo"
 )
 
@@ -57,12 +58,7 @@ func SmeltOre(receiver, source game.Object, v any) {
 		ore.Consume(1)
 		return
 	}
-	io := game.GetWorld().New("IronIngot")
-	ingot, ok := io.(game.Item)
-	if !ok {
-		// Something is very wrong
-		return
-	}
+	ingot := template.Create("IronIngot").(game.Item)
 	ingot.SetAmount(ore.Amount() * 2)
 	game.GetWorld().Remove(ore)
 	if !smelter.DropToBackpack(ingot, false) {
