@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -192,6 +193,8 @@ func (w *World) Marshal() (*sync.WaitGroup, error) {
 	}
 	defer w.lock.Unlock()
 
+	w.BroadcastMessage(nil, "The world is saving, please wait...")
+
 	filePath := path.Join(w.savePath, w.getFileName()+".sav.gz")
 	filePath = path.Clean(filePath)
 	os.MkdirAll(path.Dir(filePath), 0777)
@@ -245,7 +248,8 @@ func (w *World) Marshal() (*sync.WaitGroup, error) {
 		}
 	}(s)
 	// Kick off the object database persistance goroutines
-	w.ods.MarshalObjects(tf, 4, wg)
+	nThreads := runtime.NumCPU()
+	w.ods.MarshalObjects(tf, nThreads, wg)
 	// Map object list
 	wg.Add(1)
 	s = tf.Segment(marshal.SegmentMap)
@@ -264,6 +268,8 @@ func (w *World) Marshal() (*sync.WaitGroup, error) {
 	end := time.Now()
 	elapsed := end.Sub(start)
 	log.Printf("generated save data in %ds%03dms", elapsed.Milliseconds()/1000, elapsed.Milliseconds()%1000)
+
+	w.BroadcastMessage(nil, "World save completed in %ds%03dms", elapsed.Milliseconds()/1000, elapsed.Milliseconds()%1000)
 
 	// Kick off another goroutine to persist the save to disk and let the main
 	// goroutine continue.
