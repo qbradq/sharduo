@@ -5,19 +5,30 @@ programming language.
 ## Current Working Features ##
 * Account creation and login
 * Global chat
+* Spatial chat
+* Walking, running, mounted movement
+* Items and containers
+* Equipment
 
 ## Next Milestone - Mining Vertical ##
 The next milestone set for ShardUO is to implement the Mining skill vertical,
 including all features required to mine ore and smelt it into ingots.
 
 ### Current Defects ###
-* Stair behavior for East-to-West marble stair is wrong, see throne room.
+* Stair behavior for East-to-West marble stair is wrong, see throne room
 * Some items are immoveable that should not be, see LargeCrate
 
 ### Required Features and Tasks ###
-* Player movement packet throttling
-* Action rate-limiting
+* Respond to status closed messages
 * Restrict command usage to access levels
+* Make number of marshal goroutines configurable
+* Auto-saves
+* Automatically archive and clean old save files
+* Player movement packet throttling
+* Action packet throttling
+* Mining skill
+* Ore resource map
+* Mobile weight limit and stamina
 * ~~Map loading~~
 * ~~Map tile query~~
 * ~~Following the map during movement~~
@@ -29,60 +40,60 @@ including all features required to mine ore and smelt it into ingots.
 * ~~Equipping equipment~~
 * ~~Using equipment~~
 * ~~Timers~~
-* Mining skill
 * ~~Smelting~~
 * ~~Backpack and inventory~~
 * ~~Container handling~~
 * ~~Spacial chat with speaking, yelling, whispering, and emotes~~
 * ~~Global chat~~
-* Mobile weight limit and stamina
 * ~~Stat updates~~
 * ~~Skill system~~
 * ~~Skill updates~~
 * ~~Skill gains~~
 * ~~Stat gains~~
 * ~~Stackable items~~
-* Respond to status closed messages
 * ~~Animations~~
 * ~~Sounds~~
 * ~~Music~~
 * ~~Clilocs~~
-* Auto-saves
 
 ### Nice to Haves ###
-* ~~Gold~~
 * NPC Vendors
+* Buying from vendors
 * Stable Master NPC
+* Walk Random AI
+* Follow Master AI
 * Smelter NPC
 * Miner NPC
 * Miner Guildmaster NPC
 * Miner's Guild
-* Buying from vendors
 * Selling to vendors
-* ~~Mounts~~
-* ~~Horses and Llamas~~
-* Walk Random AI
-* Follow Master AI
-* ~~Pack Horses and Llamas~~
-* ~~Banker NPC~~
-* ~~Bank box~~
-* Line of sight checks
-* ~~Paper Dolls for others~~
 * Item durability
-* ~~Context menus~~
-* MegaCliloc roll-over info
 * Passive fauna
 * Wild flora
 * Agricultural crops
 * Regions
 * Region spawning
+* GUMP support
+* Welcome GUMP
+* Feedback GUMP
+* Help GUMP
+* MegaCliloc roll-over info
+* Line of sight checks
+* ~~Gold~~
+* ~~Context menus~~
+* ~~Paper Dolls for others~~
+* ~~Pack Horses and Llamas~~
+* ~~Banker NPC~~
+* ~~Bank box~~
+* ~~Mounts~~
+* ~~Horses and Llamas~~
 
 ### Nerdy Things I Might Do for Fun ###
-* ~~Global light levels~~
-* ~~Personal light levels~~
 * Day/Night cycles
 * Weather patterns
 * Fall damage
+* ~~Global light levels~~
+* ~~Personal light levels~~
 
 ## Outstanding Issues ##
 
@@ -90,33 +101,43 @@ including all features required to mine ore and smelt it into ingots.
 This is a list of known tasks that must be completed before the server may be
 opened to outside connections.
 
+* Evaluate all TODO tags remaining in the source code, create tasks for them and assign them to milestones
+* Create homepage site and service
+* Make client available for download somehow
 * ~~Removal of stale NetStates in the game service goroutine~~
 * ~~Removal of stale connections in the login service goroutine~~
 * ~~Integration of the game service into a single self-managed structure~~
 * ~~Do not allow items within the bank box to be used unless the bank box is open~~
 * ~~Proper coordinate wrapping in game.Map.getChunksInBounds()~~
-* Evaluate all TODO tags remaining in the source code, create tasks for them and assign them to milestones
-* Make client available for download somehow
-* Create homepage site and service
-* Make number of marshal goroutines configurable
-* Automatically archive and clean old save files
 
 ### Miscellaneous Issues ###
 This is a list of known issues that do not need to be resolved before the next
 milestone but do need to be resolved sometime.
 
-* ~~Save system re-write~~
 * Reduce allocations for map query operations
 * Reduce or remove golang map usage in performance-critical areas
 * Proper coordinate wrapping in uo.Location.XYDistance()
 * Wrapped overworld
+* ~~Save system re-write~~
 
 ## Feature Packages ##
-Below are tasks that need to be completed to fully implement other feature
-verticals.
+Below are feature verticals that I want to implement next in priority order.
 
-### Blacksmithing ###
-
+* Tinkering
+  * GUMP support
+  * Crafting GUMP
+  * Crafting system
+    * Resource consumption function
+    * Item creation
+    * Normal, exceptional, and inferior quality
+  * Tinkered item crafting
+* Blacksmithing
+  * Blacksmithing item crafting
+* Lumberjacking
+  * Wood resources
+  * Lumberjacking skill
+* Carpentry
+  * Carpentry item crafting
 
 # Shard Administration Advice #
 The ShardUO software and the creative content within were developed to host a
