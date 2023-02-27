@@ -8,6 +8,7 @@ import (
 func init() {
 	giFactory.Ignore(0x05) // Client screen dimensions
 	giFactory.Ignore(0x0B) // Client language
+	giFactory.Ignore(0x0C) // Status closed
 	giFactory.Ignore(0x0F) // Client flags
 	giFactory.Add(0x15, newContextMenuSelection)
 }
