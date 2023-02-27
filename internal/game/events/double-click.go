@@ -86,7 +86,9 @@ func OpenContainer(receiver, source game.Object, v any) {
 	if !ok || sm.NetState() == nil {
 		return
 	}
-	dz := rc.Location().Z - sm.Location().Z
+	rl := game.RootParent(receiver).Location()
+	sl := game.RootParent(source).Location()
+	dz := rl.Z - sl.Z
 	if dz < uo.ContainerOpenLowerLimit || dz > uo.ContainerOpenUpperLimit {
 		sm.NetState().Cliloc(nil, 500312)
 		return
