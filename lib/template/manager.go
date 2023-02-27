@@ -120,7 +120,7 @@ func GenerateObject(which string) Object {
 		return nil
 	}
 	// Deserialize the object.
-	s.Deserialize(t)
+	s.Deserialize(t, true)
 	// Recalculate stats
 	s.RecalculateStats()
 	return s

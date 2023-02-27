@@ -13,7 +13,7 @@ type dsobj interface {
 	Serial() uo.Serial
 	SetSerial(uo.Serial)
 	SerialType() uo.SerialType
-	Deserialize(*template.T)
+	Deserialize(*template.T, bool)
 	RecalculateStats()
 	TemplateName() string
 	SetTemplateName(string)
@@ -137,7 +137,7 @@ func (s *T[K]) UnmarshalObjects(seg *marshal.TagFileSegment) bool {
 			// The error is logged inside FindTemplate
 			return false
 		}
-		k.Deserialize(t)
+		k.Deserialize(t, false)
 		k.RecalculateStats()
 		tags := k.Unmarshal(seg)
 		s.tagsPool[serial] = tags

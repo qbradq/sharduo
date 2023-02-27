@@ -22,7 +22,7 @@ func reg(name string, ot marshal.ObjectType, fn func() any) {
 
 // Object is the interface every object in the game implements
 type Object interface {
-	Deserialize(*template.T)
+	Deserialize(*template.T, bool)
 	marshal.Marshaler
 	marshal.Unmarshaler
 
@@ -189,7 +189,7 @@ func (o *BaseObject) Marshal(s *marshal.TagFileSegment) {
 }
 
 // Deserialize implements the util.Serializeable interface.
-func (o *BaseObject) Deserialize(t *template.T) {
+func (o *BaseObject) Deserialize(t *template.T, create bool) {
 	o.templateName = t.GetString("TemplateName", "")
 	if o.templateName == "" {
 		// Something is very wrong

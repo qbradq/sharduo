@@ -33,7 +33,7 @@ type Object interface {
 	Serial() uo.Serial
 	// Deserialize takes data from the template object and initializes the
 	// object's data structures with it.
-	Deserialize(*T)
+	Deserialize(*T, bool)
 	// RecalculateStats is called after Deserialize() and should be used to
 	// recalculate any dynamic values of the data structures initialized by
 	// Deserialize().

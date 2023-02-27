@@ -29,7 +29,7 @@ func (w *BaseWeapon) ObjectType() marshal.ObjectType {
 }
 
 // Deserialize implements the util.Serializeable interface.
-func (w *BaseWeapon) Deserialize(t *template.T) {
-	w.BaseWearable.Deserialize(t)
+func (w *BaseWeapon) Deserialize(t *template.T, create bool) {
+	w.BaseWearable.Deserialize(t, create)
 	w.skill = uo.Skill(t.GetNumber("Skill", int(uo.SkillWrestling)))
 }

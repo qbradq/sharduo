@@ -295,10 +295,10 @@ func (m *BaseMobile) Marshal(s *marshal.TagFileSegment) {
 }
 
 // Deserialize implements the util.Serializeable interface.
-func (m *BaseMobile) Deserialize(t *template.T) {
+func (m *BaseMobile) Deserialize(t *template.T, create bool) {
 	m.skills = make([]int16, uo.SkillCount)
 	m.cursor = &Cursor{}
-	m.BaseObject.Deserialize(t)
+	m.BaseObject.Deserialize(t, create)
 	m.viewRange = int16(t.GetNumber("ViewRange", int(uo.MaxViewRange)))
 	m.isPlayerCharacter = t.GetBool("IsPlayerCharacter", false)
 	m.isFemale = t.GetBool("IsFemale", false)
@@ -315,7 +315,11 @@ func (m *BaseMobile) Deserialize(t *template.T) {
 		m.skills[s] = int16(t.GetNumber("Skill"+uo.SkillNames[s], 0))
 	}
 	// Load default equipment collection
-	m.equipment = NewEquipmentCollectionWith(t.GetObjectReferences("Equipment"), m)
+	if create {
+		m.equipment = NewEquipmentCollectionWith(t.GetObjectReferences("Equipment"), m)
+	} else {
+		m.equipment = NewEquipmentCollection()
+	}
 }
 
 // Unmarshal implements the marshal.Unmarshaler interface.
