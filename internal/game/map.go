@@ -93,14 +93,20 @@ func (m *Map) Unmarshal(s *marshal.TagFileSegment) {
 		c := m.getChunk(o.Location())
 		c.Add(o)
 	}
-	// Call AfterUnmarshalOntoMap for all map objects
+	// Call AfterUnmarshalOntoMap for all map objects. We do this with a pre-
+	// compiled list of objects so that calls to AfterUnmarshalOntoMap can call
+	// world.Remove() if needed.
+	var objs []Object
 	for _, c := range m.chunks {
 		for _, item := range c.items {
-			item.AfterUnmarshalOntoMap()
+			objs = append(objs, item)
 		}
 		for _, mobile := range c.mobiles {
-			mobile.AfterUnmarshalOntoMap()
+			objs = append(objs, mobile)
 		}
+	}
+	for _, o := range objs {
+		o.AfterUnmarshalOntoMap()
 	}
 }
 

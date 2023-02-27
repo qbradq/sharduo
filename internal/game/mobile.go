@@ -504,13 +504,9 @@ func (m *BaseMobile) DropItemInCursor() {
 	world.Update(m)
 }
 
-// RecalculateStats implements the Object interface.
-func (m *BaseMobile) RecalculateStats() {
-	m.equipment.recalculateStats()
-	// Update gold amount
+func (m *BaseMobile) recalculateGold() {
 	backpackObj := m.equipment.GetItemInLayer(uo.LayerBackpack)
 	if backpackObj == nil {
-		log.Printf("error: mobile %s has no backpack", m.Serial().String())
 		return
 	}
 	backpack, ok := backpackObj.(Container)
@@ -531,6 +527,12 @@ func (m *BaseMobile) RecalculateStats() {
 		})
 	}
 	fn(backpack)
+}
+
+// RecalculateStats implements the Object interface.
+func (m *BaseMobile) RecalculateStats() {
+	m.equipment.recalculateStats()
+	m.recalculateGold()
 }
 
 // PickUp attempts to pick up the object. Returns true if successful.

@@ -64,6 +64,7 @@ func (a *Account) Marshal(s *marshal.TagFileSegment) {
 	s.PutString(a.passwordHash)
 	s.PutByte(byte(a.roles))
 	// NOTE: We can safely add Tag values below
+	s.PutTag(marshal.TagEndOfList, marshal.TagValueBool, true)
 }
 
 // Deserialize does nothing

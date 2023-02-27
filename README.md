@@ -71,6 +71,11 @@ including all features required to mine ore and smelt it into ingots.
 * Item durability
 * ~~Context menus~~
 * MegaCliloc roll-over info
+* Passive fauna
+* Wild flora
+* Agricultural crops
+* Regions
+* Region spawning
 
 ### Nerdy Things I Might Do for Fun ###
 * ~~Global light levels~~
