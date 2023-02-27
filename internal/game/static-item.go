@@ -2,13 +2,12 @@ package game
 
 import (
 	"github.com/qbradq/sharduo/lib/marshal"
+	"github.com/qbradq/sharduo/lib/template"
 	"github.com/qbradq/sharduo/lib/uo"
-	"github.com/qbradq/sharduo/lib/util"
 )
 
 func init() {
-	objctors["StaticItem"] = func() Object { return &StaticItem{} }
-	marshal.RegisterCtor(marshal.ObjectTypeStatic, func() interface{} { return &StaticItem{} })
+	reg("StaticItem", marshal.ObjectTypeStatic, func() any { return &StaticItem{} })
 }
 
 // StaticItem is a light-weight Item implementation intended to be used for
@@ -122,10 +121,10 @@ func (i *StaticItem) Marshal(s *marshal.TagFileSegment) {
 }
 
 // Deserialize implements the util.Serializeable interface.
-func (i *StaticItem) Deserialize(f *util.TagFileObject) {
-	i.graphic = uo.Graphic(f.GetNumber("Graphic", int(uo.GraphicDefault)))
+func (i *StaticItem) Deserialize(t *template.T) {
+	i.graphic = uo.Graphic(t.GetNumber("Graphic", int(uo.GraphicDefault)))
 	i.def = world.GetItemDefinition(i.graphic)
-	i.hue = uo.Hue(f.GetNumber("Hue", int(uo.HueDefault)))
+	i.hue = uo.Hue(t.GetNumber("Hue", int(uo.HueDefault)))
 }
 
 // Unmarshal implements the marshal.Unmarshaler interface.

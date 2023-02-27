@@ -2,13 +2,12 @@ package game
 
 import (
 	"github.com/qbradq/sharduo/lib/marshal"
+	"github.com/qbradq/sharduo/lib/template"
 	"github.com/qbradq/sharduo/lib/uo"
-	"github.com/qbradq/sharduo/lib/util"
 )
 
 func init() {
-	objctors["BaseWearable"] = func() Object { return &BaseWearable{} }
-	marshal.RegisterCtor(marshal.ObjectTypeWearable, func() interface{} { return &BaseWearable{} })
+	reg("BaseWearable", marshal.ObjectTypeWearable, func() any { return &BaseWearable{} })
 }
 
 // Layerer represents an item that can be layered onto an equippable mobile.
@@ -34,9 +33,9 @@ type BaseWearable struct {
 func (i *BaseWearable) ObjectType() marshal.ObjectType { return marshal.ObjectTypeWearable }
 
 // Deserialize implements the util.Serializeable interface.
-func (i *BaseWearable) Deserialize(f *util.TagFileObject) {
-	i.BaseItem.Deserialize(f)
-	i.layer = uo.Layer(f.GetNumber("Layer", int(uo.LayerInvalid)))
+func (i *BaseWearable) Deserialize(t *template.T) {
+	i.BaseItem.Deserialize(t)
+	i.layer = uo.Layer(t.GetNumber("Layer", int(uo.LayerInvalid)))
 }
 
 // Layer implements the Item interface.

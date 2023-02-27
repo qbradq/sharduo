@@ -6,25 +6,23 @@ import (
 	"strings"
 
 	"github.com/qbradq/sharduo/lib/marshal"
+	"github.com/qbradq/sharduo/lib/template"
 	"github.com/qbradq/sharduo/lib/uo"
-	"github.com/qbradq/sharduo/lib/util"
 )
 
-var objctors = make(map[string]func() Object)
-
 func init() {
-	objctors["BaseObject"] = func() Object { return &BaseObject{} }
-	marshal.RegisterCtor(marshal.ObjectTypeObject, func() interface{} { return &BaseObject{} })
+	reg("BaseObject", marshal.ObjectTypeObject, func() any { return &BaseObject{} })
 }
 
-// Constructor returns the constructor for the given type string or nil
-func Constructor(which string) func() Object {
-	return objctors[which]
+// reg registers a constructor with the template and marshal packages.
+func reg(name string, ot marshal.ObjectType, fn func() any) {
+	template.RegisterConstructor(name, fn)
+	marshal.RegisterCtor(ot, fn)
 }
 
 // Object is the interface every object in the game implements
 type Object interface {
-	Deserialize(*util.TagFileObject)
+	Deserialize(*template.T)
 	marshal.Marshaler
 	marshal.Unmarshaler
 
@@ -191,19 +189,19 @@ func (o *BaseObject) Marshal(s *marshal.TagFileSegment) {
 }
 
 // Deserialize implements the util.Serializeable interface.
-func (o *BaseObject) Deserialize(f *util.TagFileObject) {
-	o.templateName = f.GetString("TemplateName", "")
+func (o *BaseObject) Deserialize(t *template.T) {
+	o.templateName = t.GetString("TemplateName", "")
 	if o.templateName == "" {
 		// Something is very wrong
 		log.Printf("warning: object %s has no TemplateName property", o.Serial().String())
 		return
 	}
-	o.name = f.GetString("Name", "unknown entity")
-	o.articleA = f.GetBool("ArticleA", false)
-	o.articleAn = f.GetBool("ArticleAn", false)
-	o.hue = uo.Hue(f.GetNumber("Hue", int(uo.HueDefault)))
+	o.name = t.GetString("Name", "unknown entity")
+	o.articleA = t.GetBool("ArticleA", false)
+	o.articleAn = t.GetBool("ArticleAn", false)
+	o.hue = uo.Hue(t.GetNumber("Hue", int(uo.HueDefault)))
 	// Event handling
-	events := f.GetString("Events", "")
+	events := t.GetString("Events", "")
 	for idx, pair := range strings.Split(events, ",") {
 		if pair == "" {
 			continue
@@ -216,7 +214,7 @@ func (o *BaseObject) Deserialize(f *util.TagFileObject) {
 		o.LinkEvent(parts[0], parts[1])
 	}
 	// Context menu handling
-	contextMenu := f.GetString("ContextMenu", "")
+	contextMenu := t.GetString("ContextMenu", "")
 	for idx, pair := range strings.Split(contextMenu, ",") {
 		if pair == "" {
 			continue

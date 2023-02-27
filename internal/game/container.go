@@ -5,13 +5,13 @@ import (
 	"log"
 
 	"github.com/qbradq/sharduo/lib/marshal"
+	"github.com/qbradq/sharduo/lib/template"
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
 )
 
 func init() {
-	objctors["BaseContainer"] = func() Object { return &BaseContainer{} }
-	marshal.RegisterCtor(marshal.ObjectTypeContainer, func() interface{} { return &BaseContainer{} })
+	reg("BaseContainer", marshal.ObjectTypeContainer, func() any { return &BaseContainer{} })
 }
 
 // Container is the interface all objects implement that can contain other
@@ -81,12 +81,12 @@ func (i *BaseContainer) Marshal(s *marshal.TagFileSegment) {
 }
 
 // Deserialize implements the util.Serializeable interface.
-func (c *BaseContainer) Deserialize(f *util.TagFileObject) {
-	c.BaseItem.Deserialize(f)
-	c.gump = uo.Gump(f.GetHex("Gump", uint32(0x003C)))
-	c.maxContainerWeight = f.GetFloat("MaxContainerWeight", float32(uo.DefaultMaxContainerWeight))
-	c.maxContainerItems = f.GetNumber("MaxContainerItems", uo.DefaultMaxContainerItems)
-	c.bounds = f.GetBounds("Bounds", uo.Bounds{X: 44, Y: 65, W: 142, H: 94})
+func (c *BaseContainer) Deserialize(t *template.T) {
+	c.BaseItem.Deserialize(t)
+	c.gump = uo.Gump(t.GetHex("Gump", uint32(0x003C)))
+	c.maxContainerWeight = t.GetFloat("MaxContainerWeight", float32(uo.DefaultMaxContainerWeight))
+	c.maxContainerItems = t.GetNumber("MaxContainerItems", uo.DefaultMaxContainerItems)
+	c.bounds = t.GetBounds("Bounds", uo.Bounds{X: 44, Y: 65, W: 142, H: 94})
 }
 
 // AfterUnmarshal implements the marshal.Unmarshaler interface.

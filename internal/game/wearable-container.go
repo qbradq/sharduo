@@ -4,13 +4,12 @@ import (
 	"log"
 
 	"github.com/qbradq/sharduo/lib/marshal"
+	"github.com/qbradq/sharduo/lib/template"
 	"github.com/qbradq/sharduo/lib/uo"
-	"github.com/qbradq/sharduo/lib/util"
 )
 
 func init() {
-	objctors["WearableContainer"] = func() Object { return &WearableContainer{} }
-	marshal.RegisterCtor(marshal.ObjectTypeWearableContainer, func() interface{} { return &WearableContainer{} })
+	reg("WearableContainer", marshal.ObjectTypeWearableContainer, func() any { return &WearableContainer{} })
 }
 
 // WearableContainer is a wearable item with the properties of a container, such
@@ -27,9 +26,9 @@ func (i *WearableContainer) ObjectType() marshal.ObjectType {
 }
 
 // Deserialize implements the util.Serializeable interface.
-func (s *WearableContainer) Deserialize(f *util.TagFileObject) {
-	s.BaseContainer.Deserialize(f)
-	s.layer = uo.Layer(f.GetNumber("Layer", int(uo.LayerInvalid)))
+func (s *WearableContainer) Deserialize(t *template.T) {
+	s.BaseContainer.Deserialize(t)
+	s.layer = uo.Layer(t.GetNumber("Layer", int(uo.LayerInvalid)))
 	if s.layer == uo.LayerInvalid {
 		log.Printf("error: wearable container %s no layer given", s.Serial().String())
 	}

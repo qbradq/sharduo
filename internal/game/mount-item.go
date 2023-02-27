@@ -8,8 +8,7 @@ import (
 )
 
 func init() {
-	objctors["MountItem"] = func() Object { return &MountItem{} }
-	marshal.RegisterCtor(marshal.ObjectTypeMountItem, func() interface{} { return &MountItem{} })
+	reg("MountItem", marshal.ObjectTypeMountItem, func() any { return &MountItem{} })
 }
 
 // MountItem is a special wearable on uo.LayerMount that represents a mount

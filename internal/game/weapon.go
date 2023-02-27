@@ -2,13 +2,12 @@ package game
 
 import (
 	"github.com/qbradq/sharduo/lib/marshal"
+	"github.com/qbradq/sharduo/lib/template"
 	"github.com/qbradq/sharduo/lib/uo"
-	"github.com/qbradq/sharduo/lib/util"
 )
 
 func init() {
-	objctors["BaseWeapon"] = func() Object { return &BaseWeapon{} }
-	marshal.RegisterCtor(marshal.ObjectTypeWeapon, func() interface{} { return &BaseWeapon{} })
+	reg("BaseWeapon", marshal.ObjectTypeWeapon, func() any { return &BaseWeapon{} })
 }
 
 // Weapon is the interface all weapons implement
@@ -30,7 +29,7 @@ func (w *BaseWeapon) ObjectType() marshal.ObjectType {
 }
 
 // Deserialize implements the util.Serializeable interface.
-func (w *BaseWeapon) Deserialize(f *util.TagFileObject) {
-	w.BaseWearable.Deserialize(f)
-	w.skill = uo.Skill(f.GetNumber("Skill", int(uo.SkillWrestling)))
+func (w *BaseWeapon) Deserialize(t *template.T) {
+	w.BaseWearable.Deserialize(t)
+	w.skill = uo.Skill(t.GetNumber("Skill", int(uo.SkillWrestling)))
 }

@@ -6,12 +6,10 @@ import (
 	"github.com/qbradq/sharduo/lib/marshal"
 	"github.com/qbradq/sharduo/lib/template"
 	"github.com/qbradq/sharduo/lib/uo"
-	"github.com/qbradq/sharduo/lib/util"
 )
 
 func init() {
-	objctors["BaseItem"] = func() Object { return &BaseItem{} }
-	marshal.RegisterCtor(marshal.ObjectTypeItem, func() interface{} { return &BaseItem{} })
+	reg("BaseItem", marshal.ObjectTypeItem, func() any { return &BaseItem{} })
 }
 
 // Item is the interface that all non-static items implement.
@@ -156,16 +154,16 @@ func (i *BaseItem) Marshal(s *marshal.TagFileSegment) {
 }
 
 // Deserialize implements the util.Serializeable interface.
-func (i *BaseItem) Deserialize(f *util.TagFileObject) {
-	i.BaseObject.Deserialize(f)
-	i.graphic = uo.Graphic(f.GetNumber("Graphic", int(uo.GraphicDefault)))
+func (i *BaseItem) Deserialize(t *template.T) {
+	i.BaseObject.Deserialize(t)
+	i.graphic = uo.Graphic(t.GetNumber("Graphic", int(uo.GraphicDefault)))
 	i.def = world.GetItemDefinition(i.graphic)
-	i.flippedGraphic = uo.Graphic(f.GetNumber("FlippedGraphic", int(uo.GraphicNone)))
-	i.dyable = f.GetBool("Dyable", false)
-	i.weight = f.GetFloat("Weight", 255.0)
-	i.stackable = f.GetBool("Stackable", false)
-	i.amount = f.GetNumber("Amount", 1)
-	i.plural = f.GetString("Plural", "")
+	i.flippedGraphic = uo.Graphic(t.GetNumber("FlippedGraphic", int(uo.GraphicNone)))
+	i.dyable = t.GetBool("Dyable", false)
+	i.weight = t.GetFloat("Weight", 255.0)
+	i.stackable = t.GetBool("Stackable", false)
+	i.amount = t.GetNumber("Amount", 1)
+	i.plural = t.GetString("Plural", "")
 }
 
 // Unmarshal implements the marshal.Unmarshaler interface.

@@ -1,10 +1,11 @@
-package util
+package datastore
 
 import (
 	"log"
 	"sync"
 
 	"github.com/qbradq/sharduo/lib/marshal"
+	"github.com/qbradq/sharduo/lib/template"
 	"github.com/qbradq/sharduo/lib/uo"
 )
 
@@ -12,15 +13,16 @@ type dsobj interface {
 	Serial() uo.Serial
 	SetSerial(uo.Serial)
 	SerialType() uo.SerialType
-	Deserialize(*TagFileObject)
+	Deserialize(*template.T)
+	RecalculateStats()
 	TemplateName() string
 	SetTemplateName(string)
 	marshal.Marshaler
 	marshal.Unmarshaler
 }
 
-// DataStore is a file-backed key-value store.
-type DataStore[K dsobj] struct {
+// T is a file-backed key-value store.
+type T[K dsobj] struct {
 	// Pool of managed objects
 	objects map[uo.Serial]K
 	// Pool of deserialization data for rebuilding the objects
@@ -30,8 +32,8 @@ type DataStore[K dsobj] struct {
 }
 
 // NewDataStore initializes and returns a new DataStore object.
-func NewDataStore[K dsobj](rng uo.RandomSource) *DataStore[K] {
-	return &DataStore[K]{
+func NewDataStore[K dsobj](rng uo.RandomSource) *T[K] {
+	return &T[K]{
 		objects:  make(map[uo.Serial]K),
 		tagsPool: make(map[uo.Serial]*marshal.TagCollection),
 		rng:      rng,
@@ -40,7 +42,7 @@ func NewDataStore[K dsobj](rng uo.RandomSource) *DataStore[K] {
 
 // Add adds a new object to the datastore assigning it a new serial of the
 // correct type.
-func (s *DataStore[K]) Add(k K, t uo.SerialType) {
+func (s *T[K]) Add(k K, t uo.SerialType) {
 	for {
 		var serial uo.Serial
 		switch t {
@@ -63,7 +65,7 @@ func (s *DataStore[K]) Add(k K, t uo.SerialType) {
 
 // Remove blindly removes the object from the datastore that is indexed by this
 // object's serial.
-func (s *DataStore[K]) Remove(o dsobj) {
+func (s *T[K]) Remove(o dsobj) {
 	var zero K
 	s.objects[o.Serial()] = zero
 	delete(s.objects, o.Serial())
@@ -72,22 +74,22 @@ func (s *DataStore[K]) Remove(o dsobj) {
 // Insert inserts the object into the datastore with its current serial and will
 // overwrite existing values without warning. This is typically only used when
 // rebuilding the dataset from an external data source.
-func (s *DataStore[K]) Insert(k K) {
+func (s *T[K]) Insert(k K) {
 	s.objects[k.Serial()] = k
 }
 
 // Get returns the identified object or nil.
-func (s *DataStore[K]) Get(serial uo.Serial) K {
+func (s *T[K]) Get(serial uo.Serial) K {
 	return s.objects[serial]
 }
 
 // Data returns the underlying data store.
-func (s *DataStore[K]) Data() map[uo.Serial]K {
+func (s *T[K]) Data() map[uo.Serial]K {
 	return s.objects
 }
 
 // MarshalObjects marshals objects to raw data.
-func (s *DataStore[K]) MarshalObjects(tf *marshal.TagFile, goroutines int, wg *sync.WaitGroup) {
+func (s *T[K]) MarshalObjects(tf *marshal.TagFile, goroutines int, wg *sync.WaitGroup) {
 	// We have to build a slice of all of our objects so we don't have
 	// concurrency issues on the data store map during the multi-goroutine save
 	objects := make([]K, len(s.objects))
@@ -118,29 +120,34 @@ func (s *DataStore[K]) MarshalObjects(tf *marshal.TagFile, goroutines int, wg *s
 
 // UnmarshalObjects unmarshals objects from raw data. AfterUnmarshalObjects must
 // be called after this to complete the load process and free internal memory.
-func (s *DataStore[K]) UnmarshalObjects(seg *marshal.TagFileSegment) {
+// True is returned on success.
+func (s *T[K]) UnmarshalObjects(seg *marshal.TagFileSegment) bool {
 	for i := uint32(0); i < seg.RecordCount(); i++ {
 		// Grab the object's serial
 		serial := uo.Serial(seg.Int())
-		// Load the template so we can deserialize the default and static values
-		// tn := seg.String()
-		// tfo := templateObjectGetter(tn)
-		if k, ok := s.objects[serial]; ok {
-			// if tfo != nil {
-			// 	// Deserialize the template data so we pick up static values
-			// 	k.Deserialize(tfo)
-			// }
-			tags := k.Unmarshal(seg)
-			s.tagsPool[serial] = tags
-		} else {
+		k, ok := s.objects[serial]
+		if !ok {
 			log.Printf("failed to find object %s", serial.String())
+			return false
 		}
+		// Load the template so we can deserialize the default and static values
+		tn := seg.String()
+		t := template.FindTemplate(tn)
+		if t == nil {
+			// The error is logged inside FindTemplate
+			return false
+		}
+		k.Deserialize(t)
+		k.RecalculateStats()
+		tags := k.Unmarshal(seg)
+		s.tagsPool[serial] = tags
 	}
+	return true
 }
 
 // AfterUnmarshalObjects executes the AfterUnmarshal function for all objects in
 // the datastore. UnmarshalObjects must be called first.
-func (s *DataStore[K]) AfterUnmarshalObjects() {
+func (s *T[K]) AfterUnmarshalObjects() {
 	for serial, k := range s.objects {
 		tags := s.tagsPool[serial]
 		k.AfterUnmarshal(tags)

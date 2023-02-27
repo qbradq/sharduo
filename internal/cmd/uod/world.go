@@ -13,10 +13,10 @@ import (
 	"time"
 
 	"github.com/qbradq/sharduo/internal/game"
+	"github.com/qbradq/sharduo/lib/datastore"
 	"github.com/qbradq/sharduo/lib/marshal"
 	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/uo"
-	"github.com/qbradq/sharduo/lib/util"
 )
 
 // File lock error
@@ -31,7 +31,7 @@ type World struct {
 	// The world map
 	m *game.Map
 	// The object data store for the entire world
-	ods *util.DataStore[game.Object]
+	ods *datastore.T[game.Object]
 	// Collection of all accounts
 	accounts map[string]*game.Account
 	// Account access mutex
@@ -56,7 +56,7 @@ type World struct {
 func NewWorld(savePath string, rng uo.RandomSource) *World {
 	return &World{
 		m:             game.NewMap(),
-		ods:           util.NewDataStore[game.Object](rng),
+		ods:           datastore.NewDataStore[game.Object](rng),
 		accounts:      make(map[string]*game.Account),
 		rng:           rng,
 		requestQueue:  make(chan WorldRequest, 1024*16),

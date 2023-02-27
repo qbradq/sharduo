@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"log"
 	txtmp "text/template"
 
 	"github.com/qbradq/sharduo/data"
@@ -78,12 +79,61 @@ func Initialize(templatePath, listPath, variablesFilePath string, rng uo.RandomS
 	return nil
 }
 
+// FindTemplate returns a pointer to the named template or nil if not found.
+func FindTemplate(which string) *T {
+	t, found := tm.templates.Get(which)
+	if !found {
+		log.Printf("template %s not found\n", which)
+		return nil
+	}
+	return t
+}
+
+// UpdateContextValues randomizes the values of all context variables with
+// random or changing values.
+func UpdateContextValues() {
+	// Inject dynamic values into the template context
+	if tm.rng.RandomBool() {
+		templateContext["IsFemale"] = "true"
+	} else {
+		templateContext["IsFemale"] = ""
+	}
+}
+
+// GenerateObject returns a pointer to a newly constructed object as in Create()
+// but the object is not added to the data stores.
+func GenerateObject(which string) Object {
+	t := FindTemplate(which)
+	if t == nil {
+		return nil
+	}
+	UpdateContextValues()
+	// Create the object
+	ctor := GetConstructor(t.TypeName)
+	if ctor == nil {
+		log.Printf("error: constructor not found for type %s", t.TypeName)
+		return nil
+	}
+	s := ctor().(Object)
+	if s == nil {
+		log.Printf("error: constructor for type %s returned nil", t.TypeName)
+		return nil
+	}
+	// Deserialize the object.
+	s.Deserialize(t)
+	// Recalculate stats
+	s.RecalculateStats()
+	return s
+}
+
 // Create returns a pointer to a newly constructed object that has been assigned
 // a unique serial of the correct type and added to the data stores. It does not
 // yet have a parent nor has it been placed on the map. One of these things must
 // be done otherwise the data store will leak this object.
 func Create(which string) Object {
-	return nil
+	o := GenerateObject(which)
+	tm.storeObject(o)
+	return o
 }
 
 // loadListFile loads a single list file and merges that list with the current.
@@ -146,8 +196,10 @@ func (m *TemplateManager) resolveTemplate(t *T) error {
 	if !ok || base == nil {
 		return fmt.Errorf("base template %s not found while resolving template %s", t.BaseTemplate, t.TemplateName)
 	}
-	if err := m.resolveTemplate(base); err != nil {
-		return err
+	if !base.IsResolved {
+		if err := m.resolveTemplate(base); err != nil {
+			return err
+		}
 	}
 
 	// Integrate the base template's properties into our own

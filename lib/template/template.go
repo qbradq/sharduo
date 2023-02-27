@@ -12,10 +12,32 @@ import (
 	"github.com/qbradq/sharduo/lib/util"
 )
 
+var objctors = make(map[string]func() any)
+
+// RegisterConstructor registers a constructor with the template package.
+func RegisterConstructor(name string, fn func() any) {
+	if _, duplicate := objctors[name]; duplicate {
+		log.Fatalf("fatal: duplicate template constructor registered for name %s", name)
+	}
+	objctors[name] = fn
+}
+
+// GetConstructor returns the named constructor or nil.
+func GetConstructor(name string) func() any {
+	return objctors[name]
+}
+
 // Object is the interface all Template objects must implement.
 type Object interface {
 	// Serial returns the unique ID of the object.
 	Serial() uo.Serial
+	// Deserialize takes data from the template object and initializes the
+	// object's data structures with it.
+	Deserialize(*T)
+	// RecalculateStats is called after Deserialize() and should be used to
+	// recalculate any dynamic values of the data structures initialized by
+	// Deserialize().
+	RecalculateStats()
 }
 
 // T contains all of the property lines of the template.
@@ -241,7 +263,7 @@ func (t *T) GetBounds(name string, def uo.Bounds) uo.Bounds {
 		return def
 	}
 	parts := strings.Split(str, ",")
-	if len(parts) != 3 {
+	if len(parts) != 4 {
 		log.Printf("GetLocation(%s) did not find four values", name)
 		return def
 	}
@@ -276,24 +298,3 @@ func (t *T) GetBounds(name string, def uo.Bounds) uo.Bounds {
 	}
 	return b
 }
-
-// // generateTagFileObject generates a new TagFileObject by executing the
-// // templates contained within the strings.
-// func (t *T) generateTagFileObject(tm *TemplateManager, ctx map[string]string) (*util.TagFileObject, error) {
-// 	tfo := util.NewTagFileObject()
-// 	for k, p := range t.properties {
-// 		switch v := p.(type) {
-// 		case string:
-// 			tfo.Set(k, v)
-// 		case *template.Template:
-// 			buf := bytes.NewBuffer(nil)
-// 			if err := v.Execute(buf, ctx); err != nil {
-// 				return nil, err
-// 			}
-// 			tfo.Set(k, buf.String())
-// 		default:
-// 			panic("unhandled type in generateTagFileObject")
-// 		}
-// 	}
-// 	return tfo, nil
-// }

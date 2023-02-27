@@ -5,8 +5,8 @@ import (
 	"encoding/hex"
 
 	"github.com/qbradq/sharduo/lib/marshal"
+	"github.com/qbradq/sharduo/lib/template"
 	"github.com/qbradq/sharduo/lib/uo"
-	"github.com/qbradq/sharduo/lib/util"
 )
 
 func init() {
@@ -67,7 +67,7 @@ func (a *Account) Marshal(s *marshal.TagFileSegment) {
 }
 
 // Deserialize does nothing
-func (a *Account) Deserialize(f *util.TagFileObject) {}
+func (a *Account) Deserialize(t *template.T) {}
 
 // Unmarshal reads the account data from a segment
 func (a *Account) Unmarshal(s *marshal.TagFileSegment) *marshal.TagCollection {

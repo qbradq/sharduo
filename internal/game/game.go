@@ -2,7 +2,6 @@ package game
 
 import (
 	"github.com/qbradq/sharduo/lib/serverpacket"
-	"github.com/qbradq/sharduo/lib/util"
 )
 
 // EventHandler is the function signature of event handlers
@@ -53,12 +52,6 @@ func BuildContextMenu(o Object) *ContextMenu {
 	(*serverpacket.ContextMenu)(p).Serial = o.Serial()
 	o.AppendContextMenuEntries(p)
 	return p
-}
-
-// DispatchDeserialize executes the Deserialize method through the Object
-// interface.
-func DispatchDeserialize(o Object, tfo *util.TagFileObject) {
-	o.Deserialize(tfo)
 }
 
 // SetEventHandlerGetter sets the function used to get event handler functions

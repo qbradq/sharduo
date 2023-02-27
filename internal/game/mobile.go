@@ -4,13 +4,12 @@ import (
 	"log"
 
 	"github.com/qbradq/sharduo/lib/marshal"
+	"github.com/qbradq/sharduo/lib/template"
 	"github.com/qbradq/sharduo/lib/uo"
-	"github.com/qbradq/sharduo/lib/util"
 )
 
 func init() {
-	objctors["BaseMobile"] = func() Object { return &BaseMobile{} }
-	marshal.RegisterCtor(marshal.ObjectTypeMobile, func() interface{} { return &BaseMobile{} })
+	reg("BaseMobile", marshal.ObjectTypeMobile, func() any { return &BaseMobile{} })
 }
 
 // Mobile is the interface all mobiles implement
@@ -296,27 +295,27 @@ func (m *BaseMobile) Marshal(s *marshal.TagFileSegment) {
 }
 
 // Deserialize implements the util.Serializeable interface.
-func (m *BaseMobile) Deserialize(f *util.TagFileObject) {
+func (m *BaseMobile) Deserialize(t *template.T) {
 	m.skills = make([]int16, uo.SkillCount)
 	m.cursor = &Cursor{}
-	m.BaseObject.Deserialize(f)
-	m.viewRange = int16(f.GetNumber("ViewRange", int(uo.MaxViewRange)))
-	m.isPlayerCharacter = f.GetBool("IsPlayerCharacter", false)
-	m.isFemale = f.GetBool("IsFemale", false)
-	m.body = uo.Body(f.GetNumber("Body", int(uo.BodyDefault)))
-	m.notoriety = uo.Notoriety(f.GetNumber("Notoriety", int(uo.NotorietyAttackable)))
-	m.baseStrength = f.GetNumber("Strength", 10)
-	m.baseDexterity = f.GetNumber("Dexterity", 10)
-	m.baseIntelligence = f.GetNumber("Intelligence", 10)
-	m.hitPoints = f.GetNumber("HitPoints", 1)
-	m.mana = f.GetNumber("Mana", 1)
-	m.stamina = f.GetNumber("Stamina", 1)
+	m.BaseObject.Deserialize(t)
+	m.viewRange = int16(t.GetNumber("ViewRange", int(uo.MaxViewRange)))
+	m.isPlayerCharacter = t.GetBool("IsPlayerCharacter", false)
+	m.isFemale = t.GetBool("IsFemale", false)
+	m.body = uo.Body(t.GetNumber("Body", int(uo.BodyDefault)))
+	m.notoriety = uo.Notoriety(t.GetNumber("Notoriety", int(uo.NotorietyAttackable)))
+	m.baseStrength = t.GetNumber("Strength", 10)
+	m.baseDexterity = t.GetNumber("Dexterity", 10)
+	m.baseIntelligence = t.GetNumber("Intelligence", 10)
+	m.hitPoints = t.GetNumber("HitPoints", 1)
+	m.mana = t.GetNumber("Mana", 1)
+	m.stamina = t.GetNumber("Stamina", 1)
 	// Load default skill values
 	for s := uo.SkillFirst; s <= uo.SkillLast; s++ {
-		m.skills[s] = int16(f.GetNumber("Skill"+uo.SkillNames[s], 0))
+		m.skills[s] = int16(t.GetNumber("Skill"+uo.SkillNames[s], 0))
 	}
 	// Load default equipment collection
-	m.equipment = NewEquipmentCollectionWith(f.GetObjectReferences("Equipment"), m)
+	m.equipment = NewEquipmentCollectionWith(t.GetObjectReferences("Equipment"), m)
 }
 
 // Unmarshal implements the marshal.Unmarshaler interface.
