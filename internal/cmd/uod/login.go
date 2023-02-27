@@ -62,12 +62,6 @@ func LoginServerMain(wg *sync.WaitGroup) {
 
 	defer wg.Done()
 
-	defaultUsername := configuration.DefaultAdminUsername
-	defaultPassword := game.HashPassword(configuration.DefaultAdminPassword)
-
-	admin := world.AuthenticateAccount(defaultUsername, defaultPassword)
-	log.Println("default admin username", admin.Username())
-
 	loginServerListener, err = net.ListenTCP("tcp", &net.TCPAddr{
 		IP:   net.ParseIP(configuration.LoginServerAddress),
 		Port: configuration.LoginServerPort,

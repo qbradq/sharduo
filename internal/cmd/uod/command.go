@@ -45,19 +45,30 @@ var commands = make(map[string]*cmdesc)
 
 // ExecuteCommand executes the command for the given command line
 func ExecuteCommand(n *NetState, line string) {
+	if n.account == nil {
+		return
+	}
 	r := csv.NewReader(strings.NewReader(line))
 	r.Comma = ' ' // Space
 	c, err := r.Read()
 	if err != nil {
+		n.Speech(nil, "command not found")
 		return
 	}
 	if len(c) == 0 {
+		n.Speech(nil, "command not found")
 		return
 	}
 	desc := commands[c[0]]
-	if desc != nil {
-		desc.fn(n, c, line)
+	if desc == nil {
+		n.Speech(nil, "%s is not a command", c[0])
+		return
 	}
+	if !n.account.HasRole(desc.roles) {
+		n.Speech(nil, "you do not have permission to use the %s command", c[0])
+		return
+	}
+	desc.fn(n, c, line)
 }
 
 func commandChat(n *NetState, args CommandArgs, cl string) {

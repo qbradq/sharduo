@@ -21,6 +21,7 @@ const (
 	RoleModerator     Role = 0b00000010 // Global chat moderation commands
 	RoleAdministrator Role = 0b00000100 // Server administration commands
 	RoleGameMaster    Role = 0b00001000 // All other commands and actions
+	RoleSuperUser     Role = 0b11111111 // All roles current and future
 )
 
 // Hashes a password suitable for the accounts database.
@@ -30,11 +31,11 @@ func HashPassword(password string) string {
 }
 
 // NewAccount creates a new account object
-func NewAccount(username, passwordHash string) *Account {
+func NewAccount(username, passwordHash string, roles Role) *Account {
 	return &Account{
 		username:     username,
 		passwordHash: passwordHash,
-		roles:        RolePlayer,
+		roles:        roles,
 	}
 }
 

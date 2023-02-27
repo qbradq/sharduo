@@ -341,7 +341,9 @@ func (w *World) Remove(o game.Object) {
 // AuthenticateAccount attempts to authenticate an account by username and
 // password hash. If no account exists for that username, a new one will be
 // created for the user. If an account is found but the password hashes do not
-// match nil is returned. Otherwise the account is returned.
+// match nil is returned. Otherwise the account is returned. If no accounts
+// exist in the accounts datastore at all, the newly created account will have
+// super-user permissions and a message will be logged.
 func (w *World) AuthenticateAccount(username, passwordHash string) *game.Account {
 	w.alock.Lock()
 	defer w.alock.Unlock()
@@ -349,13 +351,17 @@ func (w *World) AuthenticateAccount(username, passwordHash string) *game.Account
 	a := w.accounts[username]
 	newAccount := false
 	if a == nil {
-		a = game.NewAccount(username, passwordHash)
+		a = game.NewAccount(username, passwordHash, game.RolePlayer)
 		newAccount = true
 	}
 	if !a.ComparePasswordHash(passwordHash) {
 		return nil
 	}
 	if newAccount {
+		if len(w.accounts) == 0 {
+			a = game.NewAccount(username, passwordHash, game.RoleSuperUser)
+			log.Printf("warning: new user %s granted super-user roles", username)
+		}
 		w.accounts[username] = a
 	}
 	return a
