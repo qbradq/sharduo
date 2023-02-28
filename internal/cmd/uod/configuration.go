@@ -20,6 +20,8 @@ type Configuration struct {
 
 	// Internal data file path for the default configuration ini
 	DefaultConfigurationFile string
+	// Internal data file path for the default crontab file
+	DefaultCrontabFile string
 	// Internal data directory where templates are loaded from
 	TemplatesDirectory string
 	// Internal data directory where lists are loaded from
@@ -37,6 +39,8 @@ type Configuration struct {
 	SaveDirectory string
 	// External directory containing the client files
 	ClientFilesDirectory string
+	// External path to the crontab file
+	CrontabFile string
 
 	//
 	// Login service configuration
@@ -70,6 +74,7 @@ type Configuration struct {
 func newConfiguration() *Configuration {
 	return &Configuration{
 		DefaultConfigurationFile: "misc/default-configuration.ini",
+		DefaultCrontabFile:       "misc/default-crontab",
 		ConfigurationFile:        "configuration.ini",
 	}
 }
@@ -110,6 +115,7 @@ func (c *Configuration) LoadConfiguration() error {
 	// External paths
 	c.SaveDirectory = tfo.GetString("SaveDirectory", "saves")
 	c.ClientFilesDirectory = tfo.GetString("ClientFilesDirectory", "client")
+	c.ClientFilesDirectory = tfo.GetString("CrontabFile", "crontab")
 	// Login service configuration
 	c.LoginServerAddress = tfo.GetString("LoginServerAddress", "0.0.0.0")
 	c.LoginServerPort = tfo.GetNumber("LoginServerPort", 7775)
