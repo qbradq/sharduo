@@ -115,7 +115,7 @@ func (c *Configuration) LoadConfiguration() error {
 	// External paths
 	c.SaveDirectory = tfo.GetString("SaveDirectory", "saves")
 	c.ClientFilesDirectory = tfo.GetString("ClientFilesDirectory", "client")
-	c.ClientFilesDirectory = tfo.GetString("CrontabFile", "crontab")
+	c.CrontabFile = tfo.GetString("CrontabFile", "crontab")
 	// Login service configuration
 	c.LoginServerAddress = tfo.GetString("LoginServerAddress", "0.0.0.0")
 	c.LoginServerPort = tfo.GetNumber("LoginServerPort", 7775)

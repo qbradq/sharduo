@@ -41,6 +41,7 @@ func logMemStats() {
 func gracefulShutdown() {
 	StopLoginService()
 	StopGameService()
+	cron.Stop()
 	world.Stop()
 }
 
@@ -76,6 +77,11 @@ func initialize() {
 	// Load configuration
 	configuration = newConfiguration()
 	if err := configuration.LoadConfiguration(); err != nil {
+		log.Fatal(err)
+	}
+
+	// Load crontab
+	if err := InitializeCron(); err != nil {
 		log.Fatal(err)
 	}
 
@@ -195,8 +201,9 @@ func Main() {
 	wg := &sync.WaitGroup{}
 
 	// Start the goroutines
-	wg.Add(3)
+	wg.Add(4)
 	go world.Main(wg)
+	go cron.Main(wg)
 	go LoginServerMain(wg)
 	go GameServerMain(wg)
 	wg.Wait()

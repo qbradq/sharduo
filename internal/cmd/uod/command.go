@@ -16,6 +16,7 @@ import (
 
 func init() {
 	commands["bank"] = &cmdesc{commandBank, game.RoleGameMaster, "bank", "Opens the bank box of the targeted mobile, if any"}
+	commands["broadcast"] = &cmdesc{commandBroadcast, game.RoleAdministrator, "broadcast text", "Broadcasts the given text to all connected players"}
 	commands["c"] = &cmdesc{commandChat, game.RolePlayer, "c", "Sends global chat speech"}
 	commands["chat"] = &cmdesc{commandChat, game.RolePlayer, "chat", "Sends global chat speech"}
 	commands["debug"] = &cmdesc{commandDebug, game.RoleGameMaster, "debug command [arguments]", "Executes debug commands"}
@@ -375,4 +376,12 @@ func commandSave(n *NetState, args CommandArgs, cl string) {
 
 func commandShutdown(n *NetState, args CommandArgs, cl string) {
 	gracefulShutdown()
+}
+
+func commandBroadcast(n *NetState, args CommandArgs, cl string) {
+	parts := strings.SplitN(cl, " ", 2)
+	if len(parts) != 2 {
+		return
+	}
+	Broadcast(parts[1])
 }

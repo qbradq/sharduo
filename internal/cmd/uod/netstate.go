@@ -70,13 +70,26 @@ func (n *NetState) Update() {
 
 // Send attempts to add a packet to the client's send queue and returns false if
 // the queue is full.
-func (n *NetState) Send(p serverpacket.Packet) bool {
-	select {
-	case n.sendQueue <- p:
-		return true
-	default:
-		return false
+func (n *NetState) Send(sp serverpacket.Packet) bool {
+	if n.conn != nil {
+		select {
+		case n.sendQueue <- sp:
+			return true
+		default:
+			return false
+		}
 	}
+	// Packet filtering for internal net states
+	switch p := sp.(type) {
+	case *serverpacket.Speech:
+		// Log all messages
+		if p.Name == "" {
+			log.Printf("info: %s", p.Text)
+		} else {
+			log.Printf("info: %s: %s", p.Name, p.Text)
+		}
+	}
+	return true
 }
 
 // Disconnect disconnects the NetState.

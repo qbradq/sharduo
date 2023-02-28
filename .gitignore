@@ -28,8 +28,9 @@ saves/
 # Client data directory
 client/
 
-# Machine-specific configuration file
+# Machine-specific configuration files
 /configuration.ini
+/crontab
 
 # Profiling files
 *.pprof

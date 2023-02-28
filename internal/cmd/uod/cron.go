@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/csv"
 	"errors"
+	"io"
 	"os"
 	"strconv"
 	"sync"
@@ -31,10 +32,14 @@ var cron Cron
 type Cron struct {
 	// List of cron jobs
 	jobs []cronJob
+	// Done channel
+	done chan struct{}
 }
 
 // InitializeCron loads the crontab into the global cron object.
 func InitializeCron() error {
+	// Initialize the cron structure
+	cron.done = make(chan struct{})
 	// Load the crontab or copy the default one
 	d, err := os.ReadFile(configuration.CrontabFile)
 	if err != nil {
@@ -57,6 +62,9 @@ func InitializeCron() error {
 	for {
 		row, err := r.Read()
 		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
 			return err
 		}
 		if row == nil {
@@ -111,10 +119,15 @@ func writeDefaultCrontab() ([]byte, error) {
 }
 
 // Main is the main loop for the Cron daemon.
-func (c *Cron) Main(wg sync.WaitGroup, done chan struct{}) {
+func (c *Cron) Main(wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	ticker := time.NewTicker(time.Minute * 1)
+	// Create the nil net state we use for the commands
+	n := NewNetState(nil)
+	n.account = world.superUser
+
+	// Ticker to check cron states every minute
+	ticker := time.NewTicker(time.Minute)
 	defer ticker.Stop()
 
 	// Ticks
@@ -125,18 +138,26 @@ func (c *Cron) Main(wg sync.WaitGroup, done chan struct{}) {
 			// Process all cron jobs
 			for _, j := range c.jobs {
 				// Make sure it's the correct time for the job to fire
-				if j.day >= 0 && j.day != int(t.Weekday()) {
+				if j.minute >= 0 && j.minute != t.Minute() {
 					continue
 				}
 				if j.hour >= 0 && j.hour != t.Hour() {
 					continue
 				}
-				if j.minute >= 0 && j.minute != t.Minute() {
+				if j.day >= 0 && j.day != int(t.Weekday()) {
 					continue
 				}
+				// Execute the command
+				ExecuteCommand(n, j.command)
 			}
-		case <-done:
+		case <-c.done:
 			return
 		}
 	}
+}
+
+// Stop stops the cron daemon process.
+func (c *Cron) Stop() {
+	c.done <- struct{}{}
+	close(c.done)
 }

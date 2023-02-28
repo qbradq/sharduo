@@ -21,7 +21,8 @@ const (
 	RoleModerator     Role = 0b00000010 // Global chat moderation commands
 	RoleAdministrator Role = 0b00000100 // Server administration commands
 	RoleGameMaster    Role = 0b00001000 // All other commands and actions
-	RoleSuperUser     Role = 0b11111111 // All roles current and future
+	RoleSuperUser     Role = 0b10000000 // Marks the account as the super user
+	RoleAll           Role = 0b11111111 // All roles current and future
 )
 
 // Hashes a password suitable for the accounts database.

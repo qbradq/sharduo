@@ -51,6 +51,8 @@ type World struct {
 	time uo.Time
 	// Current time on the server
 	wallClockTime time.Time
+	// Pointer to the super-user account
+	superUser *game.Account
 }
 
 // NewWorld creates a new, empty world
@@ -130,6 +132,16 @@ func (w *World) Unmarshal() error {
 	w.time = uo.Time(s.Long())
 	// Timers
 	game.UnmarshalTimers(tf.Segment(marshal.SegmentTimers))
+	// Accounts
+	s = tf.Segment(marshal.SegmentAccounts)
+	for idx := 0; idx < int(s.RecordCount()); idx++ {
+		a := &game.Account{}
+		a.Unmarshal(s)
+		w.accounts[a.Username()] = a
+		if a.HasRole(game.RoleSuperUser) {
+			w.superUser = a
+		}
+	}
 	// Create objects in data stores
 	s = tf.Segment(marshal.SegmentObjectList)
 	for i := uint32(0); i < s.RecordCount(); i++ {
@@ -365,8 +377,8 @@ func (w *World) AuthenticateAccount(username, passwordHash string) *game.Account
 	}
 	if newAccount {
 		if len(w.accounts) == 0 {
-			a = game.NewAccount(username, passwordHash, game.RoleSuperUser)
-			log.Printf("warning: new user %s granted super-user roles", username)
+			a = game.NewAccount(username, passwordHash, game.RoleAll)
+			log.Printf("warning: new user %s granted all roles and marked as the super-user", username)
 		}
 		w.accounts[username] = a
 	}
