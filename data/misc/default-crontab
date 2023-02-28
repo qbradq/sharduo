@@ -1,0 +1,24 @@
+# crontab
+#
+# This file controls the behavior of the Cron object within internal/cmd/uod. It
+# defines at what time and date to execute certain commands on behalf of the
+# server superuser.
+#
+# File Format
+#
+# The file is a space-separated values file using the pound sign '#' for comment
+# lines. The first three fields are values indicating the real-world minute,
+# hour and day-of-week when the command should execute. The special character *
+# means every (minute, hour, or day). Day 0 is Sunday. Note that this
+# implementation does not support ranges or lists as in 0-10 or 0,20,40.
+
+# Archive and backup save files every Tuesday at noon.
+0 12 2 archiveAndBackup
+
+# Save the game every 20 minutes.
+0 * * broadcast The server will save in 1 minute.
+1 * * save
+20 * * broadcast The server will save in 1 minute.
+21 * * save
+40 * * broadcast The server will save in 1 minute.
+41 * * save

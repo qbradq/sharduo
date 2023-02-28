@@ -25,6 +25,9 @@ const mediumSpeedTimerPoolsCount = int(uo.DurationSecond)
 // Slice of all timer pools
 var timerPools []map[uo.Serial]*Timer
 
+// Collection of serials currently in use
+var timerSerials map[uo.Serial]*Timer
+
 // Timer dispatches an event after a set interval, optionally repeating. If
 // either the receiver or source objects have been deleted prior to the trigger
 // the event will not fire. Nil may be passed for either or both the receiver
@@ -59,17 +62,18 @@ func NewTimer(delay uo.Time, event string, receiver, source Object) {
 	}
 	for {
 		serial := uo.RandomMobileSerial(world.Random())
+		if timerSerials[serial] != nil {
+			// Duplicate serial
+			continue
+		}
 		pool := 0
 		if delay > uo.DurationSecond && delay < uo.DurationMinute {
 			pool = 1 + (int(serial) % mediumSpeedTimerPoolsCount)
 		} else {
 			pool = 1 + mediumSpeedTimerPoolsCount + (int(serial) % lowSpeedTimerPoolsCount)
 		}
-		if timerPools[pool][serial] == nil {
-			timerPools[pool][serial] = t
-			break
-		}
-		// Duplicate serial in pool, try another
+		timerPools[pool][serial] = t
+		timerSerials[serial] = t
 	}
 }
 
@@ -85,6 +89,7 @@ func UpdateTimers(now uo.Time) {
 		}
 		for _, s := range toRemove {
 			delete(timers, s)
+			delete(timerSerials, s)
 		}
 	}
 	fn(timerPools[0])
@@ -121,16 +126,18 @@ func UnmarshalTimers(s *marshal.TagFileSegment) {
 			log.Printf("timer %s pool %d out of range", s.String(), pool)
 			continue
 		}
-		if _, duplicate := timerPools[pool][s]; duplicate {
+		if _, duplicate := timerSerials[s]; duplicate {
 			log.Printf("timer %s is a duplicate in pool %d", s.String(), pool)
 			continue
 		}
-		timerPools[pool][serial] = &Timer{
+		t := &Timer{
 			deadline: deadline,
 			event:    event,
 			receiver: receiver,
 			source:   source,
 		}
+		timerPools[pool][serial] = t
+		timerSerials[serial] = t
 	}
 }
 
