@@ -2,7 +2,11 @@ package uod
 
 import (
 	"encoding/csv"
+	"fmt"
+	"io"
 	"log"
+	"os"
+	"path"
 	"strings"
 	"time"
 
@@ -26,6 +30,8 @@ func init() {
 	commands["new"] = &cmdesc{commandNew, game.RoleGameMaster, "new template_name [stack_amount]", "Creates a new item with an optional stack amount"}
 	commands["save"] = &cmdesc{commandSave, game.RoleAdministrator, "save", "Executes a world save immediately"}
 	commands["shutdown"] = &cmdesc{commandShutdown, game.RoleAdministrator, "shutdown", "Shuts down the server immediately"}
+	commands["snapshot_daily"] = &cmdesc{commandSnapshotDaily, game.RoleAdministrator, "snapshot_daily", "internal command, please do not use"}
+	commands["snapshot_weekly"] = &cmdesc{commandSnapshotWeekly, game.RoleAdministrator, "snapshot_weekly", "internal command, please do not use"}
 	commands["static"] = &cmdesc{commandStatic, game.RoleGameMaster, "static graphic_number", "Creates a new static object with the given graphic number"}
 	commands["teleport"] = &cmdesc{commandTeleport, game.RoleGameMaster, "teleport [x y|x y z|multi]", "Teleports you to the targeted location - optionally multiple times, or to the top Z of the given X/Y location, or to the absolute location"}
 }
@@ -384,4 +390,43 @@ func commandBroadcast(n *NetState, args CommandArgs, cl string) {
 		return
 	}
 	Broadcast(parts[1])
+}
+
+func commandSnapshotDaily(n *NetState, args CommandArgs, cl string) {
+	// Make sure the archive directory exists
+	os.MkdirAll(configuration.ArchiveDirectory, 0777)
+	// Create an archive copy of the save file
+	p := world.LatestSavePath()
+	src, err := os.Open(p)
+	if err != nil {
+		n.Speech(nil, "error: failed to create daily archive: %s", err)
+		return
+	}
+	defer src.Close()
+	dest, err := os.Create(path.Join(configuration.ArchiveDirectory, "daily.sav.gz"))
+	if err != nil {
+		n.Speech(nil, "error: failed to create daily archive: %s", err)
+		return
+	}
+	_, err = io.Copy(dest, src)
+	dest.Close()
+	if err != nil {
+		n.Speech(nil, "error: failed to create daily archive: %s", err)
+		return
+	}
+	// Remove the oldest save
+	os.Remove(path.Join(configuration.ArchiveDirectory, "daily7.sav.gz"))
+	// Rotate daily saves
+	for i := 6; i > 0; i-- {
+		op := path.Join(configuration.ArchiveDirectory, fmt.Sprintf("daily%d.sav.gz", i))
+		np := path.Join(configuration.ArchiveDirectory, fmt.Sprintf("daily%d.sav.gz", i+1))
+		os.Rename(op, np)
+	}
+	// Move the new save file into the archives
+	os.Rename(path.Join(configuration.ArchiveDirectory, "daily.sav.gz"),
+		path.Join(configuration.ArchiveDirectory, "daily1.sav.gz"))
+}
+
+func commandSnapshotWeekly(n *NetState, args CommandArgs, cl string) {
+
 }

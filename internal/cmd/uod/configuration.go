@@ -37,6 +37,8 @@ type Configuration struct {
 	ConfigurationFile string
 	// External directory path to write saves to
 	SaveDirectory string
+	// External directory path to write archived saves to
+	ArchiveDirectory string
 	// External directory containing the client files
 	ClientFilesDirectory string
 	// External path to the crontab file
@@ -114,6 +116,7 @@ func (c *Configuration) LoadConfiguration() error {
 	c.TemplateVariablesFile = tfo.GetString("TemplateVariablesFile", "misc/templates")
 	// External paths
 	c.SaveDirectory = tfo.GetString("SaveDirectory", "saves")
+	c.ArchiveDirectory = tfo.GetString("ArchiveDirectory", "archives")
 	c.ClientFilesDirectory = tfo.GetString("ClientFilesDirectory", "client")
 	c.CrontabFile = tfo.GetString("CrontabFile", "crontab")
 	// Login service configuration

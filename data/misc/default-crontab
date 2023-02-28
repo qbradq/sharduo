@@ -12,13 +12,19 @@
 # means every (minute, hour, or day). Day 0 is Sunday. Note that this
 # implementation does not support ranges or lists as in 0-10 or 0,20,40.
 
-# Archive and backup save files every Tuesday at noon.
-0 12 2 "archiveAndBackup"
+# Daily snapshot backups at noon
+0 12 * snapshotDaily
+
+# Weekly snapshot backups at noon on Tuesday
+0 12 2 snapshotWeekly
+
+# Clean old saves every day at 12:15
+15 12 * cleanSaves
 
 # Save the game every 20 minutes.
 0 * * "broadcast The server will save in 1 minute."
-1 * * "save"
+1 * * save
 20 * * "broadcast The server will save in 1 minute."
-21 * * "save"
+21 * * save
 40 * * "broadcast The server will save in 1 minute."
-41 * * "save"
+41 * * save

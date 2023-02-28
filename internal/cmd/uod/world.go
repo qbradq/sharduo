@@ -70,8 +70,8 @@ func NewWorld(savePath string, rng uo.RandomSource) *World {
 	}
 }
 
-// latestSavePath returns the path to the most recent save file or directory
-func (w *World) latestSavePath() string {
+// LatestSavePath returns the path to the most recent save file or directory
+func (w *World) LatestSavePath() string {
 	entries, err := os.ReadDir(w.savePath)
 	if err != nil {
 		return ""
@@ -103,7 +103,7 @@ func (w *World) Unmarshal() error {
 	defer w.lock.Unlock()
 
 	start := time.Now()
-	filePath := w.latestSavePath()
+	filePath := w.LatestSavePath()
 	gzf, err := os.Open(filePath)
 	if err != nil {
 		if strings.Contains(err.Error(), "handle is invalid") {
@@ -301,6 +301,7 @@ func (w *World) Marshal() (*sync.WaitGroup, error) {
 		tf.Output(zw)
 		zw.Close()
 		tf.Close()
+		f.Close()
 		end := time.Now()
 		elapsed := end.Sub(start)
 		log.Printf("saved file to disk in %ds%03dms", elapsed.Milliseconds()/1000, elapsed.Milliseconds()%1000)

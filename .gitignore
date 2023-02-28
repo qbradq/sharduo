@@ -22,8 +22,9 @@ debug
 # Debug files
 /debug-map.png
 
-# Save directory
+# Save directories
 saves/
+archives/
 
 # Client data directory
 client/
