@@ -22,7 +22,7 @@ var tm *TemplateManager
 // TemplateManager manages a collection of templates
 type TemplateManager struct {
 	// Registry of templates in the manager
-	templates *util.Registry[string, *T]
+	templates *util.Registry[string, *Template]
 	// Registry of pre-compiled go templates
 	pctp *util.Registry[string, *txtmp.Template]
 	// Collection of lists used by the random object creation methods
@@ -39,7 +39,7 @@ type TemplateManager struct {
 func Initialize(templatePath, listPath, variablesFilePath string, rng uo.RandomSource, fn func(Object)) []error {
 	// Initialize the manager
 	tm = &TemplateManager{
-		templates:   util.NewRegistry[string, *T]("templates"),
+		templates:   util.NewRegistry[string, *Template]("templates"),
 		pctp:        util.NewRegistry[string, *txtmp.Template]("template-pre-cache"),
 		lists:       util.NewRegistry[string, []string]("template-lists"),
 		rng:         rng,
@@ -80,7 +80,7 @@ func Initialize(templatePath, listPath, variablesFilePath string, rng uo.RandomS
 }
 
 // FindTemplate returns a pointer to the named template or nil if not found.
-func FindTemplate(which string) *T {
+func FindTemplate(which string) *Template {
 	t, found := tm.templates.Get(which)
 	if !found {
 		log.Printf("template %s not found\n", which)
@@ -179,7 +179,7 @@ func (m *TemplateManager) loadTemplateFile(filePath string, d []byte) []error {
 	return errs
 }
 
-func (m *TemplateManager) resolveTemplate(t *T) error {
+func (m *TemplateManager) resolveTemplate(t *Template) error {
 	// Refuse to do duplicate work
 	if t.IsResolved {
 		return nil
@@ -217,7 +217,7 @@ func (m *TemplateManager) resolveTemplate(t *T) error {
 // resolveInheritance resolves the inheritance chains of all templates the
 // manager has loaded.
 func (m *TemplateManager) resolveInheritance() []error {
-	errs := m.templates.Map(func(k string, t *T) error {
+	errs := m.templates.Map(func(k string, t *Template) error {
 		if err := m.resolveTemplate(t); err != nil {
 			return err
 		}

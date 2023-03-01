@@ -81,7 +81,7 @@ func (i *BaseContainer) Marshal(s *marshal.TagFileSegment) {
 }
 
 // Deserialize implements the util.Serializeable interface.
-func (c *BaseContainer) Deserialize(t *template.T, create bool) {
+func (c *BaseContainer) Deserialize(t *template.Template, create bool) {
 	c.BaseItem.Deserialize(t, create)
 	c.gump = uo.Gump(t.GetHex("Gump", uint32(0x003C)))
 	c.maxContainerWeight = t.GetFloat("MaxContainerWeight", float32(uo.DefaultMaxContainerWeight))

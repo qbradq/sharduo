@@ -295,7 +295,7 @@ func (m *BaseMobile) Marshal(s *marshal.TagFileSegment) {
 }
 
 // Deserialize implements the util.Serializeable interface.
-func (m *BaseMobile) Deserialize(t *template.T, create bool) {
+func (m *BaseMobile) Deserialize(t *template.Template, create bool) {
 	m.skills = make([]int16, uo.SkillCount)
 	m.cursor = &Cursor{}
 	m.BaseObject.Deserialize(t, create)

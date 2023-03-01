@@ -378,3 +378,6 @@ const (
 	LightLevelNight LightLevel = 9
 	LightLevelBlack LightLevel = 0x1F
 )
+
+// GUMP represents a GUMP graphic.
+type GUMP uint16

@@ -6,6 +6,7 @@ import (
 
 	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/lib/clientpacket"
+	"github.com/qbradq/sharduo/lib/gump"
 	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/template"
 	"github.com/qbradq/sharduo/lib/uo"
@@ -99,6 +100,12 @@ func (r *CharacterLoginRequest) Execute() error {
 	})
 	world.Map().SendEverything(r.NetState.m)
 	r.NetState.SendObject(r.NetState.m)
+
+	// TODO Send welcome GUMP 9380
+	g := &gump.GUMP{}
+	g.Background(0, 0, 800, 600, 9380)
+	g.AlphaRegion(40, 20, 720, 560)
+	r.NetState.Send(g.Packet(100, 100, 1, 2))
 
 	return nil
 }

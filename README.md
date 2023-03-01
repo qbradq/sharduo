@@ -2,6 +2,16 @@
 ShardUO is an experimental Ultima Online server emulator written in the Go
 programming language.
 
+## Thanks and Recognition ##
+A huge thank you goes out to the following groups, in no particular order.
+
+* The Penultima Online (POL) packet documentation for being a guide stone and
+  first source of packet information.
+* Every contributor to the RunUO / PlayUO / ServUO source code for packet
+  reference.
+* Every contributor to the ClassicUO source code for packet and client behavior
+  reference.
+
 ## Current Working Features ##
 * Account creation and login
 * Global chat
@@ -57,7 +67,8 @@ including all features required to mine ore and smelt it into ingots.
 * ~~Clilocs~~
 
 ### Nice to Haves ###
-* NPC Vendors
+* NPC name generation
+* NPC vendors
 * Buying from vendors
 * Stable Master NPC
 * Walk Random AI
@@ -79,6 +90,7 @@ including all features required to mine ore and smelt it into ingots.
 * Help GUMP
 * MegaCliloc roll-over info
 * Line of sight checks
+* Compressed GUMP support
 * ~~Gold~~
 * ~~Context menus~~
 * ~~Paper Dolls for others~~

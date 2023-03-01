@@ -26,7 +26,7 @@ func (i *WearableContainer) ObjectType() marshal.ObjectType {
 }
 
 // Deserialize implements the util.Serializeable interface.
-func (s *WearableContainer) Deserialize(t *template.T, create bool) {
+func (s *WearableContainer) Deserialize(t *template.Template, create bool) {
 	s.BaseContainer.Deserialize(t, create)
 	s.layer = uo.Layer(t.GetNumber("Layer", int(uo.LayerInvalid)))
 	if s.layer == uo.LayerInvalid {

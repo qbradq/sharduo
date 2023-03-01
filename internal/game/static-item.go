@@ -121,7 +121,7 @@ func (i *StaticItem) Marshal(s *marshal.TagFileSegment) {
 }
 
 // Deserialize implements the util.Serializeable interface.
-func (i *StaticItem) Deserialize(t *template.T, create bool) {
+func (i *StaticItem) Deserialize(t *template.Template, create bool) {
 	i.graphic = uo.Graphic(t.GetNumber("Graphic", int(uo.GraphicDefault)))
 	i.def = world.GetItemDefinition(i.graphic)
 	i.hue = uo.Hue(t.GetNumber("Hue", int(uo.HueDefault)))

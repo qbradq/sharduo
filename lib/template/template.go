@@ -33,15 +33,15 @@ type Object interface {
 	Serial() uo.Serial
 	// Deserialize takes data from the template object and initializes the
 	// object's data structures with it.
-	Deserialize(*T, bool)
+	Deserialize(*Template, bool)
 	// RecalculateStats is called after Deserialize() and should be used to
 	// recalculate any dynamic values of the data structures initialized by
 	// Deserialize().
 	RecalculateStats()
 }
 
-// T contains all of the property lines of the template.
-type T struct {
+// Template contains all of the property lines of the template.
+type Template struct {
 	// Name of the object constructor used to create the object.
 	TypeName string
 	// Unique name of the template.
@@ -57,8 +57,8 @@ type T struct {
 // New creates a new template.T object from the provided TagFileObject. The
 // inheritance chain has not been resolved for this object, but all text
 // templates have been pre-compiled and are ready to run.
-func New(tfo *util.TagFileObject, tm *TemplateManager) (*T, []error) {
-	t := &T{
+func New(tfo *util.TagFileObject, tm *TemplateManager) (*Template, []error) {
+	t := &Template{
 		TypeName:   tfo.TypeName(),
 		properties: make(map[string]any),
 	}
@@ -94,7 +94,7 @@ func New(tfo *util.TagFileObject, tm *TemplateManager) (*T, []error) {
 
 // GetString returns the named property as a string or the default if not
 // found.
-func (t *T) GetString(name, def string) string {
+func (t *Template) GetString(name, def string) string {
 	p := t.properties[name]
 	switch v := p.(type) {
 	case nil:
@@ -118,7 +118,7 @@ func (t *T) GetString(name, def string) string {
 
 // GetNumber returns the named property as a number or the default if not
 // found. This function may add errors to the internal error slice.
-func (t *T) GetNumber(name string, def int) int {
+func (t *Template) GetNumber(name string, def int) int {
 	v := t.GetString(name, "")
 	if v == "" {
 		return def
@@ -134,7 +134,7 @@ func (t *T) GetNumber(name string, def int) int {
 // GetULong returns the named property as a uint64 or the default if not found.
 // This function may add errors to the internal error slice. Only use this for
 // actual 64-bit values, like uo.Time.
-func (t *T) GetULong(name string, def uint64) uint64 {
+func (t *Template) GetULong(name string, def uint64) uint64 {
 	v := t.GetString(name, "")
 	if v == "" {
 		return def
@@ -149,7 +149,7 @@ func (t *T) GetULong(name string, def uint64) uint64 {
 
 // GetFloat returns the named property as a float32 or the default if not
 // found. This function may add errors to the internal error slice.
-func (t *T) GetFloat(name string, def float32) float32 {
+func (t *Template) GetFloat(name string, def float32) float32 {
 	v := t.GetString(name, "")
 	if v == "" {
 		return def
@@ -164,7 +164,7 @@ func (t *T) GetFloat(name string, def float32) float32 {
 
 // GetHex returns the named property as an unsigned number or the default if not
 // found. This function may add errors to the internal error slice.
-func (t *T) GetHex(name string, def uint32) uint32 {
+func (t *Template) GetHex(name string, def uint32) uint32 {
 	v := t.GetString(name, "")
 	if v == "" {
 		return def
@@ -179,7 +179,7 @@ func (t *T) GetHex(name string, def uint32) uint32 {
 
 // GetBool returns the named property as a boolean value or the default if not
 // found. This function may add errors to the internal error slice.
-func (t *T) GetBool(name string, def bool) bool {
+func (t *Template) GetBool(name string, def bool) bool {
 	v := t.GetString(name, "~~NOT~FOUND~~")
 	if v == "~~NOT~FOUND~~" {
 		return def
@@ -199,7 +199,7 @@ func (t *T) GetBool(name string, def bool) bool {
 
 // GetObjectReferences returns a slice of uo.Serial values. nil is the default
 // value. This function may add errors to the internal error slice.
-func (t *T) GetObjectReferences(name string) []uo.Serial {
+func (t *Template) GetObjectReferences(name string) []uo.Serial {
 	v := t.GetString(name, "")
 	if v == "" {
 		return nil
@@ -219,7 +219,7 @@ func (t *T) GetObjectReferences(name string) []uo.Serial {
 
 // GetLocation returns a uo.Location value. The default value is returned if the
 // named tag is not found.
-func (t *T) GetLocation(name string, def uo.Location) uo.Location {
+func (t *Template) GetLocation(name string, def uo.Location) uo.Location {
 	str := t.GetString(name, "")
 	if str == "" {
 		return def
@@ -257,7 +257,7 @@ func (t *T) GetLocation(name string, def uo.Location) uo.Location {
 
 // GetBounds returns a uo.Bounds value. The default value is returned if the
 // named tag is not found.
-func (t *T) GetBounds(name string, def uo.Bounds) uo.Bounds {
+func (t *Template) GetBounds(name string, def uo.Bounds) uo.Bounds {
 	str := t.GetString(name, "")
 	if str == "" {
 		return def

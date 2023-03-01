@@ -13,7 +13,7 @@ type dsobj interface {
 	Serial() uo.Serial
 	SetSerial(uo.Serial)
 	SerialType() uo.SerialType
-	Deserialize(*template.T, bool)
+	Deserialize(*template.Template, bool)
 	RecalculateStats()
 	TemplateName() string
 	SetTemplateName(string)

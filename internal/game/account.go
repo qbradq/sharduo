@@ -70,7 +70,7 @@ func (a *Account) Marshal(s *marshal.TagFileSegment) {
 }
 
 // Deserialize does nothing
-func (a *Account) Deserialize(t *template.T, create bool) {}
+func (a *Account) Deserialize(t *template.Template, create bool) {}
 
 // Unmarshal reads the account data from a segment
 func (a *Account) Unmarshal(s *marshal.TagFileSegment) *marshal.TagCollection {

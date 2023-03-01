@@ -154,7 +154,7 @@ func (i *BaseItem) Marshal(s *marshal.TagFileSegment) {
 }
 
 // Deserialize implements the util.Serializeable interface.
-func (i *BaseItem) Deserialize(t *template.T, create bool) {
+func (i *BaseItem) Deserialize(t *template.Template, create bool) {
 	i.BaseObject.Deserialize(t, create)
 	i.graphic = uo.Graphic(t.GetNumber("Graphic", int(uo.GraphicDefault)))
 	i.def = world.GetItemDefinition(i.graphic)

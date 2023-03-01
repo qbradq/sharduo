@@ -33,7 +33,7 @@ type BaseWearable struct {
 func (i *BaseWearable) ObjectType() marshal.ObjectType { return marshal.ObjectTypeWearable }
 
 // Deserialize implements the util.Serializeable interface.
-func (i *BaseWearable) Deserialize(t *template.T, create bool) {
+func (i *BaseWearable) Deserialize(t *template.Template, create bool) {
 	i.BaseItem.Deserialize(t, create)
 	i.layer = uo.Layer(t.GetNumber("Layer", int(uo.LayerInvalid)))
 }
