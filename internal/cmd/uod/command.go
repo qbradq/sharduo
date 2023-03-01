@@ -425,8 +425,41 @@ func commandSnapshotDaily(n *NetState, args CommandArgs, cl string) {
 	// Move the new save file into the archives
 	os.Rename(path.Join(configuration.ArchiveDirectory, "daily.sav.gz"),
 		path.Join(configuration.ArchiveDirectory, "daily1.sav.gz"))
+	n.Speech(nil, "daily archive complete")
 }
 
 func commandSnapshotWeekly(n *NetState, args CommandArgs, cl string) {
-
+	// Make sure the archive directory exists
+	os.MkdirAll(configuration.ArchiveDirectory, 0777)
+	// Create an archive copy of the save file
+	p := world.LatestSavePath()
+	src, err := os.Open(p)
+	if err != nil {
+		n.Speech(nil, "error: failed to create weekly archive: %s", err)
+		return
+	}
+	defer src.Close()
+	dest, err := os.Create(path.Join(configuration.ArchiveDirectory, "weekly.sav.gz"))
+	if err != nil {
+		n.Speech(nil, "error: failed to create weekly archive: %s", err)
+		return
+	}
+	_, err = io.Copy(dest, src)
+	dest.Close()
+	if err != nil {
+		n.Speech(nil, "error: failed to create weekly archive: %s", err)
+		return
+	}
+	// Remove the oldest save
+	os.Remove(path.Join(configuration.ArchiveDirectory, "weekly52.sav.gz"))
+	// Rotate daily saves
+	for i := 51; i > 0; i-- {
+		op := path.Join(configuration.ArchiveDirectory, fmt.Sprintf("weekly%d.sav.gz", i))
+		np := path.Join(configuration.ArchiveDirectory, fmt.Sprintf("weekly%d.sav.gz", i+1))
+		os.Rename(op, np)
+	}
+	// Move the new save file into the archives
+	os.Rename(path.Join(configuration.ArchiveDirectory, "weekly.sav.gz"),
+		path.Join(configuration.ArchiveDirectory, "weekly1.sav.gz"))
+	n.Speech(nil, "weekly archive complete")
 }
