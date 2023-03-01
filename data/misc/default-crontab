@@ -13,13 +13,13 @@
 # implementation does not support ranges or lists as in 0-10 or 0,20,40.
 
 # Daily snapshot backups at noon
-0 12 * snapshotDaily
+0 12 * snapshot_daily
 
-# Weekly snapshot backups at noon on Tuesday
-0 12 2 snapshotWeekly
+# Weekly snapshot backups at noon-thirty on Tuesday
+30 12 2 snapshot_weekly
 
 # Clean old saves every day at 12:15
-15 12 * cleanSaves
+15 12 * snapshot_clean
 
 # Save the game every 20 minutes.
 0 * * "broadcast The server will save in 1 minute."

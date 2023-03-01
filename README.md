@@ -19,12 +19,12 @@ including all features required to mine ore and smelt it into ingots.
 * Some items are immoveable that should not be, see LargeCrate
 
 ### Required Features and Tasks ###
-* Automatically archive and clean old save files
 * Player movement packet throttling
 * Action packet throttling
 * Mining skill
 * Ore resource map
 * Mobile weight limit and stamina
+* ~~Automatically archive and clean old save files~~
 * ~~Auto-saves~~
 * ~~Make number of marshal goroutines configurable~~
 * ~~Restrict command usage to access levels~~

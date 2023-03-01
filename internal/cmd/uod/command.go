@@ -4,9 +4,11 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
+	"io/fs"
 	"log"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -30,6 +32,7 @@ func init() {
 	commands["new"] = &cmdesc{commandNew, game.RoleGameMaster, "new template_name [stack_amount]", "Creates a new item with an optional stack amount"}
 	commands["save"] = &cmdesc{commandSave, game.RoleAdministrator, "save", "Executes a world save immediately"}
 	commands["shutdown"] = &cmdesc{commandShutdown, game.RoleAdministrator, "shutdown", "Shuts down the server immediately"}
+	commands["snapshot_clean"] = &cmdesc{commandSnapshotClean, game.RoleAdministrator, "snapshot_clean", "internal command, please do not use"}
 	commands["snapshot_daily"] = &cmdesc{commandSnapshotDaily, game.RoleAdministrator, "snapshot_daily", "internal command, please do not use"}
 	commands["snapshot_weekly"] = &cmdesc{commandSnapshotWeekly, game.RoleAdministrator, "snapshot_weekly", "internal command, please do not use"}
 	commands["static"] = &cmdesc{commandStatic, game.RoleGameMaster, "static graphic_number", "Creates a new static object with the given graphic number"}
@@ -462,4 +465,25 @@ func commandSnapshotWeekly(n *NetState, args CommandArgs, cl string) {
 	os.Rename(path.Join(configuration.ArchiveDirectory, "weekly.sav.gz"),
 		path.Join(configuration.ArchiveDirectory, "weekly1.sav.gz"))
 	n.Speech(nil, "weekly archive complete")
+}
+
+func commandSnapshotClean(n *NetState, args CommandArgs, cl string) {
+	t := time.Now().Add(time.Hour * 72 * -1)
+	filepath.WalkDir(configuration.SaveDirectory, func(p string, d fs.DirEntry, e error) error {
+		log.Println(p)
+		if d.IsDir() {
+			return nil
+		}
+		di, err := d.Info()
+		if err != nil {
+			return err
+		}
+		if di.ModTime().Before(t) {
+			if err := os.Remove(p); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	n.Speech(nil, "old saves cleaned")
 }
