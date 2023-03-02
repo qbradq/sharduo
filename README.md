@@ -29,6 +29,7 @@ including all features required to mine ore and smelt it into ingots.
 * Some items are immoveable that should not be, see LargeCrate
 
 ### Required Features and Tasks ###
+* Do not leak child objects on Remove()
 * Player movement packet throttling
 * Action packet throttling
 * Mining skill
