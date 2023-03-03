@@ -11,61 +11,6 @@ import (
 
 // GUMP is the interface all GUMP objects implement.
 type GUMP interface {
-	//
-	// Layout
-	//
-
-	// InsertLine inserts line into the GUMP's list of text lines and returns
-	// the new line's index number.
-	InsertLine(line string) int
-	// AlphaRegion creates a checker-pattern alpha effect in the given area.
-	AlphaRegion(x, y, w, h int)
-	// Background creates a 9-way background.
-	Background(x, y, w, h int, bg uo.GUMP)
-	// ReplyButton creates a normal button that causes a reply and closes the
-	// GUMP.
-	ReplyButton(x, y int, normal, pressed uo.GUMP, id uint32)
-	// PageButton creates a button that hides all pages except page 0, then
-	// shows the given page number. This all happens client-side and does not
-	// generate a response packet.
-	PageButton(x, y int, normal, pressed uo.GUMP, page int)
-	// Group defines a button group.
-	Group(n int)
-	// Checkbox creates an on-off checkbox button.
-	Checkbox(x, y int, normal, pressed uo.GUMP, id uint32, checked bool)
-	// HTML creates an HTML view area with literal text.
-	HTML(x, y, w, h int, html string, background, scrollbar bool)
-	// Image places a GUMP image.
-	Image(x, y int, gump uo.GUMP, hue uo.Hue)
-	// TiledImageReplyButton creates a button element with an item graphic over
-	// it that generates a reply and closes the GUMP.
-	TiledImageReplyButton(x, y, w, h, normal, pressed uo.GUMP, item uo.Graphic, hue uo.Hue, id uint32)
-	// TiledImagePageButton creates a button element with an item graphic over
-	// it that hides all pages except page 0, then shows the indicated page.
-	TiledImagePageButton(x, y, w, h, normal, pressed uo.GUMP, item uo.Graphic, hue uo.Hue, page int)
-	// TiledImage creates an area of tiled GUMP art.
-	TiledImage(x, y, w, h int, gump uo.GUMP)
-	// Item draws the item at the given location with the provided hue.
-	Item(x, y int, item uo.Graphic, hue uo.Hue)
-	// Label places text at the location in the given hue.
-	Label(x, y int, hue uo.Hue, text string)
-	// CroppedLabel places text cropped to the given dimensions with the given
-	// hue at the location.
-	CroppedLabel(x, y, w, h int, hue uo.Hue, text string)
-	// Page starts the numbered page.
-	Page(page int)
-	// RadioButton places a traditional radio-style button.
-	RadioButton(x, y int, normal, pressed uo.GUMP, id uint32, on bool)
-	// Sprite places a portion of GUMP art at the given location.
-	Sprite(x, y int, gump uo.GUMP, sx, sy, w, h int)
-	// TextEntry places a text entry area. If the limit parameter is zero then
-	// there will be no upper limit.
-	TextEntry(x, y, w, h int, hue uo.Hue, id uint32, text string, limit int)
-
-	//
-	// Packet creation
-	//
-
 	// Layout executes all of the layout functions that comprise this GUMP.
 	// Must be called before Packet().
 	Layout(target, param game.Object)
