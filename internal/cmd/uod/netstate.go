@@ -527,7 +527,7 @@ func (n *NetState) ContainerOpen(c game.Container) {
 	n.observedContainers[c.Serial()] = c
 	n.Send(&serverpacket.OpenContainerGump{
 		GumpSerial: c.Serial(),
-		Gump:       uo.Gump(c.GumpGraphic()),
+		Gump:       uo.GUMP(c.GumpGraphic()),
 	})
 	if c.ItemCount() > 0 {
 		p := &serverpacket.Contents{}

@@ -19,7 +19,7 @@ func init() {
 type Container interface {
 	Item
 	// GumpGraphic returns the gump graphic of the item
-	GumpGraphic() uo.Gump
+	GumpGraphic() uo.GUMP
 	// Contains returns true if the object is a direct child of this container,
 	// or any child containers.
 	Contains(Object) bool
@@ -48,7 +48,7 @@ type BaseContainer struct {
 	// Contents of the container
 	contents util.Slice[Item]
 	// Gump image to show for the container background
-	gump uo.Gump
+	gump uo.GUMP
 	// Max weight this container can hold
 	maxContainerWeight float32
 	// Max items this container can hold
@@ -83,7 +83,7 @@ func (i *BaseContainer) Marshal(s *marshal.TagFileSegment) {
 // Deserialize implements the util.Serializeable interface.
 func (c *BaseContainer) Deserialize(t *template.Template, create bool) {
 	c.BaseItem.Deserialize(t, create)
-	c.gump = uo.Gump(t.GetHex("Gump", uint32(0x003C)))
+	c.gump = uo.GUMP(t.GetHex("Gump", uint32(0x003C)))
 	c.maxContainerWeight = t.GetFloat("MaxContainerWeight", float32(uo.DefaultMaxContainerWeight))
 	c.maxContainerItems = t.GetNumber("MaxContainerItems", uo.DefaultMaxContainerItems)
 	c.bounds = t.GetBounds("Bounds", uo.Bounds{X: 44, Y: 65, W: 142, H: 94})
@@ -124,7 +124,7 @@ func (c *BaseContainer) RecalculateStats() {
 }
 
 // GumpGraphic implements the Container interface.
-func (c *BaseContainer) GumpGraphic() uo.Gump { return c.gump }
+func (c *BaseContainer) GumpGraphic() uo.GUMP { return c.gump }
 
 // SingleClick implements the Object interface
 func (c *BaseContainer) SingleClick(from Mobile) {

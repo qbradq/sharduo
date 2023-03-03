@@ -665,7 +665,7 @@ type OpenContainerGump struct {
 	// The ID of the Gump
 	GumpSerial uo.Serial
 	// The gump graphic
-	Gump uo.Gump
+	Gump uo.GUMP
 }
 
 // Write implements the Packet interface.

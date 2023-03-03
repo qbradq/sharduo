@@ -1,15 +1,20 @@
-package gump
+package gumps
 
 import (
 	"fmt"
 	"strings"
 
+	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/uo"
 )
 
 // GUMP is the interface all GUMP objects implement.
 type GUMP interface {
+	//
+	// Layout
+	//
+
 	// InsertLine inserts line into the GUMP's list of text lines and returns
 	// the new line's index number.
 	InsertLine(line string) int
@@ -31,13 +36,39 @@ type GUMP interface {
 	// HTML creates an HTML view area with literal text.
 	HTML(x, y, w, h int, html string, background, scrollbar bool)
 	// Image places a GUMP image.
-	Image(x, y int, gump uo.Gump, hue uo.Hue)
-	// ReplyImageTileButton creates a button element with an item graphic over
+	Image(x, y int, gump uo.GUMP, hue uo.Hue)
+	// TiledImageReplyButton creates a button element with an item graphic over
 	// it that generates a reply and closes the GUMP.
-	ReplyImageTileButton(x, y, w, h, normal, pressed uo.GUMP, item uo.Graphic, hue uo.Hue, id uint32)
-	// PageImageTileButton creates a button element with an item graphic over
+	TiledImageReplyButton(x, y, w, h, normal, pressed uo.GUMP, item uo.Graphic, hue uo.Hue, id uint32)
+	// TiledImagePageButton creates a button element with an item graphic over
 	// it that hides all pages except page 0, then shows the indicated page.
-	PageImageTileButton(x, y, w, h, normal, pressed uo.GUMP, item uo.Graphic, hue uo.Hue, page int)
+	TiledImagePageButton(x, y, w, h, normal, pressed uo.GUMP, item uo.Graphic, hue uo.Hue, page int)
+	// TiledImage creates an area of tiled GUMP art.
+	TiledImage(x, y, w, h int, gump uo.GUMP)
+	// Item draws the item at the given location with the provided hue.
+	Item(x, y int, item uo.Graphic, hue uo.Hue)
+	// Label places text at the location in the given hue.
+	Label(x, y int, hue uo.Hue, text string)
+	// CroppedLabel places text cropped to the given dimensions with the given
+	// hue at the location.
+	CroppedLabel(x, y, w, h int, hue uo.Hue, text string)
+	// Page starts the numbered page.
+	Page(page int)
+	// RadioButton places a traditional radio-style button.
+	RadioButton(x, y int, normal, pressed uo.GUMP, id uint32, on bool)
+	// Sprite places a portion of GUMP art at the given location.
+	Sprite(x, y int, gump uo.GUMP, sx, sy, w, h int)
+	// TextEntry places a text entry area. If the limit parameter is zero then
+	// there will be no upper limit.
+	TextEntry(x, y, w, h int, hue uo.Hue, id uint32, text string, limit int)
+
+	//
+	// Packet creation
+	//
+
+	// Layout executes all of the layout functions that comprise this GUMP.
+	// Must be called before Packet().
+	Layout(target, param game.Object)
 	// Packet returns a newly created serverpacket.Packet for this GUMP.
 	Packet(x, y int, id, serial uo.Serial) serverpacket.Packet
 }
@@ -47,6 +78,9 @@ type BaseGUMP struct {
 	l     strings.Builder // Layout string
 	lines []string        // List of all text lines used
 }
+
+// BaseGUMP does not implement the Layout() function. This forces includers to
+// define their own to satisfy the GUMP interface.
 
 // Packet implements the GUMP interface.
 func (g *BaseGUMP) Packet(x, y int, id, serial uo.Serial) serverpacket.Packet {
@@ -117,8 +151,8 @@ func (g *BaseGUMP) HTML(x, y, w, h int, html string, background, scrollbar bool)
 }
 
 // Image implements the GUMP interface.
-func (g *BaseGUMP) Image(x, y int, gump uo.Gump, hue uo.Hue) {
-	if hue == 0 {
+func (g *BaseGUMP) Image(x, y int, gump uo.GUMP, hue uo.Hue) {
+	if hue == uo.HueDefault {
 		g.l.WriteString(fmt.Sprintf("{ gumppic %d %d %d }", x, y, gump))
 	} else {
 		g.l.WriteString(fmt.Sprintf("{ gumppic %d %d %d hue=%d }", x, y, gump, hue))
@@ -135,4 +169,56 @@ func (g *BaseGUMP) ReplyImageTileButton(x, y, w, h, normal, pressed uo.GUMP, ite
 func (g *BaseGUMP) PageImageTileButton(x, y, w, h, normal, pressed uo.GUMP, item uo.Graphic, hue uo.Hue, page int) {
 	g.l.WriteString(fmt.Sprintf("{ buttontileart %d %d %d %d 0 %d %d %d %d %d 0 }",
 		x, y, normal, pressed, page, item, hue, w, h))
+}
+
+// TiledImage implements the GUMP interface.
+func (g *BaseGUMP) TiledImage(x, y, w, h int, gump uo.GUMP) {
+	g.l.WriteString(fmt.Sprintf("{ gumppictiled %d %d %d %d %d }", x, y, w, h, gump))
+}
+
+// Item implements the GUMP interface.
+func (g *BaseGUMP) Item(x, y int, item uo.Graphic, hue uo.Hue) {
+	if hue == uo.HueDefault {
+		g.l.WriteString(fmt.Sprintf("{ tilepic %d %d %d }", x, y, item))
+	} else {
+		g.l.WriteString(fmt.Sprintf("{ tilepichue %d %d %d %d }", x, y, item, hue))
+	}
+}
+
+// Label implements the GUMP interface.
+func (g *BaseGUMP) Label(x, y int, hue uo.Hue, text string) {
+	g.l.WriteString(fmt.Sprintf("{ text %d %d %d %d }", x, y, hue, g.InsertLine(text)))
+}
+
+// CroppedLabel implements the GUMP interface.
+func (g *BaseGUMP) CroppedLabel(x, y, w, h int, hue uo.Hue, text string) {
+	g.l.WriteString(fmt.Sprintf("{ croppedtext %d %d %d %d %d %d }", x, y, w, h, hue, g.InsertLine(text)))
+}
+
+// Page implements the GUMP interface.
+func (g *BaseGUMP) Page(page int) {
+	g.l.WriteString(fmt.Sprintf("{ page %d }", page))
+}
+
+// RadioButton implements the GUMP interface.
+func (g *BaseGUMP) RadioButton(x, y int, normal, pressed uo.GUMP, id uint32, on bool) {
+	v := 0
+	if on {
+		v = 1
+	}
+	g.l.WriteString(fmt.Sprintf("{ radio %d %d %d %d %d %d }", x, y, normal, pressed, v, id))
+}
+
+// Sprite implements the GUMP interface.
+func (g *BaseGUMP) Sprite(x, y int, gump uo.GUMP, sx, sy, w, h int) {
+	g.l.WriteString(fmt.Sprintf("{ picinpic %d %d %d %d %d %d %d }", x, y, gump, w, h, sx, sy))
+}
+
+// TextEntry implements the GUMP interface.
+func (g *BaseGUMP) TextEntry(x, y, w, h int, hue uo.Hue, id uint32, text string, limit int) {
+	if limit < 1 {
+		g.l.WriteString(fmt.Sprintf("{ textentry %d %d %d %d %d %d %d }", x, y, w, h, hue, id, g.InsertLine(text)))
+	} else {
+		g.l.WriteString(fmt.Sprintf("{ textentrylimited %d %d %d %d %d %d %d %d }", x, y, w, h, hue, id, g.InsertLine(text), limit))
+	}
 }

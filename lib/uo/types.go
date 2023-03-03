@@ -286,14 +286,14 @@ const (
 	MoveItemRejectReasonUnspecified        MoveItemRejectReason = 5
 )
 
-// Gump represents a gump graphic.
-type Gump uint16
+// GUMP represents a gump graphic.
+type GUMP uint16
 
 // Constant values for Gump
 const (
-	GumpNone             Gump = 0x0000
-	GumpDefault          Gump = 0x0046 // Partial skull with glowing eyes
-	GumpContainerDefault Gump = 0x03E8 // Huge chest, old login gump
+	GUMPNone             GUMP = 0x0000
+	GUMPDefault          GUMP = 0x0046 // Partial skull with glowing eyes
+	GUMPContainerDefault GUMP = 0x03E8 // Huge chest, old login gump
 )
 
 // Protocol extension request types
@@ -378,6 +378,3 @@ const (
 	LightLevelNight LightLevel = 9
 	LightLevelBlack LightLevel = 0x1F
 )
-
-// GUMP represents a GUMP graphic.
-type GUMP uint16
