@@ -136,6 +136,12 @@ milestone but do need to be resolved sometime.
 ## Feature Packages ##
 Below are feature verticals that I want to implement next in priority order.
 
+* New skill system
+  * Skill use
+  * Skill XP gains
+  * Skills GUMP
+  * Leveling up skills
+  * Skill point reset
 * Tinkering
   * GUMP support
   * Crafting GUMP
