@@ -23,6 +23,7 @@ func init() {
 	packetHandlers.Add(0x6C, handleTargetResponse)
 	packetHandlers.Add(0x73, handlePing)
 	packetHandlers.Add(0xAD, handleSpeech)
+	packetHandlers.Add(0xB1, handleGUMPReply)
 	packetHandlers.Add(0xBD, handleVersion)
 	packetHandlers.Add(0xBF, handleGeneralInformation)
 	packetHandlers.Add(0xC8, handleViewRange)
@@ -322,5 +323,9 @@ func handleWearItemRequest(n *NetState, cp clientpacket.Packet) {
 }
 
 func handleGUMPReply(n *NetState, cp clientpacket.Packet) {
-
+	if n == nil {
+		return
+	}
+	p := cp.(*clientpacket.GUMPReply)
+	n.GUMPReply(p.GUMPSerial, p)
 }

@@ -13,6 +13,17 @@ import (
 // support.
 type Test struct {
 	game.StandardGUMP
+	switches []bool
+}
+
+// NewTest creates a new Test GUMP initialized and ready for use.
+func NewTest() *Test {
+	t := &Test{
+		switches: make([]bool, 6),
+	}
+	t.switches[1] = true
+	t.switches[5] = true
+	return t
 }
 
 // Layout implements the GUMP interface.
@@ -26,9 +37,20 @@ func (g *Test) Layout(target, param game.Object) {
 	g.Text(5, 2, 4, 1, uo.HueDefault, "Page 1 HTML")
 	g.HTML(0, 5, 24, 10, game.MungHTMLForGUMP(string(motd)), true)
 	g.Page(2)
-	g.Text(5, 2, 4, 1, uo.HueDefault, "Page 2 Buttons")
-	g.ReplyButton(6, 5, 6, 1, uo.HueDefault, "Reply Button", 1)
-	g.ReplyButton(6, 6, 6, 1, uo.HueIce3, "Ice, Ice Baby!", 2)
+	g.Text(5, 2, 14, 1, uo.HueDefault, "Page 2 Buttons")
+	g.Text(2, 4, 10, 1, uo.HueDefault, "Check Switches")
+	g.CheckSwitch(2, 5, 10, 1, uo.HueDefault, "Check Switch 1", 1000, g.switches[0])
+	g.CheckSwitch(2, 6, 10, 1, uo.HueDefault, "Check Switch 2", 1001, g.switches[1])
+	g.CheckSwitch(2, 7, 10, 1, uo.HueDefault, "Check Switch 2", 1002, g.switches[2])
+	g.Text(2, 9, 10, 1, uo.HueDefault, "Radio Switches")
+	g.Group()
+	g.RadioSwitch(2, 10, 10, 1, uo.HueDefault, "Radio Switch 1", 1003, g.switches[3])
+	g.RadioSwitch(2, 11, 10, 1, uo.HueDefault, "Radio Switch 2", 1004, g.switches[4])
+	g.RadioSwitch(2, 12, 10, 1, uo.HueDefault, "Radio Switch 2", 1005, g.switches[5])
+	g.Text(20, 0, 4, 1, uo.HueDefault, "Gem Buttons")
+	for i := 0; i < 17; i++ {
+		g.GemButton(21, i+1, game.SGGemButton(i), 2000+uint32(i))
+	}
 	g.Page(3)
 	g.Text(5, 2, 4, 1, uo.HueDefault, "Page 3")
 	g.Page(4)
@@ -40,5 +62,8 @@ func (g *Test) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 	if g.StandardReplyHandler(p) {
 		return
 	}
-	log.Printf("Button reply %d", p.Button)
+	n.Speech(nil, "Button reply %d", p.Button)
+	for i := uint32(0); i < 6; i++ {
+		g.switches[i] = p.Switch(1000 + i)
+	}
 }

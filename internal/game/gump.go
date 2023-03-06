@@ -123,8 +123,16 @@ func (g *BaseGUMP) Checkbox(x, y int, normal, pressed uo.GUMP, id uint32, checke
 // Group starts a RadioButton group. RadioButton groups must be book-ended by
 // the EndGroup function otherwise they will not work on pages after 1 according
 // to the POL GUMP documentation. No idea if this is an issue in ClassicUO.
-func (g *BaseGUMP) Group(n int) {
+func (g *BaseGUMP) Group(n uint32) {
 	g.l.WriteString(fmt.Sprintf("{ group %d }", n))
+}
+
+// EndGroup ends the current RadioButton group. RadioButton groups must be book-
+// ended by the EndGroup function otherwise they will not work on pages after 1
+// according to the POL GUMP documentation. No idea if this is an issue in
+// ClassicUO.
+func (g *BaseGUMP) EndGroup() {
+	g.l.WriteString(fmt.Sprintf("{ endgroup }"))
 }
 
 // HTML creates an HTML view.

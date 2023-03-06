@@ -31,6 +31,21 @@ func HashPassword(password string) string {
 	return hex.EncodeToString(hd[:])
 }
 
+// Account holds all of the account information for one user
+type Account struct {
+	// Username
+	username string
+	// Password hash
+	passwordHash string
+	// Email address
+	emailAddress string
+	// Serial of the player's permanent mobile (not the currently controlled
+	// mobile)
+	player uo.Serial
+	// The roles this account has been assigned
+	roles Role
+}
+
 // NewAccount creates a new account object
 func NewAccount(username, passwordHash string, roles Role) *Account {
 	return &Account{
@@ -38,19 +53,6 @@ func NewAccount(username, passwordHash string, roles Role) *Account {
 		passwordHash: passwordHash,
 		roles:        roles,
 	}
-}
-
-// Account holds all of the account information for one user
-type Account struct {
-	// Username
-	username string
-	// Password hash
-	passwordHash string
-	// Serial of the player's permanent mobile (not the currently controlled
-	// mobile)
-	player uo.Serial
-	// The roles this account has been assigned
-	roles Role
 }
 
 // TemplateName returns the template name for accounts
@@ -64,6 +66,7 @@ func (a *Account) Marshal(s *marshal.TagFileSegment) {
 	s.PutInt(uint32(a.player))
 	s.PutString(a.username)
 	s.PutString(a.passwordHash)
+	s.PutString(a.emailAddress)
 	s.PutByte(byte(a.roles))
 	// NOTE: We can safely add Tag values below
 	s.PutTag(marshal.TagEndOfList, marshal.TagValueBool, true)
@@ -77,6 +80,7 @@ func (a *Account) Unmarshal(s *marshal.TagFileSegment) *marshal.TagCollection {
 	a.player = uo.Serial(s.Int())
 	a.username = s.String()
 	a.passwordHash = s.String()
+	a.emailAddress = s.String()
 	a.roles = Role(s.Byte())
 	return s.Tags()
 }

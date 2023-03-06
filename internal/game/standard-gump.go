@@ -8,10 +8,65 @@ import (
 	"github.com/qbradq/sharduo/lib/uo"
 )
 
-// StandardGUMP provides a set of layout methods built on top of BaseGUMP's
-// layout methods that make it a little more convenient to build GUMPs with the
-// standard theme. The methods of this struct accept coordinates and dimensions
-// in cells, not pixels. A cell is 32x32 pixels.
+// SGGemButton is an enumeration of the available gem buttons available to the
+// GemButton() function.
+type SGGemButton uint8
+
+// All valid values for SGGemButton
+const (
+	SGGemButtonOptions   SGGemButton = 0
+	SGGemButtonLogOut    SGGemButton = 1
+	SGGemButtonJournal   SGGemButton = 2
+	SGGemButtonSkills    SGGemButton = 3
+	SGGemButtonChat      SGGemButton = 4
+	SGGemButtonPeace     SGGemButton = 5
+	SGGemButtonWar       SGGemButton = 6
+	SGGemButtonStatus    SGGemButton = 7
+	SGGemButtonCharacter SGGemButton = 8
+	SGGemButtonHelp      SGGemButton = 9
+	SGGemButtonAuto      SGGemButton = 10
+	SGGemButtonManual    SGGemButton = 11
+	SGGemButtonCancel    SGGemButton = 12
+	SGGemButtonApply     SGGemButton = 13
+	SGGemButtonDefault   SGGemButton = 14
+	SGGemButtonOK        SGGemButton = 15
+	SGGemButtonStrategy  SGGemButton = 16
+	sgGemButtonCount     int         = 17
+)
+
+// sgGemDef defines the graphics and offsets for a gem button for the
+// GemButton() function.
+type sgGemDef struct {
+	// Button normal
+	n uo.GUMP
+	// Button pressed
+	p uo.GUMP
+	// Button horizontal offset
+	h int
+	// Button vertical offset
+	v int
+}
+
+// sgGemDefs defines all of the buttons for the GemButton() function.
+var sgGemDefs [sgGemButtonCount]sgGemDef = [sgGemButtonCount]sgGemDef{
+	{n: 2006, p: 2007, h: 0, v: 5},
+	{n: 2009, p: 2010, h: 0, v: 5},
+	{n: 2012, p: 2013, h: 0, v: 5},
+	{n: 2015, p: 2016, h: 0, v: 5},
+	{n: 2018, p: 2019, h: 0, v: 5},
+	{n: 2021, p: 2022, h: 0, v: 5},
+	{n: 2024, p: 2025, h: 0, v: 5},
+	{n: 2027, p: 2028, h: 0, v: 5},
+	{n: 2030, p: 2030, h: -1, v: 5},
+	{n: 2031, p: 2032, h: 0, v: 5},
+	{n: 2111, p: 2112, h: 4, v: 5},
+	{n: 2114, p: 2115, h: 4, v: 5},
+	{n: 2119, p: 2120, h: 4, v: 5},
+	{n: 2122, p: 2123, h: 4, v: 5},
+	{n: 2125, p: 2126, h: 4, v: 5},
+	{n: 2128, p: 2129, h: 4, v: 5},
+	{n: 2131, p: 2131, h: -1, v: 5},
+}
 
 // SGFlag describes the flags that a StandardGUMP object understands.
 type SGFlag uint8
@@ -37,11 +92,18 @@ const (
 	//
 
 	sgBackground           uo.GUMP = 5170
-	sgTextHue              uo.Hue  = 1
 	sgBoarderWidth         int     = 38
 	sgBoarderHeight        int     = 38
 	sgBottomBoarderOverlap int     = 10
 	sgTitleTextOffset      int     = 3
+
+	//
+	// Text
+	//
+
+	sgTextHue     uo.Hue = 1
+	sgTextHOffset int    = 4
+	sgTextVOffset int    = 4
 
 	//
 	// Scroll button skins
@@ -62,6 +124,15 @@ const (
 	sgButtonVOffset int     = 1
 
 	//
+	// Checkbox and radio buttons skin
+	//
+
+	sgSwitchOff     uo.GUMP = 2151
+	sgSwitchOn      uo.GUMP = 2154
+	sgSwitchHOffset int     = 1
+	sgSwitchVOffset int     = 1
+
+	//
 	// Calculated constants
 	//
 
@@ -79,6 +150,10 @@ const (
 	sgReplyLastReserved uint32 = 1000 // User codes begin at 1001
 )
 
+// StandardGUMP provides a set of layout methods built on top of BaseGUMP's
+// layout methods that make it a little more convenient to build GUMPs with the
+// standard theme. The methods of this struct accept coordinates and dimensions
+// in cells, not pixels. A cell is 32x32 pixels.
 type StandardGUMP struct {
 	// BaseGUMP we are managing
 	g BaseGUMP
@@ -88,8 +163,10 @@ type StandardGUMP struct {
 	h int
 	// If true generate page buttons at the right
 	pageButtons bool
-	// Number of the last page that was created
+	// Number of the last page that was created, 0 means none
 	lastPage uint32
+	// Number of the last radio group that was created, 0 means none
+	lastGroup uint32
 }
 
 // Packet implements the GUMP interface.
@@ -180,7 +257,7 @@ func (g *StandardGUMP) Text(x, y, w, h int, hue uo.Hue, text string) {
 		hue = sgTextHue
 	}
 	hue -= 1
-	g.g.CroppedLabel(x, y, w, h, hue, text)
+	g.g.CroppedLabel(x+sgTextHOffset, y+sgTextVOffset, w, h, hue, text)
 }
 
 // ReplyButton creates a small gem button with the text to the right. The
@@ -204,9 +281,9 @@ func (g *StandardGUMP) ReplyButton(x, y, w, h int, hue uo.Hue, text string, id u
 	if id != 0 {
 		id += sgReplyLastReserved
 	}
-	g.g.ReplyButton(x, y, sgButtonNormal, sgButtonPressed, id)
+	g.g.ReplyButton(x+sgButtonHOffset, y+sgButtonVOffset, sgButtonNormal, sgButtonPressed, id)
 	x += sgCellWidth
-	g.g.CroppedLabel(x, y, w, h, hue, text)
+	g.g.CroppedLabel(x+sgTextHOffset, y+sgTextVOffset, w, h, hue, text)
 }
 
 // PageButton creates a small gem button with the text to the right. The
@@ -231,9 +308,9 @@ func (g *StandardGUMP) PageButton(x, y, w, h int, hue uo.Hue, text string, page 
 		hue = sgTextHue
 	}
 	hue -= 1
-	g.g.PageButton(x, y, sgButtonNormal, sgButtonPressed, page)
+	g.g.PageButton(x+sgButtonHOffset, y+sgButtonVOffset, sgButtonNormal, sgButtonPressed, page)
 	x += sgCellWidth
-	g.g.CroppedLabel(x, y, w, h, hue, text)
+	g.g.CroppedLabel(x+sgTextHOffset, y+sgTextVOffset, w, h, hue, text)
 }
 
 // Page begins the numbered page. If g.pageButtons is true then this page will
@@ -269,4 +346,74 @@ func (g *StandardGUMP) HTML(x, y, w, h int, html string, scrollbar bool) {
 	w *= sgCellWidth
 	h *= sgCellHeight
 	g.g.HTML(x, y, w, h, html, false, scrollbar)
+}
+
+// CheckSwitch creates a checkbox element with a numbered switch and a label.
+func (g *StandardGUMP) CheckSwitch(x, y, w, h int, hue uo.Hue, text string, id uint32, checked bool) {
+	// Convert dimensions from cells
+	if x < 0 || y < 0 || w < 2 || h < 1 {
+		return
+	}
+	x *= sgCellWidth
+	x += sgLeft
+	y *= sgCellHeight
+	y += sgTop
+	w = (w - 1) * sgCellWidth
+	h *= sgCellHeight
+	if hue == uo.HueDefault {
+		hue = sgTextHue
+	}
+	hue -= 1
+	g.g.Checkbox(x+sgSwitchHOffset, y+sgSwitchVOffset, sgSwitchOff, sgSwitchOn, id, checked)
+	x += sgCellWidth
+	g.g.CroppedLabel(x+sgTextHOffset, y+sgTextVOffset, w, h, hue, text)
+}
+
+// Group starts a new RadioSwitch group.
+func (g *StandardGUMP) Group() {
+	if g.lastGroup > 0 {
+		g.g.EndGroup()
+	}
+	g.lastGroup++
+	g.g.Group(g.lastGroup)
+}
+
+// RadioSwitch creates a radio button element with a numbered switch and a label.
+func (g *StandardGUMP) RadioSwitch(x, y, w, h int, hue uo.Hue, text string, id uint32, checked bool) {
+	// Convert dimensions from cells
+	if x < 0 || y < 0 || w < 2 || h < 1 {
+		return
+	}
+	x *= sgCellWidth
+	x += sgLeft
+	y *= sgCellHeight
+	y += sgTop
+	w = (w - 1) * sgCellWidth
+	h *= sgCellHeight
+	if hue == uo.HueDefault {
+		hue = sgTextHue
+	}
+	hue -= 1
+	g.g.RadioButton(x+sgSwitchHOffset, y+sgSwitchVOffset, sgSwitchOff, sgSwitchOn, id, checked)
+	x += sgCellWidth
+	g.g.CroppedLabel(x+sgTextHOffset, y+sgTextVOffset, w, h, hue, text)
+}
+
+// GemButton creates a standardized button from the gem theme with a word baked
+// into the button image. The button is always two cells wide by one cell tall.
+func (g *StandardGUMP) GemButton(x, y int, which SGGemButton, id uint32) {
+	if x < 0 || y < 0 || which >= SGGemButton(sgGemButtonCount) {
+		return
+	}
+	x *= sgCellWidth
+	x += sgLeft
+	y *= sgCellHeight
+	y += sgTop
+	if id != 0 {
+		id += sgReplyLastReserved
+	}
+	d := sgGemDefs[which]
+	x += d.h
+	y += d.v
+	g.g.ReplyButton(x, y, d.n, d.p, id)
 }

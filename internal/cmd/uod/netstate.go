@@ -25,6 +25,16 @@ type TargetCallback func(*clientpacket.TargetResponse)
 // packet during character login.
 var ErrWrongPacket = errors.New("wrong packet")
 
+// gumpDescription describes a GUMP instance.
+type gumpDescription struct {
+	// The GUMP being managed
+	g game.GUMP
+	// Serial of the target object
+	t uo.Serial
+	// Serial of the parameter object
+	p uo.Serial
+}
+
 // NetState manages the network state of a single connection.
 type NetState struct {
 	// TCP connection we are connected through
@@ -48,7 +58,7 @@ type NetState struct {
 	// Make sure we don't try to close conn more than once
 	disconnectLock sync.Once
 	// All open GUMPs on the client side
-	gumps map[uo.Serial]game.GUMP
+	gumps map[uo.Serial]*gumpDescription
 }
 
 // NewNetState constructs a new NetState object.
@@ -59,7 +69,7 @@ func NewNetState(conn *net.TCPConn) *NetState {
 		observedContainers: make(map[uo.Serial]game.Container),
 		updateGroup:        world.Random().Random(0, int(uo.DurationSecond)-1),
 		deadline:           world.Time() + uo.DurationMinute*5,
-		gumps:              make(map[uo.Serial]game.GUMP),
+		gumps:              make(map[uo.Serial]*gumpDescription),
 	}
 }
 
@@ -768,8 +778,9 @@ func (n *NetState) Animate(mob game.Mobile, at uo.AnimationType, aa uo.Animation
 	})
 }
 
-// GUMP sends a generic GUMP to the client
-func (n *NetState) GUMP(g game.GUMP) {
+// GUMP sends a generic GUMP to the client. This should be a newly created GUMP
+// that has not had Layout() called yet.
+func (n *NetState) GUMP(g game.GUMP, target, param game.Object) {
 	s := uo.RandomMobileSerial(world.rng)
 	for {
 		if _, duplicate := n.gumps[s]; !duplicate {
@@ -777,21 +788,67 @@ func (n *NetState) GUMP(g game.GUMP) {
 		}
 		s = uo.RandomMobileSerial(world.rng)
 	}
-	n.gumps[s] = g
+	ts := uo.SerialSystem
+	if target != nil {
+		ts = target.Serial()
+	}
+	ps := uo.SerialSystem
+	if param != nil {
+		ps = param.Serial()
+	}
+	n.gumps[s] = &gumpDescription{
+		g: g,
+		t: ts,
+		p: ps,
+	}
+	// TODO Implement GUMP type IDs
 	id := uo.SerialSystem
 	if n.m != nil {
 		id = n.m.Serial()
 	}
+	g.Layout(target, param)
 	n.Send(g.Packet(0, 0, id, s))
 }
 
 // GUMPReply dispatches a GUMP reply
 func (n *NetState) GUMPReply(s uo.Serial, p *clientpacket.GUMPReply) {
-	g := n.gumps[s]
-	if g == nil {
+	// Handle close requests
+	if p.Button == 0 {
+		delete(n.gumps, s)
 		return
 	}
-	if p.Button == 0 {
-
+	// Resolve the GUMP on our end
+	d := n.gumps[s]
+	if d == nil {
+		return
 	}
+	// Resolve objects
+	var tg game.Object
+	if d.t != uo.SerialSystem {
+		tg = world.Find(d.t)
+		if tg == nil {
+			// Target of the GUMP has been removed, close the GUMP
+			delete(n.gumps, s)
+			return
+		}
+	}
+	var pm game.Object
+	if d.p != uo.SerialSystem {
+		pm = world.Find(d.p)
+		if pm == nil {
+			// Parameter of the GUMP has been removed, close the GUMP
+			delete(n.gumps, s)
+			return
+		}
+	}
+	// Handle reply
+	d.g.HandleReply(n, p)
+	// Refresh the GUMP for the client
+	// TODO Implement GUMP type IDs
+	id := uo.SerialSystem
+	if n.m != nil {
+		id = n.m.Serial()
+	}
+	d.g.Layout(tg, pm)
+	n.Send(d.g.Packet(0, 0, id, s))
 }
