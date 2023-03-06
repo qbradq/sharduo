@@ -1,6 +1,9 @@
 package game
 
 import (
+	"log"
+
+	"github.com/qbradq/sharduo/lib/clientpacket"
 	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/uo"
 )
@@ -71,9 +74,9 @@ const (
 	// Reply constants
 	//
 
-	SGReplyClose        uint32 = 0
-	SGReplyMinimize     uint32 = 1
-	SGReplyLastReserved uint32 = 1000 // User codes begin at 1001
+	sgReplyClose        uint32 = 0
+	sgReplyMinimize     uint32 = 1
+	sgReplyLastReserved uint32 = 1000 // User codes begin at 1001
 )
 
 type StandardGUMP struct {
@@ -92,6 +95,29 @@ type StandardGUMP struct {
 // Packet implements the GUMP interface.
 func (g *StandardGUMP) Packet(x, y int, id, serial uo.Serial) serverpacket.Packet {
 	return g.g.Packet(x, y, id, serial)
+}
+
+// StandardReplyHandler returns true if the reply was totally handled by this
+// function and should be ignored. This function alters the packet in ways
+// required for the proper function of the GUMP, therefore this function must be
+// called first thing in any HandleReply function.
+func (g *StandardGUMP) StandardReplyHandler(p *clientpacket.GUMPReply) bool {
+	if p.Button == sgReplyClose {
+		// Should never reach this as the server is responsible for GUMP close
+		// requests
+		return true
+	}
+	if p.Button == sgReplyMinimize {
+		// TODO Minimize functionality
+		return true
+	}
+	if p.Button > sgReplyLastReserved {
+		p.Button -= sgReplyLastReserved
+		return false
+	} else {
+		log.Printf("Unknown standard reply button ID %d", p.Button)
+		return true
+	}
 }
 
 // Window creates a new Window for the GUMP. Window dimensions are given in
@@ -131,10 +157,10 @@ func (g *StandardGUMP) Window(w, h int, title string, flags SGFlag) {
 	// Standard UI elements
 	if flags&SGFlagNoClose == 0 {
 		y := sgTop + g.h*sgCellHeight
-		g.g.ReplyButton(0, y, sgCloseButton, sgCloseButton, SGReplyClose)
+		g.g.ReplyButton(0, y, sgCloseButton, sgCloseButton, sgReplyClose)
 	}
 	if flags&SGFlagNoMinimize == 0 {
-		g.g.ReplyButton(0, 0, sgMinimizeButton, sgMinimizeButton, SGReplyMinimize)
+		g.g.ReplyButton(0, 0, sgMinimizeButton, sgMinimizeButton, sgReplyMinimize)
 	}
 }
 
@@ -175,6 +201,9 @@ func (g *StandardGUMP) ReplyButton(x, y, w, h int, hue uo.Hue, text string, id u
 		hue = sgTextHue
 	}
 	hue -= 1
+	if id != 0 {
+		id += sgReplyLastReserved
+	}
 	g.g.ReplyButton(x, y, sgButtonNormal, sgButtonPressed, id)
 	x += sgCellWidth
 	g.g.CroppedLabel(x, y, w, h, hue, text)

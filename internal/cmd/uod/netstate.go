@@ -784,3 +784,14 @@ func (n *NetState) GUMP(g game.GUMP) {
 	}
 	n.Send(g.Packet(0, 0, id, s))
 }
+
+// GUMPReply dispatches a GUMP reply
+func (n *NetState) GUMPReply(s uo.Serial, p *clientpacket.GUMPReply) {
+	g := n.gumps[s]
+	if g == nil {
+		return
+	}
+	if p.Button == 0 {
+
+	}
+}

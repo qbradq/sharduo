@@ -320,3 +320,7 @@ func handleWearItemRequest(n *NetState, cp clientpacket.Packet) {
 	n.m.PickUp(nil)
 	n.Send(&serverpacket.DropApproved{})
 }
+
+func handleGUMPReply(n *NetState, cp clientpacket.Packet) {
+
+}

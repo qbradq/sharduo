@@ -2,12 +2,24 @@ package game
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/qbradq/sharduo/lib/clientpacket"
 	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/uo"
 )
+
+var reWhitespace = regexp.MustCompile(`\s+`)
+
+// MungHTMLForGUMP manipulates the input line-by-line in the following way:
+// 1. All leading and trailing whitespace is removed
+// 2. The trailing newline is replaced with a single space
+// 3. Consecutive whitespace is collapsed into a single space
+func MungHTMLForGUMP(in string) string {
+	in = strings.TrimSpace(in) + " "
+	return reWhitespace.ReplaceAllLiteralString(in, " ")
+}
 
 // GUMP is the interface all GUMP objects implement.
 type GUMP interface {
@@ -16,8 +28,11 @@ type GUMP interface {
 	Layout(target, param Object)
 	// Packet returns a newly created serverpacket.Packet for this GUMP.
 	Packet(x, y int, id, serial uo.Serial) serverpacket.Packet
-	// HandleReply is called to process all replies for this GUMP.
-	HandleReply(p *clientpacket.GUMPReply)
+	// HandleReply is called to process all replies for this GUMP. HandleReply
+	// is not expected to handle GUMP close requests. The server keeping track
+	// of open GUMPs should do that. Additionally the server needs to call
+	// Layout again and send the new GUMP packet back to the client.
+	HandleReply(n NetState, p *clientpacket.GUMPReply)
 }
 
 // BaseGUMP represents a generic GUMP and is the basis for all other GUMPs.
@@ -88,7 +103,7 @@ func (g *BaseGUMP) Background(x, y, w, h int, bg uo.GUMP) {
 
 // ReplyButton creates a button that will generate a reply packet.
 func (g *BaseGUMP) ReplyButton(x, y int, normal, pressed uo.GUMP, id uint32) {
-	g.l.WriteString(fmt.Sprintf("{ button %d %d %d %d 0 0 %d }", x, y, normal, pressed, id))
+	g.l.WriteString(fmt.Sprintf("{ button %d %d %d %d 1 0 %d }", x, y, normal, pressed, id))
 }
 
 // PageButton creates a button that will change pages.
