@@ -7,7 +7,7 @@ import (
 
 // FS is the embedded file system
 //
-//go:embed misc templates lists
+//go:embed misc templates lists html
 var FS embed.FS
 
 // Walk walks the given path in the embedded file system

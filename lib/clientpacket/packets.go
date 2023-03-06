@@ -23,6 +23,7 @@ func init() {
 	pf.Add(0x91, newGameServerLogin)
 	pf.Add(0xA0, newSelectServer)
 	pf.Add(0xAD, newSpeech)
+	pf.Add(0xB1, newGUMPReply)
 	pf.Ignore(0xB5) // Open chat window request
 	pf.Add(0xBD, newVersion)
 	pf.Add(0xBF, newGeneralInformation)
@@ -488,4 +489,66 @@ func newProtocolExtension(in []byte) Packet {
 		RequestType: uo.ProtocolExtensionRequest(in[0]),
 	}
 	return p
+}
+
+// GUMPReply describes a client's response to a generic GUMP form.
+type GUMPReply struct {
+	basePacket
+	// First serial in the 0xB0 packet, in sharduo this is usually the mobile's
+	// serial
+	MobileSerial uo.Serial
+	// Second serial in the 0xB0 packet, in sharduo this is an identifier unique
+	// on the net state but not globally
+	GUMPSerial uo.Serial
+	// The button ID used to reply, 0 means closed by the client
+	Button uint32
+	// List of all checkbox and radio buttons that are enabled, all valid values
+	// that do not appear in this list are unset
+	Switches []uint32
+	// Map of text entry contents
+	TextEntries map[uint16]string
+}
+
+func newGUMPReply(in []byte) Packet {
+	p := &GUMPReply{
+		basePacket:   basePacket{id: 0xB1},
+		MobileSerial: uo.Serial(dc.GetUint32(in[0:4])),
+		GUMPSerial:   uo.Serial(dc.GetUint32(in[4:8])),
+		Button:       dc.GetUint32(in[8:12]),
+		TextEntries:  make(map[uint16]string),
+	}
+	sc := dc.GetUint32(in[12:16])
+	p.Switches = make([]uint32, sc)
+	ofs := 16
+	for i := uint32(0); i < sc; i++ {
+		p.Switches[i] = dc.GetUint32(in[ofs : ofs+4])
+		ofs += 4
+	}
+	tc := dc.GetUint32(in[ofs : ofs+4])
+	ofs += 4
+	for i := 0; uint32(i) < tc; i++ {
+		tid := dc.GetUint16(in[ofs : ofs+2])
+		ofs += 2
+		tl := int(dc.GetUint16(in[ofs : ofs+2]))
+		ofs += 2
+		text := dc.UTF16String(in[ofs : ofs+tl*2])
+		ofs += tl * 2
+		p.TextEntries[tid] = text
+	}
+	return p
+}
+
+// Switch returns the value of switch id.
+func (p *GUMPReply) Switch(id uint32) bool {
+	for _, sid := range p.Switches {
+		if sid == id {
+			return true
+		}
+	}
+	return false
+}
+
+// Text returns the value of text entry id or the empty string.
+func (p *GUMPReply) Text(id uint16) string {
+	return p.TextEntries[id]
 }

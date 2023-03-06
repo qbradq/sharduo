@@ -73,6 +73,7 @@ func trap() {
 func initialize() {
 	// Configure logging
 	log.SetFlags(log.LstdFlags | log.Llongfile)
+	log.Println("ShardUO initializing...")
 
 	// Load configuration
 	configuration = newConfiguration()

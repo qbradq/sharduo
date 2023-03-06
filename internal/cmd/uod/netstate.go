@@ -27,16 +27,28 @@ var ErrWrongPacket = errors.New("wrong packet")
 
 // NetState manages the network state of a single connection.
 type NetState struct {
-	conn               *net.TCPConn
-	sendQueue          chan serverpacket.Packet
-	m                  game.Mobile
-	account            *game.Account
+	// TCP connection we are connected through
+	conn *net.TCPConn
+	// Queue of packets to send on conn
+	sendQueue chan serverpacket.Packet
+	// Mobile being controlled by this client, if any
+	m game.Mobile
+	// Account of the player or a mock account, never nil
+	account *game.Account
+	// All containers being observed by the player
 	observedContainers map[uo.Serial]game.Container
-	targetCallback     TargetCallback
-	targetDeadline     uo.Time
-	updateGroup        int
-	deadline           uo.Time
-	disconnectLock     sync.Once
+	// Function to execute when the next targeting request comes in
+	targetCallback TargetCallback
+	// When the outstanding targeting request will expire
+	targetDeadline uo.Time
+	// Used in load balancing
+	updateGroup int
+	// When this connection should be closed due to inactivity
+	deadline uo.Time
+	// Make sure we don't try to close conn more than once
+	disconnectLock sync.Once
+	// All open GUMPs on the client side
+	gumps map[uo.Serial]game.GUMP
 }
 
 // NewNetState constructs a new NetState object.
@@ -47,6 +59,7 @@ func NewNetState(conn *net.TCPConn) *NetState {
 		observedContainers: make(map[uo.Serial]game.Container),
 		updateGroup:        world.Random().Random(0, int(uo.DurationSecond)-1),
 		deadline:           world.Time() + uo.DurationMinute*5,
+		gumps:              make(map[uo.Serial]game.GUMP),
 	}
 }
 
@@ -753,4 +766,21 @@ func (n *NetState) Animate(mob game.Mobile, at uo.AnimationType, aa uo.Animation
 		AnimationType:   at,
 		AnimationAction: aa,
 	})
+}
+
+// GUMP sends a generic GUMP to the client
+func (n *NetState) GUMP(g game.GUMP) {
+	s := uo.RandomMobileSerial(world.rng)
+	for {
+		if _, duplicate := n.gumps[s]; !duplicate {
+			break
+		}
+		s = uo.RandomMobileSerial(world.rng)
+	}
+	n.gumps[s] = g
+	id := uo.SerialSystem
+	if n.m != nil {
+		id = n.m.Serial()
+	}
+	n.Send(g.Packet(0, 0, id, s))
 }

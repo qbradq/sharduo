@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/qbradq/sharduo/internal/cmd/uod/gumps"
 	"github.com/qbradq/sharduo/internal/game"
-	"github.com/qbradq/sharduo/internal/game/gumps"
 	"github.com/qbradq/sharduo/lib/clientpacket"
 	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/template"
@@ -101,10 +101,10 @@ func (r *CharacterLoginRequest) Execute() error {
 	world.Map().SendEverything(r.NetState.m)
 	r.NetState.SendObject(r.NetState.m)
 
-	// TODO Send welcome GUMP 9380
+	// TODO Send welcome GUMP
 	g := &gumps.Test{}
 	g.Layout(r.NetState.m, nil)
-	r.NetState.Send(g.Packet(100, 100, 1, 1))
+	r.NetState.GUMP(g)
 
 	return nil
 }

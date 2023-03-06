@@ -86,12 +86,14 @@ including all features required to mine ore and smelt it into ingots.
 * Regions
 * Region spawning
 * GUMP support
+* Compressed GUMP support
 * Welcome GUMP
 * Feedback GUMP
 * Help GUMP
+* Decoration GUMP
+* Start decorating
 * MegaCliloc roll-over info
 * Line of sight checks
-* Compressed GUMP support
 * ~~Gold~~
 * ~~Context menus~~
 * ~~Paper Dolls for others~~
