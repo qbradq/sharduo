@@ -241,6 +241,24 @@ func (g *StandardGUMP) Window(w, h int, title string, flags SGFlag) {
 	}
 }
 
+// DebugCheckBackground creates a checked background to illustrate the size and
+// position of each cell.
+func (g *StandardGUMP) DebugCheckBackground() {
+	for iy := 0; iy < g.h; iy++ {
+		y := sgTop + iy*sgCellHeight
+		dark := iy%2 == 0
+		for ix := 0; ix < g.w; ix++ {
+			x := sgLeft + ix*sgCellWidth
+			if dark {
+				g.g.TiledImage(x, y, sgCellWidth, sgCellHeight, 9354)
+			} else {
+				g.g.TiledImage(x, y, sgCellWidth, sgCellHeight, 9304)
+			}
+			dark = !dark
+		}
+	}
+}
+
 // Text creates a cropped label element. Text elements are always one line tall
 // and do not respect newlines. If more functionality is needed see HTML().
 func (g *StandardGUMP) Text(x, y, w int, hue uo.Hue, text string) {

@@ -219,12 +219,6 @@ func (g *BaseGUMP) RadioButton(x, y int, normal, pressed uo.GUMP, id uint32, on 
 	g.l.WriteString(fmt.Sprintf("{ radio %d %d %d %d %d %d }", x, y, normal, pressed, v, id))
 }
 
-// Sprite places a bounded slice of a GUMP image. This can be used to create
-// sprite sheets.
-func (g *BaseGUMP) Sprite(x, y int, gump uo.GUMP, sx, sy, w, h int) {
-	g.l.WriteString(fmt.Sprintf("{ picinpic %d %d %d %d %d %d %d }", x, y, gump, w, h, sx, sy))
-}
-
 // TextEntry creates a text entry area. If limit is less than 1 no limit will be
 // enforced.
 func (g *BaseGUMP) TextEntry(x, y, w, h int, hue uo.Hue, text string, limit int, id uint32) {
