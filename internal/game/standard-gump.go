@@ -133,6 +133,20 @@ const (
 	sgSwitchVOffset int     = 1
 
 	//
+	// Text entry skin
+	//
+
+	sgTEBarLeft             uo.GUMP = 57
+	sgTEBarMid              uo.GUMP = 58
+	sgTEBarRight            uo.GUMP = 59
+	sgTEBarWidth            int     = 16
+	sgTEVOffset             int     = 10
+	sgTELeftEndCapHOffset   int     = 2
+	sgTEBarMidHeight        int     = 16
+	sgTEEndCapApparentWidth int     = 15
+	sgTEHeight              int     = 16
+
+	//
 	// Calculated constants
 	//
 
@@ -443,8 +457,9 @@ func (g *StandardGUMP) GemButton(x, y int, which SGGemButton, id uint32) {
 // TextEntry creates a text entry element. Text entries are always one line
 // tall and does not support newlines.
 func (g *StandardGUMP) TextEntry(x, y, w int, hue uo.Hue, text string, limit int, id uint32) {
+	bw := w - 2
 	// Convert dimensions from cells
-	if x < 0 || y < 0 || w < 1 {
+	if x < 0 || y < 0 || bw < 1 {
 		return
 	}
 	x *= sgCellWidth
@@ -452,10 +467,21 @@ func (g *StandardGUMP) TextEntry(x, y, w int, hue uo.Hue, text string, limit int
 	y *= sgCellHeight
 	y += sgTop
 	w *= sgCellWidth
-	h := sgCellHeight
+	h := sgTEHeight
+	// Create the bar
+	bx := x
+	bw *= sgCellWidth
+	g.g.Image(bx+sgTELeftEndCapHOffset, y+sgTEVOffset, sgTEBarLeft, uo.HueDefault)
+	bx += sgCellWidth
+	g.g.TiledImage(bx, y+sgTEVOffset, bw, sgTEBarMidHeight, sgTEBarMid)
+	bx += bw
+	g.g.Image(bx, y+sgTEVOffset, sgTEBarRight, uo.HueDefault)
+	// Create the text entry
 	if hue == uo.HueDefault {
 		hue = sgTextHue
 	}
 	hue -= 1
+	x += sgTEEndCapApparentWidth
+	w -= sgTEEndCapApparentWidth * 2
 	g.g.TextEntry(x, y, w, h, hue, text, limit, id)
 }

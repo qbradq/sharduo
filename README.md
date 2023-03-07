@@ -19,6 +19,7 @@ A huge thank you goes out to the following groups, in no particular order.
 * Walking, running, mounted movement
 * Items and containers
 * Equipment
+* Generic GUMPs
 
 ## Next Milestone - Mining Vertical ##
 The next milestone set for ShardUO is to implement the Mining skill vertical,
@@ -27,6 +28,7 @@ including all features required to mine ore and smelt it into ingots.
 ### Current Defects ###
 * Stair behavior for East-to-West marble stair is wrong, see throne room
 * Some items are immoveable that should not be, see LargeCrate
+* Using the Help gem button causes the client to crash from the test GUMP
 
 ### Required Features and Tasks ###
 * Do not leak child objects on Remove()
@@ -85,7 +87,6 @@ including all features required to mine ore and smelt it into ingots.
 * Agricultural crops
 * Regions
 * Region spawning
-* GUMP support
 * Compressed GUMP support
 * Welcome GUMP
 * Feedback GUMP
@@ -94,6 +95,7 @@ including all features required to mine ore and smelt it into ingots.
 * Start decorating
 * MegaCliloc roll-over info
 * Line of sight checks
+* ~~GUMP support~~
 * ~~Gold~~
 * ~~Context menus~~
 * ~~Paper Dolls for others~~
