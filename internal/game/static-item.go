@@ -100,6 +100,7 @@ func (i *StaticItem) SetTemplateName(name string)                               
 func (i *StaticItem) LinkEvent(event, handler string)                           {}
 func (i *StaticItem) GetEventHandler(s string) *EventHandler                    { return nil }
 func (i *StaticItem) RecalculateStats()                                         {}
+func (i *StaticItem) RemoveChildren()                                           {}
 func (i *StaticItem) RemoveObject(o Object) bool                                { return false }
 func (i *StaticItem) AddObject(o Object) bool                                   { return false }
 func (i *StaticItem) ForceAddObject(o Object)                                   {}

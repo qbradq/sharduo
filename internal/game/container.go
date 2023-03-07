@@ -37,6 +37,9 @@ type Container interface {
 	// RemoveObserver removes an observer from this container's list of
 	// containers.
 	RemoveObserver(o ContainerObserver)
+	// StopAllObservers forces all observers of this container to stop observing
+	// it.
+	StopAllObservers()
 	// AdjustWeightAndCount adds to the cached total weight and item count of
 	// the container.
 	AdjustWeightAndCount(float32, int)
@@ -65,6 +68,13 @@ type BaseContainer struct {
 
 // ObjectType implements the Object interface.
 func (i *BaseContainer) ObjectType() marshal.ObjectType { return marshal.ObjectTypeContainer }
+
+// RemoveChildren implements the Object interface.
+func (i *BaseContainer) RemoveChildren() {
+	for _, c := range i.contents {
+		Remove(c)
+	}
+}
 
 // Marshal implements the marshal.Marshaler interface.
 func (i *BaseContainer) Marshal(s *marshal.TagFileSegment) {
@@ -164,6 +174,13 @@ func (c *BaseContainer) DropObject(o Object, l uo.Location, from Mobile) bool {
 	return false
 }
 
+// StopAllObservers forces all observers of this container to stop observing it.
+func (c *BaseContainer) StopAllObservers() {
+	for o := range c.observers {
+		o.ContainerClose(c)
+	}
+}
+
 // doRemove removes an object forcefully if requested
 func (c *BaseContainer) doRemove(o Object, force bool) bool {
 	// Only items go into containers
@@ -244,7 +261,7 @@ func (c *BaseContainer) ForceAddObject(o Object) {
 	// bank box or backpack. This will leak the object but at this point we are
 	// dealing with an exploit / system abuse and don't really care.
 	if len(c.contents) > 255 {
-		world.Remove(o)
+		Remove(o)
 		return
 	}
 	if o == nil {

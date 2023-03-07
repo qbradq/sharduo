@@ -30,6 +30,10 @@ type Object interface {
 	// OnDoubleClick....................Player double-clicks on object
 
 	//
+	// Lifecycle management
+	//
+
+	//
 	// Parent / child relationships
 	//
 
@@ -48,6 +52,8 @@ type Object interface {
 	HasParent(Object) bool
 	// SetParent sets the parent pointer. Use nil to represent the world.
 	SetParent(Object)
+	// RemoveChildren is responsible for calling Remove() for all child objects.
+	RemoveChildren()
 	// ObjectType returns the marshal.ObjectType associated with this struct.
 	ObjectType() marshal.ObjectType
 	// TemplateName returns the name of the template used to create this object.
@@ -285,6 +291,9 @@ func (o *BaseObject) SetTemplateName(name string) { o.templateName = name }
 
 // RecalculateStats implements the Object interface
 func (o *BaseObject) RecalculateStats() {}
+
+// RemoveChildren implements  the Object interface
+func (o *BaseObject) RemoveChildren() {}
 
 // RemoveObject implements the Object interface
 func (o *BaseObject) RemoveObject(c Object) bool {

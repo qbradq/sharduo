@@ -228,7 +228,7 @@ func (i *BaseItem) Consume(n int) bool {
 	}
 	i.amount -= n
 	if i.amount == 0 {
-		world.Remove(i)
+		Remove(i)
 	} else {
 		world.Update(i)
 	}
@@ -310,7 +310,7 @@ func (i *BaseItem) Combine(other Item) bool {
 		iparent.ForceRemoveObject(i)
 		iparent.ForceAddObject(other)
 	}
-	world.Remove(i)
+	Remove(i)
 	return true
 }
 

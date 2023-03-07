@@ -12,9 +12,9 @@ import (
 type World interface {
 	// Find returns a pointer to the object with the given ID or nil
 	Find(uo.Serial) Object
-	// Remove removes the given object from the world, removing it from the
-	// current parent forcefully and deleting it from the data stores.
-	Remove(Object)
+	// Delete removes the given object from the world and delets it from the
+	// data stores.
+	Delete(Object)
 	// Update adds the object to the world's list of objects that we need to
 	// send update packets for. It is safe to update the same object rapidly in
 	// succession. No duplicate packets will be sent.

@@ -21,15 +21,18 @@ import (
 )
 
 func init() {
+	commands["add"] = &cmdesc{commandNew, game.RoleGameMaster, "add template_name [stack_amount]", "Creates a new item with an optional stack amount"}
 	commands["bank"] = &cmdesc{commandBank, game.RoleGameMaster, "bank", "Opens the bank box of the targeted mobile, if any"}
 	commands["broadcast"] = &cmdesc{commandBroadcast, game.RoleAdministrator, "broadcast text", "Broadcasts the given text to all connected players"}
 	commands["c"] = &cmdesc{commandChat, game.RolePlayer, "c", "Sends global chat speech"}
 	commands["chat"] = &cmdesc{commandChat, game.RolePlayer, "chat", "Sends global chat speech"}
 	commands["debug"] = &cmdesc{commandDebug, game.RoleGameMaster, "debug command [arguments]", "Executes debug commands"}
+	commands["delete"] = &cmdesc{commandRemove, game.RoleGameMaster, "delete", "Removes the targeted object and all of its children from the game world"}
 	commands["g"] = &cmdesc{commandChat, game.RolePlayer, "g", "Sends global chat speech"}
 	commands["global"] = &cmdesc{commandChat, game.RolePlayer, "global", "Sends global chat speech"}
 	commands["location"] = &cmdesc{commandLocation, game.RoleAdministrator, "location", "Tells the absolute location of the targeted location or object"}
 	commands["new"] = &cmdesc{commandNew, game.RoleGameMaster, "new template_name [stack_amount]", "Creates a new item with an optional stack amount"}
+	commands["remove"] = &cmdesc{commandRemove, game.RoleGameMaster, "remove", "Removes the targeted object and all of its children from the game world"}
 	commands["save"] = &cmdesc{commandSave, game.RoleAdministrator, "save", "Executes a world save immediately"}
 	commands["shutdown"] = &cmdesc{commandShutdown, game.RoleAdministrator, "shutdown", "Shuts down the server immediately"}
 	commands["snapshot_clean"] = &cmdesc{commandSnapshotClean, game.RoleAdministrator, "snapshot_clean", "internal command, please do not use"}
@@ -109,14 +112,15 @@ func commandNew(n *NetState, args CommandArgs, cl string) {
 		n.Speech(nil, "new command requires 2 or 3 arguments, got %d", len(args))
 	}
 	n.TargetSendCursor(uo.TargetTypeLocation, func(r *clientpacket.TargetResponse) {
-		o := template.Create(args[1]).(game.Object)
-		if o == nil {
+		to := template.Create(args[1])
+		if to == nil {
 			n.Speech(nil, "failed to create object with template %s", args[1])
 			return
 		}
+		o := to.(game.Object)
 		o.SetLocation(r.Location)
 		if len(args) == 3 {
-			item, ok := o.(game.Item)
+			item, ok := to.(game.Item)
 			if !ok {
 				n.Speech(nil, "amount specified for non-item %s", args[1])
 				return
@@ -486,4 +490,14 @@ func commandSnapshotClean(n *NetState, args CommandArgs, cl string) {
 		return nil
 	})
 	n.Speech(nil, "old saves cleaned")
+}
+
+func commandRemove(n *NetState, args CommandArgs, cl string) {
+	if n == nil {
+		return
+	}
+	n.TargetSendCursor(uo.TargetTypeObject, func(tr *clientpacket.TargetResponse) {
+		o := world.Find(tr.TargetObject)
+		game.Remove(o)
+	})
 }

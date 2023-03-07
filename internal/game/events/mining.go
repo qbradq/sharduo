@@ -60,7 +60,7 @@ func SmeltOre(receiver, source game.Object, v any) {
 	}
 	ingot := template.Create("IronIngot").(game.Item)
 	ingot.SetAmount(ore.Amount() * 2)
-	game.GetWorld().Remove(ore)
+	game.Remove(ore)
 	if !smelter.DropToBackpack(ingot, false) {
 		smelter.DropToFeet(ingot)
 	}

@@ -56,7 +56,7 @@ func PlayerDoubleClick(receiver, source game.Object, v any) {
 	}
 	m.SetLocation(rm.Location())
 	game.GetWorld().Map().SetNewParent(m, nil)
-	game.GetWorld().Remove(mi)
+	game.Remove(mi)
 }
 
 // OpenPaperDoll opens the paper doll of the receiver mobile to the source.

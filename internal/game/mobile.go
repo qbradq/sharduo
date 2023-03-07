@@ -363,13 +363,13 @@ func (m *BaseMobile) AfterUnmarshal(tags *marshal.TagCollection) {
 	// Make sure all mobiles have a backpack, this should be covered in the template
 	if !m.equipment.IsLayerOccupied(uo.LayerBackpack) {
 		log.Printf("error: mobile %s does not have a backpack, removing", m.Serial().String())
-		world.Remove(m)
+		Remove(m)
 		return
 	}
 	// Make sure all players have a bank box
 	if m.IsPlayerCharacter() && !m.equipment.IsLayerOccupied(uo.LayerBankBox) {
 		log.Printf("error: player mobile %s does not have a bank box, removing", m.Serial().String())
-		world.Remove(m)
+		Remove(m)
 		return
 	}
 }
@@ -381,7 +381,7 @@ func (m *BaseMobile) AfterUnmarshalOntoMap() {
 	if floor == nil {
 		// We are below the ground or in the void which is an invalid state
 		log.Printf("error: mobile %s below the world or in the void, removing", m.serial.String())
-		world.Remove(m)
+		Remove(m)
 	}
 	m.floor = floor
 }
@@ -529,6 +529,15 @@ func (m *BaseMobile) recalculateGold() {
 	fn(backpack)
 }
 
+// RemoveChildren implements the Object interface.
+func (m *BaseMobile) RemoveChildren() {
+	m.equipment.Map(func(w Wearable) error {
+		Remove(w)
+		return nil
+	})
+	Remove(m.cursor.item)
+}
+
 // RecalculateStats implements the Object interface.
 func (m *BaseMobile) RecalculateStats() {
 	m.equipment.recalculateStats()
@@ -672,7 +681,7 @@ func (m *BaseMobile) DropToBackpack(o Object, force bool) bool {
 		// Something is very wrong
 		if force {
 			log.Printf("error: Mobile.DropToBackpack(force) leaked object %s because it was not an item", o.Serial().String())
-			world.Remove(o)
+			Remove(o)
 		}
 		return force
 	}
@@ -681,7 +690,7 @@ func (m *BaseMobile) DropToBackpack(o Object, force bool) bool {
 		// Something is very wrong
 		if force {
 			log.Printf("error: Mobile.DropToBackpack(force) leaked object %s because the backpack was not found", o.Serial().String())
-			world.Remove(o)
+			Remove(o)
 		}
 		return force
 	}
@@ -690,7 +699,7 @@ func (m *BaseMobile) DropToBackpack(o Object, force bool) bool {
 		// Something is very wrong
 		if force {
 			log.Printf("error: Mobile.DropToBackpack(force) leaked object %s because the backpack was not a container", o.Serial().String())
-			world.Remove(o)
+			Remove(o)
 		}
 		return force
 	}
@@ -718,8 +727,7 @@ func (m *BaseMobile) doEquip(w Wearable, force bool) bool {
 	if !m.equipment.Equip(w) {
 		if force {
 			log.Printf("error: leaked object %s during force-equip", w.Serial().String())
-			w.SetParent(TheVoid)
-			world.Remove(w)
+			Remove(w)
 		}
 	}
 	w.SetParent(m)

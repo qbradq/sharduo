@@ -342,18 +342,9 @@ func (w *World) Find(id uo.Serial) game.Object {
 	return w.ods.Get(id)
 }
 
-// Remove implements the game.World interface.
-func (w *World) Remove(o game.Object) {
-	p := o.Parent()
-	if p == nil {
-		for _, m := range w.m.GetNetStatesInRange(o.Location(), uo.MaxViewRange) {
-			m.NetState().RemoveObject(o)
-		}
-		w.m.ForceRemoveObject(o)
-	} else {
-		p.ForceRemoveObject(o)
-	}
-	o.SetParent(game.TheVoid)
+// Delete implements the game.World interface.
+func (w *World) Delete(o game.Object) {
+	log.Printf("deleting object %s", o.Serial().String())
 	w.ods.Remove(o)
 }
 
