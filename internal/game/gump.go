@@ -227,7 +227,7 @@ func (g *BaseGUMP) Sprite(x, y int, gump uo.GUMP, sx, sy, w, h int) {
 
 // TextEntry creates a text entry area. If limit is less than 1 no limit will be
 // enforced.
-func (g *BaseGUMP) TextEntry(x, y, w, h int, hue uo.Hue, id uint32, text string, limit int) {
+func (g *BaseGUMP) TextEntry(x, y, w, h int, hue uo.Hue, text string, limit int, id uint32) {
 	if limit < 1 {
 		g.l.WriteString(fmt.Sprintf("{ textentry %d %d %d %d %d %d %d }", x, y, w, h, hue, id, g.InsertLine(text)))
 	} else {

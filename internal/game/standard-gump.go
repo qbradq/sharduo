@@ -241,10 +241,11 @@ func (g *StandardGUMP) Window(w, h int, title string, flags SGFlag) {
 	}
 }
 
-// Text creates a cropped label element.
-func (g *StandardGUMP) Text(x, y, w, h int, hue uo.Hue, text string) {
+// Text creates a cropped label element. Text elements are always one line tall
+// and do not respect newlines. If more functionality is needed see HTML().
+func (g *StandardGUMP) Text(x, y, w int, hue uo.Hue, text string) {
 	// Convert dimensions from cells
-	if x < 0 || y < 0 || w < 1 || h < 1 {
+	if x < 0 || y < 0 || w < 1 {
 		return
 	}
 	x *= sgCellWidth
@@ -252,7 +253,7 @@ func (g *StandardGUMP) Text(x, y, w, h int, hue uo.Hue, text string) {
 	y *= sgCellHeight
 	y += sgTop
 	w *= sgCellWidth
-	h *= sgCellHeight
+	h := sgCellHeight
 	if hue == uo.HueDefault {
 		hue = sgTextHue
 	}
@@ -265,6 +266,7 @@ func (g *StandardGUMP) Text(x, y, w, h int, hue uo.Hue, text string) {
 // that the text is cropped to an area w-1xh. This button will generate a GUMP
 // reply packet and close the GUMP.
 func (g *StandardGUMP) ReplyButton(x, y, w, h int, hue uo.Hue, text string, id uint32) {
+	// Convert dimensions from cells
 	if x < 0 || y < 0 || w < 2 || h < 1 {
 		return
 	}
@@ -295,6 +297,7 @@ func (g *StandardGUMP) ReplyButton(x, y, w, h int, hue uo.Hue, text string, id u
 // forward and backward. Only use this function if a different use case is
 // required.
 func (g *StandardGUMP) PageButton(x, y, w, h int, hue uo.Hue, text string, page uint32) {
+	// Convert dimensions from cells
 	if x < 0 || y < 0 || w < 2 || h < 1 {
 		return
 	}
@@ -402,6 +405,7 @@ func (g *StandardGUMP) RadioSwitch(x, y, w, h int, hue uo.Hue, text string, id u
 // GemButton creates a standardized button from the gem theme with a word baked
 // into the button image. The button is always two cells wide by one cell tall.
 func (g *StandardGUMP) GemButton(x, y int, which SGGemButton, id uint32) {
+	// Convert dimensions from cells
 	if x < 0 || y < 0 || which >= SGGemButton(sgGemButtonCount) {
 		return
 	}
@@ -416,4 +420,24 @@ func (g *StandardGUMP) GemButton(x, y int, which SGGemButton, id uint32) {
 	x += d.h
 	y += d.v
 	g.g.ReplyButton(x, y, d.n, d.p, id)
+}
+
+// TextEntry creates a text entry element. Text entries are always one line
+// tall and does not support newlines.
+func (g *StandardGUMP) TextEntry(x, y, w int, hue uo.Hue, text string, limit int, id uint32) {
+	// Convert dimensions from cells
+	if x < 0 || y < 0 || w < 1 {
+		return
+	}
+	x *= sgCellWidth
+	x += sgLeft
+	y *= sgCellHeight
+	y += sgTop
+	w *= sgCellWidth
+	h := sgCellHeight
+	if hue == uo.HueDefault {
+		hue = sgTextHue
+	}
+	hue -= 1
+	g.g.TextEntry(x, y, w, h, hue, text, limit, id)
 }
