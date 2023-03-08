@@ -356,6 +356,7 @@ func (n *NetState) itemInfo(item game.Item) {
 			Location:         item.Location(),
 			Layer:            layer,
 			Hue:              item.Hue(),
+			Movable:          item.Movable(),
 		})
 	}
 }

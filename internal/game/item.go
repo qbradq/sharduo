@@ -202,7 +202,7 @@ func (i *BaseItem) Flippable() bool { return i.flippedGraphic != uo.GraphicNone 
 func (i *BaseItem) Stackable() bool { return i.stackable }
 
 // Movable implements the Item interface
-func (i *BaseItem) Movable() bool { return i.def.Weight != 255 }
+func (i *BaseItem) Movable() bool { return true }
 
 // Amount implements the Item interface.
 func (i *BaseItem) Amount() int { return i.amount }

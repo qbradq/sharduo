@@ -405,6 +405,10 @@ type ObjectInfo struct {
 	Layer uo.Layer
 	// Hue - 0 if multi
 	Hue uo.Hue
+	// If true the object will be moveable even if normally not. Note that even
+	// when this is false the client may still treat the object as movable
+	// depending on the contents of the tile definition for the graphic.
+	Movable bool
 }
 
 // Write implements the Packet interface.
@@ -445,7 +449,11 @@ func (p *ObjectInfo) Write(w io.Writer) {
 		dc.PutUint16(w, uint16(p.Hue))
 	}
 	// Flags
-	dc.PutByte(w, 0)
+	flags := byte(0)
+	if p.Movable {
+		flags |= 0x20
+	}
+	dc.PutByte(w, flags) // Movable if normally not
 	// Unknown
 	dc.Pad(w, 2)
 }

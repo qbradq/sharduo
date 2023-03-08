@@ -26,7 +26,6 @@ The next milestone set for ShardUO is to implement the Mining skill vertical,
 including all features required to mine ore and smelt it into ingots.
 
 ### Current Defects ###
-* Some items are immoveable that should not be, see LargeCrate
 * Using the Help gem button causes the client to crash from the test GUMP
 
 ### Required Features and Tasks ###
