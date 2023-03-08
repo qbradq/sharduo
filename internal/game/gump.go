@@ -132,7 +132,7 @@ func (g *BaseGUMP) Group(n uint32) {
 // according to the POL GUMP documentation. No idea if this is an issue in
 // ClassicUO.
 func (g *BaseGUMP) EndGroup() {
-	g.l.WriteString(fmt.Sprintf("{ endgroup }"))
+	g.l.WriteString("{ endgroup }")
 }
 
 // HTML creates an HTML view.

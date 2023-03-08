@@ -53,12 +53,16 @@ func (m *Map) LoadFromMuls(mapmul *file.MapMul, staticsmul *file.StaticsMul) {
 		c := m.getChunk(static.Location)
 		c.statics = append(c.statics, static)
 	}
-	// Z-sort statics
+	// Sort statics by top Z
 	for iy := int16(0); iy < int16(uo.MapChunksHeight); iy++ {
 		for ix := int16(0); ix < int16(uo.MapChunksWidth); ix++ {
 			c := m.getChunk(uo.Location{X: ix * int16(uo.ChunkWidth), Y: iy * int16(uo.ChunkHeight)})
 			sort.Slice(c.statics, func(i, j int) bool {
-				return c.statics[i].Location.Z < c.statics[j].Location.Z
+				si := c.statics[i]
+				sj := c.statics[j]
+				sit := si.Location.Z + si.Height()
+				sjt := sj.Location.Z + sj.Height()
+				return sit < sjt
 			})
 		}
 	}
