@@ -7,6 +7,7 @@ import (
 )
 
 func init() {
+	reg("Mine", Mine)
 	reg("SmeltOre", SmeltOre)
 }
 
@@ -24,6 +25,35 @@ var forgeItemSet = map[uo.Graphic]struct{}{
 	0x199E: {},
 	0x19A2: {},
 	0x19A6: {},
+}
+
+func Mine(receiver, source game.Object, v any) {
+	miner, ok := source.(game.Mobile)
+	if !ok || miner.NetState() == nil {
+		return
+	}
+	if !miner.IsEquipped(receiver) {
+		miner.NetState().Cliloc(nil, 1149764) // You must have that equipped to use it.
+		return
+	}
+	// TODO Next action delay
+	// TODO Resource map
+	// Animation
+	miner.NetState().Animate(miner, uo.AnimationTypeAttack, 0)
+	// Skill check
+	if miner.SkillCheck(uo.SkillMining, 0, 1000) {
+		ore := template.Create("IronOre").(game.Item)
+		ore.SetAmount(2)
+		if !miner.DropToBackpack(ore, false) {
+			ore.SetLocation(miner.Location())
+			game.GetWorld().Map().SetNewParent(ore, nil)
+			miner.NetState().Cliloc(nil, 503045) // You dig some ore and but you have no place to put it.
+		} else {
+			miner.NetState().Cliloc(nil, 503044) // You dig some ore and put it in your backpack.
+		}
+	} else {
+		miner.NetState().Cliloc(nil, 503043)
+	}
 }
 
 func SmeltOre(receiver, source game.Object, v any) {
