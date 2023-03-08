@@ -95,14 +95,14 @@ func New(tfo *util.TagFileObject, tm *TemplateManager) (*Template, []error) {
 // GetString returns the named property as a string or the default if not
 // found.
 func (t *Template) GetString(name, def string) string {
-	p := t.properties[name]
+	p, ok := t.properties[name]
+	if !ok {
+		return def
+	}
 	switch v := p.(type) {
 	case nil:
 		return def
 	case string:
-		if v == "" {
-			return def
-		}
 		return v
 	case *template.Template:
 		buf := bytes.NewBuffer(nil)

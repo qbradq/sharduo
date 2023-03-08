@@ -31,12 +31,12 @@ including all features required to mine ore and smelt it into ingots.
 * Using the Help gem button causes the client to crash from the test GUMP
 
 ### Required Features and Tasks ###
-* Do not leak child objects on Remove()
 * Player movement packet throttling
 * Action packet throttling
 * Mining skill
 * Ore resource map
 * Mobile weight limit and stamina
+* ~~Do not leak child objects on Remove()~~
 * ~~Automatically archive and clean old save files~~
 * ~~Auto-saves~~
 * ~~Make number of marshal goroutines configurable~~
