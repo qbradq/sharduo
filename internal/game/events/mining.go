@@ -33,6 +33,10 @@ func startMiningLoop(miner game.Mobile, tool game.Weapon, p *clientpacket.Target
 		miner.NetState().Cliloc(nil, 501863) // You can't mine that.
 		return
 	}
+	if !game.GetWorld().Map().HasOre(p.Location) {
+		miner.NetState().Cliloc(nil, 503040) // There is no metal here to mine.
+		return
+	}
 	// Animation and sound
 	miner.NetState().Animate(miner, uo.AnimationTypeAttack, tool.AnimationAction())
 	game.NewTimer(12, "ContinueMining", tool, miner, true, p)
@@ -60,7 +64,6 @@ func BeginMining(receiver, source game.Object, v any) {
 		miner.NetState().Cliloc(nil, 501864) // You can't dig while riding or flying.
 		return
 	}
-	// TODO Resource map check
 	// Targeting
 	miner.NetState().TargetSendCursor(uo.TargetTypeLocation, func(p *clientpacket.TargetResponse) {
 		startMiningLoop(miner, tool, p)
@@ -130,13 +133,16 @@ func FinishMining(receiver, source game.Object, v any) {
 		miner.NetState().Cliloc(nil, 500251) // That location is too far away.
 		return
 	}
+	if !game.GetWorld().Map().HasOre(p.Location) {
+		miner.NetState().Cliloc(nil, 503040) // There is no metal here to mine.
+		return
+	}
 	// Play the hit sound
 	s := uo.Sound(0x125)
 	if game.GetWorld().Random().RandomBool() {
 		s = 0x126
 	}
 	game.GetWorld().Map().PlaySound(s, p.Location)
-	// TODO Resource map check
 	// Skill check
 	if miner.SkillCheck(uo.SkillMining, 0, 1000) {
 		ore := template.Create("IronOre").(game.Item)

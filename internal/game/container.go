@@ -414,6 +414,7 @@ func (c *BaseContainer) DropInto(i Item) bool {
 			// Same item type and enough stack capacity to accept
 			if i.TemplateName() == other.TemplateName() && other.Amount()+i.Amount() <= int(uo.MaxStackAmount) {
 				other.SetAmount(other.Amount() + i.Amount())
+				world.Update(other)
 				return true
 			}
 		}

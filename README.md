@@ -20,6 +20,7 @@ A huge thank you goes out to the following groups, in no particular order.
 * Items and containers
 * Equipment
 * Generic GUMPs
+* Mining
 
 ## Next Milestone - Mining Vertical ##
 The next milestone set for ShardUO is to implement the Mining skill vertical,
@@ -182,3 +183,4 @@ repository or its associated services who share that appreciation.
 
 That said below are some things I have learned about administrating this shard.
 
+* It takes about 30 minutes after first shard start for all of the ore to spawn.

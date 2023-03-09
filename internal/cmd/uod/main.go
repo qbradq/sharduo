@@ -87,7 +87,6 @@ func initialize() {
 	}
 
 	// Load client data files
-	logMemStats()
 	log.Println("loading client files...")
 	tiledatamul = file.NewTileDataMul(path.Join(configuration.ClientFilesDirectory, "tiledata.mul"))
 	mapmul := file.NewMapMulFromFile(path.Join(configuration.ClientFilesDirectory, "map0.mul"), tiledatamul)
@@ -107,7 +106,6 @@ func initialize() {
 		}
 	}
 
-	logMemStats()
 	log.Println("Misc operations...")
 	if configuration.GenerateDebugMaps {
 		log.Println("generating debug map...")
@@ -173,16 +171,13 @@ func initialize() {
 	}
 
 	// Initialize our data structures
-	logMemStats()
 	log.Println("Allocating world data structures...")
 	world = NewWorld(configuration.SaveDirectory, rng)
-	logMemStats()
 	log.Println("Populating map data structures...")
 	world.Map().LoadFromMuls(mapmul, staticsmul)
 	game.RegisterWorld(world)
 
 	// Try to load the most recent save
-	logMemStats()
 	if err := world.Unmarshal(); err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			log.Println("warning: no save files found")
@@ -190,7 +185,6 @@ func initialize() {
 			log.Fatal("error while trying to load data stores from main goroutine", err)
 		}
 	}
-	logMemStats()
 	log.Println("End of initialization")
 }
 

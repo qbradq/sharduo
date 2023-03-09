@@ -13,13 +13,13 @@ import (
 // Map contains the tile matrix, static items, and all dynamic objects of a map.
 type Map struct {
 	// The chunks of the map
-	chunks []*chunk
+	chunks []*Chunk
 }
 
 // NewMap creates and returns a new Map
 func NewMap() *Map {
 	m := &Map{
-		chunks: make([]*chunk, uo.MapChunksWidth*uo.MapChunksHeight),
+		chunks: make([]*Chunk, uo.MapChunksWidth*uo.MapChunksHeight),
 	}
 	for cx := 0; cx < uo.MapChunksWidth; cx++ {
 		for cy := 0; cy < uo.MapChunksHeight; cy++ {
@@ -35,13 +35,13 @@ func (m *Map) LoadFromMuls(mapmul *file.MapMul, staticsmul *file.StaticsMul) {
 	// Load the tiles
 	for iy := 0; iy < uo.MapHeight; iy++ {
 		for ix := 0; ix < uo.MapWidth; ix++ {
-			m.getChunk(uo.Location{X: int16(ix), Y: int16(iy)}).setTile(ix, iy, mapmul.GetTile(ix, iy))
+			m.GetChunk(uo.Location{X: int16(ix), Y: int16(iy)}).setTile(ix, iy, mapmul.GetTile(ix, iy))
 		}
 	}
 	// Pre-calculate tile elevations
 	for iy := int16(0); iy < int16(uo.MapHeight); iy++ {
 		for ix := int16(0); ix < int16(uo.MapWidth); ix++ {
-			c := m.getChunk(uo.Location{X: ix, Y: iy})
+			c := m.GetChunk(uo.Location{X: ix, Y: iy})
 			t := c.GetTile(ix, iy)
 			lowest, avg, height := m.getTerrainElevations(ix, iy)
 			t = t.SetElevations(lowest, avg, height)
@@ -50,13 +50,13 @@ func (m *Map) LoadFromMuls(mapmul *file.MapMul, staticsmul *file.StaticsMul) {
 	}
 	// Load the statics
 	for _, static := range staticsmul.Statics() {
-		c := m.getChunk(static.Location)
+		c := m.GetChunk(static.Location)
 		c.statics = append(c.statics, static)
 	}
 	// Sort statics by top Z
 	for iy := int16(0); iy < int16(uo.MapChunksHeight); iy++ {
 		for ix := int16(0); ix < int16(uo.MapChunksWidth); ix++ {
-			c := m.getChunk(uo.Location{X: ix * int16(uo.ChunkWidth), Y: iy * int16(uo.ChunkHeight)})
+			c := m.GetChunk(uo.Location{X: ix * int16(uo.ChunkWidth), Y: iy * int16(uo.ChunkHeight)})
 			sort.Slice(c.statics, func(i, j int) bool {
 				si := c.statics[i]
 				sj := c.statics[j]
@@ -94,7 +94,7 @@ func (m *Map) Unmarshal(s *marshal.TagFileSegment) {
 			log.Printf("warning: map referenced leaked object %s", serial.String())
 			continue
 		}
-		c := m.getChunk(o.Location())
+		c := m.GetChunk(o.Location())
 		c.Add(o)
 	}
 	// Call AfterUnmarshalOntoMap for all map objects. We do this with a pre-
@@ -114,8 +114,8 @@ func (m *Map) Unmarshal(s *marshal.TagFileSegment) {
 	}
 }
 
-// getChunk returns a pointer to the chunk for the given location.
-func (m *Map) getChunk(l uo.Location) *chunk {
+// GetChunk returns a pointer to the chunk for the given location.
+func (m *Map) GetChunk(l uo.Location) *Chunk {
 	l = l.Bound()
 	cx := int(l.X) / uo.ChunkWidth
 	cy := int(l.Y) / uo.ChunkHeight
@@ -124,7 +124,7 @@ func (m *Map) getChunk(l uo.Location) *chunk {
 
 // GetTile returns the Tile value for the location
 func (m *Map) GetTile(x, y int16) uo.Tile {
-	return m.getChunk(uo.Location{
+	return m.GetChunk(uo.Location{
 		X: x,
 		Y: y,
 	}).GetTile(x, y)
@@ -272,7 +272,7 @@ func (m *Map) ForceAddObject(o Object) {
 		return
 	}
 	o.SetParent(nil)
-	c := m.getChunk(o.Location())
+	c := m.GetChunk(o.Location())
 	c.Add(o)
 	// Send the new object to all mobiles in range with an attached net state
 	for _, mob := range m.GetNetStatesInRange(o.Location(), uo.MaxViewRange) {
@@ -295,7 +295,7 @@ func (m *Map) ForceAddObject(o Object) {
 
 // ForceRemoveObject removes the object from the map and always succeeds.
 func (m *Map) ForceRemoveObject(o Object) {
-	c := m.getChunk(o.Location().Bound())
+	c := m.GetChunk(o.Location().Bound())
 	c.Remove(o)
 	// Tell other mobiles with net states in range about the object removal
 	for _, mob := range m.GetNetStatesInRange(o.Location(), uo.MaxViewRange) {
@@ -389,8 +389,8 @@ func (m *Map) MoveMobile(mob Mobile, dir uo.Direction) bool {
 			return false
 		}
 	}
-	oldChunk := m.getChunk(oldLocation)
-	newChunk := m.getChunk(newLocation)
+	oldChunk := m.GetChunk(oldLocation)
+	newChunk := m.GetChunk(newLocation)
 	// If this is a mobile with an attached net state we need to check for
 	// new and old objects.
 	if mob.NetState() != nil {
@@ -500,8 +500,8 @@ func (m *Map) Query(center uo.Location, queryRange int16, set map[uo.Graphic]str
 	return false
 }
 
-func (m *Map) getChunksInBounds(b uo.Bounds) []*chunk {
-	var ret []*chunk
+func (m *Map) getChunksInBounds(b uo.Bounds) []*Chunk {
+	var ret []*Chunk
 	tl := uo.Location{
 		X: b.X,
 		Y: b.Y,
@@ -525,7 +525,7 @@ func (m *Map) getChunksInBounds(b uo.Bounds) []*chunk {
 }
 
 // getChunksInRange gets chunks in the given range of a reference point.
-func (m *Map) getChunksInRange(l uo.Location, r int16) []*chunk {
+func (m *Map) getChunksInRange(l uo.Location, r int16) []*Chunk {
 	return m.getChunksInBounds(uo.Bounds{
 		X: l.X - r,
 		Y: l.Y - r,
@@ -715,7 +715,7 @@ func (m *Map) plop(toPlop Item) bool {
 	// Find the Z level that would make this item set on top of other non-solid
 	// items at the same location
 	tz := fz
-	c := m.getChunk(l)
+	c := m.GetChunk(l)
 	for _, item := range c.items {
 		// Only look at items at our location
 		if item.Location().X != l.X || item.Location().Y != l.Y {
@@ -769,7 +769,7 @@ func (m *Map) plopItems(l uo.Location, drop int8) {
 		cz = ceiling.Z()
 	}
 	// Process items to adjust Z position
-	c := m.getChunk(l)
+	c := m.GetChunk(l)
 	for _, item := range c.items {
 		// Only look at items at our location
 		if item.Location().X != l.X || item.Location().Y != l.Y {
@@ -815,7 +815,7 @@ func (m *Map) GetFloorAndCeiling(l uo.Location, ignoreDynamicItems bool) (uo.Com
 	ceiling := uo.MapMaxZ
 	footHeight := l.Z
 	// Consider tile matrix
-	c := m.getChunk(l)
+	c := m.GetChunk(l)
 	t := c.GetTile(l.X, l.Y)
 	if !t.Ignore() {
 		bottom := t.Z()
@@ -935,3 +935,35 @@ func (m *Map) SendSpeech(from Object, r int16, format string, args ...any) {
 		}
 	}
 }
+
+// Update calls Update on a few chunks every frame such that every chunk gets an
+// Update call once every 30 real-world minutes or 6 in-game hours.
+func (m *Map) Update() {
+	nChunks := uint64(uo.MapChunksWidth * uo.MapChunksHeight)
+	step := uint64(uo.DurationMinute * 30)
+	start := uint64(world.Time() % uo.Time(step))
+	for idx := start; idx < nChunks; idx += step {
+		c := m.chunks[idx]
+		c.Update()
+	}
+}
+
+// ConsumeOre attempts to consume the specified amount of ore from the chunk at
+// the specified location and returns the number of ore piles consumed.
+func (m *Map) ConsumeOre(l uo.Location, n int) int {
+	if n < 1 || n > 255 {
+		return 0
+	}
+	amount := uint8(n)
+	c := m.GetChunk(l)
+	if amount > c.ore {
+		amount = c.ore
+		c.ore = 0
+	} else {
+		c.ore -= amount
+	}
+	return int(amount)
+}
+
+// HasOre returns true if the chunk at the given location has any ore.
+func (m *Map) HasOre(l uo.Location) bool { return m.GetChunk(l).ore != 0 }

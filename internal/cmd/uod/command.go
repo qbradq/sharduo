@@ -215,6 +215,8 @@ func commandDebug(n *NetState, args CommandArgs, cl string) {
 		return
 	}
 	switch args[1] {
+	case "force_chunk_update":
+		fallthrough
 	case "memory_test":
 		fallthrough
 	case "delay_test":
@@ -250,6 +252,11 @@ func commandDebug(n *NetState, args CommandArgs, cl string) {
 	}
 	// Execute command
 	switch args[1] {
+	case "force_chunk_update":
+		n.Speech(n.m, "Target the chunk you wish to force-update")
+		n.TargetSendCursor(uo.TargetTypeLocation, func(tr *clientpacket.TargetResponse) {
+			world.Map().GetChunk(tr.Location).Update()
+		})
 	case "global_light":
 		ll := uo.LightLevel(args.Int(2))
 		n.Send(&serverpacket.GlobalLightLevel{

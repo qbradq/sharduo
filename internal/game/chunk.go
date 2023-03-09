@@ -5,8 +5,8 @@ import (
 	"github.com/qbradq/sharduo/lib/util"
 )
 
-// chunk contains the tile matrix, static and dynamic objects in one 8x8 chunk
-type chunk struct {
+// Chunk contains the tile matrix, static and dynamic objects in one 8x8 Chunk
+type Chunk struct {
 	// Bounds of the chunk
 	bounds uo.Bounds
 	// The slice of all tiles in the chunk
@@ -17,11 +17,13 @@ type chunk struct {
 	items util.Slice[Item]
 	// Collection of all mobiles in the chunk
 	mobiles util.Slice[Mobile]
+	// Amount of ore left in this chunk
+	ore uint8
 }
 
 // newChunk creates and returns a new Chunk object
-func newChunk(x, y int) *chunk {
-	return &chunk{
+func newChunk(x, y int) *Chunk {
+	return &Chunk{
 		bounds: uo.Bounds{
 			X: int16(x),
 			Y: int16(y),
@@ -36,7 +38,7 @@ func newChunk(x, y int) *chunk {
 
 // Add adds the object to the chunk and returns true if it is located in this
 // chunk.
-func (c *chunk) Add(o Object) bool {
+func (c *Chunk) Add(o Object) bool {
 	if !c.bounds.Contains(o.Location()) {
 		return false
 	}
@@ -61,7 +63,7 @@ func (c *chunk) Add(o Object) bool {
 }
 
 // Remove removes the object from the chunk.
-func (c *chunk) Remove(o Object) {
+func (c *Chunk) Remove(o Object) {
 	if item, ok := o.(Item); ok {
 		c.items = c.items.Remove(item)
 	} else if mobile, ok := o.(Mobile); ok {
@@ -71,12 +73,17 @@ func (c *chunk) Remove(o Object) {
 
 // GetTile returns the Tile value for the given chunk-relative location. x and y
 // must be between 0 and 7 inclusive.
-func (c *chunk) GetTile(x, y int16) uo.Tile {
+func (c *Chunk) GetTile(x, y int16) uo.Tile {
 	return c.tiles[(int(y)%uo.ChunkHeight)*uo.ChunkWidth+(int(x)%uo.ChunkWidth)]
 }
 
 // setTile sets the tile value at the given chunk-relative location. x and y
 // must be between 0 and 7 inclusive.
-func (c *chunk) setTile(x, y int, t uo.Tile) {
+func (c *Chunk) setTile(x, y int, t uo.Tile) {
 	c.tiles[(y%uo.ChunkHeight)*uo.ChunkWidth+(x%uo.ChunkWidth)] = t
+}
+
+// Update handles the 30-minute periodic update for this chunk.
+func (c *Chunk) Update() {
+	c.ore = uint8(world.Random().Random(10, 24))
 }
