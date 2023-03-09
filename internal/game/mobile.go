@@ -716,6 +716,7 @@ func (m *BaseMobile) DropToBackpack(o Object, force bool) bool {
 		}
 		return force
 	}
+	item.SetDropLocation(uo.RandomContainerLocation)
 	if !force {
 		return backpack.AddObject(item)
 	}

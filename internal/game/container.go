@@ -43,6 +43,9 @@ type Container interface {
 	// AdjustWeightAndCount adds to the cached total weight and item count of
 	// the container.
 	AdjustWeightAndCount(float32, int)
+	// DropInto attempts to drop the item into this container, merging it with
+	// any currently existing stacks. Returns true on success.
+	DropInto(Item) bool
 }
 
 // BaseContainer implements the base implementation of the Container interface.
@@ -397,6 +400,26 @@ func (c *BaseContainer) RemoveObserver(o ContainerObserver) {
 			c.observers = nil
 		}
 	}
+}
+
+// DropInto implements the Container interface.
+func (c *BaseContainer) DropInto(i Item) bool {
+	// Over weight limit
+	if c.ContentWeight()+i.Weight() > c.maxContainerWeight {
+		return false
+	}
+	// Try to stack
+	if i.Stackable() {
+		for _, other := range c.contents {
+			// Same item type and enough stack capacity to accept
+			if i.TemplateName() == other.TemplateName() && other.Amount()+i.Amount() <= int(uo.MaxStackAmount) {
+				other.SetAmount(other.Amount() + i.Amount())
+				return true
+			}
+		}
+	}
+	// Try to drop to bag
+	return c.AddObject(i)
 }
 
 // AppendContextMenuEntries implements the Object interface.

@@ -26,14 +26,14 @@ The next milestone set for ShardUO is to implement the Mining skill vertical,
 including all features required to mine ore and smelt it into ingots.
 
 ### Current Defects ###
-* Using the Help gem button causes the client to crash from the test GUMP
 
 ### Required Features and Tasks ###
+* Player logout detection and handling
 * Player movement packet throttling
 * Action packet throttling
-* Mining skill
 * Ore resource map
 * Mobile weight limit and stamina
+* ~~Mining skill~~
 * ~~Do not leak child objects on Remove()~~
 * ~~Automatically archive and clean old save files~~
 * ~~Auto-saves~~

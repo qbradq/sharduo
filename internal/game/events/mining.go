@@ -35,7 +35,7 @@ func startMiningLoop(miner game.Mobile, tool game.Weapon, p *clientpacket.Target
 	}
 	// Animation and sound
 	miner.NetState().Animate(miner, uo.AnimationTypeAttack, tool.AnimationAction())
-	game.NewTimer(12, "ContinueMining", tool, miner, true, p)
+	game.NewTimer(18, "ContinueMining", tool, miner, true, p)
 }
 
 func BeginMining(receiver, source game.Object, v any) {
@@ -152,8 +152,8 @@ func FinishMining(receiver, source game.Object, v any) {
 		miner.NetState().Cliloc(nil, 503043) // You loosen some rocks but fail to find any useable ore.
 	}
 	// TODO Item durability
-	// Continue mining the spot
-	startMiningLoop(miner, tool, p)
+	// TODO Continue mining the spot
+	// startMiningLoop(miner, tool, p)
 }
 
 func SmeltOre(receiver, source game.Object, v any) {
