@@ -27,7 +27,7 @@ type Object interface {
 	marshal.Unmarshaler
 
 	// List of all events supported by all Objects
-	// OnDoubleClick....................Player double-clicks on object
+	// DoubleClick......................Player double-clicks on object
 
 	//
 	// Lifecycle management
@@ -118,6 +118,9 @@ type Object interface {
 	SetLocation(uo.Location)
 	// Hue returns the hue of the item
 	Hue() uo.Hue
+	// SetHue sets the hue of the item. Remember to use hue.SetPartial() if a
+	// partial hue is desired.
+	SetHue(uo.Hue)
 	// Facing returns the direction the object is currently facing. 8-way for
 	// mobiles, 2-way for most items, and 4-way for a few items.
 	Facing() uo.Direction
@@ -355,6 +358,9 @@ func (o *BaseObject) SetLocation(l uo.Location) {
 
 // Hue implements the Object interface
 func (o *BaseObject) Hue() uo.Hue { return o.hue }
+
+// SetHue implements the Object interface
+func (o *BaseObject) SetHue(hue uo.Hue) { o.hue = hue }
 
 // DisplayName implements the Object interface
 func (o *BaseObject) DisplayName() string {

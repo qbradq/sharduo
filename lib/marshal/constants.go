@@ -34,7 +34,7 @@ const (
 	TagArticleA          Tag = 1
 	TagArticleAn         Tag = 2
 	TagFacing            Tag = 3
-	TagOnDoubleClick     Tag = 4
+	TagDoubleClick       Tag = 4
 	TagGraphic           Tag = 5
 	TagFlippedGraphic    Tag = 6
 	TagFlipped           Tag = 7

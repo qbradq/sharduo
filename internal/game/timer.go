@@ -26,7 +26,7 @@ const mediumSpeedTimerPoolsCount = int(uo.DurationSecond)
 var timerPools []map[uo.Serial]*Timer
 
 // Collection of serials currently in use
-var timerSerials map[uo.Serial]*Timer
+var timerSerials = map[uo.Serial]*Timer{}
 
 // Timer dispatches an event after a set interval, optionally repeating. If
 // either the receiver or source objects have been deleted prior to the trigger
@@ -41,11 +41,15 @@ type Timer struct {
 	receiver uo.Serial
 	// Serial of the source of the event
 	source uo.Serial
+	// True if this is an non-saved timer
+	ephemeral bool
+	// Parameter of the event, only used if this is an ephemeral timer
+	parameter any
 }
 
 // NewTimer creates a new timer with the given options, then adds the timer to
 // the update pool most suitable for it.
-func NewTimer(delay uo.Time, event string, receiver, source Object) {
+func NewTimer(delay uo.Time, event string, receiver, source Object, ephemeral bool, parameter any) {
 	receiverSerial := uo.SerialZero
 	sourceSerial := uo.SerialZero
 	if receiver != nil {
@@ -55,10 +59,12 @@ func NewTimer(delay uo.Time, event string, receiver, source Object) {
 		sourceSerial = source.Serial()
 	}
 	t := &Timer{
-		deadline: world.Time() + delay,
-		event:    event,
-		receiver: receiverSerial,
-		source:   sourceSerial,
+		deadline:  world.Time() + delay,
+		event:     event,
+		receiver:  receiverSerial,
+		source:    sourceSerial,
+		ephemeral: ephemeral,
+		parameter: parameter,
 	}
 	for {
 		serial := uo.RandomMobileSerial(world.Random())
@@ -69,11 +75,12 @@ func NewTimer(delay uo.Time, event string, receiver, source Object) {
 		pool := 0
 		if delay > uo.DurationSecond && delay < uo.DurationMinute {
 			pool = 1 + (int(serial) % mediumSpeedTimerPoolsCount)
-		} else {
+		} else if delay >= uo.DurationMinute {
 			pool = 1 + mediumSpeedTimerPoolsCount + (int(serial) % lowSpeedTimerPoolsCount)
-		}
+		} // Else delay <= uo.DurationSecond, pool stays 0
 		timerPools[pool][serial] = t
 		timerSerials[serial] = t
+		break
 	}
 }
 
@@ -101,6 +108,10 @@ func UpdateTimers(now uo.Time) {
 func MarshalTimers(s *marshal.TagFileSegment) {
 	for pool, timers := range timerPools {
 		for serial, t := range timers {
+			if t.ephemeral {
+				// Ephemeral timers do not get saved
+				continue
+			}
 			s.PutInt(uint32(serial))
 			s.PutShort(uint16(pool))
 			s.PutLong(uint64(t.deadline))
@@ -157,5 +168,5 @@ func (t *Timer) Execute() {
 			return
 		}
 	}
-	ExecuteEventHandler(t.event, receiver, source, nil)
+	ExecuteEventHandler(t.event, receiver, source, t.parameter)
 }

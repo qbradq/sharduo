@@ -1,10 +1,9 @@
 package events
 
-// Common OnDoubleClick events
+// Common DoubleClick events
 
 import (
 	"github.com/qbradq/sharduo/internal/game"
-	"github.com/qbradq/sharduo/lib/template"
 	"github.com/qbradq/sharduo/lib/uo"
 )
 
@@ -36,27 +35,11 @@ func PlayerDoubleClick(receiver, source game.Object, v any) {
 		sm.NetState().OpenPaperDoll(rm)
 		return
 	}
-	mio := rm.EquipmentInSlot(uo.LayerMount)
-	if mio == nil {
-		// We are not mounted, just send ourselves our paper doll
+	if rm.IsMounted() {
+		rm.Dismount()
+	} else {
 		sm.NetState().OpenPaperDoll(rm)
-		return
 	}
-	// Dismount
-	if !rm.Unequip(mio) {
-		return
-	}
-	mi, ok := mio.(*game.MountItem)
-	if !ok {
-		return
-	}
-	m := mi.Mount()
-	if m == nil {
-		return
-	}
-	m.SetLocation(rm.Location())
-	game.GetWorld().Map().SetNewParent(m, nil)
-	game.Remove(mi)
 }
 
 // OpenPaperDoll opens the paper doll of the receiver mobile to the source.
@@ -106,24 +89,7 @@ func Mount(receiver, source game.Object, v any) {
 	if !ok {
 		return
 	}
-	mi := template.Create("MountItem").(*game.MountItem)
-	switch rm.Body() {
-	case 0xC8:
-		mi.SetBaseGraphic(0x3E9F)
-	case 0xCC:
-		mi.SetBaseGraphic(0x3EA2)
-	case 0xDC:
-		mi.SetBaseGraphic(0x3EA6)
-	case 0xE2:
-		mi.SetBaseGraphic(0x3EA0)
-	case 0xE4:
-		mi.SetBaseGraphic(0x3EA1)
-	}
-	if !sm.Equip(mi) {
-		return
-	}
-	// Remove the mount from the world and attach it to the receiver
-	game.GetWorld().Map().SetNewParent(rm, mi)
+	sm.Mount(rm)
 }
 
 // OpenBackpack attempts to open the backpack of the receiver as in snooping or

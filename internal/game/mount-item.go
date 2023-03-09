@@ -55,7 +55,27 @@ func (i *MountItem) Unmarshal(s *marshal.TagFileSegment) *marshal.TagCollection 
 	} else {
 		i.m = nil
 	}
+	if i.m != nil {
+		i.SetBaseGraphicForBody(i.m.Body())
+	}
 	return tags
+}
+
+// SetBaseGraphicForBody sets the base graphic of the item correctly for the
+// given mount body.
+func (i *MountItem) SetBaseGraphicForBody(body uo.Body) {
+	switch body {
+	case 0xC8:
+		i.SetBaseGraphic(0x3E9F)
+	case 0xCC:
+		i.SetBaseGraphic(0x3EA2)
+	case 0xDC:
+		i.SetBaseGraphic(0x3EA6)
+	case 0xE2:
+		i.SetBaseGraphic(0x3EA0)
+	case 0xE4:
+		i.SetBaseGraphic(0x3EA1)
+	}
 }
 
 // RemoveObject implements the Object interface

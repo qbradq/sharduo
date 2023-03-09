@@ -35,7 +35,6 @@ func (g *Test) Layout(target, param game.Object) {
 		log.Println(err)
 	}
 	g.Window(24, 18, "Welcome to the Trammel Time test GUMP", 0)
-	g.DebugCheckBackground()
 	g.Page(1)
 	g.Text(5, 2, 4, uo.HueDefault, "Page 1 HTML")
 	g.HTML(0, 5, 24, 10, game.MungHTMLForGUMP(string(motd)), true)

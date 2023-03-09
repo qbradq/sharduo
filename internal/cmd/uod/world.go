@@ -344,7 +344,6 @@ func (w *World) Find(id uo.Serial) game.Object {
 
 // Delete implements the game.World interface.
 func (w *World) Delete(o game.Object) {
-	log.Printf("deleting object %s", o.Serial().String())
 	w.ods.Remove(o)
 }
 

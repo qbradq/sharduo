@@ -109,6 +109,7 @@ func (i *StaticItem) DropObject(o Object, l uo.Location, m Mobile) bool         
 func (i *StaticItem) Location() uo.Location                                     { return i.location }
 func (i *StaticItem) SetLocation(l uo.Location)                                 { i.location = l }
 func (i *StaticItem) Hue() uo.Hue                                               { return i.hue }
+func (i *StaticItem) SetHue(hue uo.Hue)                                         { i.hue = hue }
 func (i *StaticItem) Facing() uo.Direction                                      { return uo.DirectionNorth }
 func (i *StaticItem) SetFacing(d uo.Direction)                                  {}
 func (i *StaticItem) DisplayName() string                                       { return i.def.Name }

@@ -17,7 +17,7 @@ type Mobile interface {
 	Object
 
 	// List of events supported by Mobiles
-	// OnSpeech.........................Triggered when someone speaks near them.
+	// Speech...........................Triggered when someone speaks near them.
 
 	//
 	// NetState
@@ -942,14 +942,38 @@ func (m *BaseMobile) BankBoxOpen() bool {
 
 // Mount implements the Mobile interface.
 func (m *BaseMobile) Mount(mount Mobile) {
-	if m.IsMounted() {
+	if mount == nil || m.IsMounted() {
 		return
 	}
-
+	mi := template.Create("MountItem").(*MountItem)
+	mi.SetBaseGraphicForBody(mount.Body())
+	mi.SetHue(mount.Hue())
+	if !m.Equip(mi) {
+		return
+	}
+	// Remove the mount from the world and attach it to the receiver
+	world.Map().SetNewParent(mount, mi)
 }
 
 // Dismount implements the Mobile interface.
-func (m *BaseMobile) Dismount() {}
+func (m *BaseMobile) Dismount() {
+	mio := m.EquipmentInSlot(uo.LayerMount)
+	if mio == nil || !m.Unequip(mio) {
+		return
+	}
+	mi, ok := mio.(*MountItem)
+	if !ok {
+		return
+	}
+	mount := mi.Mount()
+	if mount == nil {
+		return
+	}
+	mount.SetLocation(m.Location())
+	mount.SetFacing(m.Facing())
+	world.Map().SetNewParent(mount, nil)
+	Remove(mi)
+}
 
 // IsMounted implements the Mobile interface.
 func (m *BaseMobile) IsMounted() bool {

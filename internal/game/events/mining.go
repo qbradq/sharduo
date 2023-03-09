@@ -14,7 +14,64 @@ func init() {
 	reg("SmeltOre", SmeltOre)
 }
 
+func startMiningLoop(miner game.Mobile, tool game.Weapon, p *clientpacket.TargetResponse) {
+	// Sanity checks
+	if !miner.IsEquipped(tool) {
+		miner.NetState().Cliloc(nil, 1149764) // You must have that equipped to use it.
+		return
+	}
+	if miner.IsMounted() {
+		miner.NetState().Cliloc(nil, 501864) // You can't dig while riding or flying.
+		return
+	}
+	if miner.Location().XYDistance(p.Location) > 2 {
+		miner.NetState().Cliloc(nil, 500251) // That location is too far away.
+		return
+	}
+	t := game.GetWorld().Map().GetTile(p.Location.X, p.Location.Y)
+	if _, minable := mountainAndCaveTiles[t.BaseGraphic()]; !minable {
+		miner.NetState().Cliloc(nil, 501863) // You can't mine that.
+		return
+	}
+	// Animation and sound
+	miner.NetState().Animate(miner, uo.AnimationTypeAttack, tool.AnimationAction())
+	game.NewTimer(12, "ContinueMining", tool, miner, true, p)
+}
+
 func BeginMining(receiver, source game.Object, v any) {
+	if receiver == nil || source == nil {
+		return
+	}
+	miner, ok := source.(game.Mobile)
+	if !ok || miner.NetState() == nil {
+		return
+	}
+	tool, ok := receiver.(game.Weapon)
+	if !ok {
+		return
+	}
+	// TODO Next action delay
+	// Sanity checks
+	if !miner.IsEquipped(tool) {
+		miner.NetState().Cliloc(nil, 1149764) // You must have that equipped to use it.
+		return
+	}
+	if miner.IsMounted() {
+		miner.NetState().Cliloc(nil, 501864) // You can't dig while riding or flying.
+		return
+	}
+	// TODO Resource map check
+	// Targeting
+	miner.NetState().TargetSendCursor(uo.TargetTypeLocation, func(p *clientpacket.TargetResponse) {
+		startMiningLoop(miner, tool, p)
+	})
+}
+
+func ContinueMining(receiver, source game.Object, v any) {
+	if receiver == nil || source == nil {
+		return
+	}
+	p := v.(*clientpacket.TargetResponse)
 	miner, ok := source.(game.Mobile)
 	if !ok || miner.NetState() == nil {
 		return
@@ -28,39 +85,58 @@ func BeginMining(receiver, source game.Object, v any) {
 		miner.NetState().Cliloc(nil, 1149764) // You must have that equipped to use it.
 		return
 	}
-	// Targeting
-	miner.NetState().TargetSendCursor(uo.TargetTypeLocation, func(p *clientpacket.TargetResponse) {
-		// Sanity checks
-		if !miner.IsEquipped(tool) {
-			miner.NetState().Cliloc(nil, 1149764) // You must have that equipped to use it.
-			return
-		}
-		if miner
-		if miner.Location().XYDistance(p.Location) > 2 {
-			miner.NetState().Cliloc(nil, 500251) // That location is too far away.
-			return
-		}
-		t := game.GetWorld().Map().GetTile(p.Location.X, p.Location.Y)
-		if _, minable := mountainAndCaveTiles[t.BaseGraphic()]; !minable {
-			miner.NetState().Cliloc(nil, 501863) // You can't mine that.
-			return
-		}
-
-	})
-}
-
-func ContinueMining(receiver, source game.Object, v any) {
-
+	if miner.IsMounted() {
+		miner.NetState().Cliloc(nil, 501864) // You can't dig while riding or flying.
+		return
+	}
+	if miner.Location().XYDistance(p.Location) > 2 {
+		miner.NetState().Cliloc(nil, 500251) // That location is too far away.
+		return
+	}
+	// Play the hit sound
+	s := uo.Sound(0x125)
+	if game.GetWorld().Random().RandomBool() {
+		s = 0x126
+	}
+	game.GetWorld().Map().PlaySound(s, p.Location)
+	// Queue up the last hit
+	miner.NetState().Animate(miner, uo.AnimationTypeAttack, tool.AnimationAction())
+	game.NewTimer(12, "FinishMining", receiver, source, true, p)
 }
 
 func FinishMining(receiver, source game.Object, v any) {
-
-}
-
-func Mine(receiver, source game.Object, v any) {
-	// TODO Next action delay
-	// Effect
-	miner.NetState().Animate(miner, uo.AnimationTypeAttack, tool.AnimationAction())
+	if receiver == nil || source == nil {
+		return
+	}
+	p := v.(*clientpacket.TargetResponse)
+	miner, ok := source.(game.Mobile)
+	if !ok || miner.NetState() == nil {
+		return
+	}
+	tool, ok := receiver.(game.Weapon)
+	if !ok {
+		return
+	}
+	// Sanity checks
+	if !miner.IsEquipped(tool) {
+		miner.NetState().Cliloc(nil, 1149764) // You must have that equipped to use it.
+		return
+	}
+	if miner.IsMounted() {
+		miner.NetState().Cliloc(nil, 501864) // You can't dig while riding or flying.
+		return
+	}
+	if miner.Location().XYDistance(p.Location) > 2 {
+		miner.NetState().Cliloc(nil, 500251) // That location is too far away.
+		return
+	}
+	// Play the hit sound
+	s := uo.Sound(0x125)
+	if game.GetWorld().Random().RandomBool() {
+		s = 0x126
+	}
+	game.GetWorld().Map().PlaySound(s, p.Location)
+	// TODO Resource map check
 	// Skill check
 	if miner.SkillCheck(uo.SkillMining, 0, 1000) {
 		ore := template.Create("IronOre").(game.Item)
@@ -73,8 +149,11 @@ func Mine(receiver, source game.Object, v any) {
 			miner.NetState().Cliloc(nil, 503044) // You dig some ore and put it in your backpack.
 		}
 	} else {
-		miner.NetState().Cliloc(nil, 503043)
+		miner.NetState().Cliloc(nil, 503043) // You loosen some rocks but fail to find any useable ore.
 	}
+	// TODO Item durability
+	// Continue mining the spot
+	startMiningLoop(miner, tool, p)
 }
 
 func SmeltOre(receiver, source game.Object, v any) {
@@ -86,16 +165,12 @@ func SmeltOre(receiver, source game.Object, v any) {
 	// The only scenario in which we would reject the request is if the ore
 	// belongs to a mobile other than the smelter.
 	root := game.RootParent(receiver)
-	if root.Serial().IsMobile() && root.Serial() != receiver.Serial() {
-		if smelter.NetState() != nil {
-			smelter.NetState().Speech(nil, "You cannot access that.")
-		}
+	if root.Serial().IsMobile() && root.Serial() != smelter.Serial() {
+		smelter.NetState().Cliloc(nil, 500685) // You can't use that, it belongs to someone else.
 		return
 	}
 	if !game.GetWorld().Map().Query(source.Location(), 3, forgeItemSet) {
-		if smelter.NetState() != nil {
-			smelter.NetState().Speech(nil, "There is no forge nearby.")
-		}
+		smelter.NetState().Cliloc(nil, 500420) // You are not near a forge.
 		return
 	}
 	ore, ok := receiver.(game.Item)
@@ -192,7 +267,6 @@ var mountainAndCaveTiles = map[uo.Graphic]struct{}{
 	292:    {},
 	293:    {},
 	294:    {},
-	296:    {},
 	296:    {},
 	297:    {},
 	321:    {},

@@ -153,7 +153,7 @@ func handleDoubleClickRequest(n *NetState, cp clientpacket.Packet) {
 		if n.m.Location().XYDistance(targetLocation) > n.m.ViewRange() {
 			return
 		}
-		game.DynamicDispatch("OnDoubleClick", o, n.m, nil)
+		game.DynamicDispatch("DoubleClick", o, n.m, nil)
 		return
 	}
 	if !n.m.CanAccess(o) {
@@ -165,7 +165,7 @@ func handleDoubleClickRequest(n *NetState, cp clientpacket.Packet) {
 		return
 	}
 	// TODO Line of sight check
-	game.DynamicDispatch("OnDoubleClick", o, n.m, nil)
+	game.DynamicDispatch("DoubleClick", o, n.m, nil)
 }
 
 func handleViewRange(n *NetState, cp clientpacket.Packet) {
