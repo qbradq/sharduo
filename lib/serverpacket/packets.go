@@ -923,7 +923,7 @@ func (p *Animation) Write(w io.Writer) {
 	dc.PutUint32(w, uint32(p.Serial))          // Mobile to animate
 	dc.PutUint16(w, uint16(p.AnimationType))   // Animation to play
 	dc.PutUint16(w, uint16(p.AnimationAction)) // Sub-animation to play
-	dc.PutByte(w, 0)                           // Delay
+	dc.PutByte(w, 0)                           // Mode
 }
 
 // Time tells the client the server time.

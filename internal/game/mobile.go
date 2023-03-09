@@ -163,6 +163,17 @@ type Mobile interface {
 	BankBoxOpen() bool
 
 	//
+	// Mount support
+	//
+
+	// Mount attempts to mount the given mountable mobile.
+	Mount(Mobile)
+	// Dismount attempts to dismount the mobile they are riding.
+	Dismount()
+	// IsMounted returns true if the mobile is riding a mount.
+	IsMounted() bool
+
+	//
 	// Notoriety system
 	//
 
@@ -927,6 +938,23 @@ func (m *BaseMobile) BankBoxOpen() bool {
 		return false
 	}
 	return m.NetState().ContainerIsObserving(bbobj)
+}
+
+// Mount implements the Mobile interface.
+func (m *BaseMobile) Mount(mount Mobile) {
+	if m.IsMounted() {
+		return
+	}
+
+}
+
+// Dismount implements the Mobile interface.
+func (m *BaseMobile) Dismount() {}
+
+// IsMounted implements the Mobile interface.
+func (m *BaseMobile) IsMounted() bool {
+	mi := m.EquipmentInSlot(uo.LayerMount)
+	return mi != nil
 }
 
 // CanAccess implements the Mobile interface.

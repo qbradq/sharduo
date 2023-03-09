@@ -1,6 +1,9 @@
 package game
 
-import "github.com/qbradq/sharduo/lib/uo"
+import (
+	"github.com/qbradq/sharduo/lib/clientpacket"
+	"github.com/qbradq/sharduo/lib/uo"
+)
 
 // NetState is the interface the server client's network state object must
 // implement to be compatible with this library of game objects.
@@ -26,6 +29,8 @@ type NetState interface {
 	Music(uo.Song)
 	// Animate make the client animate the given mobile
 	Animate(Mobile, uo.AnimationType, uo.AnimationAction)
+	// TargetSendCursor sends a targeting request to the client
+	TargetSendCursor(uo.TargetType, func(*clientpacket.TargetResponse))
 
 	//
 	// Item management and updates

@@ -13,7 +13,7 @@ type StaticDefinition struct {
 	// Stack amount
 	Count int
 	// Animation of the static
-	Animation Animation
+	Animation AnimationType
 	// Hue
 	Hue Hue
 	// Light index

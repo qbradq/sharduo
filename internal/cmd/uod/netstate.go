@@ -18,9 +18,6 @@ import (
 	"github.com/qbradq/sharduo/lib/uo"
 )
 
-// TargetCallback is the function signature for target callbacks
-type TargetCallback func(*clientpacket.TargetResponse)
-
 // ErrWrongPacket is the error logged when the client sends an unexpected
 // packet during character login.
 var ErrWrongPacket = errors.New("wrong packet")
@@ -48,7 +45,7 @@ type NetState struct {
 	// All containers being observed by the player
 	observedContainers map[uo.Serial]game.Container
 	// Function to execute when the next targeting request comes in
-	targetCallback TargetCallback
+	targetCallback func(*clientpacket.TargetResponse)
 	// When the outstanding targeting request will expire
 	targetDeadline uo.Time
 	// Used in load balancing
@@ -698,7 +695,7 @@ func (n *NetState) OpenPaperDoll(m game.Mobile) {
 }
 
 // TargetSendCursor implements the game.NetState interface
-func (n *NetState) TargetSendCursor(ttype uo.TargetType, fn TargetCallback) {
+func (n *NetState) TargetSendCursor(ttype uo.TargetType, fn func(*clientpacket.TargetResponse)) {
 	if n.m == nil {
 		return
 	}

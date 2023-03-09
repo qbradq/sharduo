@@ -266,9 +266,6 @@ const (
 	TextureNone Texture = 0x0000
 )
 
-// Animation represents an animation ID
-type Animation uint16
-
 // Light represents a light graphic
 type Light uint16
 
@@ -368,6 +365,20 @@ const (
 // AnimationAction is a second parameter to animations which selects between
 // different sub-animations.
 type AnimationAction uint16
+
+// AnimationAction values for weapon animations
+const (
+	AnimationActionSlash1H   AnimationAction = 9
+	AnimationActionPierce1H  AnimationAction = 10
+	AnimationActionBash1H    AnimationAction = 11
+	AnimationActionBash2H    AnimationAction = 12
+	AnimationActionSlash2H   AnimationAction = 13
+	AnimationActionPierce2H  AnimationAction = 14
+	AnimationActionShootBow  AnimationAction = 18
+	AnimationActionShootXBow AnimationAction = 19
+	AnimationActionWrestle   AnimationAction = 31
+	AnimationActionThrowing  AnimationAction = 32
+)
 
 // LightLevel indicates how bright a light is.
 type LightLevel byte

@@ -3,6 +3,7 @@ package game
 import (
 	"testing"
 
+	"github.com/qbradq/sharduo/lib/clientpacket"
 	"github.com/qbradq/sharduo/lib/uo"
 )
 
@@ -25,26 +26,27 @@ func (n *MockNetState) Reset() {
 }
 
 // Required for interface compliance
-func (n *MockNetState) SystemMessage(fmtstr string, args ...interface{})         {}
-func (n *MockNetState) Speech(from Object, fmtstr string, args ...interface{})   {}
-func (n *MockNetState) Cliloc(from Object, cliloc uo.Cliloc, args ...string)     {}
-func (n *MockNetState) Sound(sound uo.Sound, from uo.Location)                   {}
-func (n *MockNetState) Music(song uo.Song)                                       {}
-func (n *MockNetState) Animate(Mobile, uo.AnimationType, uo.AnimationAction)     {}
-func (n *MockNetState) DrawPlayer()                                              {}
-func (n *MockNetState) MoveMobile(mob Mobile)                                    {}
-func (n *MockNetState) UpdateObject(Object)                                      {}
-func (n *MockNetState) WornItem(wearable Wearable, mob Mobile)                   {}
-func (n *MockNetState) DropReject(reason uo.MoveItemRejectReason)                {}
-func (n *MockNetState) ContainerOpen(c Container)                                {}
-func (n *MockNetState) ContainerClose(c Container)                               {}
-func (n *MockNetState) ContainerItemAdded(c Container, item Item)                {}
-func (n *MockNetState) ContainerItemRemoved(c Container, item Item)              {}
-func (n *MockNetState) ContainerRangeCheck()                                     {}
-func (n *MockNetState) ContainerIsObserving(o Object) bool                       { return false }
-func (n *MockNetState) OpenPaperDoll(m Mobile)                                   {}
-func (n *MockNetState) CloseGump(gump uo.Serial)                                 {}
-func (n *MockNetState) UpdateSkill(which uo.Skill, lock uo.SkillLock, value int) {}
+func (n *MockNetState) SystemMessage(fmtstr string, args ...interface{})                   {}
+func (n *MockNetState) Speech(from Object, fmtstr string, args ...interface{})             {}
+func (n *MockNetState) Cliloc(from Object, cliloc uo.Cliloc, args ...string)               {}
+func (n *MockNetState) Sound(sound uo.Sound, from uo.Location)                             {}
+func (n *MockNetState) Music(song uo.Song)                                                 {}
+func (n *MockNetState) Animate(Mobile, uo.AnimationType, uo.AnimationAction)               {}
+func (n *MockNetState) TargetSendCursor(uo.TargetType, func(*clientpacket.TargetResponse)) {}
+func (n *MockNetState) DrawPlayer()                                                        {}
+func (n *MockNetState) MoveMobile(mob Mobile)                                              {}
+func (n *MockNetState) UpdateObject(Object)                                                {}
+func (n *MockNetState) WornItem(wearable Wearable, mob Mobile)                             {}
+func (n *MockNetState) DropReject(reason uo.MoveItemRejectReason)                          {}
+func (n *MockNetState) ContainerOpen(c Container)                                          {}
+func (n *MockNetState) ContainerClose(c Container)                                         {}
+func (n *MockNetState) ContainerItemAdded(c Container, item Item)                          {}
+func (n *MockNetState) ContainerItemRemoved(c Container, item Item)                        {}
+func (n *MockNetState) ContainerRangeCheck()                                               {}
+func (n *MockNetState) ContainerIsObserving(o Object) bool                                 { return false }
+func (n *MockNetState) OpenPaperDoll(m Mobile)                                             {}
+func (n *MockNetState) CloseGump(gump uo.Serial)                                           {}
+func (n *MockNetState) UpdateSkill(which uo.Skill, lock uo.SkillLock, value int)           {}
 func (n *MockNetState) DragItem(item Item, srcMob Mobile, srcLoc uo.Location, destMob Mobile, destLoc uo.Location) {
 }
 
