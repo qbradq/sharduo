@@ -35,7 +35,7 @@ func startMiningLoop(miner game.Mobile, tool game.Weapon, p *clientpacket.Target
 	}
 	// Animation and sound
 	miner.NetState().Animate(miner, uo.AnimationTypeAttack, tool.AnimationAction())
-	game.NewTimer(18, "ContinueMining", tool, miner, true, p)
+	game.NewTimer(12, "ContinueMining", tool, miner, true, p)
 }
 
 func BeginMining(receiver, source game.Object, v any) {
