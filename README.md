@@ -29,10 +29,10 @@ including all features required to mine ore and smelt it into ingots.
 ### Current Defects ###
 
 ### Required Features and Tasks ###
-* Player logout detection and handling
 * Player movement packet throttling
 * Action packet throttling
 * Mobile weight limit and stamina
+* ~~Player logout detection and handling~~
 * ~~Ore resource map~~
 * ~~Mining skill~~
 * ~~Do not leak child objects on Remove()~~

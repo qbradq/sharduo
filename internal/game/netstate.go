@@ -11,6 +11,13 @@ type NetState interface {
 	ContainerObserver
 
 	//
+	// Life cycle management
+	//
+
+	// Disconnect disconnects the underlying network connection
+	Disconnect()
+
+	//
 	// Speech and messaging
 	//
 

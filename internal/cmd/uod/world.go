@@ -312,13 +312,14 @@ func (w *World) Marshal() (*sync.WaitGroup, error) {
 
 // SendRequest sends a WorldRequest to the world's goroutine. Returns true if
 // the command was successfully queued. This never blocks.
-func (w *World) SendRequest(cmd WorldRequest) bool {
-	select {
-	case w.requestQueue <- cmd:
-		return true
-	default:
-		return false
-	}
+func (w *World) SendRequest(cmd WorldRequest) (closed bool) {
+	defer func() {
+		if recover() != nil {
+			closed = true
+		}
+	}()
+	w.requestQueue <- cmd
+	return true
 }
 
 // Random returns the uo.RandomSource the world is using for sync operations

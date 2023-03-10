@@ -72,8 +72,8 @@ func (r *CharacterLoginRequest) Execute() error {
 		player = template.Create("Player").(game.Mobile)
 		// TODO New player setup
 		player.SetLocation(uo.Location{X: 1148, Y: 1863, Z: 0})
-		world.Map().AddObject(player)
 	}
+	world.Map().AddObject(player)
 	r.NetState.m = player
 	r.NetState.account.SetPlayer(player.Serial())
 	r.NetState.m.SetNetState(r.NetState)
@@ -104,5 +104,20 @@ func (r *CharacterLoginRequest) Execute() error {
 	// TODO Send welcome GUMP
 	r.NetState.GUMP(gumps.NewTest(), r.NetState.m, nil)
 
+	return nil
+}
+
+// CharacterLogoutRequest is sent when the client's network connection ends for
+// any reason.
+type CharacterLogoutRequest struct {
+	BaseWorldRequest
+
+	// Mobile is the mobile of the player logging out
+	Mobile game.Mobile
+}
+
+// Execute implements the WorldRequest interface
+func (r *CharacterLogoutRequest) Execute() error {
+	game.NewTimer(uo.DurationSecond*10, "PlayerLogout", r.Mobile, nil, false, nil)
 	return nil
 }

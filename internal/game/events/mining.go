@@ -158,8 +158,10 @@ func FinishMining(receiver, source game.Object, v any) {
 		miner.NetState().Cliloc(nil, 503043) // You loosen some rocks but fail to find any useable ore.
 	}
 	// TODO Item durability
-	// TODO Continue mining the spot if the player is still logged in
-	// startMiningLoop(miner, tool, p)
+	// Continue mining the spot if the player is still logged in
+	if miner.NetState() != nil {
+		startMiningLoop(miner, tool, p)
+	}
 }
 
 func SmeltOre(receiver, source game.Object, v any) {

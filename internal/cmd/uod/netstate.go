@@ -238,11 +238,11 @@ func (n *NetState) readLoop(r *clientpacket.Reader) {
 			n.Disconnect()
 			return
 		}
-		// 5 minute timeout, should never be hit due to client ping packets
-		n.conn.SetDeadline(time.Now().Add(time.Minute * 5))
-		// 5 minute deadline to allow for crazy stuff like connection
+		// 1 minute timeout, should never be hit due to client ping packets
+		n.conn.SetDeadline(time.Now().Add(time.Minute))
+		// 1 minute deadline to allow for crazy stuff like connection
 		// interruptions, very long save times, etc.
-		n.deadline = world.Time() + uo.DurationMinute*5
+		n.deadline = world.Time() + uo.DurationMinute
 
 		cp := clientpacket.New(data)
 		switch p := cp.(type) {

@@ -63,7 +63,13 @@ func handleGameConnection(c *net.TCPConn) {
 	ns := NewNetState(c)
 	gameNetStates.Store(ns, true)
 	ns.Service()
-	log.Printf("connection ended for %s", c.RemoteAddr().String())
+	ns.Disconnect()
+	M := ns.m
+	M.SetNetState(nil)
+	ns.m = nil
+	world.SendRequest(&CharacterLogoutRequest{
+		Mobile: M,
+	})
 }
 
 // Executes the update method on all net states in the numbered update group.
