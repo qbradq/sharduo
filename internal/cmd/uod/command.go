@@ -291,20 +291,30 @@ func commandDebug(n *NetState, args CommandArgs, cl string) {
 		start := time.Now()
 		for i := 0; i < 1_000_000; i++ {
 			o := template.Create("FancyShirt").(game.Object)
-			o.SetLocation(uo.Location{
+			nl := uo.Location{
 				X: int16(world.Random().Random(100, uo.MapWidth-101)),
 				Y: int16(world.Random().Random(100, uo.MapHeight-101)),
-				Z: 65,
-			})
+				Z: uo.MapMaxZ,
+			}
+			f, _ := world.Map().GetFloorAndCeiling(nl, false)
+			if f != nil {
+				nl.Z = f.Z()
+			}
+			o.SetLocation(nl)
 			world.Map().ForceAddObject(o)
 		}
 		for i := 0; i < 150_000; i++ {
 			o := template.Create("Banker").(game.Object)
-			o.SetLocation(uo.Location{
+			nl := uo.Location{
 				X: int16(world.Random().Random(100, uo.MapWidth-101)),
 				Y: int16(world.Random().Random(100, uo.MapHeight-101)),
-				Z: 65,
-			})
+				Z: uo.MapMaxZ,
+			}
+			f, _ := world.Map().GetFloorAndCeiling(nl, false)
+			if f != nil {
+				nl.Z = f.Z()
+			}
+			o.SetLocation(nl)
 			world.Map().ForceAddObject(o)
 		}
 		end := time.Now()

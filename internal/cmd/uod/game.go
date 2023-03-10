@@ -63,6 +63,7 @@ func handleGameConnection(c *net.TCPConn) {
 	ns := NewNetState(c)
 	gameNetStates.Store(ns, true)
 	ns.Service()
+	log.Printf("connection ended for %s", c.RemoteAddr().String())
 }
 
 // Executes the update method on all net states in the numbered update group.
