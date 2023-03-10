@@ -146,7 +146,7 @@ func FinishMining(receiver, source game.Object, v any) {
 	// Skill check
 	if miner.SkillCheck(uo.SkillMining, 0, 1000) {
 		ore := template.Create("IronOre").(game.Item)
-		ore.SetAmount(2)
+		ore.SetAmount(game.GetWorld().Map().ConsumeOre(p.Location, 2))
 		if !miner.DropToBackpack(ore, false) {
 			ore.SetLocation(miner.Location())
 			game.GetWorld().Map().SetNewParent(ore, nil)
@@ -158,7 +158,7 @@ func FinishMining(receiver, source game.Object, v any) {
 		miner.NetState().Cliloc(nil, 503043) // You loosen some rocks but fail to find any useable ore.
 	}
 	// TODO Item durability
-	// TODO Continue mining the spot
+	// TODO Continue mining the spot if the player is still logged in
 	// startMiningLoop(miner, tool, p)
 }
 

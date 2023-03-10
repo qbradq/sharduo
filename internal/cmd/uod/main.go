@@ -18,6 +18,8 @@ import (
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/uo/file"
 	"github.com/qbradq/sharduo/lib/util"
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 )
 
 // Tile data
@@ -29,12 +31,16 @@ var world *World
 // The configuration
 var configuration *Configuration
 
-// TODO DEBUG REMOVE should probably remove this entirely before alpha launch
-// logMemStats logs current memory stats
-func logMemStats() {
+// memStats returns a string describing current memory utilization
+func memStats() string {
+	mb := func(n uint64) uint64 {
+		return n / 1024 / 1024
+	}
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
-	log.Printf("CURRENT HEAP ALLOC = %d MB", (m.HeapAlloc/1024)/1024)
+	p := message.NewPrinter(language.English)
+	return p.Sprintf("stats: HeapAlloc=%dMB, LiveObjects=%d", mb(m.HeapAlloc),
+		m.Mallocs-m.Frees)
 }
 
 // gracefulShutdown initiates a graceful systems shutdown
@@ -185,6 +191,7 @@ func initialize() {
 			log.Fatal("error while trying to load data stores from main goroutine", err)
 		}
 	}
+
 	log.Println("End of initialization")
 }
 

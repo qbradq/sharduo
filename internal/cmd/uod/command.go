@@ -31,6 +31,7 @@ func init() {
 	commands["g"] = &cmdesc{commandChat, game.RolePlayer, "g", "Sends global chat speech"}
 	commands["global"] = &cmdesc{commandChat, game.RolePlayer, "global", "Sends global chat speech"}
 	commands["location"] = &cmdesc{commandLocation, game.RoleAdministrator, "location", "Tells the absolute location of the targeted location or object"}
+	commands["logMemStats"] = &cmdesc{commandLogMemStats, game.RoleAdministrator, "logMemStats", "Forces the server to log memory statistics and echo that to the caller"}
 	commands["new"] = &cmdesc{commandNew, game.RoleGameMaster, "new template_name [stack_amount]", "Creates a new item with an optional stack amount"}
 	commands["remove"] = &cmdesc{commandRemove, game.RoleGameMaster, "remove", "Removes the targeted object and all of its children from the game world"}
 	commands["save"] = &cmdesc{commandSave, game.RoleAdministrator, "save", "Executes a world save immediately"}
@@ -82,6 +83,14 @@ func ExecuteCommand(n *NetState, line string) {
 		return
 	}
 	desc.fn(n, c, line)
+}
+
+func commandLogMemStats(n *NetState, args CommandArgs, cl string) {
+	s := memStats()
+	log.Println(s)
+	if n != nil && n.m != nil {
+		n.Speech(nil, s)
+	}
 }
 
 func commandChat(n *NetState, args CommandArgs, cl string) {

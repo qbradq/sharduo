@@ -32,8 +32,8 @@ including all features required to mine ore and smelt it into ingots.
 * Player logout detection and handling
 * Player movement packet throttling
 * Action packet throttling
-* Ore resource map
 * Mobile weight limit and stamina
+* ~~Ore resource map~~
 * ~~Mining skill~~
 * ~~Do not leak child objects on Remove()~~
 * ~~Automatically archive and clean old save files~~

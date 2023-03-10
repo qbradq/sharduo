@@ -28,3 +28,6 @@
 21 * * save
 40 * * "broadcast The server will save in 1 minute."
 41 * * save
+
+# Log memory statistics every minute.
+* * * logMemStats
