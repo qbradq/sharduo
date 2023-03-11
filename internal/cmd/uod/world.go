@@ -175,7 +175,7 @@ func (w *World) Unmarshal() error {
 	for _, o := range w.ods.Data() {
 		o.RecalculateStats()
 	}
-	// Let the map accumulate all of it's child objects
+	// Map data
 	w.m.Unmarshal(tf.Segment(marshal.SegmentMap))
 	// Rebuild accounts dataset
 	s = tf.Segment(marshal.SegmentAccounts)
@@ -262,7 +262,7 @@ func (w *World) Marshal() (*sync.WaitGroup, error) {
 	// Kick off the object database persistance goroutines
 	nThreads := runtime.NumCPU()
 	w.ods.MarshalObjects(tf, nThreads, wg)
-	// Map object list
+	// Map data
 	wg.Add(1)
 	s = tf.Segment(marshal.SegmentMap)
 	go func(s *marshal.TagFileSegment) {

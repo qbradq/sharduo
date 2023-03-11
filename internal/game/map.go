@@ -72,6 +72,7 @@ func (m *Map) LoadFromMuls(mapmul *file.MapMul, staticsmul *file.StaticsMul) {
 // Marshal writes out all object references of objects that are directly on the
 // map.
 func (m *Map) Marshal(s *marshal.TagFileSegment) {
+	// List of objects on the map, this is what the record count refers to
 	for _, c := range m.chunks {
 		for _, item := range c.items {
 			s.PutInt(uint32(item.Serial()))
@@ -81,6 +82,10 @@ func (m *Map) Marshal(s *marshal.TagFileSegment) {
 			s.PutInt(uint32(mobile.Serial()))
 			s.IncrementRecordCount()
 		}
+	}
+	// Ore map is next
+	for _, c := range m.chunks {
+		s.PutByte(byte(c.ore))
 	}
 }
 
@@ -112,6 +117,10 @@ func (m *Map) Unmarshal(s *marshal.TagFileSegment) {
 	}
 	for _, o := range objs {
 		o.AfterUnmarshalOntoMap()
+	}
+	// Load the ore map data
+	for _, c := range m.chunks {
+		c.ore = uint8(s.Byte())
 	}
 }
 
