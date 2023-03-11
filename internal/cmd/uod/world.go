@@ -266,14 +266,8 @@ func (w *World) Marshal() (*sync.WaitGroup, error) {
 	wg.Add(1)
 	s = tf.Segment(marshal.SegmentMap)
 	go func(s *marshal.TagFileSegment) {
-		// Raw data for map object list
 		defer wg.Done()
-		for _, o := range objects {
-			if o.Parent() == nil {
-				s.PutInt(uint32(o.Serial()))
-				s.IncrementRecordCount()
-			}
-		}
+		w.m.Marshal(s)
 	}(s)
 	// The main goroutine is blocked at this point
 	wg.Wait()

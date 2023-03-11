@@ -34,41 +34,6 @@ None that I am aware of. Famous last words and all that.
 * Action packet throttling
 * Mobile weight limit and stamina
 * Welcome GUMP
-* ~~Player logout detection and handling~~
-* ~~Ore resource map~~
-* ~~Mining skill~~
-* ~~Do not leak child objects on Remove()~~
-* ~~Automatically archive and clean old save files~~
-* ~~Auto-saves~~
-* ~~Make number of marshal goroutines configurable~~
-* ~~Restrict command usage to access levels~~
-* ~~Respond to status closed messages~~
-* ~~Map loading~~
-* ~~Map tile query~~
-* ~~Following the map during movement~~
-* ~~Stats~~
-* ~~Running~~
-* ~~Picking up and dropping items on the ground~~
-* ~~Player persistance~~
-* ~~Removing equipment~~
-* ~~Equipping equipment~~
-* ~~Using equipment~~
-* ~~Timers~~
-* ~~Smelting~~
-* ~~Backpack and inventory~~
-* ~~Container handling~~
-* ~~Spacial chat with speaking, yelling, whispering, and emotes~~
-* ~~Global chat~~
-* ~~Stat updates~~
-* ~~Skill system~~
-* ~~Skill updates~~
-* ~~Skill gains~~
-* ~~Stat gains~~
-* ~~Stackable items~~
-* ~~Animations~~
-* ~~Sounds~~
-* ~~Music~~
-* ~~Clilocs~~
 
 ### Nice to Haves ###
 * Compressed GUMP support
@@ -95,22 +60,11 @@ None that I am aware of. Famous last words and all that.
 * Start decorating
 * MegaCliloc roll-over info
 * Line of sight checks
-* ~~GUMP support~~
-* ~~Gold~~
-* ~~Context menus~~
-* ~~Paper Dolls for others~~
-* ~~Pack Horses and Llamas~~
-* ~~Banker NPC~~
-* ~~Bank box~~
-* ~~Mounts~~
-* ~~Horses and Llamas~~
 
 ### Nerdy Things I Might Do for Fun ###
 * Day/Night cycles
 * Weather patterns
 * Fall damage
-* ~~Global light levels~~
-* ~~Personal light levels~~
 
 ## Outstanding Issues ##
 
@@ -121,11 +75,6 @@ opened to outside connections.
 * Evaluate all TODO tags remaining in the source code, create tasks for them and assign them to milestones
 * Create homepage site and service
 * Make client available for download somehow
-* ~~Removal of stale NetStates in the game service goroutine~~
-* ~~Removal of stale connections in the login service goroutine~~
-* ~~Integration of the game service into a single self-managed structure~~
-* ~~Do not allow items within the bank box to be used unless the bank box is open~~
-* ~~Proper coordinate wrapping in game.Map.getChunksInBounds()~~
 
 ### Miscellaneous Issues ###
 This is a list of known issues that do not need to be resolved before the next
@@ -135,17 +84,10 @@ milestone but do need to be resolved sometime.
 * Reduce or remove golang map usage in performance-critical areas
 * Proper coordinate wrapping in uo.Location.XYDistance()
 * Wrapped overworld
-* ~~Save system re-write~~
 
 ## Feature Packages ##
 Below are feature verticals that I want to implement next in priority order.
 
-* New skill system
-  * Skill use
-  * Skill XP gains
-  * Skills GUMP
-  * Leveling up skills
-  * Skill point reset
 * Tinkering
   * GUMP support
   * Crafting GUMP
