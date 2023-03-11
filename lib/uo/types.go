@@ -389,3 +389,29 @@ const (
 	LightLevelNight LightLevel = 9
 	LightLevelBlack LightLevel = 0x1F
 )
+
+// GFXType is a code that indicates how a graphical effect behaves.
+type GFXType byte
+
+// All valid values for GFXType
+const (
+	GFXTypeMoving    GFXType = 0 // Moves from source to target
+	GFXTypeLightning GFXType = 1 // Lightning strike at source
+	GFXTypeFixed     GFXType = 2 // Moves toward the absolute target location
+	GFXTypeTrack     GFXType = 3 // Moves toward and tracks the source object
+)
+
+// GFXBlendMode is a code that indicates how a graphical effect is rendered.
+type GFXBlendMode uint32
+
+// All valid values for GFXBlendMode
+const (
+	GFXBlendModeNormal          GFXBlendMode = 0 // Normal blending, black is transparent
+	GFXBlendModeMultiply        GFXBlendMode = 1 // Darken
+	GFXBlendModeScreen          GFXBlendMode = 2 // Lighten
+	GFXBlendModeScreenMore      GFXBlendMode = 3 // Lighten more
+	GFXBlendModeScreenLess      GFXBlendMode = 4 // Lighten less
+	GFXBlendModeHalfTransparent GFXBlendMode = 5 // Transparent with black edges
+	GFXBlendModeShadowBlue      GFXBlendMode = 6 // Complete shadow with blue edges
+	GFXBlendModeScreenRed       GFXBlendMode = 7 // Transparent but more red?
+)

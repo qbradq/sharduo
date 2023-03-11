@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/qbradq/sharduo/lib/clientpacket"
+	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/uo"
 )
 
@@ -26,6 +27,7 @@ func (n *MockNetState) Reset() {
 }
 
 // Required for interface compliance
+func (n *MockNetState) Send(serverpacket.Packet) bool                                      { return true }
 func (n *MockNetState) Disconnect()                                                        {}
 func (n *MockNetState) SystemMessage(fmtstr string, args ...interface{})                   {}
 func (n *MockNetState) Speech(from Object, fmtstr string, args ...interface{})             {}

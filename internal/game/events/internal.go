@@ -2,6 +2,7 @@ package events
 
 import (
 	"github.com/qbradq/sharduo/internal/game"
+	"github.com/qbradq/sharduo/lib/uo"
 )
 
 func init() {
@@ -30,4 +31,6 @@ func PlayerLogout(receiver, source game.Object, v any) {
 		return
 	}
 	game.GetWorld().Map().RemoveObject(receiver)
+	game.GetWorld().Map().PlayEffect(uo.GFXTypeFixed, receiver, receiver, 0x3728,
+		15, 10, true, false, uo.HueDefault, uo.GFXBlendModeNormal)
 }

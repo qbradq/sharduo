@@ -38,7 +38,7 @@ func startMiningLoop(miner game.Mobile, tool game.Weapon, p *clientpacket.Target
 		return
 	}
 	// Animation and sound
-	miner.NetState().Animate(miner, uo.AnimationTypeAttack, tool.AnimationAction())
+	game.GetWorld().Map().PlayAnimation(miner, uo.AnimationTypeAttack, tool.AnimationAction())
 	game.NewTimer(12, "ContinueMining", tool, miner, true, p)
 }
 
@@ -103,7 +103,7 @@ func ContinueMining(receiver, source game.Object, v any) {
 	}
 	game.GetWorld().Map().PlaySound(s, p.Location)
 	// Queue up the last hit
-	miner.NetState().Animate(miner, uo.AnimationTypeAttack, tool.AnimationAction())
+	game.GetWorld().Map().PlayAnimation(miner, uo.AnimationTypeAttack, tool.AnimationAction())
 	game.NewTimer(12, "FinishMining", receiver, source, true, p)
 }
 

@@ -6,6 +6,7 @@ import (
 	"sort"
 
 	"github.com/qbradq/sharduo/lib/marshal"
+	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/uo/file"
 )
@@ -918,8 +919,62 @@ func (m *Map) GetFloorAndCeiling(l uo.Location, ignoreDynamicItems bool) (uo.Com
 
 // PlaySound plays a sound at the given location for all clients in range.
 func (m *Map) PlaySound(which uo.Sound, from uo.Location) {
-	for _, m := range m.GetNetStatesInRange(from, uo.MaxUpdateRange) {
-		m.NetState().Sound(which, from)
+	for _, mob := range m.GetNetStatesInRange(from, uo.MaxUpdateRange) {
+		if mob.Location().XYDistance(from) <= mob.ViewRange() {
+			mob.NetState().Sound(which, from)
+		}
+	}
+}
+
+// PlayEffect plays a graphic effect with the given parameters for all clients
+// in range.
+func (m *Map) PlayEffect(t uo.GFXType, src, trg Object, gfx uo.Graphic, speed, duration uint8, fixed, explodes bool, hue uo.Hue, bm uo.GFXBlendMode) {
+	var sl uo.Location
+	ss := uo.SerialMobileNil
+	if src != nil {
+		ss = src.Serial()
+		sl = src.Location()
+	}
+	var tl uo.Location
+	ts := uo.SerialMobileNil
+	if trg != nil {
+		ts = trg.Serial()
+		tl = trg.Location()
+	}
+	p := &serverpacket.GraphicalEffect{
+		GFXType:        t,
+		Source:         ss,
+		Target:         ts,
+		Graphic:        gfx,
+		SourceLocation: sl,
+		TargetLocation: tl,
+		Speed:          speed,
+		Duration:       duration,
+		Fixed:          fixed,
+		Explodes:       explodes,
+		Hue:            hue,
+		GFXBlendMode:   bm,
+	}
+	l := trg.Location()
+	for _, mob := range m.GetNetStatesInRange(l, uo.MaxUpdateRange) {
+		if mob.Location().XYDistance(l) <= mob.ViewRange() {
+			mob.NetState().Send(p)
+		}
+	}
+}
+
+// PlayAnimation plays an animation for a mobile.
+func (m *Map) PlayAnimation(who Mobile, at uo.AnimationType, aa uo.AnimationAction) {
+	p := &serverpacket.Animation{
+		Serial:          who.Serial(),
+		AnimationType:   at,
+		AnimationAction: aa,
+	}
+	l := who.Location()
+	for _, mob := range m.GetNetStatesInRange(l, uo.MaxUpdateRange) {
+		if mob.Location().XYDistance(l) <= mob.ViewRange() {
+			mob.NetState().Send(p)
+		}
 	}
 }
 

@@ -2,6 +2,7 @@ package game
 
 import (
 	"github.com/qbradq/sharduo/lib/clientpacket"
+	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/uo"
 )
 
@@ -30,12 +31,12 @@ type NetState interface {
 	// Effects and random stuff
 	//
 
+	// Send sends a custom packet to the client
+	Send(serverpacket.Packet) bool
 	// Sound sends a sound to the client from the specified location
 	Sound(uo.Sound, uo.Location)
 	// Music sends a song to the client
 	Music(uo.Song)
-	// Animate make the client animate the given mobile
-	Animate(Mobile, uo.AnimationType, uo.AnimationAction)
 	// TargetSendCursor sends a targeting request to the client
 	TargetSendCursor(uo.TargetType, func(*clientpacket.TargetResponse))
 

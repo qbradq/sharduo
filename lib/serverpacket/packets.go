@@ -1044,3 +1044,53 @@ func (p *GUMP) Write(w io.Writer) {
 		dc.PutUTF16StringN(w, line, lrc) // Line data
 	}
 }
+
+// GraphicalEffect sends a graphical effect packet to the client
+type GraphicalEffect struct {
+	// Behavior of the effect
+	GFXType uo.GFXType
+	// Serial of the source object
+	Source uo.Serial
+	// Serial of the target object
+	Target uo.Serial
+	// First frame of the effect
+	Graphic uo.Graphic
+	// Source location
+	SourceLocation uo.Location
+	// Target location
+	TargetLocation uo.Location
+	// Speed of the animation in FPS?
+	Speed uint8
+	// Duration of the animation 1=Slowest, 0=Even slower for some reason
+	Duration uint8
+	// If true the projectile will not attempt to change facing during flight
+	Fixed bool
+	// If true the projectile will explode on impact
+	Explodes bool
+	// Hue of the effect
+	Hue uo.Hue
+	// Render mode of the effect
+	GFXBlendMode uo.GFXBlendMode
+}
+
+// Write implements the Packet interface.
+func (p *GraphicalEffect) Write(w io.Writer) {
+	dc.PutByte(w, 0xC0) // Packet ID
+	dc.PutByte(w, byte(p.GFXType))
+	dc.PutUint32(w, uint32(p.Source))
+	dc.PutUint32(w, uint32(p.Target))
+	dc.PutUint16(w, uint16(p.Graphic))
+	dc.PutUint16(w, uint16(p.SourceLocation.X))
+	dc.PutUint16(w, uint16(p.SourceLocation.Y))
+	dc.PutByte(w, byte(p.SourceLocation.Z))
+	dc.PutUint16(w, uint16(p.TargetLocation.X))
+	dc.PutUint16(w, uint16(p.TargetLocation.Y))
+	dc.PutByte(w, byte(p.TargetLocation.Z))
+	dc.PutByte(w, byte(p.Speed))
+	dc.PutByte(w, byte(p.Duration))
+	dc.Pad(w, 2)
+	dc.PutBool(w, p.Fixed)
+	dc.PutBool(w, p.Explodes)
+	dc.PutUint32(w, uint32(p.Hue))
+	dc.PutUint32(w, uint32(p.GFXBlendMode))
+}

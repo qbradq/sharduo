@@ -224,6 +224,8 @@ func commandDebug(n *NetState, args CommandArgs, cl string) {
 		return
 	}
 	switch args[1] {
+	case "gfx_test":
+		fallthrough
 	case "force_chunk_update":
 		fallthrough
 	case "memory_test":
@@ -261,6 +263,21 @@ func commandDebug(n *NetState, args CommandArgs, cl string) {
 	}
 	// Execute command
 	switch args[1] {
+	case "gfx_test":
+		n.Send(&serverpacket.GraphicalEffect{
+			GFXType:        uo.GFXTypeFixed,
+			Source:         n.m.Serial(),
+			Target:         n.m.Serial(),
+			Graphic:        0x3728,
+			SourceLocation: n.m.Location(),
+			TargetLocation: n.m.Location(),
+			Speed:          15,
+			Duration:       10,
+			Fixed:          true,
+			Explodes:       false,
+			Hue:            uo.HueDefault,
+			GFXBlendMode:   uo.GFXBlendModeNormal,
+		})
 	case "force_chunk_update":
 		n.Speech(n.m, "Target the chunk you wish to force-update")
 		n.TargetSendCursor(uo.TargetTypeLocation, func(tr *clientpacket.TargetResponse) {

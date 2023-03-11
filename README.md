@@ -27,11 +27,13 @@ The next milestone set for ShardUO is to implement the Mining skill vertical,
 including all features required to mine ore and smelt it into ingots.
 
 ### Current Defects ###
+None that I am aware of. Famous last words and all that.
 
 ### Required Features and Tasks ###
 * Player movement packet throttling
 * Action packet throttling
 * Mobile weight limit and stamina
+* Welcome GUMP
 * ~~Player logout detection and handling~~
 * ~~Ore resource map~~
 * ~~Mining skill~~
@@ -69,6 +71,9 @@ including all features required to mine ore and smelt it into ingots.
 * ~~Clilocs~~
 
 ### Nice to Haves ###
+* Compressed GUMP support
+* Feedback GUMP
+* Help GUMP
 * NPC name generation
 * NPC vendors
 * Buying from vendors
@@ -81,15 +86,11 @@ including all features required to mine ore and smelt it into ingots.
 * Miner's Guild
 * Selling to vendors
 * Item durability
+* Regions
+* Region spawning
 * Passive fauna
 * Wild flora
 * Agricultural crops
-* Regions
-* Region spawning
-* Compressed GUMP support
-* Welcome GUMP
-* Feedback GUMP
-* Help GUMP
 * Decoration GUMP
 * Start decorating
 * MegaCliloc roll-over info
