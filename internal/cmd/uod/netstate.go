@@ -56,6 +56,8 @@ type NetState struct {
 	disconnectLock sync.Once
 	// All open GUMPs on the client side
 	gumps map[uo.Serial]*gumpDescription
+	// When the next action can be taken
+	nextActionTime uo.Time
 }
 
 // NewNetState constructs a new NetState object.
@@ -127,6 +129,19 @@ func (n *NetState) Disconnect() {
 		}
 		gameNetStates.Delete(n)
 	})
+}
+
+// TakeAction returns true if an action is allowed at this time. Examples of
+// actions are double-clicking anything basically and moving and
+// equipping items. This method assumes that the action will be taken after
+// this call and sets internal states to limit action speed.
+func (n *NetState) TakeAction() bool {
+	now := world.Time()
+	if now < n.nextActionTime {
+		return false
+	}
+	n.nextActionTime = now + uo.DurationSecond/2
+	return true
 }
 
 // Service is the goroutine that services the netstate.

@@ -812,6 +812,9 @@ func (m *BaseMobile) IsEquipped(o Object) bool {
 		return false
 	}
 	e := m.EquipmentInSlot(w.Layer())
+	if e == nil {
+		return false
+	}
 	return o.Serial() == e.Serial()
 }
 

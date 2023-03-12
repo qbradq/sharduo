@@ -14,27 +14,37 @@ func init() {
 	reg("SmeltOre", SmeltOre)
 }
 
+// Registry of active miners
+var regMiners = map[uo.Serial]struct{}{}
+
 func startMiningLoop(miner game.Mobile, tool game.Weapon, p *clientpacket.TargetResponse) {
+	// Register the miner blindly
+	regMiners[miner.Serial()] = struct{}{}
 	// Sanity checks
 	if !miner.IsEquipped(tool) {
 		miner.NetState().Cliloc(nil, 1149764) // You must have that equipped to use it.
+		delete(regMiners, miner.Serial())
 		return
 	}
 	if miner.IsMounted() {
 		miner.NetState().Cliloc(nil, 501864) // You can't dig while riding or flying.
+		delete(regMiners, miner.Serial())
 		return
 	}
 	if miner.Location().XYDistance(p.Location) > 2 {
 		miner.NetState().Cliloc(nil, 500251) // That location is too far away.
+		delete(regMiners, miner.Serial())
 		return
 	}
 	t := game.GetWorld().Map().GetTile(p.Location.X, p.Location.Y)
 	if _, minable := mountainAndCaveTiles[t.BaseGraphic()]; !minable {
 		miner.NetState().Cliloc(nil, 501863) // You can't mine that.
+		delete(regMiners, miner.Serial())
 		return
 	}
 	if !game.GetWorld().Map().HasOre(p.Location) {
 		miner.NetState().Cliloc(nil, 503040) // There is no metal here to mine.
+		delete(regMiners, miner.Serial())
 		return
 	}
 	// Animation and sound
@@ -54,14 +64,24 @@ func BeginMining(receiver, source game.Object, v any) {
 	if !ok {
 		return
 	}
-	// TODO Next action delay
 	// Sanity checks
+	if miner.NetState() == nil {
+		return
+	}
+	if !miner.NetState().TakeAction() {
+		miner.NetState().Cliloc(nil, 500119) // You must wait to perform another action.
+		return
+	}
 	if !miner.IsEquipped(tool) {
 		miner.NetState().Cliloc(nil, 1149764) // You must have that equipped to use it.
 		return
 	}
 	if miner.IsMounted() {
 		miner.NetState().Cliloc(nil, 501864) // You can't dig while riding or flying.
+		return
+	}
+	if _, found := regMiners[miner.Serial()]; found {
+		miner.NetState().Speech(nil, "You are already mining.")
 		return
 	}
 	// Targeting
@@ -76,24 +96,32 @@ func ContinueMining(receiver, source game.Object, v any) {
 	}
 	p := v.(*clientpacket.TargetResponse)
 	miner, ok := source.(game.Mobile)
-	if !ok || miner.NetState() == nil {
+	if !ok {
+		return
+	}
+	if miner.NetState() == nil {
+		delete(regMiners, miner.Serial())
 		return
 	}
 	tool, ok := receiver.(game.Weapon)
 	if !ok {
+		delete(regMiners, miner.Serial())
 		return
 	}
 	// Sanity checks
 	if !miner.IsEquipped(tool) {
 		miner.NetState().Cliloc(nil, 1149764) // You must have that equipped to use it.
+		delete(regMiners, miner.Serial())
 		return
 	}
 	if miner.IsMounted() {
 		miner.NetState().Cliloc(nil, 501864) // You can't dig while riding or flying.
+		delete(regMiners, miner.Serial())
 		return
 	}
 	if miner.Location().XYDistance(p.Location) > 2 {
 		miner.NetState().Cliloc(nil, 500251) // That location is too far away.
+		delete(regMiners, miner.Serial())
 		return
 	}
 	// Play the hit sound
@@ -113,28 +141,37 @@ func FinishMining(receiver, source game.Object, v any) {
 	}
 	p := v.(*clientpacket.TargetResponse)
 	miner, ok := source.(game.Mobile)
-	if !ok || miner.NetState() == nil {
+	if !ok {
+		return
+	}
+	if miner.NetState() == nil {
+		delete(regMiners, miner.Serial())
 		return
 	}
 	tool, ok := receiver.(game.Weapon)
 	if !ok {
+		delete(regMiners, miner.Serial())
 		return
 	}
 	// Sanity checks
 	if !miner.IsEquipped(tool) {
 		miner.NetState().Cliloc(nil, 1149764) // You must have that equipped to use it.
+		delete(regMiners, miner.Serial())
 		return
 	}
 	if miner.IsMounted() {
 		miner.NetState().Cliloc(nil, 501864) // You can't dig while riding or flying.
+		delete(regMiners, miner.Serial())
 		return
 	}
 	if miner.Location().XYDistance(p.Location) > 2 {
 		miner.NetState().Cliloc(nil, 500251) // That location is too far away.
+		delete(regMiners, miner.Serial())
 		return
 	}
 	if !game.GetWorld().Map().HasOre(p.Location) {
 		miner.NetState().Cliloc(nil, 503040) // There is no metal here to mine.
+		delete(regMiners, miner.Serial())
 		return
 	}
 	// Play the hit sound
@@ -161,6 +198,8 @@ func FinishMining(receiver, source game.Object, v any) {
 	// Continue mining the spot if the player is still logged in
 	if miner.NetState() != nil {
 		startMiningLoop(miner, tool, p)
+	} else {
+		delete(regMiners, miner.Serial())
 	}
 }
 

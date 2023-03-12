@@ -6,7 +6,7 @@ programming language.
 A huge thank you goes out to the following groups, in no particular order.
 
 * The Penultima Online (POL) packet documentation for being a guide stone and
-  first source of packet information.
+  first source of packet and GUMP information.
 * Every contributor to the RunUO / PlayUO / ServUO source code for packet
   reference.
 * Every contributor to the ClassicUO source code for packet and client behavior
