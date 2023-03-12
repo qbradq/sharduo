@@ -806,6 +806,9 @@ func (n *NetState) GUMP(g game.GUMP, target, param game.Object) {
 
 // GUMPReply dispatches a GUMP reply
 func (n *NetState) GUMPReply(s uo.Serial, p *clientpacket.GUMPReply) {
+	if n.m == nil {
+		return
+	}
 	// Handle close requests
 	if p.Button == 0 {
 		delete(n.gumps, s)
@@ -840,5 +843,5 @@ func (n *NetState) GUMPReply(s uo.Serial, p *clientpacket.GUMPReply) {
 	// Refresh the GUMP for the client
 	// TODO Implement GUMP type IDs
 	d.g.Layout(tg, pm)
-	n.Send(d.g.Packet(0, 0, s, 1))
+	n.Send(d.g.Packet(0, 0, n.m.Serial(), s))
 }
