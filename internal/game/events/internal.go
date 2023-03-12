@@ -30,6 +30,10 @@ func PlayerLogout(receiver, source game.Object, v any) {
 	if receiver == nil {
 		return
 	}
+	rm, ok := receiver.(game.Mobile)
+	if !ok || rm.NetState() != nil {
+		return
+	}
 	game.GetWorld().Map().RemoveObject(receiver)
 	game.GetWorld().Map().PlayEffect(uo.GFXTypeFixed, receiver, receiver, 0x3728,
 		15, 10, true, false, uo.HueDefault, uo.GFXBlendModeNormal)

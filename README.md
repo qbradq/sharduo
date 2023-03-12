@@ -30,13 +30,11 @@ including all features required to mine ore and smelt it into ingots.
 * Have to refactor GUMP handling to use GUMP type codes
 
 ### Required Features and Tasks ###
-* Player movement packet throttling
 * Action packet throttling
 * Mobile weight limit and stamina
 * Welcome GUMP
 
 ### Nice to Haves ###
-* Compressed GUMP support
 * Feedback GUMP
 * Help GUMP
 * NPC name generation
@@ -62,6 +60,7 @@ including all features required to mine ore and smelt it into ingots.
 * Line of sight checks
 
 ### Nerdy Things I Might Do for Fun ###
+* Player movement packet throttling
 * Day/Night cycles
 * Weather patterns
 * Fall damage
