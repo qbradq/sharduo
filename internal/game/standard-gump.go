@@ -184,8 +184,8 @@ type StandardGUMP struct {
 }
 
 // Packet implements the GUMP interface.
-func (g *StandardGUMP) Packet(x, y int, id, serial uo.Serial) serverpacket.Packet {
-	return g.g.Packet(x, y, id, serial)
+func (g *StandardGUMP) Packet(x, y int, sender, serial uo.Serial) serverpacket.Packet {
+	return g.g.Packet(x, y, sender, serial)
 }
 
 // StandardReplyHandler returns true if the reply was totally handled by this

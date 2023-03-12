@@ -27,7 +27,7 @@ type GUMP interface {
 	// Must be called before Packet().
 	Layout(target, param Object)
 	// Packet returns a newly created serverpacket.Packet for this GUMP.
-	Packet(x, y int, id, serial uo.Serial) serverpacket.Packet
+	Packet(x, y int, sender, serial uo.Serial) serverpacket.Packet
 	// HandleReply is called to process all replies for this GUMP. HandleReply
 	// is not expected to handle GUMP close requests. The server keeping track
 	// of open GUMPs should do that. Additionally the server needs to call
@@ -48,11 +48,11 @@ type BaseGUMP struct {
 // to define their own.
 
 // Packet implements the GUMP interface.
-func (g *BaseGUMP) Packet(x, y int, id, serial uo.Serial) serverpacket.Packet {
+func (g *BaseGUMP) Packet(x, y int, sender, serial uo.Serial) serverpacket.Packet {
 	return &serverpacket.GUMP{
-		ProcessID: id,
-		GUMPID:    serial,
-		Layout:    g.l.String(),
+		Sender: sender,
+		Serial: serial,
+		Layout: g.l.String(),
 		Location: uo.Location{
 			X: int16(x),
 			Y: int16(y),

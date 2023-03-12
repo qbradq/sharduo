@@ -800,12 +800,8 @@ func (n *NetState) GUMP(g game.GUMP, target, param game.Object) {
 		p: ps,
 	}
 	// TODO Implement GUMP type IDs
-	id := uo.SerialSystem
-	if n.m != nil {
-		id = n.m.Serial()
-	}
 	g.Layout(target, param)
-	n.Send(g.Packet(0, 0, id, s))
+	n.Send(g.Packet(0, 0, n.m.Serial(), s))
 }
 
 // GUMPReply dispatches a GUMP reply
@@ -843,10 +839,6 @@ func (n *NetState) GUMPReply(s uo.Serial, p *clientpacket.GUMPReply) {
 	d.g.HandleReply(n, p)
 	// Refresh the GUMP for the client
 	// TODO Implement GUMP type IDs
-	id := uo.SerialSystem
-	if n.m != nil {
-		id = n.m.Serial()
-	}
 	d.g.Layout(tg, pm)
-	n.Send(d.g.Packet(0, 0, id, s))
+	n.Send(d.g.Packet(0, 0, s, 1))
 }

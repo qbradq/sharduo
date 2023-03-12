@@ -9,7 +9,7 @@ import (
 	"github.com/qbradq/sharduo/lib/uo"
 )
 
-// Test is a test GUMP that uses all of the GUMP features I am aware of and
+// Test is a Test GUMP that uses all of the GUMP features I am aware of and
 // support.
 type Test struct {
 	game.StandardGUMP
@@ -17,15 +17,14 @@ type Test struct {
 	email    string
 }
 
-// NewTest creates a new Test GUMP initialized and ready for use.
 func NewTest() *Test {
-	t := &Test{
+	g := &Test{
 		switches: make([]bool, 6),
 		email:    "email@domain.com",
 	}
-	t.switches[1] = true
-	t.switches[5] = true
-	return t
+	g.switches[1] = true
+	g.switches[5] = true
+	return g
 }
 
 // Layout implements the GUMP interface.

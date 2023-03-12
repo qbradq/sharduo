@@ -1,6 +1,8 @@
 package serverpacket
 
 import (
+	"bytes"
+	"compress/zlib"
 	"io"
 	"net"
 	"strings"
@@ -1008,40 +1010,81 @@ func (p *ContextMenu) Write(w io.Writer) {
 
 // GUMP sends a non-compressed generic GUMP to the client.
 type GUMP struct {
-	// Serial of the process that fired the GUMP, gets returned in reply packets
-	ProcessID uo.Serial
-	// Serial of the GUMP layout, this should not change at runtime
-	GUMPID uo.Serial
+	// Sender code of the GUMP layout
+	Sender uo.Serial
+	// Serial of the GUMP returned in reply packets
+	Serial uo.Serial
 	// Layout string for the GUMP
 	Layout string
 	// Location of the GUMP on screen
 	Location uo.Location
 	// Text lines
 	Lines []string
+	// If true the GUMP data will be sent uncompressed
+	DoNotCompress bool
 }
 
 // Write implements the Packet interface.
 func (p *GUMP) Write(w io.Writer) {
-	// Calculate length
-	l := 23                        // All fixed-width fields
-	l += len(p.Lines) * 2          // Length field for all lines
-	l += len(p.Layout)             // Layout section
-	for _, line := range p.Lines { // Length of the lines of text
-		l += utf8.RuneCountInString(line) * 2
-	}
-	dc.PutByte(w, 0xB0)                       // General packet ID
-	dc.PutUint16(w, uint16(l))                // Packet length
-	dc.PutUint32(w, uint32(p.ProcessID))      // Process ID
-	dc.PutUint32(w, uint32(p.GUMPID))         // GUMP type ID
-	dc.PutUint32(w, uint32(p.Location.X))     // Screen location X
-	dc.PutUint32(w, uint32(p.Location.Y))     // Screen location Y
-	dc.PutUint16(w, uint16(len(p.Layout)))    // Layout data length
-	dc.PutStringN(w, p.Layout, len(p.Layout)) // Layout data
-	dc.PutUint16(w, uint16(len(p.Lines)))     // Number of text lines
-	for _, line := range p.Lines {
-		lrc := utf8.RuneCountInString(line)
-		dc.PutUint16(w, uint16(lrc))     // Length of the line in runes
-		dc.PutUTF16StringN(w, line, lrc) // Line data
+	// Use the old GUMP packet
+	if p.DoNotCompress {
+		// Calculate length
+		l := 23                        // All fixed-width fields
+		l += len(p.Lines) * 2          // Length field for all lines
+		l += len(p.Layout)             // Layout section
+		for _, line := range p.Lines { // Length of the lines of text
+			l += utf8.RuneCountInString(line) * 2
+		}
+		dc.PutByte(w, 0xB0)                       // General packet ID
+		dc.PutUint16(w, uint16(l))                // Packet length
+		dc.PutUint32(w, uint32(p.Serial))         // GUMP serial
+		dc.PutUint32(w, uint32(p.Sender))         // GUMP type ID
+		dc.PutUint32(w, uint32(p.Location.X))     // Screen location X
+		dc.PutUint32(w, uint32(p.Location.Y))     // Screen location Y
+		dc.PutUint16(w, uint16(len(p.Layout)))    // Layout data length
+		dc.PutStringN(w, p.Layout, len(p.Layout)) // Layout data
+		dc.PutUint16(w, uint16(len(p.Lines)))     // Number of text lines
+		for _, line := range p.Lines {
+			lrc := utf8.RuneCountInString(line)
+			dc.PutUint16(w, uint16(lrc))     // Length of the line in runes
+			dc.PutUTF16StringN(w, line, lrc) // Line data
+		}
+	} else {
+		// Compress layout data
+		fb := bytes.NewBuffer(nil)
+		fz := zlib.NewWriter(fb)
+		fz.Write([]byte(p.Layout))
+		fz.Close()
+		fd := fb.Bytes()
+		// Build the line data
+		lbraw := bytes.NewBuffer(nil)
+		for _, line := range p.Lines {
+			lrc := utf8.RuneCountInString(line)
+			dc.PutUint16(lbraw, uint16(lrc))
+			dc.PutUTF16StringN(lbraw, line, lrc)
+		}
+		ldraw := lbraw.Bytes()
+		lb := bytes.NewBuffer(nil)
+		lz := zlib.NewWriter(lb)
+		lz.Write(ldraw)
+		lz.Close()
+		ld := lb.Bytes()
+		// Calculate packet length
+		l := 39 + len(fd) + len(ld)
+		// Write the packet
+		dc.PutByte(w, 0xDD)                    // Packet ID
+		dc.PutUint16(w, uint16(l))             // Packet length
+		dc.PutUint32(w, uint32(p.Serial))      // GUMP serial
+		dc.PutUint32(w, uint32(p.Sender))      // GUMP type code
+		dc.PutUint32(w, uint32(p.Location.X))  // Screen location X
+		dc.PutUint32(w, uint32(p.Location.Y))  // Screen location Y
+		dc.PutUint32(w, uint32(len(fd)+4))     // Compressed layout length
+		dc.PutUint32(w, uint32(len(p.Layout))) // Decompressed layout length
+		w.Write(fd)                            // Compressed layout
+		dc.PutUint32(w, uint32(len(p.Lines)))  // Number of lines
+		dc.PutUint32(w, uint32(len(ld)+4))     // Compressed lines length
+		dc.PutUint32(w, uint32(len(ldraw)))    // Decompressed lines length
+		w.Write(ld)                            // Compressed lines
 	}
 }
 
