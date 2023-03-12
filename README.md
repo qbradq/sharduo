@@ -30,7 +30,6 @@ including all features required to mine ore and smelt it into ingots.
 * Have to refactor GUMP handling to use GUMP type codes
 
 ### Required Features and Tasks ###
-* Action packet throttling
 * Mobile weight limit and stamina
 * Welcome GUMP
 

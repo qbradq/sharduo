@@ -102,7 +102,7 @@ func (r *CharacterLoginRequest) Execute() error {
 	r.NetState.SendObject(r.NetState.m)
 
 	// TODO Send welcome GUMP
-	r.NetState.GUMP(gumps.NewTest(), r.NetState.m, nil)
+	r.NetState.GUMP(&gumps.Welcome{}, r.NetState.m, nil)
 
 	return nil
 }
