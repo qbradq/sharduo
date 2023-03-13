@@ -190,6 +190,12 @@ func (g *StandardGUMP) InvalidateLayout() {
 	g.lastGroup = 0
 }
 
+// TypeCode implements the GUMP interface.
+func (g *StandardGUMP) TypeCode() uint32 { return g.g.typeCode }
+
+// SetTypeCode implements the GUMP interface.
+func (g *StandardGUMP) SetTypeCode(c uint32) { g.g.typeCode = c }
+
 // Packet implements the GUMP interface.
 func (g *StandardGUMP) Packet(x, y int, sender, serial uo.Serial) serverpacket.Packet {
 	return g.g.Packet(x, y, sender, serial)

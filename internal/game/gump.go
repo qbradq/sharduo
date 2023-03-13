@@ -36,12 +36,17 @@ type GUMP interface {
 	// of open GUMPs should do that. Additionally the server needs to call
 	// Layout again and send the new GUMP packet back to the client.
 	HandleReply(n NetState, p *clientpacket.GUMPReply)
+	// TypeCode returns the GUMP's type code.
+	TypeCode() uint32
+	// SetTypeCode sets the GUMP's type code.
+	SetTypeCode(uint32)
 }
 
 // BaseGUMP represents a generic GUMP and is the basis for all other GUMPs.
 type BaseGUMP struct {
-	l     strings.Builder // Layout string
-	lines []string        // List of all text lines used
+	l        strings.Builder // Layout string
+	lines    []string        // List of all text lines used
+	typeCode uint32
 }
 
 // BaseGUMP does not implement the Layout() function. This forces includers to
@@ -49,6 +54,12 @@ type BaseGUMP struct {
 
 // BaseGUMP does not implement the HandleReply() function. This forces includers
 // to define their own.
+
+// TypeCode implements the GUMP interface.
+func (g *BaseGUMP) TypeCode() uint32 { return g.typeCode }
+
+// SetTypeCode implements the GUMP interface.
+func (g *BaseGUMP) SetTypeCode(c uint32) { g.typeCode = c }
 
 // InvalidateLayout implements the GUMP interface.
 func (g *BaseGUMP) InvalidateLayout() {

@@ -796,6 +796,7 @@ func (n *NetState) Animate(mob game.Mobile, at uo.AnimationType, aa uo.Animation
 
 // GUMP sends a generic GUMP to the client.
 func (n *NetState) GUMP(g game.GUMP, target, param game.Object) {
+	s := g.TypeCode()
 	s := uo.RandomMobileSerial(world.rng)
 	for {
 		if _, duplicate := n.gumps[s]; !duplicate {

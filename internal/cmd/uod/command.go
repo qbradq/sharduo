@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/qbradq/sharduo/internal/cmd/uod/gumps"
 	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/internal/game/events"
 	"github.com/qbradq/sharduo/lib/clientpacket"
@@ -224,6 +225,8 @@ func commandDebug(n *NetState, args CommandArgs, cl string) {
 		return
 	}
 	switch args[1] {
+	case "welcome":
+		fallthrough
 	case "gfx_test":
 		fallthrough
 	case "force_chunk_update":
@@ -263,6 +266,8 @@ func commandDebug(n *NetState, args CommandArgs, cl string) {
 	}
 	// Execute command
 	switch args[1] {
+	case "welcome":
+		n.GUMP(&gumps.Welcome{}, n.m, nil)
 	case "gfx_test":
 		n.Send(&serverpacket.GraphicalEffect{
 			GFXType:        uo.GFXTypeFixed,

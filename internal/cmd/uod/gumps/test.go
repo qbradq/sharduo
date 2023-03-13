@@ -9,22 +9,24 @@ import (
 	"github.com/qbradq/sharduo/lib/uo"
 )
 
+func init() {
+	reg("test", func() game.GUMP {
+		g := &Test{
+			switches: make([]bool, 6),
+			email:    "email@domain.com",
+		}
+		g.switches[1] = true
+		g.switches[5] = true
+		return g
+	})
+}
+
 // Test is a Test GUMP that uses all of the GUMP features I am aware of and
 // support.
 type Test struct {
 	game.StandardGUMP
 	switches []bool
 	email    string
-}
-
-func NewTest() *Test {
-	g := &Test{
-		switches: make([]bool, 6),
-		email:    "email@domain.com",
-	}
-	g.switches[1] = true
-	g.switches[5] = true
-	return g
 }
 
 // Layout implements the GUMP interface.
