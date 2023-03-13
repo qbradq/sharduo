@@ -103,3 +103,9 @@ func (a *Account) SetPlayer(s uo.Serial) { a.player = s }
 
 // HasRole returns true if the account has the given role
 func (a *Account) HasRole(r Role) bool { return a.roles&r != 0 }
+
+// EmailAddress returns the email address for the account
+func (a *Account) EmailAddress() string { return a.emailAddress }
+
+// SetEmailAddress sets the email address for the account
+func (a *Account) SetEmailAddress(e string) { a.emailAddress = e }

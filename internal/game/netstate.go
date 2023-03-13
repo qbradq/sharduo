@@ -17,6 +17,9 @@ type NetState interface {
 
 	// Disconnect disconnects the underlying network connection
 	Disconnect()
+	// Account returns the account attached to this NetState, which will never
+	// be nil.
+	Account() *Account
 	// TakeAction returns true if an action is allowed at this time. Examples of
 	// actions are double-clicking anything basically and moving and
 	// equipping items. This method assumes that the action will be taken after

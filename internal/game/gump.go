@@ -26,6 +26,9 @@ type GUMP interface {
 	// Layout executes all of the layout functions that comprise this GUMP.
 	// Must be called before Packet().
 	Layout(target, param Object)
+	// InvalidateLayout resets the internal state so that Layout() may be called
+	// again.
+	InvalidateLayout()
 	// Packet returns a newly created serverpacket.Packet for this GUMP.
 	Packet(x, y int, sender, serial uo.Serial) serverpacket.Packet
 	// HandleReply is called to process all replies for this GUMP. HandleReply
@@ -46,6 +49,12 @@ type BaseGUMP struct {
 
 // BaseGUMP does not implement the HandleReply() function. This forces includers
 // to define their own.
+
+// InvalidateLayout implements the GUMP interface.
+func (g *BaseGUMP) InvalidateLayout() {
+	g.l.Reset()
+	g.lines = nil
+}
 
 // Packet implements the GUMP interface.
 func (g *BaseGUMP) Packet(x, y int, sender, serial uo.Serial) serverpacket.Packet {

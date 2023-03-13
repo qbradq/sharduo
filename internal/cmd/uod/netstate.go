@@ -131,6 +131,9 @@ func (n *NetState) Disconnect() {
 	})
 }
 
+// Account returns the account associated with this NetState.
+func (n *NetState) Account() *game.Account { return n.account }
+
 // TakeAction returns true if an action is allowed at this time. Examples of
 // actions are double-clicking anything basically and moving and
 // equipping items. This method assumes that the action will be taken after
@@ -791,8 +794,7 @@ func (n *NetState) Animate(mob game.Mobile, at uo.AnimationType, aa uo.Animation
 	})
 }
 
-// GUMP sends a generic GUMP to the client. This should be a newly created GUMP
-// that has not had Layout() called yet.
+// GUMP sends a generic GUMP to the client.
 func (n *NetState) GUMP(g game.GUMP, target, param game.Object) {
 	s := uo.RandomMobileSerial(world.rng)
 	for {
@@ -815,6 +817,7 @@ func (n *NetState) GUMP(g game.GUMP, target, param game.Object) {
 		p: ps,
 	}
 	// TODO Implement GUMP type IDs
+	g.InvalidateLayout()
 	g.Layout(target, param)
 	n.Send(g.Packet(0, 0, n.m.Serial(), s))
 }
@@ -857,6 +860,7 @@ func (n *NetState) GUMPReply(s uo.Serial, p *clientpacket.GUMPReply) {
 	d.g.HandleReply(n, p)
 	// Refresh the GUMP for the client
 	// TODO Implement GUMP type IDs
+	d.g.InvalidateLayout()
 	d.g.Layout(tg, pm)
 	n.Send(d.g.Packet(0, 0, n.m.Serial(), s))
 }

@@ -183,6 +183,13 @@ type StandardGUMP struct {
 	lastGroup uint32
 }
 
+// InvalidateLayout implements the GUMP interface.
+func (g *StandardGUMP) InvalidateLayout() {
+	g.g.InvalidateLayout()
+	g.lastPage = 0
+	g.lastGroup = 0
+}
+
 // Packet implements the GUMP interface.
 func (g *StandardGUMP) Packet(x, y int, sender, serial uo.Serial) serverpacket.Packet {
 	return g.g.Packet(x, y, sender, serial)

@@ -31,7 +31,6 @@ including all features required to mine ore and smelt it into ingots.
 
 ### Required Features and Tasks ###
 * Mobile weight limit and stamina
-* Welcome GUMP
 
 ### Nice to Haves ###
 * Feedback GUMP
