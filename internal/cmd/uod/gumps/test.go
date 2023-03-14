@@ -11,7 +11,7 @@ import (
 
 func init() {
 	reg("test", func() game.GUMP {
-		g := &Test{
+		g := &test{
 			switches: make([]bool, 6),
 			email:    "email@domain.com",
 		}
@@ -21,16 +21,16 @@ func init() {
 	})
 }
 
-// Test is a Test GUMP that uses all of the GUMP features I am aware of and
+// test is a test GUMP that uses all of the GUMP features I am aware of and
 // support.
-type Test struct {
+type test struct {
 	game.StandardGUMP
 	switches []bool
 	email    string
 }
 
 // Layout implements the GUMP interface.
-func (g *Test) Layout(target, param game.Object) {
+func (g *test) Layout(target, param game.Object) {
 	motd, err := data.FS.ReadFile("html/motd.html")
 	if err != nil {
 		log.Println(err)
@@ -60,7 +60,7 @@ func (g *Test) Layout(target, param game.Object) {
 }
 
 // HandleReply implements the GUMP interface.
-func (g *Test) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
+func (g *test) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 	if g.StandardReplyHandler(p) {
 		return
 	}

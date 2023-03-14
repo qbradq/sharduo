@@ -797,13 +797,6 @@ func (n *NetState) Animate(mob game.Mobile, at uo.AnimationType, aa uo.Animation
 // GUMP sends a generic GUMP to the client.
 func (n *NetState) GUMP(g game.GUMP, target, param game.Object) {
 	s := g.TypeCode()
-	s := uo.RandomMobileSerial(world.rng)
-	for {
-		if _, duplicate := n.gumps[s]; !duplicate {
-			break
-		}
-		s = uo.RandomMobileSerial(world.rng)
-	}
 	ts := uo.SerialSystem
 	if target != nil {
 		ts = target.Serial()
@@ -817,7 +810,6 @@ func (n *NetState) GUMP(g game.GUMP, target, param game.Object) {
 		t: ts,
 		p: ps,
 	}
-	// TODO Implement GUMP type IDs
 	g.InvalidateLayout()
 	g.Layout(target, param)
 	n.Send(g.Packet(0, 0, n.m.Serial(), s))
@@ -860,7 +852,6 @@ func (n *NetState) GUMPReply(s uo.Serial, p *clientpacket.GUMPReply) {
 	// Handle reply
 	d.g.HandleReply(n, p)
 	// Refresh the GUMP for the client
-	// TODO Implement GUMP type IDs
 	d.g.InvalidateLayout()
 	d.g.Layout(tg, pm)
 	n.Send(d.g.Packet(0, 0, n.m.Serial(), s))

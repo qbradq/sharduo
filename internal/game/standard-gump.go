@@ -191,14 +191,14 @@ func (g *StandardGUMP) InvalidateLayout() {
 }
 
 // TypeCode implements the GUMP interface.
-func (g *StandardGUMP) TypeCode() uint32 { return g.g.typeCode }
+func (g *StandardGUMP) TypeCode() uo.Serial { return g.g.typeCode }
 
 // SetTypeCode implements the GUMP interface.
-func (g *StandardGUMP) SetTypeCode(c uint32) { g.g.typeCode = c }
+func (g *StandardGUMP) SetTypeCode(c uo.Serial) { g.g.typeCode = c }
 
 // Packet implements the GUMP interface.
-func (g *StandardGUMP) Packet(x, y int, sender, serial uo.Serial) serverpacket.Packet {
-	return g.g.Packet(x, y, sender, serial)
+func (g *StandardGUMP) Packet(x, y int, sender, typeCode uo.Serial) serverpacket.Packet {
+	return g.g.Packet(x, y, sender, typeCode)
 }
 
 // StandardReplyHandler returns true if the reply was totally handled by this

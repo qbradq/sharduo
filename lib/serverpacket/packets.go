@@ -1012,8 +1012,8 @@ func (p *ContextMenu) Write(w io.Writer) {
 type GUMP struct {
 	// Sender code of the GUMP layout
 	Sender uo.Serial
-	// Serial of the GUMP returned in reply packets
-	Serial uo.Serial
+	// TypeCode of the GUMP returned in reply packets
+	TypeCode uo.Serial
 	// Layout string for the GUMP
 	Layout string
 	// Location of the GUMP on screen
@@ -1038,7 +1038,7 @@ func (p *GUMP) Write(w io.Writer) {
 		dc.PutByte(w, 0xB0)                       // General packet ID
 		dc.PutUint16(w, uint16(l))                // Packet length
 		dc.PutUint32(w, uint32(p.Sender))         // Player mobile serial
-		dc.PutUint32(w, uint32(p.Serial))         // GUMP serial
+		dc.PutUint32(w, uint32(p.TypeCode))       // GUMP serial
 		dc.PutUint32(w, uint32(p.Location.X))     // Screen location X
 		dc.PutUint32(w, uint32(p.Location.Y))     // Screen location Y
 		dc.PutUint16(w, uint16(len(p.Layout)))    // Layout data length
@@ -1075,7 +1075,7 @@ func (p *GUMP) Write(w io.Writer) {
 		dc.PutByte(w, 0xDD)                    // Packet ID
 		dc.PutUint16(w, uint16(l))             // Packet length
 		dc.PutUint32(w, uint32(p.Sender))      // Player mobile's serial
-		dc.PutUint32(w, uint32(p.Serial))      // GUMP serial
+		dc.PutUint32(w, uint32(p.TypeCode))    // GUMP serial
 		dc.PutUint32(w, uint32(p.Location.X))  // Screen location X
 		dc.PutUint32(w, uint32(p.Location.Y))  // Screen location Y
 		dc.PutUint32(w, uint32(len(fd)+4))     // Compressed layout length

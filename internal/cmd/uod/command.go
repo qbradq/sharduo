@@ -267,7 +267,7 @@ func commandDebug(n *NetState, args CommandArgs, cl string) {
 	// Execute command
 	switch args[1] {
 	case "welcome":
-		n.GUMP(&gumps.Welcome{}, n.m, nil)
+		n.GUMP(gumps.New("welcome"), n.m, nil)
 	case "gfx_test":
 		n.Send(&serverpacket.GraphicalEffect{
 			GFXType:        uo.GFXTypeFixed,

@@ -6,11 +6,12 @@ import (
 	"log"
 
 	"github.com/qbradq/sharduo/internal/game"
+	"github.com/qbradq/sharduo/lib/uo"
 )
 
 // gumpDefinition ties together a GUMP's type code and constructor
 type gumpDefinition struct {
-	typeCode uint32
+	typeCode uo.Serial
 	ctor     func() game.GUMP
 }
 
@@ -23,7 +24,7 @@ func reg(name string, fn func() game.GUMP) {
 		panic(fmt.Sprintf("duplicate GUMP definition %s", name))
 	}
 	d := gumpDefinition{
-		typeCode: crc32.ChecksumIEEE([]byte(name)),
+		typeCode: uo.Serial(crc32.ChecksumIEEE([]byte(name))),
 		ctor:     fn,
 	}
 	for k, v := range gumpDefs {

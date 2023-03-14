@@ -37,16 +37,16 @@ type GUMP interface {
 	// Layout again and send the new GUMP packet back to the client.
 	HandleReply(n NetState, p *clientpacket.GUMPReply)
 	// TypeCode returns the GUMP's type code.
-	TypeCode() uint32
+	TypeCode() uo.Serial
 	// SetTypeCode sets the GUMP's type code.
-	SetTypeCode(uint32)
+	SetTypeCode(uo.Serial)
 }
 
 // BaseGUMP represents a generic GUMP and is the basis for all other GUMPs.
 type BaseGUMP struct {
 	l        strings.Builder // Layout string
 	lines    []string        // List of all text lines used
-	typeCode uint32
+	typeCode uo.Serial
 }
 
 // BaseGUMP does not implement the Layout() function. This forces includers to
@@ -56,10 +56,10 @@ type BaseGUMP struct {
 // to define their own.
 
 // TypeCode implements the GUMP interface.
-func (g *BaseGUMP) TypeCode() uint32 { return g.typeCode }
+func (g *BaseGUMP) TypeCode() uo.Serial { return g.typeCode }
 
 // SetTypeCode implements the GUMP interface.
-func (g *BaseGUMP) SetTypeCode(c uint32) { g.typeCode = c }
+func (g *BaseGUMP) SetTypeCode(c uo.Serial) { g.typeCode = c }
 
 // InvalidateLayout implements the GUMP interface.
 func (g *BaseGUMP) InvalidateLayout() {
@@ -68,11 +68,11 @@ func (g *BaseGUMP) InvalidateLayout() {
 }
 
 // Packet implements the GUMP interface.
-func (g *BaseGUMP) Packet(x, y int, sender, serial uo.Serial) serverpacket.Packet {
+func (g *BaseGUMP) Packet(x, y int, sender, typeCode uo.Serial) serverpacket.Packet {
 	return &serverpacket.GUMP{
-		Sender: sender,
-		Serial: serial,
-		Layout: g.l.String(),
+		Sender:   sender,
+		TypeCode: typeCode,
+		Layout:   g.l.String(),
 		Location: uo.Location{
 			X: int16(x),
 			Y: int16(y),

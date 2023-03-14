@@ -9,14 +9,20 @@ import (
 	"github.com/qbradq/sharduo/lib/uo"
 )
 
+func init() {
+	reg("welcome", func() game.GUMP {
+		return &welcome{}
+	})
+}
+
 // Welcome implements the standard welcome GUMP.
-type Welcome struct {
+type welcome struct {
 	game.StandardGUMP
 	email string
 }
 
 // Layout implements the game.GUMP interface.
-func (g *Welcome) Layout(target, param game.Object) {
+func (g *welcome) Layout(target, param game.Object) {
 	tm, ok := target.(game.Mobile)
 	if !ok {
 		return
@@ -42,7 +48,7 @@ func (g *Welcome) Layout(target, param game.Object) {
 }
 
 // HandleReply implements the GUMP interface.
-func (g *Welcome) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
+func (g *welcome) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 	if g.StandardReplyHandler(p) {
 		return
 	}
