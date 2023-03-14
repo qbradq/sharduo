@@ -81,6 +81,12 @@ milestone but do need to be resolved sometime.
 * Proper coordinate wrapping in uo.Location.XYDistance()
 * Wrapped overworld
 
+### Intentional Differences ###
+Below are differences between how things worked in the UO:R era on live and how
+things work with ShardUO.
+
+* Vendors do not resell what they buy from players
+
 ## Feature Packages ##
 Below are feature verticals that I want to implement next in priority order.
 

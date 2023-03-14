@@ -570,8 +570,9 @@ func (n *NetState) ContainerOpen(c game.Container) {
 	})
 	if c.ItemCount() > 0 {
 		p := &serverpacket.Contents{}
+		p.Items = make([]serverpacket.ContentsItem, 0, c.ItemCount())
 		c.MapContents(func(item game.Item) error {
-			p.Items = append(p.Items, &serverpacket.ContentsItem{
+			p.Items = append(p.Items, serverpacket.ContentsItem{
 				Serial:        item.Serial(),
 				Graphic:       item.BaseGraphic(),
 				GraphicOffset: item.GraphicOffset(),

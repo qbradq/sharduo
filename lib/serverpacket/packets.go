@@ -734,11 +734,15 @@ type ContentsItem struct {
 	Container uo.Serial
 	// Hue of the item
 	Hue uo.Hue
+	// Price of the item if it is being sold
+	Price uint32
+	// Shop description if it is being sold
+	Description string
 }
 
 // Contents sends the contents of a container to the client.
 type Contents struct {
-	Items []*ContentsItem
+	Items []ContentsItem
 }
 
 // Write implements the Packet interface.
@@ -1136,4 +1140,97 @@ func (p *GraphicalEffect) Write(w io.Writer) {
 	dc.PutBool(w, p.Explodes)
 	dc.PutUint32(w, uint32(p.Hue))
 	dc.PutUint32(w, uint32(p.GFXBlendMode))
+}
+
+// BuyWindow transfers the buy window details to the client.
+type BuyWindow struct {
+	// Serial of the container of the buy window.
+	Serial uo.Serial
+	// The list of items in the container in normal order. The Write method
+	// takes care of reversing the order.
+	Items []ContentsItem
+}
+
+// Write implements the Packet interface.
+func (p *BuyWindow) Write(w io.Writer) {
+	// Calculate packet length
+	l := 8
+	for _, i := range p.Items {
+		l += 5 + len(i.Description)
+	}
+	dc.PutByte(w, 0x74)                            // Packet ID
+	dc.PutUint16(w, uint16(l))                     // Packet length
+	dc.PutUint32(w, uint32(p.Serial))              // Container serial
+	dc.PutByte(w, byte(len(p.Items)))              // Number of items
+	for idx := len(p.Items) - 1; idx >= 0; idx-- { // Reverse order
+		i := p.Items[idx]
+		dc.PutUint32(w, i.Price)                // Item price
+		dc.PutByte(w, byte(len(i.Description))) // Description length
+		dc.PutString(w, i.Description)          // Description
+	}
+}
+
+// VendorBuySequence implements the required sequence of packets to open an NPC
+// buy window.
+type VendorBuySequence struct {
+	// Serial of the vendor
+	Vendor uo.Serial
+	// Serial of the sell container
+	ForSale uo.Serial
+	// Serial of the bought container
+	Bought uo.Serial
+	// List of items in the sell container
+	ForSaleItems []ContentsItem
+	// List of items in the bought container
+	BoughtItems []ContentsItem
+}
+
+// Write implements the Packet interface.
+func (p *VendorBuySequence) Write(w io.Writer) {
+	// Wear ForSale container packet
+	wp := WornItem{
+		Item:    p.ForSale,
+		Graphic: 0x0E75,
+		Layer:   uo.LayerNPCBuyRestockContainer,
+		Wearer:  p.Vendor,
+		Hue:     uo.HueDefault,
+	}
+	wp.Write(w)
+	// Wear Bought container packet
+	wp = WornItem{
+		Item:    p.Bought,
+		Graphic: 0x0E75,
+		Layer:   uo.LayerNPCBuyNoRestockContainer,
+		Wearer:  p.Vendor,
+		Hue:     uo.HueDefault,
+	}
+	wp.Write(w)
+	// Contents packet for the ForSale container
+	cp := Contents{
+		Items: p.ForSaleItems,
+	}
+	cp.Write(w)
+	// BuyWindow packet for the ForSale container
+	bp := BuyWindow{
+		Serial: p.ForSale,
+		Items:  p.ForSaleItems,
+	}
+	bp.Write(w)
+	// Contents packet for the Bought container
+	cp = Contents{
+		Items: p.BoughtItems,
+	}
+	cp.Write(w)
+	// BuyWindow packet for the ForSale container
+	bp = BuyWindow{
+		Serial: p.Bought,
+		Items:  p.BoughtItems,
+	}
+	bp.Write(w)
+	// Open container packet
+	op := OpenContainerGump{
+		GumpSerial: p.ForSale,
+		Gump:       0x0030,
+	}
+	op.Write(w)
 }
