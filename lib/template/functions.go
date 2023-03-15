@@ -11,11 +11,12 @@ import (
 
 // Global function map for templates
 var templateFuncMap = txtmp.FuncMap{
-	"New":        templateNew,      // New creates a new object from the named template, adds it to the world datastores, then returns the string representation of the object's serial
-	"PartialHue": partialHue,       // Sets the partial hue flag
-	"RandomNew":  randomNew,        // RandomNew creates a new object of a template randomly selected from the named list
-	"RandomBool": randomBool,       // RandomBool returns a random boolean value
-	"Random":     randomListMember, // Random returns a random string from the named list, or an empty string if the named list was not found
+	"EquipPlayer": equipPlayer,      // EquipPlayer generates an equipment list for a player mobile
+	"New":         templateNew,      // New creates a new object from the named template, adds it to the world datastores, then returns the string representation of the object's serial
+	"PartialHue":  partialHue,       // PartialHue sets the partial hue flag
+	"RandomNew":   randomNew,        // RandomNew creates a new object of a template randomly selected from the named list
+	"RandomBool":  randomBool,       // RandomBool returns a random boolean value
+	"Random":      randomListMember, // Random returns a random string from the named list, or an empty string if the named list was not found
 }
 
 func randomBool() bool {
@@ -30,17 +31,17 @@ func templateNew(name string) string {
 	return o.Serial().String()
 }
 
-func randomListMember(name string) string {
-	l, ok := tm.lists.Get(name)
+func randomListMember(list string) string {
+	l, ok := tm.lists.Get(list)
 	if !ok || len(l) == 0 {
-		log.Printf("list %s not found\n", name)
+		log.Printf("list %s not found\n", list)
 		return ""
 	}
 	return l[tm.rng.Random(0, len(l)-1)]
 }
 
-func randomNew(name string) string {
-	tn := randomListMember(name)
+func randomNew(list string) string {
+	tn := randomListMember(list)
 	if tn == "" {
 		return "0"
 	}
@@ -54,4 +55,28 @@ func partialHue(hue string) string {
 	}
 	h := uo.Hue(v).SetPartialHue()
 	return fmt.Sprintf("%d", h)
+}
+
+func equipPlayer(isFemale string) string {
+	// Required equipment
+	ret := templateNew("PlayerBankBox")
+	ret += "," + templateNew("PlayerBackpack")
+	// Hair
+	if isFemale != "" {
+		// 1% of female players are bald
+		if tm.rng.Random(1, 100) != 100 {
+			ret += "," + randomNew("FemaleHair")
+		}
+	} else {
+		// 5% of male players are bald
+		if tm.rng.Random(1, 20) != 20 {
+			ret += "," + randomNew("MaleHair")
+		}
+	}
+	// Basic clothing
+	// TODO Add dresses for ladies
+	ret += "," + randomNew("Shirt")
+	ret += "," + randomNew("Pants")
+	ret += "," + randomNew("Shoes")
+	return ret
 }
