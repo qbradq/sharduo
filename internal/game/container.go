@@ -329,6 +329,16 @@ func (c *BaseContainer) ForceAddObject(o Object) {
 	}
 }
 
+// InsertObject implements the Object interface.
+func (c *BaseContainer) InsertObject(obj any) {
+	i, ok := obj.(Item)
+	if !ok {
+		return
+	}
+	i.SetDropLocation(uo.RandomContainerLocation)
+	c.ForceAddObject(i)
+}
+
 // Contains implements the Container interface.
 func (c *BaseContainer) Contains(o Object) bool {
 	// Only items go into containers

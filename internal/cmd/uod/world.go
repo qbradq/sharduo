@@ -333,6 +333,20 @@ func (w *World) addNewObjectToDataStores(o game.Object) game.Object {
 
 // Find returns the object with the given serial, or nil if it is not found in
 // the game data store.
+func Find[T game.Object](id uo.Serial) T {
+	var zero T
+	o := world.ods.Get(id)
+	if o == nil {
+		return zero
+	}
+	if r, ok := o.(T); ok {
+		return r
+	}
+	return zero
+}
+
+// Find returns the object with the given serial, or nil if it is not found in
+// the game data store.
 func (w *World) Find(id uo.Serial) game.Object {
 	return w.ods.Get(id)
 }

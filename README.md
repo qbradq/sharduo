@@ -35,7 +35,6 @@ including all features required to mine ore and smelt it into ingots.
 ### Nice to Haves ###
 * Feedback GUMP
 * Help GUMP
-* NPC name generation
 * NPC vendors
 * Buying from vendors
 * Stable Master NPC

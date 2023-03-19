@@ -104,6 +104,7 @@ func (i *StaticItem) RemoveChildren()                                           
 func (i *StaticItem) RemoveObject(o Object) bool                                { return false }
 func (i *StaticItem) AddObject(o Object) bool                                   { return false }
 func (i *StaticItem) ForceAddObject(o Object)                                   {}
+func (i *StaticItem) InsertObject(o any)                                        {}
 func (i *StaticItem) ForceRemoveObject(o Object)                                {}
 func (i *StaticItem) DropObject(o Object, l uo.Location, m Mobile) bool         { return false }
 func (i *StaticItem) Location() uo.Location                                     { return i.location }

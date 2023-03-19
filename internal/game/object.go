@@ -84,6 +84,9 @@ type Object interface {
 	AddObject(Object) bool
 	// ForceAddObject is like AddObject but should not fail for any reason.
 	ForceAddObject(Object)
+	// InsertObject adds an object as a child of this object through an empty
+	// interface.
+	InsertObject(any)
 	// ForceRemoveObject is like RemoveObject but should not fail for any
 	// reason.
 	ForceRemoveObject(Object)
@@ -316,6 +319,16 @@ func (o *BaseObject) AddObject(c Object) bool {
 func (o *BaseObject) ForceAddObject(obj Object) {
 	// BaseObject has no child references
 	obj.SetParent(o)
+}
+
+// InsertObject implements the Object interface. PLEASE NOTE that a call to
+// BaseObject.InsertObject() will leak the object!
+func (o *BaseObject) InsertObject(obj any) {
+	other, ok := obj.(Object)
+	if !ok {
+		return
+	}
+	o.ForceAddObject(other)
 }
 
 // ForceRemoveObject implements the Object interface. PLEASE NOTE that a call to

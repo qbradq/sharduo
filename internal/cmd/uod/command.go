@@ -225,6 +225,8 @@ func commandDebug(n *NetState, args CommandArgs, cl string) {
 		return
 	}
 	switch args[1] {
+	case "vendor_bag":
+		fallthrough
 	case "welcome":
 		fallthrough
 	case "gfx_test":
@@ -266,6 +268,22 @@ func commandDebug(n *NetState, args CommandArgs, cl string) {
 	}
 	// Execute command
 	switch args[1] {
+	case "vendor_bag":
+		n.TargetSendCursor(uo.TargetTypeObject, func(tr *clientpacket.TargetResponse) {
+			m := Find[game.Mobile](tr.TargetObject)
+			if m == nil {
+				return
+			}
+			w := m.EquipmentInSlot(uo.LayerNPCBuyRestockContainer)
+			if w == nil {
+				return
+			}
+			c, ok := w.(game.Container)
+			if !ok {
+				return
+			}
+			c.Open(n.m)
+		})
 	case "welcome":
 		n.GUMP(gumps.New("welcome"), n.m, nil)
 	case "gfx_test":

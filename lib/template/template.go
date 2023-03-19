@@ -38,6 +38,9 @@ type Object interface {
 	// recalculate any dynamic values of the data structures initialized by
 	// Deserialize().
 	RecalculateStats()
+	// InsertObject adds an object as a child of this object through an empty
+	// interface.
+	InsertObject(any)
 }
 
 // Template contains all of the property lines of the template.

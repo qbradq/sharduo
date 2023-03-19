@@ -11,12 +11,13 @@ import (
 
 // Global function map for templates
 var templateFuncMap = txtmp.FuncMap{
-	"DressHuman": dressHuman,       // Creates clothing and hair for a human
-	"New":        templateNew,      // New creates a new object from the named template, adds it to the world datastores, then returns the string representation of the object's serial
-	"PartialHue": partialHue,       // Sets the partial hue flag
-	"RandomNew":  randomNew,        // RandomNew creates a new object of a template randomly selected from the named list
-	"RandomBool": randomBool,       // RandomBool returns a random boolean value
-	"Random":     randomListMember, // Random returns a random string from the named list, or an empty string if the named list was not found
+	"DressHuman":  dressHuman,       // Creates clothing and hair for a human
+	"EquipVendor": equipVendor,      // Creates the buy and sell bags for a vendor
+	"New":         templateNew,      // New creates a new object from the named template, adds it to the world datastores, then returns the string representation of the object's serial
+	"PartialHue":  partialHue,       // Sets the partial hue flag
+	"RandomNew":   randomNew,        // RandomNew creates a new object of a template randomly selected from the named list
+	"RandomBool":  randomBool,       // RandomBool returns a random boolean value
+	"Random":      randomListMember, // Random returns a random string from the named list, or an empty string if the named list was not found
 }
 
 func randomBool() bool {
@@ -73,6 +74,30 @@ func dressHuman() string {
 		ret += "," + randomNew("Shirt") +
 			"," + randomNew("Pants") +
 			"," + randomNew("MaleHair")
+	}
+	return ret
+}
+
+func equipVendor(list string) string {
+	ret := templateNew("NPCBoughtContainer")
+	o := Create("NPCForSaleContainer")
+	if o == nil {
+		log.Println("error: template NPCForSaleContainer not found")
+		return ret
+	}
+	ret += "," + o.Serial().String()
+	l, ok := tm.lists.Get(list)
+	if !ok || len(l) == 0 {
+		log.Printf("warning: list %s not found\n", list)
+		return ret
+	}
+	for _, tn := range l {
+		no := Create(tn)
+		if no == nil {
+			log.Printf("warning: template %s not found\n", tn)
+			continue
+		}
+		o.InsertObject(no)
 	}
 	return ret
 }
