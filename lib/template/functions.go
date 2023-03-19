@@ -11,6 +11,7 @@ import (
 
 // Global function map for templates
 var templateFuncMap = txtmp.FuncMap{
+	"DressHuman": dressHuman,       // Creates clothing and hair for a human
 	"New":        templateNew,      // New creates a new object from the named template, adds it to the world datastores, then returns the string representation of the object's serial
 	"PartialHue": partialHue,       // Sets the partial hue flag
 	"RandomNew":  randomNew,        // RandomNew creates a new object of a template randomly selected from the named list
@@ -54,4 +55,24 @@ func partialHue(hue string) string {
 	}
 	h := uo.Hue(v).SetPartialHue()
 	return fmt.Sprintf("%d", h)
+}
+
+func dressHuman() string {
+	ret := randomNew("Shoes")
+	if templateContext["IsFemale"] != "" {
+		if tm.rng.Random(1, 20) > 17 {
+			// 15% of women in Britannia wear pants
+			ret += "," + randomNew("Shirt") +
+				"," + randomNew("Pants") +
+				"," + randomNew("FemaleHair")
+		} else {
+			ret += "," + randomNew("Dress") +
+				"," + randomNew("FemaleHair")
+		}
+	} else {
+		ret += "," + randomNew("Shirt") +
+			"," + randomNew("Pants") +
+			"," + randomNew("MaleHair")
+	}
+	return ret
 }
