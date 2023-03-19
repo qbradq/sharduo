@@ -31,17 +31,17 @@ func templateNew(name string) string {
 	return o.Serial().String()
 }
 
-func randomListMember(name string) string {
-	l, ok := tm.lists.Get(name)
+func randomListMember(list string) string {
+	l, ok := tm.lists.Get(list)
 	if !ok || len(l) == 0 {
-		log.Printf("list %s not found\n", name)
+		log.Printf("list %s not found\n", list)
 		return ""
 	}
 	return l[tm.rng.Random(0, len(l)-1)]
 }
 
-func randomNew(name string) string {
-	tn := randomListMember(name)
+func randomNew(list string) string {
+	tn := randomListMember(list)
 	if tn == "" {
 		return "0"
 	}
