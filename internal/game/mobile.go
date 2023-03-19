@@ -530,14 +530,13 @@ func (m *BaseMobile) recalculateGold() {
 	m.gold = 0
 	var fn func(Container)
 	fn = func(c Container) {
-		c.MapContents(func(item Item) error {
+		for _, item := range c.Contents() {
 			if container, ok := item.(Container); ok {
 				fn(container)
 			} else if item.TemplateName() == "GoldCoin" {
 				m.gold += item.Amount()
 			}
-			return nil
-		})
+		}
 	}
 	fn(backpack)
 }

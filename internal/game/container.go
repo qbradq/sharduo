@@ -29,9 +29,8 @@ type Container interface {
 	ContentWeight() float32
 	// ItemCount returns the total number of items within the container.
 	ItemCount() int
-	// MapContents executes the function over every item in the container and
-	// returns the accumulated non-nil errors.
-	MapContents(fn func(Item) error) []error
+	// Contents returns the contents of the container.
+	Contents() []Item
 	// Open is called by mobiles to open the container.
 	Open(Mobile)
 	// RemoveObserver removes an observer from this container's list of
@@ -391,15 +390,9 @@ func (c *BaseContainer) AdjustWeightAndCount(w float32, n int) {
 	}
 }
 
-// MapContents implements the Container interface.
-func (c *BaseContainer) MapContents(fn func(Item) error) []error {
-	var ret []error
-	for _, item := range c.contents {
-		if err := fn(item); err != nil {
-			ret = append(ret, err)
-		}
-	}
-	return ret
+// Contents implements the Container interface.
+func (c *BaseContainer) Contents() []Item {
+	return c.contents
 }
 
 // RemoveObserver implements the Container interface.

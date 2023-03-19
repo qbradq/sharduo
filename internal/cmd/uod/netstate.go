@@ -571,7 +571,7 @@ func (n *NetState) ContainerOpen(c game.Container) {
 	if c.ItemCount() > 0 {
 		p := &serverpacket.Contents{}
 		p.Items = make([]serverpacket.ContentsItem, 0, c.ItemCount())
-		c.MapContents(func(item game.Item) error {
+		for _, item := range c.Contents() {
 			p.Items = append(p.Items, serverpacket.ContentsItem{
 				Serial:        item.Serial(),
 				Graphic:       item.BaseGraphic(),
@@ -581,8 +581,7 @@ func (n *NetState) ContainerOpen(c game.Container) {
 				Container:     c.Serial(),
 				Hue:           item.Hue(),
 			})
-			return nil
-		})
+		}
 		n.Send(p)
 	}
 }
@@ -598,12 +597,11 @@ func (n *NetState) ContainerClose(c game.Container) {
 	n.CloseGump(c.Serial())
 	c.RemoveObserver(n)
 	// Close all child containers
-	c.MapContents(func(item game.Item) error {
+	for _, item := range c.Contents() {
 		if c, ok := item.(game.Container); ok {
 			n.ContainerClose(c)
 		}
-		return nil
-	})
+	}
 }
 
 // ContainerItemAdded implements the game.ContainerObserver interface
