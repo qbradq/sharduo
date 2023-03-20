@@ -75,6 +75,7 @@ func (i *StaticItem) Stackable() bool               { return false }
 func (i *StaticItem) Movable() bool                 { return false }
 func (i *StaticItem) Amount() int                   { return i.def.Count }
 func (i *StaticItem) SetAmount(int)                 {}
+func (i *StaticItem) Value() int                    { return 1 }
 func (i *StaticItem) Consume(n int) bool            { return false }
 func (i *StaticItem) Split(n int) Item              { return nil }
 func (i *StaticItem) Combine(item Item) bool        { return false }

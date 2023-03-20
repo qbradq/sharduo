@@ -52,7 +52,7 @@ func VendorBuy(receiver, source game.Object, v any) {
 			Location:      uo.Location{},
 			Container:     fsc.Serial(),
 			Hue:           item.Hue(),
-			Price:         42, // TODO Implement item value
+			Price:         uint32(item.Value()),
 			Description:   item.DisplayName(),
 		})
 	}

@@ -35,6 +35,8 @@ type Item interface {
 	// SetAmount sets the amount of the stack. If this is out of range it will
 	// be bounded to a sane value
 	SetAmount(int)
+	// Value returns the base sale price of the item at a vendor
+	Value() int
 	// Consume attempts to remove n from the number of items in this stack and
 	// returns true if successful. This function takes care of removing the
 	// object if amount reaches zero and updating the object otherwise.
@@ -114,25 +116,15 @@ type Item interface {
 // BaseItem provides the basic implementation of Item.
 type BaseItem struct {
 	BaseObject
-	// Static definition that holds the static data for the item
-	def *uo.StaticDefinition
-	// Graphic of the item
-	graphic uo.Graphic
-	// Graphic of the item when flipped. If this is uo.GraphicNone the item cannot
-	// be flipped.
-	flippedGraphic uo.Graphic
+
+	//
+	// Persistant values
+	//
+
 	// Flipped is true if the item is currently flipped.
 	flipped bool
-	// Dyable flag
-	dyable bool
-	// Base weight of the item
-	weight float32
-	// Stackable flag
-	stackable bool
 	// Stack amount
 	amount int
-	// Name when there is more than one in the stack
-	plural string
 
 	//
 	// Non-persistent values
@@ -140,6 +132,23 @@ type BaseItem struct {
 
 	// Drop request location
 	dropLocation uo.Location
+	// Static definition that holds the static data for the item
+	def *uo.StaticDefinition
+	// Graphic of the item
+	graphic uo.Graphic
+	// Graphic of the item when flipped. If this is uo.GraphicNone the item cannot
+	// be flipped.
+	flippedGraphic uo.Graphic
+	// Dyable flag
+	dyable bool
+	// Base weight of the item
+	weight float32
+	// Stackable flag
+	stackable bool
+	// Name when there is more than one in the stack
+	plural string
+	// Base sale value of the item at a vendor
+	value int
 }
 
 // ObjectType implements the Object interface.
@@ -163,6 +172,7 @@ func (i *BaseItem) Deserialize(t *template.Template, create bool) {
 	i.weight = t.GetFloat("Weight", 255.0)
 	i.stackable = t.GetBool("Stackable", false)
 	i.amount = t.GetNumber("Amount", 1)
+	i.value = t.GetNumber("Value", 1)
 	i.plural = t.GetString("Plural", "")
 }
 
@@ -216,6 +226,11 @@ func (i *BaseItem) SetAmount(n int) {
 	} else {
 		i.amount = n
 	}
+}
+
+// Value implements the Item interface.
+func (i *BaseItem) Value() int {
+	return i.value
 }
 
 // Consume implements the Item interface.
