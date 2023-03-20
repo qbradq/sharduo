@@ -742,7 +742,10 @@ type ContentsItem struct {
 
 // Contents sends the contents of a container to the client.
 type Contents struct {
+	// The items in the container
 	Items []ContentsItem
+	// If true items are listed in reverse order
+	ReverseOrder bool
 }
 
 // Write implements the Packet interface.
@@ -750,16 +753,32 @@ func (p *Contents) Write(w io.Writer) {
 	dc.PutByte(w, 0x3C)                        // Packet ID
 	dc.PutUint16(w, uint16(5+len(p.Items)*20)) // Packet length
 	dc.PutUint16(w, uint16(len(p.Items)))
-	for _, item := range p.Items {
-		dc.PutUint32(w, uint32(item.Serial))
-		dc.PutUint16(w, uint16(item.Graphic))
-		dc.PutByte(w, byte(item.GraphicOffset))
-		dc.PutUint16(w, uint16(item.Amount))
-		dc.PutUint16(w, uint16(item.Location.X))
-		dc.PutUint16(w, uint16(item.Location.Y))
-		dc.Pad(w, 1) // Grid index
-		dc.PutUint32(w, uint32(item.Container))
-		dc.PutUint16(w, uint16(item.Hue))
+	if p.ReverseOrder {
+		for i := len(p.Items) - 1; i >= 0; i-- {
+			item := p.Items[i]
+			dc.PutUint32(w, uint32(item.Serial))
+			dc.PutUint16(w, uint16(item.Graphic))
+			dc.PutByte(w, byte(item.GraphicOffset))
+			dc.PutUint16(w, uint16(item.Amount))
+			dc.PutUint16(w, uint16(item.Location.X))
+			dc.PutUint16(w, uint16(item.Location.Y))
+			dc.Pad(w, 1) // Grid index
+			dc.PutUint32(w, uint32(item.Container))
+			dc.PutUint16(w, uint16(item.Hue))
+
+		}
+	} else {
+		for _, item := range p.Items {
+			dc.PutUint32(w, uint32(item.Serial))
+			dc.PutUint16(w, uint16(item.Graphic))
+			dc.PutByte(w, byte(item.GraphicOffset))
+			dc.PutUint16(w, uint16(item.Amount))
+			dc.PutUint16(w, uint16(item.Location.X))
+			dc.PutUint16(w, uint16(item.Location.Y))
+			dc.Pad(w, 1) // Grid index
+			dc.PutUint32(w, uint32(item.Container))
+			dc.PutUint16(w, uint16(item.Hue))
+		}
 	}
 }
 
@@ -1158,15 +1177,14 @@ func (p *BuyWindow) Write(w io.Writer) {
 	for _, i := range p.Items {
 		l += 5 + len(i.Description)
 	}
-	dc.PutByte(w, 0x74)                            // Packet ID
-	dc.PutUint16(w, uint16(l))                     // Packet length
-	dc.PutUint32(w, uint32(p.Serial))              // Container serial
-	dc.PutByte(w, byte(len(p.Items)))              // Number of items
-	for idx := len(p.Items) - 1; idx >= 0; idx-- { // Reverse order
-		i := p.Items[idx]
-		dc.PutUint32(w, i.Price)                // Item price
-		dc.PutByte(w, byte(len(i.Description))) // Description length
-		dc.PutString(w, i.Description)          // Description
+	dc.PutByte(w, 0x74)               // Packet ID
+	dc.PutUint16(w, uint16(l))        // Packet length
+	dc.PutUint32(w, uint32(p.Serial)) // Container serial
+	dc.PutByte(w, byte(len(p.Items))) // Number of items
+	for _, i := range p.Items {
+		dc.PutUint32(w, i.Price)                            // Item price
+		dc.PutByte(w, byte(len(i.Description)))             // Description length
+		dc.PutStringN(w, i.Description, len(i.Description)) // Description
 	}
 }
 
@@ -1207,7 +1225,8 @@ func (p *VendorBuySequence) Write(w io.Writer) {
 	wp.Write(w)
 	// Contents packet for the ForSale container
 	cp := Contents{
-		Items: p.ForSaleItems,
+		Items:        p.ForSaleItems,
+		ReverseOrder: true,
 	}
 	cp.Write(w)
 	// BuyWindow packet for the ForSale container
@@ -1218,7 +1237,8 @@ func (p *VendorBuySequence) Write(w io.Writer) {
 	bp.Write(w)
 	// Contents packet for the Bought container
 	cp = Contents{
-		Items: p.BoughtItems,
+		Items:        p.BoughtItems,
+		ReverseOrder: true,
 	}
 	cp.Write(w)
 	// BuyWindow packet for the ForSale container
@@ -1229,7 +1249,7 @@ func (p *VendorBuySequence) Write(w io.Writer) {
 	bp.Write(w)
 	// Open container packet
 	op := OpenContainerGump{
-		GumpSerial: p.ForSale,
+		GumpSerial: p.Vendor,
 		Gump:       0x0030,
 	}
 	op.Write(w)
