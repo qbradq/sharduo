@@ -58,6 +58,10 @@ type Mobile interface {
 	Gold() int
 	// AdjustGold adds n to the total amount of gold on the mobile
 	AdjustGold(int)
+	// RemoveGold removes the given amount of gold from the mobile's inventory
+	// and bank. This function returns the amount of gold actually removed which
+	// can be less than the requested amount.
+	RemoveGold(int) int
 	// Skill returns the raw skill value (range 0-1000) of the named skill
 	Skill(uo.Skill) int16
 	// Skills returns a slice of all raw skill values (range 0-1000)
@@ -491,6 +495,66 @@ func (m *BaseMobile) Gold() int { return m.gold }
 // AdjustGold implements the Mobile interface.
 func (m *BaseMobile) AdjustGold(n int) { m.gold += n }
 
+// RemoveGold implements the Mobile interface.
+func (m *BaseMobile) RemoveGold(n int) int {
+	defer func() {
+		m.recalculateGold()
+		world.Update(m)
+	}()
+	total := 0
+	var fn func(Container)
+	fn = func(c Container) {
+		if total >= n {
+			return
+		}
+		items := make([]Item, len(c.Contents()))
+		copy(items, c.Contents())
+		for _, i := range items {
+			if total >= n {
+				return
+			}
+			if oc, ok := i.(Container); ok {
+				fn(oc)
+				continue
+			}
+			// TODO check support
+			if i.TemplateName() != "GoldCoin" {
+				continue
+			}
+			toConsume := n - total
+			if toConsume >= i.Amount() {
+				total += i.Amount()
+				Remove(i)
+				continue
+			}
+			i.SetAmount(i.Amount() - toConsume)
+			total += toConsume
+			world.Update(i)
+		}
+	}
+	// Backpack gold
+	w := m.EquipmentInSlot(uo.LayerBackpack)
+	if w == nil {
+		return total
+	}
+	c, ok := w.(Container)
+	if !ok {
+		return total
+	}
+	fn(c)
+	// Bank gold
+	w = m.EquipmentInSlot(uo.LayerBackpack)
+	if w == nil {
+		return total
+	}
+	c, ok = w.(Container)
+	if !ok {
+		return total
+	}
+	fn(c)
+	return total
+}
+
 // ItemInCursor implements the Mobile interface.
 func (m *BaseMobile) ItemInCursor() Item { return m.cursor.Item() }
 
@@ -719,7 +783,9 @@ func (m *BaseMobile) DropToBackpack(o Object, force bool) bool {
 	if !force {
 		return backpack.DropInto(item)
 	}
-	backpack.ForceAddObject(o)
+	if !backpack.DropInto(item) {
+		backpack.ForceAddObject(o)
+	}
 	return true
 }
 

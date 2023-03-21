@@ -6,6 +6,7 @@ import (
 	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/lib/clientpacket"
 	"github.com/qbradq/sharduo/lib/serverpacket"
+	"github.com/qbradq/sharduo/lib/template"
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
 )
@@ -20,6 +21,7 @@ func init() {
 	packetHandlers.Add(0x09, handleSingleClickRequest)
 	packetHandlers.Add(0x13, handleWearItemRequest)
 	packetHandlers.Add(0x34, handleStatusRequest)
+	packetHandlers.Add(0x3B, handleBuyRequest)
 	packetHandlers.Add(0x6C, handleTargetResponse)
 	packetHandlers.Add(0x73, handlePing)
 	packetHandlers.Add(0xAD, handleSpeech)
@@ -328,4 +330,43 @@ func handleGUMPReply(n *NetState, cp clientpacket.Packet) {
 	}
 	p := cp.(*clientpacket.GUMPReply)
 	n.GUMPReply(p.GUMPSerial, p)
+}
+
+func handleBuyRequest(n *NetState, cp clientpacket.Packet) {
+	// Sanity checks
+	if n == nil || n.m == nil {
+		return
+	}
+	p := cp.(*clientpacket.BuyItems)
+	vendor := game.Find[game.Mobile](p.Vendor)
+	if vendor == nil || vendor.Location().XYDistance(n.m.Location()) > uo.MaxViewRange {
+		return
+	}
+	// Calculate total cost
+	total := 0
+	for _, bi := range p.BoughtItems {
+		i := game.Find[game.Item](bi.Item)
+		// Sanity checks
+		if i == nil || game.RootParent(i).Serial() != p.Vendor {
+			return
+		}
+		total += bi.Amount * i.Value()
+	}
+	// Charge gold
+	// TODO support bank gold, change cliloc to 1042556
+	if total > n.m.Gold() {
+		n.Cliloc(vendor, 1019022) // You do not have enough gold.
+		return
+	}
+	n.m.RemoveGold(total)
+	// Give items
+	for _, bi := range p.BoughtItems {
+		i := game.Find[game.Item](bi.Item)
+		ni := template.Create(i.TemplateName()).(game.Item)
+		ni.SetAmount(bi.Amount)
+		ni.SetDropLocation(uo.RandomContainerLocation)
+		if !n.m.DropToBackpack(ni, false) {
+			n.m.DropToFeet(ni)
+		}
+	}
 }

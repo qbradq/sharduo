@@ -37,6 +37,8 @@ including all features required to mine ore and smelt it into ingots.
 * Help GUMP
 * NPC vendors
 * Buying from vendors
+* Bank gold support
+* Check support
 * Stable Master NPC
 * Walk Random AI
 * Follow Master AI

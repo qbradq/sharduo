@@ -120,6 +120,9 @@ func (n *NetState) Disconnect() {
 		if n == nil {
 			return
 		}
+		for _, c := range n.observedContainers {
+			c.RemoveObserver(n)
+		}
 		if n.conn != nil {
 			n.conn.Close()
 		}

@@ -79,7 +79,7 @@ func dressHuman() string {
 }
 
 func equipVendor(list string) string {
-	ret := templateNew("NPCBoughtContainer")
+	ret := templateNew("NPCBackpack") + "," + templateNew("NPCBoughtContainer")
 	o := Create("NPCForSaleContainer")
 	if o == nil {
 		log.Println("error: template NPCForSaleContainer not found")

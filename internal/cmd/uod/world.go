@@ -420,9 +420,15 @@ func (w *World) Main(wg *sync.WaitGroup) {
 			w.m.Update()
 			// Update objects
 			for _, o := range w.updateList {
-				for _, m := range w.m.GetNetStatesInRange(o.Location(), uo.MaxViewRange) {
-					if o.Location().XYDistance(m.Location()) <= m.ViewRange() {
-						m.NetState().UpdateObject(o)
+				if o.Parent() == nil {
+					for _, m := range w.m.GetNetStatesInRange(o.Location(), uo.MaxViewRange) {
+						if o.Location().XYDistance(m.Location()) <= m.ViewRange() {
+							m.NetState().UpdateObject(o)
+						}
+					}
+				} else if c, ok := o.Parent().(game.Container); ok {
+					if i, ok := o.(game.Item); ok {
+						c.UpdateItem(i)
 					}
 				}
 			}

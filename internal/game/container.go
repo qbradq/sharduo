@@ -45,6 +45,9 @@ type Container interface {
 	// DropInto attempts to drop the item into this container, merging it with
 	// any currently existing stacks. Returns true on success.
 	DropInto(Item) bool
+	// UpdateItem must be called when an item contained in this container
+	// changes.
+	UpdateItem(Item)
 }
 
 // BaseContainer implements the base implementation of the Container interface.
@@ -206,6 +209,8 @@ func (c *BaseContainer) doRemove(o Object, force bool) bool {
 		observer.ContainerItemRemoved(c, item)
 	}
 	// Gold calculations
+	// TODO check support
+	// TODO bank gold support
 	if c.TemplateName() != "PlayerBankBox" && item.TemplateName() == "GoldCoin" {
 		if mobile, ok := RootParent(c).(Mobile); ok {
 			mobile.AdjustGold(-item.Amount())
@@ -321,6 +326,8 @@ func (c *BaseContainer) ForceAddObject(o Object) {
 		observer.ContainerItemAdded(c, item)
 	}
 	// Gold calculations
+	// TODO check support
+	// TODO bank gold support
 	if c.TemplateName() != "PlayerBankBox" && item.TemplateName() == "GoldCoin" {
 		if mobile, ok := RootParent(c).(Mobile); ok {
 			mobile.AdjustGold(item.Amount())
@@ -415,7 +422,10 @@ func (c *BaseContainer) DropInto(i Item) bool {
 	if i.Stackable() {
 		for _, other := range c.contents {
 			// Same item type and enough stack capacity to accept
-			if i.TemplateName() == other.TemplateName() && other.Amount()+i.Amount() <= int(uo.MaxStackAmount) {
+			if other.Stackable() &&
+				i.Hue() == other.Hue() &&
+				i.TemplateName() == other.TemplateName() &&
+				other.Amount()+i.Amount() <= int(uo.MaxStackAmount) {
 				other.SetAmount(other.Amount() + i.Amount())
 				world.Update(other)
 				return true
@@ -430,4 +440,11 @@ func (c *BaseContainer) DropInto(i Item) bool {
 func (c *BaseContainer) AppendContextMenuEntries(m *ContextMenu) {
 	c.BaseItem.AppendContextMenuEntries(m)
 	m.Append("OpenContainer", 3000362)
+}
+
+// UpdateItem implements the Container interface.
+func (c *BaseContainer) UpdateItem(i Item) {
+	for o := range c.observers {
+		o.ContainerItemAdded(c, i)
+	}
 }

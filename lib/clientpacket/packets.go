@@ -16,6 +16,7 @@ func init() {
 	pf.Add(0x09, newSingleClick)
 	pf.Add(0x13, newWearItemRequest)
 	pf.Add(0x34, newPlayerStatusRequest)
+	pf.Add(0x3B, newBuyItems)
 	pf.Add(0x5D, newCharacterLogin)
 	pf.Add(0x6C, newTargetResponse)
 	pf.Add(0x73, newPing)
@@ -551,4 +552,41 @@ func (p *GUMPReply) Switch(id uint32) bool {
 // Text returns the value of text entry id or the empty string.
 func (p *GUMPReply) Text(id uint16) string {
 	return p.TextEntries[id]
+}
+
+// BoughtItem describes how much of which item to buy.
+type BoughtItem struct {
+	// Serial of the item to be bought
+	Item uo.Serial
+	// Amount to buy
+	Amount int
+}
+
+// BuyItems is sent by the client in response to the vendor buy window.
+type BuyItems struct {
+	basePacket
+	// Serial of the vendor we are buying from
+	Vendor uo.Serial
+	// List of items we are buying
+	BoughtItems []BoughtItem
+}
+
+func newBuyItems(in []byte) Packet {
+	p := &BuyItems{
+		basePacket: basePacket{id: 0x3B},
+		Vendor:     uo.Serial(dc.GetUint32(in[0:4])),
+	}
+	ofs := 5
+	for {
+		if ofs+7 > len(in) {
+			// Out of items
+			break
+		}
+		p.BoughtItems = append(p.BoughtItems, BoughtItem{
+			Item:   uo.Serial(dc.GetUint32(in[ofs+1 : ofs+5])),
+			Amount: int(dc.GetUint16(in[ofs+5 : ofs+7])),
+		})
+		ofs += 7
+	}
+	return p
 }
