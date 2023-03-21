@@ -68,5 +68,47 @@ func VendorBuy(receiver, source game.Object, v any) {
 
 // VendorSell opens the vendor sell screen for a vendor.
 func VendorSell(receiver, source game.Object, v any) {
-
+	var items []serverpacket.ContentsItem
+	var fn func(c game.Container)
+	fn = func(c game.Container) {
+		for _, i := range c.Contents() {
+			if oc, ok := i.(game.Container); ok {
+				fn(oc)
+				continue
+			}
+			items = append(items, serverpacket.ContentsItem{
+				Serial:        i.Serial(),
+				Graphic:       i.BaseGraphic(),
+				GraphicOffset: i.GraphicOffset(),
+				Amount:        i.Amount(),
+				Location:      uo.Location{},
+				Container:     c.Serial(),
+				Hue:           i.Hue(),
+				Price:         uint32(i.Value() / 2),
+				Description:   i.DisplayName(),
+			})
+		}
+	}
+	sm, ok := source.(game.Mobile)
+	if !ok {
+		return
+	}
+	if sm.NetState() == nil {
+		return
+	}
+	rm, ok := receiver.(game.Mobile)
+	if !ok {
+		return
+	}
+	w := rm.EquipmentInSlot(uo.LayerBackpack)
+	bp, ok := w.(game.Container)
+	if !ok {
+		return
+	}
+	items = make([]serverpacket.ContentsItem, 0, bp.ItemCount())
+	fn(bp)
+	sm.NetState().Send(&serverpacket.SellWindow{
+		Vendor: rm.Serial(),
+		Items:  items,
+	})
 }

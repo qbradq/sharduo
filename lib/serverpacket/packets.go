@@ -1254,3 +1254,33 @@ func (p *VendorBuySequence) Write(w io.Writer) {
 	}
 	op.Write(w)
 }
+
+// SellWindow is sent to the client to open the vendor sell window.
+type SellWindow struct {
+	// Serial of the vendor we are buying from
+	Vendor uo.Serial
+	// List of items the player is allowed to sell to the vendor
+	Items []ContentsItem
+}
+
+// Write implements the Packet interface.
+func (p *SellWindow) Write(w io.Writer) {
+	// Calculate packet length
+	l := 9
+	for _, i := range p.Items {
+		l += 14 + len(i.Description)
+	}
+	dc.PutByte(w, 0x9E)                   // Packet ID
+	dc.PutUint16(w, uint16(l))            // Packet length
+	dc.PutUint32(w, uint32(p.Vendor))     // Vendor serial
+	dc.PutUint16(w, uint16(len(p.Items))) // Number of items
+	for _, i := range p.Items {
+		dc.PutUint32(w, uint32(i.Serial))                   // Item serial
+		dc.PutUint16(w, uint16(i.Graphic))                  // Item graphic
+		dc.PutUint16(w, uint16(i.Hue))                      // Item hue
+		dc.PutUint16(w, uint16(i.Amount))                   // Item amount
+		dc.PutUint16(w, uint16(i.Price)/2)                  // Item price per unit
+		dc.PutUint16(w, uint16(len(i.Description)))         // Length of the description string
+		dc.PutStringN(w, i.Description, len(i.Description)) // Item descrition
+	}
+}

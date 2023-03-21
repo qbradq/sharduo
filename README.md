@@ -35,14 +35,11 @@ including all features required to mine ore and smelt it into ingots.
 ### Nice to Haves ###
 * Feedback GUMP
 * Help GUMP
-* NPC vendors
-* Buying from vendors
 * Bank gold support
 * Check support
 * Stable Master NPC
 * Walk Random AI
 * Follow Master AI
-* Smelter NPC
 * Miner NPC
 * Miner Guildmaster NPC
 * Miner's Guild
