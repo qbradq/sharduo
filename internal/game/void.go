@@ -11,7 +11,8 @@ type VoidObject struct {
 // Global instance of the void object
 var TheVoid *VoidObject = &VoidObject{
 	BaseObject: BaseObject{
-		name: "the void",
+		serial: uo.SerialTheVoid,
+		name:   "the void",
 	},
 }
 

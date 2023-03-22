@@ -2,6 +2,7 @@ package uod
 
 import (
 	"log"
+	"strconv"
 
 	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/lib/clientpacket"
@@ -24,6 +25,7 @@ func init() {
 	packetHandlers.Add(0x3B, handleBuyRequest)
 	packetHandlers.Add(0x6C, handleTargetResponse)
 	packetHandlers.Add(0x73, handlePing)
+	packetHandlers.Add(0x9F, handleSellRequest)
 	packetHandlers.Add(0xAD, handleSpeech)
 	packetHandlers.Add(0xB1, handleGUMPReply)
 	packetHandlers.Add(0xBD, handleVersion)
@@ -368,5 +370,50 @@ func handleBuyRequest(n *NetState, cp clientpacket.Packet) {
 		if !n.m.DropToBackpack(ni, false) {
 			n.m.DropToFeet(ni)
 		}
+	}
+	world.Map().SendCliloc(vendor, uo.SpeechNormalRange, 1080013, strconv.Itoa(total)) // The total of thy purchase is ~1_VAL~ gold,
+}
+
+func handleSellRequest(n *NetState, cp clientpacket.Packet) {
+	// Sanity checks
+	if n == nil || n.m == nil {
+		return
+	}
+	p := cp.(*clientpacket.SellResponse)
+	vm := game.Find[game.Mobile](p.Vendor)
+	if vm == nil || vm.Location().XYDistance(n.m.Location()) > uo.MaxViewRange {
+		return
+	}
+	// Remove items and calculate total
+	total := 0
+	for _, si := range p.SellItems {
+		i := game.Find[game.Item](si.Serial)
+		if i == nil {
+			continue
+		}
+		rp := game.RootParent(i)
+		if rp == nil || rp.Serial() != n.m.Serial() {
+			continue
+		}
+		sa := si.Amount
+		if sa > i.Amount() {
+			sa = i.Amount()
+		} else if sa < 1 {
+			sa = 1
+		}
+		total += (i.Value() / 2) * sa
+		if sa == i.Amount() {
+			game.Remove(i)
+		} else {
+			i.SetAmount(i.Amount() - sa)
+			world.Update(i)
+		}
+	}
+	// Payment
+	// TODO check support
+	gc := template.Create("GoldCoin").(game.Item)
+	gc.SetAmount(total)
+	if !n.m.DropToBackpack(gc, false) {
+		n.m.DropToFeet(gc)
 	}
 }

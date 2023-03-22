@@ -22,6 +22,7 @@ func init() {
 	pf.Add(0x73, newPing)
 	pf.Add(0x80, newAccountLogin)
 	pf.Add(0x91, newGameServerLogin)
+	pf.Add(0x9F, newSellResponse)
 	pf.Add(0xA0, newSelectServer)
 	pf.Add(0xAD, newSpeech)
 	pf.Add(0xB1, newGUMPReply)
@@ -591,10 +592,37 @@ func newBuyItems(in []byte) Packet {
 	return p
 }
 
+// SellItem represents one item being sold by the player.
+type SellItem struct {
+	// Serial of the item to sell
+	Serial uo.Serial
+	// Amount of the item to sell from the stack
+	Amount int
+}
+
 // SellResponse is sent by the client to sell items to a vendor.
 type SellResponse struct {
 	basePacket
 	// Serial of the vendor being sold to
 	Vendor uo.Serial
-	//
+	// List of items bought
+	SellItems []SellItem
+}
+
+func newSellResponse(in []byte) Packet {
+	p := &SellResponse{
+		basePacket: basePacket{id: 0x9F},
+		Vendor:     uo.Serial(dc.GetUint32(in[0:4])),
+	}
+	count := dc.GetUint16(in[4:6])
+	p.SellItems = make([]SellItem, 0, count)
+	ofs := 6
+	for i := uint16(0); i < count; i++ {
+		p.SellItems = append(p.SellItems, SellItem{
+			Serial: uo.Serial(dc.GetUint32(in[ofs+0 : ofs+4])),
+			Amount: int(dc.GetUint16(in[ofs+4 : ofs+6])),
+		})
+		ofs += 6
+	}
+	return p
 }

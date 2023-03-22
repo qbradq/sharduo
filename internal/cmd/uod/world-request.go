@@ -73,7 +73,7 @@ func (r *CharacterLoginRequest) Execute() error {
 		// TODO New player setup
 		player.SetLocation(uo.Location{X: 1148, Y: 1863, Z: 0})
 	}
-	world.Map().AddObject(player)
+	world.Map().SetNewParent(player, nil)
 	r.NetState.m = player
 	r.NetState.account.SetPlayer(player.Serial())
 	r.NetState.m.SetNetState(r.NetState)

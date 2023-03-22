@@ -72,6 +72,9 @@ func VendorSell(receiver, source game.Object, v any) {
 	var fn func(c game.Container)
 	fn = func(c game.Container) {
 		for _, i := range c.Contents() {
+			if i.Value() < 1 {
+				continue
+			}
 			if oc, ok := i.(game.Container); ok {
 				fn(oc)
 				continue
@@ -107,6 +110,10 @@ func VendorSell(receiver, source game.Object, v any) {
 	}
 	items = make([]serverpacket.ContentsItem, 0, bp.ItemCount())
 	fn(bp)
+	if len(items) == 0 {
+		game.GetWorld().Map().SendCliloc(rm, uo.SpeechNormalRange, 1080012) // You have nothing I would be interested in.
+		return
+	}
 	sm.NetState().Send(&serverpacket.SellWindow{
 		Vendor: rm.Serial(),
 		Items:  items,

@@ -3,6 +3,8 @@ package events
 // Common DoubleClick events
 
 import (
+	"strconv"
+
 	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/lib/uo"
 )
@@ -135,4 +137,6 @@ func OpenBankBox(receiver, source game.Object, v any) {
 		return
 	}
 	bb.Open(m)
+	game.GetWorld().Map().SendCliloc(receiver, uo.SpeechNormalRange, 1080021,
+		strconv.Itoa(bb.ItemCount()), strconv.Itoa(int(bb.Weight()))) // Bank container has ~1_VAL~ items, ~2_VAL~ stones
 }

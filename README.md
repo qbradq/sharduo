@@ -28,6 +28,7 @@ including all features required to mine ore and smelt it into ingots.
 
 ### Current Defects ###
 * Context menus are opening for all single-click events
+* Parameterized clilocs appear to be broken
 
 ### Required Features and Tasks ###
 * Mobile weight limit and stamina
@@ -44,6 +45,7 @@ including all features required to mine ore and smelt it into ingots.
 * Miner Guildmaster NPC
 * Miner's Guild
 * Selling to vendors
+* Checks
 * Item durability
 * Regions
 * Region spawning

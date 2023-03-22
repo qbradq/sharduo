@@ -251,6 +251,9 @@ func (o *BaseObject) Unmarshal(s *marshal.TagFileSegment) *marshal.TagCollection
 	ps := uo.Serial(s.Int())
 	if ps == uo.SerialSystem {
 		o.parent = nil
+	} else if ps == uo.SerialTheVoid {
+		// This is the case for logged out player characters
+		o.parent = TheVoid
 	} else if ps == uo.SerialZero {
 		log.Printf("warning: object %s has no parent", o.Serial().String())
 		o.parent = nil

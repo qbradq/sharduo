@@ -172,7 +172,7 @@ func (i *BaseItem) Deserialize(t *template.Template, create bool) {
 	i.weight = t.GetFloat("Weight", 255.0)
 	i.stackable = t.GetBool("Stackable", false)
 	i.amount = t.GetNumber("Amount", 1)
-	i.value = t.GetNumber("Value", 1)
+	i.value = t.GetNumber("Value", 0)
 	i.plural = t.GetString("Plural", "")
 }
 

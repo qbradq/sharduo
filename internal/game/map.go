@@ -995,7 +995,18 @@ func (m *Map) SendSpeech(from Object, r int16, format string, args ...any) {
 			if mob.NetState() != nil {
 				mob.NetState().Speech(from, text)
 			}
-			DynamicDispatch("OnSpeech", mob, from, text)
+			DynamicDispatch("Speech", mob, from, text)
+		}
+	}
+}
+
+// SendCliloc sends cliloc speech to all mobiles in range.
+func (m *Map) SendCliloc(from Object, r int16, c uo.Cliloc, args ...string) {
+	for _, mob := range m.GetMobilesInRange(from.Location(), r) {
+		if from.Location().XYDistance(mob.Location()) <= mob.ViewRange() {
+			if mob.NetState() != nil {
+				mob.NetState().Cliloc(from, c, args...)
+			}
 		}
 	}
 }
