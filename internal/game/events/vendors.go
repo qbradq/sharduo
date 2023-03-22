@@ -84,7 +84,7 @@ func VendorSell(receiver, source game.Object, v any) {
 				Location:      uo.Location{},
 				Container:     c.Serial(),
 				Hue:           i.Hue(),
-				Price:         uint32(i.Value() / 2),
+				Price:         uint32(i.Value()),
 				Description:   i.DisplayName(),
 			})
 		}
@@ -100,7 +100,7 @@ func VendorSell(receiver, source game.Object, v any) {
 	if !ok {
 		return
 	}
-	w := rm.EquipmentInSlot(uo.LayerBackpack)
+	w := sm.EquipmentInSlot(uo.LayerBackpack)
 	bp, ok := w.(game.Container)
 	if !ok {
 		return

@@ -590,3 +590,11 @@ func newBuyItems(in []byte) Packet {
 	}
 	return p
 }
+
+// SellResponse is sent by the client to sell items to a vendor.
+type SellResponse struct {
+	basePacket
+	// Serial of the vendor being sold to
+	Vendor uo.Serial
+	//
+}
