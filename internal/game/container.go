@@ -392,7 +392,7 @@ func (c *BaseContainer) AdjustWeightAndCount(w float32, n int) {
 			// We are being held by a mobile's cursor, don't need to do anything
 			return
 		}
-		// We are a mobile's backpack, s-end the weight adjustment up
+		// We are a mobile's backpack, send the weight adjustment up
 		mobile.AdjustWeight(w)
 	}
 }

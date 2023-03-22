@@ -91,3 +91,15 @@ func PutUTF16StringN(w io.Writer, s string, n int) {
 		w.Write(buf[:])
 	}
 }
+
+// Writes a null-terminated UTF16 string in Little Endian format
+func PutUTF16LEString(w io.Writer, s string) {
+	var zeroBuf [2]byte
+	var buf [2]byte
+	utf := utf16.Encode([]rune(s))
+	for _, r := range utf {
+		binary.LittleEndian.PutUint16(buf[:], r)
+		w.Write(buf[:])
+	}
+	w.Write(zeroBuf[:])
+}

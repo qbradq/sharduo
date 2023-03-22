@@ -883,10 +883,13 @@ type ClilocMessage struct {
 // Write implements the Packet interface.
 func (p *ClilocMessage) Write(w io.Writer) {
 	args := strings.Join(p.Arguments, "\t")
-	dc.PutByte(w, 0xC1)                           // Packet ID
-	dc.PutUint16(w, uint16(50+len([]rune(args)))) // Packet length
-	dc.PutUint32(w, uint32(p.Speaker))            // Speaker's ID
-	dc.PutUint16(w, uint16(p.Body))               // Speaker's body graphic
+	// Calculate packet length
+	l := 50                            // Fixed portions of the packet, including the terminating null
+	l += len([]rune(args)) * 2         // Two bytes per rune
+	dc.PutByte(w, 0xC1)                // Packet ID
+	dc.PutUint16(w, uint16(l))         // Packet length
+	dc.PutUint32(w, uint32(p.Speaker)) // Speaker's ID
+	dc.PutUint16(w, uint16(p.Body))    // Speaker's body graphic
 	// Message type handling
 	if p.Speaker == uo.SerialSystem {
 		dc.PutByte(w, byte(0x06))
@@ -897,7 +900,7 @@ func (p *ClilocMessage) Write(w io.Writer) {
 	dc.PutUint16(w, uint16(p.Font))   // Message font
 	dc.PutUint32(w, uint32(p.Cliloc)) // Message index number
 	dc.PutStringN(w, p.Name, 30)
-	dc.PutUTF16String(w, args)
+	dc.PutUTF16LEString(w, args)
 }
 
 // Sound tells the client to play a sound from a specific location.
