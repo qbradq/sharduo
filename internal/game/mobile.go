@@ -54,6 +54,8 @@ type Mobile interface {
 	Stamina() int
 	// MaxStamina returns the current effective max stamina
 	MaxStamina() int
+	// MaxWeight returns the maximum total weight of the mobile
+	MaxWeight() int
 	// Gold returns the amount of gold within the mobile's backpack
 	Gold() int
 	// AdjustGold adds n to the total amount of gold on the mobile
@@ -489,6 +491,9 @@ func (m *BaseMobile) Stamina() int { return m.stamina }
 // MaxStamina implements the Mobile interface.
 func (m *BaseMobile) MaxStamina() int { return m.Dexterity() }
 
+// MaxWeight implements the Mobile interface.
+func (m *BaseMobile) MaxWeight() int { return int(float64(m.Strength())*3.5 + 40) }
+
 // Gold implements the Mobile interface.
 func (m *BaseMobile) Gold() int { return m.gold }
 
@@ -498,7 +503,6 @@ func (m *BaseMobile) AdjustGold(n int) { m.gold += n }
 // RemoveGold implements the Mobile interface.
 func (m *BaseMobile) RemoveGold(n int) int {
 	defer func() {
-		m.recalculateGold()
 		world.Update(m)
 	}()
 	total := 0
@@ -524,11 +528,13 @@ func (m *BaseMobile) RemoveGold(n int) int {
 			toConsume := n - total
 			if toConsume >= i.Amount() {
 				total += i.Amount()
+				m.AdjustGold(-i.Amount())
 				Remove(i)
 				continue
 			}
 			i.SetAmount(i.Amount() - toConsume)
 			total += toConsume
+			m.AdjustGold(-toConsume)
 			world.Update(i)
 		}
 	}
@@ -605,6 +611,8 @@ func (m *BaseMobile) recalculateGold() {
 	fn(backpack)
 }
 
+func (m *BaseMobile) recalculateWeight() {}
+
 // RemoveChildren implements the Object interface.
 func (m *BaseMobile) RemoveChildren() {
 	m.equipment.Map(func(w Wearable) error {
@@ -618,6 +626,7 @@ func (m *BaseMobile) RemoveChildren() {
 func (m *BaseMobile) RecalculateStats() {
 	m.equipment.recalculateStats()
 	m.recalculateGold()
+	m.recalculateWeight()
 }
 
 // PickUp attempts to pick up the object. Returns true if successful.
@@ -915,11 +924,23 @@ func (m *BaseMobile) Weight() float32 {
 	if m.cursor.item != nil {
 		ret += m.cursor.item.Weight()
 	}
+	ret += 10 // Body weight
 	return ret
 }
 
 // AfterMove implements the Mobile interface.
 func (m *BaseMobile) AfterMove() {
+	// Max weight checks
+	w := int(m.Weight())
+	mw := m.MaxWeight()
+	if w > mw {
+		sc := w - mw
+		m.stamina -= sc
+		if m.stamina < 0 {
+			m.stamina = 0
+		}
+		world.Update(m)
+	}
 	// Check for containers that we need to close
 	if m.NetState() != nil {
 		m.NetState().ContainerRangeCheck()

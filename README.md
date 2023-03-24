@@ -21,15 +21,16 @@ A huge thank you goes out to the following groups, in no particular order.
 * Equipment
 * Generic GUMPs
 * Mining
+* Vendors
 
 ## Next Milestone - Mining Vertical ##
-The next milestone set for ShardUO is to implement the Mining skill vertical,
+The next milestone set for ShardUO is to implement the Mining skill vertical
 including all features required to mine ore and smelt it into ingots.
 
-### Current Defects ###
+### Known Defects ###
 
 ### Required Features and Tasks ###
-* Mobile weight limit and stamina
+* Attribute regeneration - HP / MP / Stam
 
 ### Nice to Haves ###
 * Feedback GUMP
@@ -84,21 +85,25 @@ milestone but do need to be resolved sometime.
 Below are differences between how things worked in the UO:R era on live and how
 things work with ShardUO.
 
-* Vendors do not resell what they buy from players
+* Vendors
+  * do not resell what they buy from players
+  * do not use vendor economy / supply and demand mechanics
+  * always stock 999 of every item every time you buy from them
+  * have unlimited inventory
+  * will buy anything
 
 ## Feature Packages ##
 Below are feature verticals that I want to implement next in priority order.
 
-* Tinkering
-  * GUMP support
+* Blacksmithing
   * Crafting GUMP
   * Crafting system
     * Resource consumption function
     * Item creation
     * Normal, exceptional, and inferior quality
-  * Tinkered item crafting
-* Blacksmithing
   * Blacksmithing item crafting
+* Tinkering
+  * Tinkered item crafting
 * Lumberjacking
   * Wood resources
   * Lumberjacking skill

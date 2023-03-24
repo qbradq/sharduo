@@ -374,16 +374,22 @@ func (m *Map) canMoveTo(mob Mobile, d uo.Direction) (bool, uo.Location, uo.Commo
 // MoveMobile moves a mobile in the given direction. Returns true if the
 // movement was successful.
 func (m *Map) MoveMobile(mob Mobile, dir uo.Direction) bool {
-	// Change facing request
 	dir = dir.Bound().StripRunningFlag()
 	if mob.Facing() != dir {
+		// Change facing request
 		mob.SetFacing(dir)
 		for _, othermob := range m.GetNetStatesInRange(mob.Location(), uo.MaxViewRange+1) {
 			othermob.NetState().MoveMobile(mob)
 		}
 		return true
+	} // else move request
+	// Stamina check
+	if mob.Stamina() <= 0 {
+		if mob.NetState() != nil {
+			mob.NetState().Cliloc(nil, 500110) // You are too fatigued to move.
+			return false
+		}
 	}
-	// Movement request
 	oldLocation := mob.Location()
 	// Check movement
 	success, newLocation, floor := m.canMoveTo(mob, dir)
