@@ -10,6 +10,7 @@ func init() {
 	giFactory.Ignore(0x0B) // Client language
 	giFactory.Ignore(0x0C) // Status closed
 	giFactory.Ignore(0x0F) // Client flags
+	giFactory.Add(0x13, newContextMenuRequest)
 	giFactory.Add(0x15, newContextMenuSelection)
 }
 
@@ -33,6 +34,21 @@ func newGeneralInformation(in []byte) Packet {
 	scid := in[1] // This field is two bytes long but never uses the most significate byte
 	data := in[2:]
 	return giFactory.New(scid, data)
+}
+
+// ContextMenuRequest is sent by the client when the user requests a context
+// menu for an object.
+type ContextMenuRequest struct {
+	baseGIPacket
+	// Serial of the object the context menu should be opened for
+	Serial uo.Serial
+}
+
+func newContextMenuRequest(in []byte) Packet {
+	return &ContextMenuRequest{
+		baseGIPacket: baseGIPacket{id: 0xBF, sc: 0x13},
+		Serial:       uo.Serial(dc.GetUint32(in[0:4])),
+	}
 }
 
 // ContextMenuSelection is sent by the client when the user selects a context

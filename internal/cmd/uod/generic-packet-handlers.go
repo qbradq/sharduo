@@ -1,12 +1,15 @@
 package uod
 
 import (
+	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/internal/game/events"
 	"github.com/qbradq/sharduo/lib/clientpacket"
+	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/util"
 )
 
 func init() {
+	giHandlers.Add(0x13, handleContextMenuRequest)
 	giHandlers.Add(0x15, handleContextMenuSelection)
 }
 
@@ -17,6 +20,18 @@ func handleGeneralInformation(n *NetState, cp clientpacket.Packet) {
 	fn, ok := giHandlers.Get(gip.SCID())
 	if ok {
 		fn(n, gip)
+	}
+}
+
+func handleContextMenuRequest(n *NetState, cp clientpacket.GeneralInformationPacket) {
+	p := cp.(*clientpacket.ContextMenuRequest)
+	o := world.Find(p.Serial)
+	if o == nil {
+		return
+	}
+	menu := game.BuildContextMenu(o)
+	if menu != nil {
+		n.Send((*serverpacket.ContextMenu)(menu))
 	}
 }
 

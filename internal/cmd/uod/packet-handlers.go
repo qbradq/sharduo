@@ -122,15 +122,7 @@ func handleSingleClickRequest(n *NetState, cp clientpacket.Packet) {
 	if o == nil {
 		return
 	}
-	// Build the context menu
-	menu := game.BuildContextMenu(o)
-	if menu.IsEmpty() {
-		// No context menu entries so just display the object's name
-		n.Speech(o, o.DisplayName())
-	} else {
-		// Send the context menu
-		n.Send((*serverpacket.ContextMenu)(menu))
-	}
+	n.Speech(o, o.DisplayName())
 }
 
 func handleDoubleClickRequest(n *NetState, cp clientpacket.Packet) {

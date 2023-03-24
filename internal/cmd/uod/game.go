@@ -64,12 +64,14 @@ func handleGameConnection(c *net.TCPConn) {
 	gameNetStates.Store(ns, true)
 	ns.Service()
 	ns.Disconnect()
-	M := ns.m
-	M.SetNetState(nil)
+	m := ns.m
 	ns.m = nil
-	world.SendRequest(&CharacterLogoutRequest{
-		Mobile: M,
-	})
+	if m != nil {
+		m.SetNetState(nil)
+		world.SendRequest(&CharacterLogoutRequest{
+			Mobile: m,
+		})
+	}
 }
 
 // Executes the update method on all net states in the numbered update group.

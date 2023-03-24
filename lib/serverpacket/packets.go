@@ -86,7 +86,7 @@ type CharacterList struct {
 
 // Write implements the Packet interface.
 func (p *CharacterList) Write(w io.Writer) {
-	length := 4 + len(p.Names)*60 + 1 + 63*len(StartingLocations) + 4
+	length := 4 + len(p.Names)*60 + 1 + 4
 	dc.PutByte(w, 0xa9)               // ID
 	dc.PutUint16(w, uint16(length))   // Length
 	dc.PutByte(w, byte(len(p.Names))) // Number of character slots
@@ -94,15 +94,16 @@ func (p *CharacterList) Write(w io.Writer) {
 		dc.PutStringN(w, name, 30)
 		dc.Pad(w, 30)
 	}
+	dc.PutByte(w, 0)
 	// Starting locations
-	dc.PutByte(w, byte(len(StartingLocations))) // Count
-	for i, loc := range StartingLocations {
-		dc.PutByte(w, byte(i)) // Index
-		dc.PutStringN(w, loc.City, 31)
-		dc.PutStringN(w, loc.Area, 31)
-	}
+	// dc.PutByte(w, byte(len(StartingLocations))) // Count
+	// for i, loc := range StartingLocations {
+	// 	dc.PutByte(w, byte(i)) // Index
+	// 	dc.PutStringN(w, loc.City, 31)
+	// 	dc.PutStringN(w, loc.Area, 31)
+	// }
 	// Flags
-	dc.PutUint32(w, 0x000001e8)
+	dc.PutUint32(w, 0x0000001c)
 }
 
 // LoginComplete is sent after character login is successful.
