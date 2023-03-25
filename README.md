@@ -28,8 +28,10 @@ The next milestone set for ShardUO is to implement the Mining skill vertical
 including all features required to mine ore and smelt it into ingots.
 
 ### Known Defects ###
+* Cron isn't working
 
 ### Required Features and Tasks ###
+* Item decay on the ground
 * Attribute regeneration - HP / MP / Stam
 
 ### Nice to Haves ###

@@ -9,7 +9,7 @@ const (
 	MaxUpdateRange            int16  = 24
 	ChunkWidth                int    = 8
 	ChunkHeight               int    = 8
-	MapWidth                  int    = 6144
+	MapWidth                  int    = 7168
 	MapHeight                 int    = 4096
 	MapOverworldWidth         int    = MapHeight
 	MapChunksWidth            int    = MapWidth / ChunkWidth
