@@ -200,9 +200,6 @@ func Main() {
 	trap()
 	initialize()
 
-	t := world.Map().GetTile(6000, 0)
-	log.Println(t.BaseGraphic(), t.RawZ())
-
 	wg := &sync.WaitGroup{}
 
 	// Start the goroutines

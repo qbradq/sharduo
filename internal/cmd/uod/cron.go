@@ -124,7 +124,6 @@ func (c *Cron) Main(wg *sync.WaitGroup) {
 
 	// Create the nil net state we use for the commands
 	n := NewNetState(nil)
-	n.account = world.superUser
 
 	// Ticker to check cron states every minute
 	ticker := time.NewTicker(time.Minute)
@@ -148,6 +147,7 @@ func (c *Cron) Main(wg *sync.WaitGroup) {
 					continue
 				}
 				// Execute the command
+				n.account = world.superUser
 				ExecuteCommand(n, j.command)
 			}
 		case <-c.done:

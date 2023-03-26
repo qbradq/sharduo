@@ -379,6 +379,7 @@ func (w *World) AuthenticateAccount(username, passwordHash string) *game.Account
 		if len(w.accounts) == 0 {
 			a = game.NewAccount(username, passwordHash, game.RoleAll)
 			log.Printf("warning: new user %s granted all roles and marked as the super-user", username)
+			w.superUser = a
 		}
 		w.accounts[username] = a
 	}
