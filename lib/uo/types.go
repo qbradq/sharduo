@@ -2,42 +2,41 @@ package uo
 
 // Random constants
 const (
-	MinStackAmount uint16 = 1
-	MaxStackAmount uint16 = 60000
-	MinViewRange   int16  = 5
-	MaxViewRange   int16  = 18
-	MaxUpdateRange int16  = 24
-	ChunkWidth     int    = 8
-	ChunkHeight    int    = 8
-	// MapWidth                  int    = 7168
-	MapWidth                  int   = 6144
-	MapHeight                 int   = 4096
-	MapOverworldWidth         int   = MapHeight
-	MapChunksWidth            int   = MapWidth / ChunkWidth
-	MapChunksHeight           int   = MapHeight / ChunkHeight
-	MapMinZ                   int8  = -128
-	MapMaxZ                   int8  = 127
-	StatsCapDefault           int   = 225
-	MaxFollowers              int   = 5
-	MaxUseRange               int16 = 3
-	MaxLiftRange              int16 = 3
-	MaxDropRange              int16 = 3
-	MaxContainerViewRange     int16 = 3
-	MaxItemStackHeight        int8  = 18
-	DefaultMaxContainerWeight int   = 400
-	DefaultMaxContainerItems  int   = 125
-	RandomDropX               int16 = -1
-	RandomDropY               int16 = -1
-	TargetCanceledX           int16 = -1
-	TargetCanceledY           int16 = -1
-	ContainerOpenLowerLimit   int8  = -8
-	ContainerOpenUpperLimit   int8  = 16
-	PlayerHeight              int8  = 16
-	StepHeight                int8  = 2
-	SpeechWhisperRange        int16 = 1
-	SpeechNormalRange         int16 = 12
-	SpeechEmoteRange          int16 = SpeechNormalRange
-	SpeechYellRange           int16 = MaxViewRange
+	MinStackAmount            uint16 = 1
+	MaxStackAmount            uint16 = 60000
+	MinViewRange              int16  = 5
+	MaxViewRange              int16  = 18
+	MaxUpdateRange            int16  = 24
+	ChunkWidth                int    = 8
+	ChunkHeight               int    = 8
+	MapWidth                  int    = 7168
+	MapHeight                 int    = 4096
+	MapOverworldWidth         int    = MapHeight
+	MapChunksWidth            int    = MapWidth / ChunkWidth
+	MapChunksHeight           int    = MapHeight / ChunkHeight
+	MapMinZ                   int8   = -128
+	MapMaxZ                   int8   = 127
+	StatsCapDefault           int    = 225
+	MaxFollowers              int    = 5
+	MaxUseRange               int16  = 3
+	MaxLiftRange              int16  = 3
+	MaxDropRange              int16  = 3
+	MaxContainerViewRange     int16  = 3
+	MaxItemStackHeight        int8   = 18
+	DefaultMaxContainerWeight int    = 400
+	DefaultMaxContainerItems  int    = 125
+	RandomDropX               int16  = -1
+	RandomDropY               int16  = -1
+	TargetCanceledX           int16  = -1
+	TargetCanceledY           int16  = -1
+	ContainerOpenLowerLimit   int8   = -8
+	ContainerOpenUpperLimit   int8   = 16
+	PlayerHeight              int8   = 16
+	StepHeight                int8   = 2
+	SpeechWhisperRange        int16  = 1
+	SpeechNormalRange         int16  = 12
+	SpeechEmoteRange          int16  = SpeechNormalRange
+	SpeechYellRange           int16  = MaxViewRange
 )
 
 // BoundViewRange bounds a view range value

@@ -418,7 +418,7 @@ func (w *World) Main(wg *sync.WaitGroup) {
 			game.UpdateTimers(w.time)
 			// Interleave net state updates
 			UpdateNetStates(int(w.time % uo.DurationSecond))
-			// Interleaved chunk updates
+			// Interleaved chunk updates, mobile think, etc
 			w.m.Update()
 			// Update objects
 			for _, o := range w.updateList {

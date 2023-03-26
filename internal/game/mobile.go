@@ -73,9 +73,14 @@ type Mobile interface {
 	SkillCheck(uo.Skill, int, int) bool
 
 	//
-	// AI-related values
+	// AI-related
 	//
 
+	// Update handles tick-by-tick updates for the mobile and is responsible for
+	// calling Think(), HP/MP/SP regen, weapon swings, etc.
+	Update()
+	// Think implements the AI of the mobile.
+	Think()
 	// ViewRange returns the number of tiles this mobile can see and visually
 	// observe objects in the world. If this mobile has an attached NetState,
 	// this value can change at any time at the request of the player.
@@ -1209,4 +1214,35 @@ func (m *BaseMobile) SkillCheck(which uo.Skill, min, max int) bool {
 	world.Update(m)
 
 	return success
+}
+
+// Update implements the Mobile interface.
+func (m *BaseMobile) Update() {
+	t := world.Time()
+	// HP regen, 1 per 3 seconds
+	if t%(uo.DurationSecond*3) == 0 {
+		if m.hitPoints < m.MaxHitPoints() {
+			m.hitPoints++
+			world.Update(m)
+		}
+	}
+	// SP regen, 1 per 2 seconds
+	if t%(uo.DurationSecond*2) == 0 {
+		if m.stamina < m.MaxStamina() {
+			m.stamina++
+			world.Update(m)
+		}
+	}
+	// MP regen, 1 per second
+	if t%(uo.DurationSecond) == 0 {
+		if m.mana < m.MaxMana() {
+			m.mana++
+			world.Update(m)
+		}
+	}
+}
+
+// Think implements the Mobile interface.
+func (m *BaseMobile) Think() {
+
 }
