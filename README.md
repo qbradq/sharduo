@@ -39,15 +39,13 @@ including all features required to mine ore and smelt it into ingots.
 * Feedback GUMP
 * Help GUMP
 * Bank gold support
-* Check support
+* Checks
 * Stable Master NPC
 * Walk Random AI
 * Follow Master AI
 * Miner NPC
 * Miner Guildmaster NPC
 * Miner's Guild
-* Selling to vendors
-* Checks
 * Item durability
 * Regions
 * Region spawning
