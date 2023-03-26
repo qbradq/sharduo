@@ -409,6 +409,7 @@ func (w *World) Main(wg *sync.WaitGroup) {
 			// The ticker has a higher priority than packets. This should ensure
 			// that the game service cannot be overwhelmed with packets and not
 			// be able to do cleanup tasks.
+			start := time.Now()
 			// TODO detect dropped ticks
 			// Time handling
 			w.time++
@@ -434,6 +435,12 @@ func (w *World) Main(wg *sync.WaitGroup) {
 				}
 			}
 			w.updateList = make(map[uo.Serial]game.Object)
+			// TODO remove or replace tick time logging
+			end := time.Now()
+			elapsed := end.Sub(start)
+			if w.time%uo.DurationSecond == 0 {
+				log.Printf("tick duration %ds%03dms", elapsed.Milliseconds()/1000, elapsed.Milliseconds()%1000)
+			}
 		case r := <-w.requestQueue:
 			// Handle graceful shutdown
 			if r == nil {

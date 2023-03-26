@@ -28,7 +28,6 @@ The next milestone set for ShardUO is to implement the Mining skill vertical
 including all features required to mine ore and smelt it into ingots.
 
 ### Known Defects ###
-* Cron isn't working
 
 ### Required Features and Tasks ###
 * Item decay on the ground
@@ -134,4 +133,6 @@ repository or its associated services who share that appreciation.
 
 That said below are some things I have learned about administrating this shard.
 
+* Cron jobs will fail to run until the super-user account is created.
+* The first account created will be flagged as the super-user.
 * It takes about 30 minutes after first shard start for all of the ore to spawn.
