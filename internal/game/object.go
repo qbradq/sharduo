@@ -33,6 +33,14 @@ type Object interface {
 	// Lifecycle management
 	//
 
+	// Removed returns true if this object has been removed from the data store
+	Removed() bool
+	// Remove flags the object as having been removed from the data store
+	Remove()
+	// NoRent returns true if this object should not persist through server
+	// restart.
+	NoRent() bool
+
 	//
 	// Parent / child relationships
 	//
@@ -171,6 +179,8 @@ type BaseObject struct {
 	eventHandlers map[string]string
 	// List of all the context menu entries from the template
 	templateContextMenuEntries []ContextMenuEntry
+	// If true this object has already been removed from the datastore
+	removed bool
 }
 
 // ObjectType implements the Object interface.
@@ -180,6 +190,15 @@ func (o *BaseObject) ObjectType() marshal.ObjectType { return marshal.ObjectType
 func (o *BaseObject) SerialType() uo.SerialType {
 	return uo.SerialTypeItem
 }
+
+// Removed implements the Object interface.
+func (o *BaseObject) Removed() bool { return o.removed }
+
+// Remove implements the Object interface.
+func (o *BaseObject) Remove() { o.removed = true }
+
+// NoRent implements the Object interface.
+func (o *BaseObject) NoRent() bool { return false }
 
 // Serial implements the Object interface.
 func (o *BaseObject) Serial() uo.Serial { return o.serial }

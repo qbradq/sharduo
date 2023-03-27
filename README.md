@@ -36,6 +36,7 @@ including all features required to mine ore and smelt it into ingots.
 * Item decay on the ground
 
 ### Nice to Haves ###
+* Object spawner
 * Feedback GUMP
 * Help GUMP
 * Bank gold support
@@ -62,8 +63,6 @@ including all features required to mine ore and smelt it into ingots.
 * Day/Night cycles
 * Weather patterns
 * Fall damage
-
-## Outstanding Issues ##
 
 ### Go-Live Tasks ###
 This is a list of known tasks that must be completed before the server may be
@@ -135,4 +134,4 @@ That said below are some things I have learned about administrating this shard.
 
 * Cron jobs will fail to run until the super-user account is created.
 * The first account created will be flagged as the super-user.
-* It takes about 30 minutes after first shard start for all of the ore to spawn.
+* It takes about a minute after first shard start for all of the ore to spawn.

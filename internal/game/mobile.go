@@ -78,7 +78,7 @@ type Mobile interface {
 
 	// Update handles tick-by-tick updates for the mobile and is responsible for
 	// calling Think(), HP/MP/SP regen, weapon swings, etc.
-	Update()
+	Update(uo.Time)
 	// Think implements the AI of the mobile.
 	Think()
 	// ViewRange returns the number of tiles this mobile can see and visually
@@ -1217,8 +1217,7 @@ func (m *BaseMobile) SkillCheck(which uo.Skill, min, max int) bool {
 }
 
 // Update implements the Mobile interface.
-func (m *BaseMobile) Update() {
-	t := world.Time()
+func (m *BaseMobile) Update(t uo.Time) {
 	// HP regen, 1 per 3 seconds
 	if t%(uo.DurationSecond*3) == 0 {
 		if m.hitPoints < m.MaxHitPoints() {

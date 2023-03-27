@@ -17,6 +17,9 @@ type dsobj interface {
 	RecalculateStats()
 	TemplateName() string
 	SetTemplateName(string)
+	Removed() bool
+	Remove()
+	NoRent() bool
 	marshal.Marshaler
 	marshal.Unmarshaler
 }
@@ -69,6 +72,7 @@ func (s *T[K]) Remove(o dsobj) {
 	var zero K
 	s.objects[o.Serial()] = zero
 	delete(s.objects, o.Serial())
+	o.Remove()
 }
 
 // Insert inserts the object into the datastore with its current serial and will
@@ -106,6 +110,9 @@ func (s *T[K]) MarshalObjects(tf *marshal.TagFile, goroutines int, wg *sync.Wait
 			defer wg.Done()
 			for i := pool; i < len(objects); i += goroutines {
 				o := objects[i]
+				if o.Removed() || o.NoRent() {
+					continue
+				}
 				seg.PutInt(uint32(o.Serial()))
 				seg.PutString(o.TemplateName())
 				o.Marshal(seg)

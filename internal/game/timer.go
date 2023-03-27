@@ -42,14 +42,14 @@ type Timer struct {
 	// Serial of the source of the event
 	source uo.Serial
 	// True if this is an non-saved timer
-	ephemeral bool
+	noRent bool
 	// Parameter of the event, only used if this is an ephemeral timer
 	parameter any
 }
 
 // NewTimer creates a new timer with the given options, then adds the timer to
 // the update pool most suitable for it.
-func NewTimer(delay uo.Time, event string, receiver, source Object, ephemeral bool, parameter any) {
+func NewTimer(delay uo.Time, event string, receiver, source Object, noRent bool, parameter any) {
 	receiverSerial := uo.SerialZero
 	sourceSerial := uo.SerialZero
 	if receiver != nil {
@@ -63,7 +63,7 @@ func NewTimer(delay uo.Time, event string, receiver, source Object, ephemeral bo
 		event:     event,
 		receiver:  receiverSerial,
 		source:    sourceSerial,
-		ephemeral: ephemeral,
+		noRent:    noRent,
 		parameter: parameter,
 	}
 	for {
@@ -108,7 +108,7 @@ func UpdateTimers(now uo.Time) {
 func MarshalTimers(s *marshal.TagFileSegment) {
 	for pool, timers := range timerPools {
 		for serial, t := range timers {
-			if t.ephemeral {
+			if t.noRent {
 				// Ephemeral timers do not get saved
 				continue
 			}

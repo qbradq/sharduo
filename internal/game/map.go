@@ -1019,19 +1019,19 @@ func (m *Map) SendCliloc(from Object, r int16, c uo.Cliloc, args ...string) {
 
 // Update calls Update on a few chunks every frame such that every chunk gets an
 // Update call once every 30 real-world minutes or 6 in-game hours.
-func (m *Map) Update() {
-	// Interleaved chunk updates
+func (m *Map) Update(t uo.Time) {
+	// Interleaved chunk updates, updates every chunk over a minute
 	nChunks := uint64(uo.MapChunksWidth * uo.MapChunksHeight)
-	step := uint64(uo.DurationMinute * 30)
+	step := uint64(uo.DurationMinute)
 	start := uint64(world.Time() % uo.Time(step))
 	for idx := start; idx < nChunks; idx += step {
 		c := m.chunks[idx]
-		c.Update()
+		c.Update(t)
 	}
 	// Update all mobiles
 	for _, c := range m.chunks {
 		for _, mob := range c.mobiles {
-			mob.Update()
+			mob.Update(t)
 		}
 	}
 }

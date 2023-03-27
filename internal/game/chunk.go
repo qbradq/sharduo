@@ -19,6 +19,8 @@ type Chunk struct {
 	mobiles util.Slice[Mobile]
 	// Amount of ore left in this chunk
 	ore uint8
+	// oreDeadline is the time when this chunk should regenerate its ore
+	oreDeadline uo.Time
 }
 
 // newChunk creates and returns a new Chunk object
@@ -83,7 +85,10 @@ func (c *Chunk) setTile(x, y int, t uo.Tile) {
 	c.tiles[(y%uo.ChunkHeight)*uo.ChunkWidth+(x%uo.ChunkWidth)] = t
 }
 
-// Update handles the 30-minute periodic update for this chunk.
-func (c *Chunk) Update() {
-	c.ore = uint8(world.Random().Random(10, 24))
+// Update handles the 1-minute periodic update for this chunk.
+func (c *Chunk) Update(t uo.Time) {
+	if t >= c.oreDeadline {
+		c.ore = uint8(world.Random().Random(10, 24))
+		c.oreDeadline = t + uo.DurationMinute*30
+	}
 }

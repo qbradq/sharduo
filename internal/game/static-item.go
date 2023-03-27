@@ -23,6 +23,8 @@ type StaticItem struct {
 	location uo.Location
 	// Hue
 	hue uo.Hue
+	// If true this static was removed from the datastore
+	removed bool
 }
 
 // ObjectType implements the Object interface.
@@ -35,6 +37,15 @@ func (o *StaticItem) SetObjectType(t marshal.ObjectType) {}
 func (o *StaticItem) SerialType() uo.SerialType {
 	return uo.SerialTypeItem
 }
+
+// Removed implements the Object interface.
+func (o *StaticItem) Removed() bool { return o.removed }
+
+// Remove implements the Object interface.
+func (o *StaticItem) Remove() { o.removed = true }
+
+// NoRent implements the Object interface.
+func (o *StaticItem) NoRent() bool { return false }
 
 // Serial implements the Object interface.
 func (o *StaticItem) Serial() uo.Serial { return o.serial }
