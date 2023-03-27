@@ -173,7 +173,7 @@ func commandTeleport(n *NetState, args CommandArgs, cl string) {
 	if len(args) == 4 {
 		l.Z = int8(args.Int(3))
 	}
-	if len(args) > 3 {
+	if len(args) >= 3 {
 		l.Y = int16(args.Int(2))
 		l.X = int16(args.Int(1))
 	}
