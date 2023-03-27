@@ -230,6 +230,8 @@ func commandDebug(n *NetState, args CommandArgs, cl string) {
 		return
 	}
 	switch args[1] {
+	case "hue_field":
+		fallthrough
 	case "vendor_bag":
 		fallthrough
 	case "welcome":
@@ -273,6 +275,23 @@ func commandDebug(n *NetState, args CommandArgs, cl string) {
 	}
 	// Execute command
 	switch args[1] {
+	case "hue_field":
+		hue := 1
+		for iy := 0; iy < 10; iy++ {
+			for ix := 0; ix < 300; ix++ {
+				r := template.Create("HueSelector").(game.Item)
+				r.SetHue(uo.Hue(hue))
+				hue++
+				if hue >= 3000 {
+					hue -= 3000
+				}
+				l := n.m.Location()
+				l.X += int16(ix)
+				l.Y += int16(iy * 2)
+				r.SetLocation(l)
+				world.Map().SetNewParent(r, nil)
+			}
+		}
 	case "vendor_bag":
 		n.TargetSendCursor(uo.TargetTypeObject, func(tr *clientpacket.TargetResponse) {
 			m := Find[game.Mobile](tr.TargetObject)

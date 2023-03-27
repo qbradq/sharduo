@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/qbradq/sharduo/internal/game"
+	"github.com/qbradq/sharduo/lib/clientpacket"
 	"github.com/qbradq/sharduo/lib/uo"
 )
 
@@ -16,6 +17,7 @@ func init() {
 	reg("OpenContainer", OpenContainer)
 	reg("OpenPaperDoll", OpenPaperDoll)
 	reg("PlayerDoubleClick", PlayerDoubleClick)
+	reg("TransferHue", TransferHue)
 }
 
 // PlayerDoubleClick selects between the open paper doll and dismount actions
@@ -139,4 +141,23 @@ func OpenBankBox(receiver, source game.Object, v any) {
 	bb.Open(m)
 	game.GetWorld().Map().SendCliloc(receiver, uo.SpeechNormalRange, 1080021,
 		strconv.Itoa(bb.ItemCount()), strconv.Itoa(int(bb.Weight()))) // Bank container has ~1_VAL~ items, ~2_VAL~ stones
+}
+
+func TransferHue(receiver, source game.Object, v any) {
+	if receiver == nil || source == nil {
+		return
+	}
+	sm, ok := source.(game.Mobile)
+	if !ok || sm.NetState() == nil {
+		return
+	}
+	sm.NetState().Speech(source, "Target object to set hue %d", receiver.Hue())
+	sm.NetState().TargetSendCursor(uo.TargetTypeObject, func(tr *clientpacket.TargetResponse) {
+		o := game.GetWorld().Find(tr.TargetObject)
+		if o == nil {
+			return
+		}
+		o.SetHue(receiver.Hue())
+		game.GetWorld().Update(o)
+	})
 }
