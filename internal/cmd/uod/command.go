@@ -22,26 +22,29 @@ import (
 )
 
 func init() {
-	commands["add"] = &cmdesc{commandNew, game.RoleGameMaster, "add template_name [stack_amount]", "Creates a new item with an optional stack amount"}
-	commands["bank"] = &cmdesc{commandBank, game.RoleGameMaster, "bank", "Opens the bank box of the targeted mobile, if any"}
-	commands["broadcast"] = &cmdesc{commandBroadcast, game.RoleAdministrator, "broadcast text", "Broadcasts the given text to all connected players"}
-	commands["c"] = &cmdesc{commandChat, game.RolePlayer, "c", "Sends global chat speech"}
-	commands["chat"] = &cmdesc{commandChat, game.RolePlayer, "chat", "Sends global chat speech"}
-	commands["debug"] = &cmdesc{commandDebug, game.RoleGameMaster, "debug command [arguments]", "Executes debug commands"}
-	commands["delete"] = &cmdesc{commandRemove, game.RoleGameMaster, "delete", "Removes the targeted object and all of its children from the game world"}
-	commands["g"] = &cmdesc{commandChat, game.RolePlayer, "g", "Sends global chat speech"}
-	commands["global"] = &cmdesc{commandChat, game.RolePlayer, "global", "Sends global chat speech"}
-	commands["location"] = &cmdesc{commandLocation, game.RoleAdministrator, "location", "Tells the absolute location of the targeted location or object"}
-	commands["logMemStats"] = &cmdesc{commandLogMemStats, game.RoleAdministrator, "logMemStats", "Forces the server to log memory statistics and echo that to the caller"}
-	commands["new"] = &cmdesc{commandNew, game.RoleGameMaster, "new template_name [stack_amount]", "Creates a new item with an optional stack amount"}
-	commands["remove"] = &cmdesc{commandRemove, game.RoleGameMaster, "remove", "Removes the targeted object and all of its children from the game world"}
-	commands["save"] = &cmdesc{commandSave, game.RoleAdministrator, "save", "Executes a world save immediately"}
-	commands["shutdown"] = &cmdesc{commandShutdown, game.RoleAdministrator, "shutdown", "Shuts down the server immediately"}
-	commands["snapshot_clean"] = &cmdesc{commandSnapshotClean, game.RoleAdministrator, "snapshot_clean", "internal command, please do not use"}
-	commands["snapshot_daily"] = &cmdesc{commandSnapshotDaily, game.RoleAdministrator, "snapshot_daily", "internal command, please do not use"}
-	commands["snapshot_weekly"] = &cmdesc{commandSnapshotWeekly, game.RoleAdministrator, "snapshot_weekly", "internal command, please do not use"}
-	commands["static"] = &cmdesc{commandStatic, game.RoleGameMaster, "static graphic_number", "Creates a new static object with the given graphic number"}
-	commands["teleport"] = &cmdesc{commandTeleport, game.RoleGameMaster, "teleport [x y|x y z|multi]", "Teleports you to the targeted location - optionally multiple times, or to the top Z of the given X/Y location, or to the absolute location"}
+	regcmd(&cmdesc{"bank", nil, commandBank, game.RoleGameMaster, "bank", "Opens the bank box of the targeted mobile, if any"})
+	regcmd(&cmdesc{"broadcast", nil, commandBroadcast, game.RoleAdministrator, "broadcast text", "Broadcasts the given text to all connected players"})
+	regcmd(&cmdesc{"chat", []string{"c", "global", "g"}, commandChat, game.RolePlayer, "chat", "Sends global chat speech"})
+	regcmd(&cmdesc{"debug", nil, commandDebug, game.RoleGameMaster, "debug command [arguments]", "Executes debug commands"})
+	regcmd(&cmdesc{"location", nil, commandLocation, game.RoleAdministrator, "location", "Tells the absolute location of the targeted location or object"})
+	regcmd(&cmdesc{"logMemStats", nil, commandLogMemStats, game.RoleAdministrator, "logMemStats", "Forces the server to log memory statistics and echo that to the caller"})
+	regcmd(&cmdesc{"new", []string{"add"}, commandNew, game.RoleGameMaster, "new template_name [stack_amount]", "Creates a new item with an optional stack amount"})
+	regcmd(&cmdesc{"remove", []string{"rem", "delete", "del"}, commandRemove, game.RoleGameMaster, "remove", "Removes the targeted object and all of its children from the game world"})
+	regcmd(&cmdesc{"save", nil, commandSave, game.RoleAdministrator, "save", "Executes a world save immediately"})
+	regcmd(&cmdesc{"shutdown", nil, commandShutdown, game.RoleAdministrator, "shutdown", "Shuts down the server immediately"})
+	regcmd(&cmdesc{"snapshot_clean", nil, commandSnapshotClean, game.RoleAdministrator, "snapshot_clean", "internal command, please do not use"})
+	regcmd(&cmdesc{"snapshot_daily", nil, commandSnapshotDaily, game.RoleAdministrator, "snapshot_daily", "internal command, please do not use"})
+	regcmd(&cmdesc{"snapshot_weekly", nil, commandSnapshotWeekly, game.RoleAdministrator, "snapshot_weekly", "internal command, please do not use"})
+	regcmd(&cmdesc{"static", nil, commandStatic, game.RoleGameMaster, "static graphic_number", "Creates a new static object with the given graphic number"})
+	regcmd(&cmdesc{"teleport", []string{"tele"}, commandTeleport, game.RoleGameMaster, "teleport [x y|x y z|multi]", "Teleports you to the targeted location - optionally multiple times, or to the top Z of the given X/Y location, or to the absolute location"})
+}
+
+// regcmd registers a command description
+func regcmd(d *cmdesc) {
+	commands[d.name] = d
+	for _, alt := range d.alts {
+		commands[alt] = d
+	}
 }
 
 // commandFunction is the signature of a command function
@@ -49,6 +52,8 @@ type commandFunction func(*NetState, CommandArgs, string)
 
 // cmdesc describes a command
 type cmdesc struct {
+	name        string
+	alts        []string
 	fn          commandFunction
 	roles       game.Role
 	usage       string
