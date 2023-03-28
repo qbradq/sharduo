@@ -444,6 +444,9 @@ func (n *NetState) updateMobile(mobile game.Mobile) {
 
 // UpdateObject implements the game.NetState interface.
 func (n *NetState) UpdateObject(o game.Object) {
+	if n.m == nil || !n.m.CanSee(o) {
+		return
+	}
 	if item, ok := o.(game.Item); ok {
 		n.itemInfo(item)
 	} else if mobile, ok := o.(game.Mobile); ok {
@@ -455,6 +458,9 @@ func (n *NetState) UpdateObject(o game.Object) {
 
 // SendObject implements the game.NetState interface.
 func (n *NetState) SendObject(o game.Object) {
+	if n.m == nil || !n.m.CanSee(o) {
+		return
+	}
 	if item, ok := o.(game.Item); ok {
 		n.itemInfo(item)
 	} else if mobile, ok := o.(game.Mobile); ok {
@@ -469,6 +475,9 @@ func (n *NetState) MoveMobile(mob game.Mobile) {
 	noto := uo.NotorietyAttackable
 	if n.m != nil {
 		noto = mob.GetNotorietyFor(n.m)
+		if !mob.CanSee(n.m) {
+			return
+		}
 	}
 	n.Send(&serverpacket.MoveMobile{
 		ID:        mob.Serial(),

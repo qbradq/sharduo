@@ -100,6 +100,9 @@ type Mobile interface {
 	StandOn(uo.CommonObject)
 	// StandingOn returns the surface that the mobile is standing on.
 	StandingOn() uo.CommonObject
+	// CanSee returns true if the mobile can see the object without regard to
+	// line of sight.
+	CanSee(Object) bool
 
 	//
 	// Graphics and display
@@ -1244,4 +1247,25 @@ func (m *BaseMobile) Update(t uo.Time) {
 // Think implements the Mobile interface.
 func (m *BaseMobile) Think() {
 
+}
+
+// CanSee implements the Mobile interface.
+func (m *BaseMobile) CanSee(o Object) bool {
+	switch o.Visibility() {
+	case uo.VisibilityVisible:
+		return true
+	case uo.VisibilityInvisibile:
+		return false
+	case uo.VisibilityHidden:
+		return false
+	case uo.VisibilityStaff:
+		if m.NetState() == nil {
+			return false
+		}
+		a := m.NetState().Account()
+		return a.HasRole(RoleGameMaster)
+	case uo.VisibilityNone:
+		return false
+	}
+	return false
 }

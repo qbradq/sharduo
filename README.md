@@ -28,7 +28,7 @@ The next milestone set for ShardUO is to implement the Mining skill vertical
 including all features required to mine ore and smelt it into ingots.
 
 ### Known Defects ###
-* Teleport X Y command is broke, I think map teleporting is broke in general
+* Going up too steep a hill will block, see location 1554x651x6 to 1554x652x11
 * Weight is not recalculated after save
 * Weight seems to stay on cursor after drop to container reject on too much weight
 

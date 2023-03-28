@@ -2,6 +2,7 @@ package game
 
 import (
 	"github.com/qbradq/sharduo/lib/marshal"
+	"github.com/qbradq/sharduo/lib/uo"
 )
 
 func init() {
@@ -30,3 +31,8 @@ type Spawner struct {
 
 // NoRent implements the Object interface.
 func (o *Spawner) NoRent() bool { return true }
+
+// Visibility implements the Object interface.
+func (o *Spawner) Visibility() uo.Visibility {
+	return uo.VisibilityStaff
+}

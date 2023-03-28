@@ -137,6 +137,8 @@ type Object interface {
 	Facing() uo.Direction
 	// SetFacing sets the direction the object is currently facing.
 	SetFacing(uo.Direction)
+	// Visibility returns the current visibility level of the object.
+	Visibility() uo.Visibility
 
 	//
 	// Complex accessors
@@ -447,4 +449,9 @@ func (o *BaseObject) GetEventHandler(which string) *EventHandler {
 	}
 	eventHandler := o.eventHandlers[which]
 	return eventHandlerGetter(eventHandler)
+}
+
+// Visibility implements the Object interface.
+func (o *BaseObject) Visibility() uo.Visibility {
+	return uo.VisibilityVisible
 }

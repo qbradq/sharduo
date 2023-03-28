@@ -383,17 +383,15 @@ const (
 // LightLevel indicates how bright a light is.
 type LightLevel byte
 
-// Reference values for LightLevel.
 const (
-	LightLevelDay   LightLevel = 0
-	LightLevelNight LightLevel = 9
-	LightLevelBlack LightLevel = 0x1F
+	LightLevelDay   LightLevel = 0    // Brightest light level
+	LightLevelNight LightLevel = 9    // OSI night
+	LightLevelBlack LightLevel = 0x1F // Lowest light level
 )
 
 // GFXType is a code that indicates how a graphical effect behaves.
 type GFXType byte
 
-// All valid values for GFXType
 const (
 	GFXTypeMoving    GFXType = 0 // Moves from source to target
 	GFXTypeLightning GFXType = 1 // Lightning strike at source
@@ -404,7 +402,6 @@ const (
 // GFXBlendMode is a code that indicates how a graphical effect is rendered.
 type GFXBlendMode uint32
 
-// All valid values for GFXBlendMode
 const (
 	GFXBlendModeNormal          GFXBlendMode = 0 // Normal blending, black is transparent
 	GFXBlendModeMultiply        GFXBlendMode = 1 // Darken
@@ -414,4 +411,15 @@ const (
 	GFXBlendModeHalfTransparent GFXBlendMode = 5 // Transparent with black edges
 	GFXBlendModeShadowBlue      GFXBlendMode = 6 // Complete shadow with blue edges
 	GFXBlendModeScreenRed       GFXBlendMode = 7 // Transparent but more red?
+)
+
+// Visibility is a code that indicates the visibility state of an object.
+type Visibility uint8
+
+const (
+	VisibilityVisible    Visibility = 0 // Normal visibility, everyone can see it
+	VisibilityInvisibile Visibility = 1 // Magical invisibility, the kind certain AI and spells can see through
+	VisibilityHidden     Visibility = 2 // Hidden as in the hidding skill, certain AI and spells can see through this
+	VisibilityStaff      Visibility = 3 // Only staff can see this object
+	VisibilityNone       Visibility = 4 // This object is never shown to the client
 )

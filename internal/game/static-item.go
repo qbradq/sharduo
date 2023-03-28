@@ -79,6 +79,11 @@ func (i *StaticItem) StandingHeight() int8 {
 	return i.def.Height
 }
 
+// Visibility implements the Object interface.
+func (o *StaticItem) Visibility() uo.Visibility {
+	return uo.VisibilityVisible
+}
+
 func (i *StaticItem) GraphicOffset() int            { return 0 }
 func (i *StaticItem) Dyable() bool                  { return false }
 func (i *StaticItem) Flippable() bool               { return false }
