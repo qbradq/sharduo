@@ -73,7 +73,14 @@ type Item interface {
 	DropLocation() uo.Location
 	// SetDropLocation sets the requested drop location of an item
 	SetDropLocation(uo.Location)
+	// RefreshDecayDeadline updates the decay deadline for this item based on
+	// the item's internal state.
+	RefreshDecayDeadline()
+
+	//
 	// Flag accessors
+	//
+
 	Background() bool
 	Weapon() bool
 	Transparent() bool
@@ -125,6 +132,8 @@ type BaseItem struct {
 	flipped bool
 	// Stack amount
 	amount int
+	// Time at which this item decays on the ground.
+	decayDeadline uo.Time
 
 	//
 	// Non-persistent values
@@ -379,6 +388,18 @@ func (i *BaseItem) DropLocation() uo.Location { return i.dropLocation }
 
 // SetDropLocation implements the Item interface
 func (i *BaseItem) SetDropLocation(l uo.Location) { i.dropLocation = l }
+
+// RefreshDecayDeadline implements the Item interface
+func (i *BaseItem) RefreshDecayDeadline() {
+	i.decayDeadline = world.Time() + uo.DurationMinute*15
+}
+
+// Update implements the Object interface.
+func (i *BaseItem) Update(t uo.Time) {
+	if t >= i.decayDeadline {
+		Remove(i)
+	}
+}
 
 // Flag accessors
 func (i *BaseItem) Background() bool   { return i.def.TileFlags&uo.TileFlagsBackground != 0 }

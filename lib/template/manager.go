@@ -83,7 +83,7 @@ func Initialize(templatePath, listPath, variablesFilePath string, rng uo.RandomS
 func FindTemplate(which string) *Template {
 	t, found := tm.templates.Get(which)
 	if !found {
-		log.Printf("template %s not found\n", which)
+		log.Printf("warning: template %s not found\n", which)
 		return nil
 	}
 	return t

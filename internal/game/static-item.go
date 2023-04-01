@@ -84,6 +84,12 @@ func (o *StaticItem) Visibility() uo.Visibility {
 	return uo.VisibilityVisible
 }
 
+// Update implements the Object interface.
+func (o *StaticItem) Update(t uo.Time) {}
+
+// RefreshDecayDeadline implements the Item interface
+func (i *StaticItem) RefreshDecayDeadline() {}
+
 func (i *StaticItem) GraphicOffset() int            { return 0 }
 func (i *StaticItem) Dyable() bool                  { return false }
 func (i *StaticItem) Flippable() bool               { return false }

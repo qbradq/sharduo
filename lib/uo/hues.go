@@ -23,6 +23,7 @@ const (
 	HueIce2        Hue = 1153
 	HueIce3        Hue = 1154
 	HueMax         Hue = 3000
+	HueHidden      Hue = 0x4000
 	HueAlpha       Hue = 0xffff
 	HuePartialFlag Hue = 0x8000
 )

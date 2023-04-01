@@ -76,9 +76,6 @@ type Mobile interface {
 	// AI-related
 	//
 
-	// Update handles tick-by-tick updates for the mobile and is responsible for
-	// calling Think(), HP/MP/SP regen, weapon swings, etc.
-	Update(uo.Time)
 	// Think implements the AI of the mobile.
 	Think()
 	// ViewRange returns the number of tiles this mobile can see and visually

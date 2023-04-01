@@ -87,8 +87,13 @@ func (c *Chunk) setTile(x, y int, t uo.Tile) {
 
 // Update handles the 1-minute periodic update for this chunk.
 func (c *Chunk) Update(t uo.Time) {
+	// Ore respawn
 	if t >= c.oreDeadline {
 		c.ore = uint8(world.Random().Random(10, 24))
 		c.oreDeadline = t + uo.DurationMinute*30
+	}
+	// Item updates for items on the ground
+	for _, i := range c.items {
+		i.Update(t)
 	}
 }

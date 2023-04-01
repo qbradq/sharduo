@@ -33,7 +33,7 @@ including all features required to mine ore and smelt it into ingots.
 * Weight seems to stay on cursor after drop to container reject on too much weight
 
 ### Required Features and Tasks ###
-* Item decay on the ground
+* Implement Removed interface
 
 ### Nice to Haves ###
 * Object spawner

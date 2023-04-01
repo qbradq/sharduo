@@ -74,6 +74,10 @@ type Object interface {
 	// Callbacks
 	//
 
+	// Update handles updates for objects. Mobiles should receive an Update()
+	// call every tick, while Items (on the ground) should receive one every
+	// minute.
+	Update(uo.Time)
 	// LinkEvent links the named handler to this object's event callbacks. Use
 	// the global function ExecuteEventHandler.
 	LinkEvent(string, string)
@@ -455,3 +459,6 @@ func (o *BaseObject) GetEventHandler(which string) *EventHandler {
 func (o *BaseObject) Visibility() uo.Visibility {
 	return uo.VisibilityVisible
 }
+
+// Update implements the Object interface.
+func (o *BaseObject) Update(t uo.Time) {}

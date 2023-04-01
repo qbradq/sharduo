@@ -301,6 +301,10 @@ func (m *Map) ForceAddObject(o Object) {
 		floor, _ := m.GetFloorAndCeiling(o.Location(), false)
 		mob.StandOn(floor)
 	}
+	// If this is an item we need to update the decay deadline.
+	if item, ok := o.(Item); ok {
+		item.RefreshDecayDeadline()
+	}
 }
 
 // ForceRemoveObject removes the object from the map and always succeeds.
