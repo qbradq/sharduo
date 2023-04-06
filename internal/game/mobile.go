@@ -1266,3 +1266,9 @@ func (m *BaseMobile) CanSee(o Object) bool {
 	}
 	return false
 }
+
+// NoRent implements the Object interface.
+func (m *BaseMobile) NoRent() bool {
+	// TODO check if this mobile is controlled by a player
+	return !m.isPlayerCharacter
+}

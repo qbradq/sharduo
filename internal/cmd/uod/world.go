@@ -254,6 +254,9 @@ func (w *World) Marshal() (*sync.WaitGroup, error) {
 	go func(s *marshal.TagFileSegment) {
 		defer wg.Done()
 		for _, o := range objects {
+			if o.Removed() || o.NoRent() {
+				continue
+			}
 			s.PutInt(uint32(o.Serial()))
 			s.PutByte(byte(o.ObjectType()))
 			s.IncrementRecordCount()

@@ -194,6 +194,9 @@ func (i *BaseItem) Unmarshal(s *marshal.TagFileSegment) *marshal.TagCollection {
 		i.amount = 1
 	}
 	i.plural = tags.String(marshal.TagPlural)
+	// Instead of storing the decay deadline we just refresh everything on a
+	// world load.
+	i.RefreshDecayDeadline()
 	return tags
 }
 
