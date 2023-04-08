@@ -129,6 +129,7 @@ func (w *World) Unmarshal() error {
 	start = time.Now()
 	tf := marshal.NewTagFile(d)
 	s := tf.Segment(marshal.SegmentWorld)
+	nThreads := int(s.Int())
 	w.time = uo.Time(s.Long())
 	// Timers
 	game.UnmarshalTimers(tf.Segment(marshal.SegmentTimers))
@@ -142,36 +143,19 @@ func (w *World) Unmarshal() error {
 			w.superUser = a
 		}
 	}
-	// Create objects in data stores
-	s = tf.Segment(marshal.SegmentObjectList)
-	for i := uint32(0); i < s.RecordCount(); i++ {
-		serial := uo.Serial(s.Int())
-		otype := marshal.ObjectType(s.Byte())
-		ctor := marshal.Constructor(otype)
-		if ctor == nil {
-			return fmt.Errorf("error: object %s of type %d constructor not found", serial.String(), otype)
-		}
-		v := ctor()
-		o, ok := v.(game.Object)
-		if !ok {
-			return fmt.Errorf("error: object %s of type %d does not implement the Object interface", serial.String(), otype)
-		}
-		o.SetSerial(serial)
-		w.ods.Insert(o)
-	}
-	// Unmarshal objects in the datastore
-	seg := marshal.SegmentObjectsStart
-	for {
+	// Unmarshal objects on the map
+	segStart := marshal.SegmentObjectsStart
+	segEnd := marshal.SegmentObjectsStart + marshal.Segment(nThreads)
+	for seg := segStart; seg < segEnd; seg++ {
 		s := tf.Segment(seg)
 		if s.IsEmpty() {
-			break
+			continue
 		}
-		w.ods.UnmarshalObjects(s)
-		seg++
+		w.m.UnmarshalObjects(s)
 	}
-	// Call the AfterUnmarshal hook on all objects in the datastore
-	w.ods.AfterUnmarshalObjects()
-	// Call RecalculateStats on all objects in the datastore
+	// Call the AfterUnmarshal hook on all objects on the map
+	w.m.AfterUnmarshal()
+	// Call RecalculateStats on all objects in the map
 	for _, o := range w.ods.Data() {
 		o.RecalculateStats()
 	}
@@ -200,6 +184,8 @@ func (w *World) getFileName() string {
 // Marshal writes all of the data stores that the world is responsible for. A
 // WaitGroup is returned to wait for the file to be written to disk.
 func (w *World) Marshal() (*sync.WaitGroup, error) {
+	nThreads := runtime.NumCPU()
+
 	if !w.lock.TryLock() {
 		return nil, ErrSaveFileLocked
 	}
@@ -213,14 +199,6 @@ func (w *World) Marshal() (*sync.WaitGroup, error) {
 	log.Printf("saving data stores to %s", filePath)
 
 	start := time.Now()
-	// We have to build a slice of all of our objects so we don't have
-	// concurrency issues on the data store map during the multi-goroutine save
-	objects := make([]game.Object, len(w.ods.Data()))
-	idx := 0
-	for _, obj := range w.ods.Data() {
-		objects[idx] = obj
-		idx++
-	}
 	wg := &sync.WaitGroup{}
 	tf := marshal.NewTagFile(nil)
 	// Global data
@@ -228,6 +206,7 @@ func (w *World) Marshal() (*sync.WaitGroup, error) {
 	wg.Add(1)
 	go func(s *marshal.TagFileSegment) {
 		defer wg.Done()
+		s.PutInt(uint32(nThreads))
 		s.PutLong(uint64(w.time))
 	}(s)
 	// Timers
@@ -248,30 +227,16 @@ func (w *World) Marshal() (*sync.WaitGroup, error) {
 			s.IncrementRecordCount()
 		}
 	}(s)
-	// Object list
-	s = tf.Segment(marshal.SegmentObjectList)
-	wg.Add(1)
-	go func(s *marshal.TagFileSegment) {
-		defer wg.Done()
-		for _, o := range objects {
-			if o.Removed() || o.NoRent() {
-				continue
-			}
-			s.PutInt(uint32(o.Serial()))
-			s.PutByte(byte(o.ObjectType()))
-			s.IncrementRecordCount()
-		}
-	}(s)
-	// Kick off the object database persistance goroutines
-	nThreads := runtime.NumCPU()
-	w.ods.MarshalObjects(tf, nThreads, wg)
+	// Kick off the object persistance goroutines
+	wg.Add(nThreads)
+	for i := 0; i < nThreads; i++ {
+		s := tf.Segment(marshal.SegmentObjectsStart + marshal.Segment(i))
+		go w.m.MarshalObjects(wg, s, i, nThreads)
+	}
 	// Map data
-	wg.Add(1)
 	s = tf.Segment(marshal.SegmentMap)
-	go func(s *marshal.TagFileSegment) {
-		defer wg.Done()
-		w.m.Marshal(s)
-	}(s)
+	wg.Add(1)
+	go w.m.Marshal(wg, s)
 	// The main goroutine is blocked at this point
 	wg.Wait()
 	end := time.Now()
@@ -511,4 +476,10 @@ func (w *World) BroadcastMessage(speaker game.Object, fmtstr string, args ...int
 		Text:    text,
 		Type:    stype,
 	})
+}
+
+// Insert inserts the object into the world's datastores blindly. Used during
+// unmarshalling.
+func (w *World) Insert(o game.Object) {
+	w.ods.Insert(o)
 }

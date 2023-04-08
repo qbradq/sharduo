@@ -68,21 +68,18 @@ func (a *Account) Marshal(s *marshal.TagFileSegment) {
 	s.PutString(a.passwordHash)
 	s.PutString(a.emailAddress)
 	s.PutByte(byte(a.roles))
-	// NOTE: We can safely add Tag values below
-	s.PutTag(marshal.TagEndOfList, marshal.TagValueBool, true)
 }
 
 // Deserialize does nothing
 func (a *Account) Deserialize(t *template.Template, create bool) {}
 
 // Unmarshal reads the account data from a segment
-func (a *Account) Unmarshal(s *marshal.TagFileSegment) *marshal.TagCollection {
+func (a *Account) Unmarshal(s *marshal.TagFileSegment) {
 	a.player = uo.Serial(s.Int())
 	a.username = s.String()
 	a.passwordHash = s.String()
 	a.emailAddress = s.String()
 	a.roles = Role(s.Byte())
-	return s.Tags()
 }
 
 // Username returns the username of the account

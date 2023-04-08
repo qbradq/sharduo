@@ -132,8 +132,6 @@ type BaseItem struct {
 	flipped bool
 	// Stack amount
 	amount int
-	// Time at which this item decays on the ground.
-	decayDeadline uo.Time
 
 	//
 	// Non-persistent values
@@ -158,6 +156,8 @@ type BaseItem struct {
 	plural string
 	// Base sale value of the item at a vendor
 	value int
+	// Time at which this item decays on the ground.
+	decayDeadline uo.Time
 }
 
 // ObjectType implements the Object interface.
@@ -166,9 +166,8 @@ func (i *BaseItem) ObjectType() marshal.ObjectType { return marshal.ObjectTypeIt
 // Marshal implements the marshal.Marshaler interface.
 func (i *BaseItem) Marshal(s *marshal.TagFileSegment) {
 	i.BaseObject.Marshal(s)
-	s.PutTag(marshal.TagFlipped, marshal.TagValueBool, i.flipped)
-	s.PutTag(marshal.TagAmount, marshal.TagValueShort, uint16(i.amount))
-	s.PutTag(marshal.TagPlural, marshal.TagValueString, i.plural)
+	s.PutBool(i.flipped)
+	s.PutShort(uint16(i.amount))
 }
 
 // Deserialize implements the util.Serializeable interface.
@@ -186,18 +185,17 @@ func (i *BaseItem) Deserialize(t *template.Template, create bool) {
 }
 
 // Unmarshal implements the marshal.Unmarshaler interface.
-func (i *BaseItem) Unmarshal(s *marshal.TagFileSegment) *marshal.TagCollection {
-	tags := i.BaseObject.Unmarshal(s)
-	i.flipped = tags.Bool(marshal.TagFlipped)
-	i.amount = int(tags.Short(marshal.TagAmount))
+func (i *BaseItem) Unmarshal(s *marshal.TagFileSegment) {
+	i.BaseObject.Unmarshal(s)
+	i.flipped = s.Bool()
+	i.amount = int(s.Short())
 	if i.amount < 1 {
 		i.amount = 1
 	}
-	i.plural = tags.String(marshal.TagPlural)
+	i.def = world.GetItemDefinition(i.graphic)
 	// Instead of storing the decay deadline we just refresh everything on a
 	// world load.
 	i.RefreshDecayDeadline()
-	return tags
 }
 
 // BaseGraphic implements the Item interface.

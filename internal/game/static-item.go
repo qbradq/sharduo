@@ -154,16 +154,12 @@ func (i *StaticItem) Deserialize(t *template.Template, create bool) {
 }
 
 // Unmarshal implements the marshal.Unmarshaler interface.
-func (i *StaticItem) Unmarshal(s *marshal.TagFileSegment) *marshal.TagCollection {
+func (i *StaticItem) Unmarshal(s *marshal.TagFileSegment) {
 	i.graphic = uo.Graphic(s.Short())
 	i.location = s.Location()
 	i.hue = uo.Hue(s.Short())
 	i.def = world.GetItemDefinition(i.graphic)
-	return s.Tags() // Should always be empty, but this reads one byte
 }
-
-// AfterUnmarshal implements the marshal.Unmarshaler interface.
-func (i *StaticItem) AfterUnmarshal(tags *marshal.TagCollection) {}
 
 // AfterUnmarshalOntoMap implements the Object interface.
 func (i *StaticItem) AfterUnmarshalOntoMap() {}

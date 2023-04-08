@@ -1,8 +1,6 @@
 package game
 
 import (
-	"log"
-
 	"github.com/qbradq/sharduo/lib/marshal"
 	"github.com/qbradq/sharduo/lib/uo"
 )
@@ -26,39 +24,20 @@ func (i *MountItem) ObjectType() marshal.ObjectType {
 
 // Marshal implements the marshal.Marshaler interface.
 func (i *MountItem) Marshal(s *marshal.TagFileSegment) {
-	ms := uo.SerialZero
-	if i.m != nil {
-		ms = i.m.Serial()
-	}
 	i.BaseWearable.Marshal(s)
-	s.PutTag(marshal.TagManagedObject, marshal.TagValueInt, uint32(ms))
+	i.m.Marshal(s)
 }
 
 // Unmarshal implements the marshal.Unmarshaler interface.
-func (i *MountItem) Unmarshal(s *marshal.TagFileSegment) *marshal.TagCollection {
-	tags := i.BaseWearable.Unmarshal(s)
-	ms := uo.Serial(tags.Int(marshal.TagManagedObject))
-	if ms != 0 {
-		o := world.Find(ms)
-		if o == nil {
-			log.Printf("warning: mount item %s references non-existent object %s", i.Serial().String(), ms.String())
-			i.m = nil
-		} else {
-			m, ok := o.(Mobile)
-			if !ok {
-				log.Printf("warning: mount item %s references non-mobile object %s, it probably leaked", i.Serial().String(), ms.String())
-				i.m = nil
-			} else {
-				i.m = m
-			}
-		}
-	} else {
-		i.m = nil
+func (i *MountItem) Unmarshal(s *marshal.TagFileSegment) {
+	i.BaseWearable.Unmarshal(s)
+	mum := s.Object()
+	m, ok := mum.(Mobile)
+	if !ok {
+		panic("mount item's mount did not implement Mobile")
 	}
-	if i.m != nil {
-		i.SetBaseGraphicForBody(i.m.Body())
-	}
-	return tags
+	i.m = m
+	i.SetBaseGraphicForBody(i.m.Body())
 }
 
 // SetBaseGraphicForBody sets the base graphic of the item correctly for the

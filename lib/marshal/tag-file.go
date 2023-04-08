@@ -5,8 +5,8 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
-	"log"
 
+	"github.com/qbradq/sharduo/lib/template"
 	"github.com/qbradq/sharduo/lib/uo"
 )
 
@@ -29,31 +29,6 @@ import (
 // Offset                 uint64          Offset from the beginning of the file where the raw segment data starts
 // Length                 uint64          Length of the raw segment data
 // Records                uint32          Number of records in the segment
-//
-// TagObjectSegment:
-// Objects                []TagObject     Object data
-//
-// TagObject:
-// ConcreteType           uint8           A value indicating which Go struct this object will deserialize into
-// Serial                 uint32          uo.Serial of the object
-// TemplateName           string          Template name this object was created from
-// Parent                 uint32          uo.Serial of the object's parent, uo.SerialSystem for the map, or uo.SerialZero for void (leaked)
-// Name                   string          Base name string of the object
-// Hue                    uint16          uo.Hue of the object
-// Location     int16,int16,int8          uo.Location of the object
-// EventCount             uint8           Number of event definitions in the object
-// Events                 []EventDef      Event definitions
-// DynamicTags            []TagValue      The rest of the data for the object as TagValue structures
-// TagsEnd
-//
-// EventDef:
-// EventName              string          Event name
-// EventHandler           string          Event handler
-//
-// TagValue:
-// Tag                    uint8           Tag code
-// TagType                uint8           Tag indicating what the format of the following data will be
-// Data                   []byte          Raw data
 type TagFile struct {
 	segs []*TagFileSegment // Segments
 }
@@ -161,6 +136,15 @@ func (s *TagFileSegment) IncrementRecordCount() { s.records++ }
 // RecordCount returns the number of records encoded into the segment.
 func (s *TagFileSegment) RecordCount() uint32 { return s.records }
 
+// PutBool writes a single 8-bit value to the segment based on the value of v.
+func (s *TagFileSegment) PutBool(v bool) {
+	if v {
+		s.buf.WriteByte(1)
+	} else {
+		s.buf.WriteByte(0)
+	}
+}
+
 // PutByte writes a single 8-bit value to the segment.
 func (s *TagFileSegment) PutByte(v byte) {
 	s.buf.WriteByte(v)
@@ -261,79 +245,19 @@ func (s *TagFileSegment) PutBounds(b uo.Bounds) {
 	s.buf.Write(s.tbuf[0:11])
 }
 
-// PutTag writes a tagged value to the segment. Please note that to write a
-// reference slice please use PutByte(byte(tag)), PutObjectReferences[I].
-func (s *TagFileSegment) PutTag(t Tag, tv TagValue, value interface{}) {
-	if t == TagEndOfList {
-		s.buf.WriteByte(byte(TagEndOfList))
-		return
-	} else if tv == TagValueBool && !value.(bool) {
-		return
-	}
-	s.tbuf[0] = byte(t)
-	s.tbuf[1] = byte(tv)
-	s.buf.Write(s.tbuf[0:2])
-	switch tv {
-	case TagValueBool:
-		// Handled in special case at top
-	case TagValueByte:
-		s.buf.WriteByte(value.(byte))
-	case TagValueShort:
-		binary.LittleEndian.PutUint16(s.tbuf[0:2], value.(uint16))
-		s.buf.Write(s.tbuf[0:2])
-	case TagValueInt:
-		binary.LittleEndian.PutUint32(s.tbuf[0:4], value.(uint32))
-		s.buf.Write(s.tbuf[0:4])
-	case TagValueLong:
-		binary.LittleEndian.PutUint64(s.tbuf[0:8], value.(uint64))
-		s.buf.Write(s.tbuf[0:8])
-	case TagValueString:
-		s.buf.WriteString(value.(string))
-		s.buf.WriteByte(0)
-	case TagValueLocation:
-		l := value.(uo.Location)
-		binary.LittleEndian.PutUint16(s.tbuf[0:2], uint16(l.X))
-		binary.LittleEndian.PutUint16(s.tbuf[2:4], uint16(l.Y))
-		s.tbuf[4] = uint8(int8(l.Z))
-		s.buf.Write(s.tbuf[0:5])
-	case TagValueBounds:
-		b := value.(uo.Bounds)
-		binary.LittleEndian.PutUint16(s.tbuf[0:2], uint16(b.X))
-		binary.LittleEndian.PutUint16(s.tbuf[2:4], uint16(b.Y))
-		s.tbuf[4] = uint8(int8(b.Z))
-		binary.LittleEndian.PutUint16(s.tbuf[5:7], uint16(b.W))
-		binary.LittleEndian.PutUint16(s.tbuf[7:9], uint16(b.H))
-		binary.LittleEndian.PutUint16(s.tbuf[9:11], uint16(b.D))
-		s.buf.Write(s.tbuf[0:11])
-	case TagValueShortSlice:
-		v := value.([]int16)
-		if len(v) > 255 {
-			log.Printf("error: tag %d slice too long", t)
-			return
-		}
-		s.tbuf[0] = byte(len(v))
-		ofs := 1
-		for _, n := range v {
-			binary.LittleEndian.PutUint16(s.tbuf[ofs+0:ofs+2], uint16(n))
-			ofs += 2
-		}
-		s.buf.Write(s.tbuf[0:ofs])
-	case TagValueReferenceSlice:
-		v := value.([]uo.Serial)
-		if len(v) > 255 {
-			log.Printf("error: tag %d slice too long", t)
-			return
-		}
-		s.tbuf[0] = byte(len(v))
-		ofs := 1
-		for _, n := range v {
-			binary.LittleEndian.PutUint32(s.tbuf[ofs+0:ofs+4], uint32(n))
-			ofs += 4
-		}
-		s.buf.Write(s.tbuf[0:ofs])
-	default:
-		log.Printf("warning: unhandled type for tag %d", t)
-	}
+// PutObject writes an object to the segment.
+func (s *TagFileSegment) PutObject(o Marshaler) {
+	s.PutByte(byte(o.ObjectType()))
+	s.PutInt(uint32(o.Serial()))
+	s.PutString(o.TemplateName())
+	o.Marshal(s)
+}
+
+// Bool returns the next 8-bit number as a boolean, any value other than 0 is
+// returned as true
+func (s *TagFileSegment) Bool() bool {
+	s.buf.Read(s.tbuf[:1])
+	return s.tbuf[0] != 0
 }
 
 // Byte returns the next 8-bit number in the segment
@@ -441,167 +365,29 @@ func (s *TagFileSegment) Bounds() uo.Bounds {
 	}
 }
 
-// Tags returns a TagCollection containing the next collection of dynamic tags
-// encoded in the segment.
-func (s *TagFileSegment) Tags() *TagCollection {
-	c := &TagCollection{
-		tags: make([]interface{}, TagLastValidValue+1),
+// Object returns the next object encoded into the segment which must support
+// the Unmarshaler interface. The object will be fully unmarshaled upon return.
+func (s *TagFileSegment) Object() Unmarshaler {
+	// Object construction
+	ot := ObjectType(s.Byte())
+	ctor := Constructor(ot)
+	if ctor == nil {
+		panic(fmt.Sprintf("no constructor found for object type code 0x%02X", ot))
 	}
-	for {
-		tag := Tag(s.Byte())
-		if tag == TagEndOfList {
-			break
-		}
-		if tag > TagLastValidValue {
-			// Something is wrong
-			log.Printf("warning: save file contains unknown tag ID %d", tag)
-			break
-		}
-		tagType := TagValue(s.Byte())
-		switch tagType {
-		case TagValueBool:
-			c.tags[tag] = true
-		case TagValueByte:
-			c.tags[tag] = s.Byte()
-		case TagValueShort:
-			c.tags[tag] = s.Short()
-		case TagValueInt:
-			c.tags[tag] = s.Int()
-		case TagValueLong:
-			c.tags[tag] = s.Long()
-		case TagValueString:
-			c.tags[tag] = s.String()
-		case TagValueReferenceSlice:
-			count := int(s.Byte())
-			v := make([]uo.Serial, 0, count)
-			for i := 0; i < count; i++ {
-				v = append(v, uo.Serial(s.Int()))
-			}
-			c.tags[tag] = v
-		case TagValueLocation:
-			c.tags[tag] = s.Location()
-		case TagValueBounds:
-			c.tags[tag] = s.Bounds()
-		case TagValueShortSlice:
-			count := int(s.Byte())
-			v := make([]int16, 0, count)
-			for i := 0; i < count; i++ {
-				v = append(v, int16(s.Short()))
-			}
-			c.tags[tag] = v
-		default:
-			panic(fmt.Sprintf("unhandled tag value type %d", tagType))
-		}
+	o := ctor()
+	um, ok := o.(Unmarshaler)
+	if !ok {
+		panic(fmt.Sprintf("object for type code 0x%02X does not implement Unmarshaler", ot))
 	}
-	return c
-}
-
-// TagCollection manages a collection of tag values.
-type TagCollection struct {
-	tags []interface{}
-}
-
-// Bool returns true if the tag is contained within the collection, false
-// otherwise.
-func (c *TagCollection) Bool(t Tag) bool {
-	if t > TagLastValidValue {
-		panic(fmt.Sprintf("warning: unknown tag type %d", t))
-	}
-	if c.tags[t] == nil {
-		return false
-	}
-	return c.tags[t].(bool)
-}
-
-// Byte returns the named 8-bit value
-func (c *TagCollection) Byte(t Tag) byte {
-	if t > TagLastValidValue {
-		panic(fmt.Sprintf("warning: unknown tag type %d", t))
-	}
-	return c.tags[t].(byte)
-}
-
-// Short returns the named 16-bit value
-func (c *TagCollection) Short(t Tag) uint16 {
-	if t > TagLastValidValue {
-		panic(fmt.Sprintf("warning: unknown tag type %d", t))
-	}
-	return c.tags[t].(uint16)
-}
-
-// Int returns the named 32-bit value
-func (c *TagCollection) Int(t Tag) uint32 {
-	if t > TagLastValidValue {
-		panic(fmt.Sprintf("warning: unknown tag type %d", t))
-	}
-	return c.tags[t].(uint32)
-}
-
-// Long returns the named 64-bit value or the default value if not found.
-func (c *TagCollection) Long(t Tag) uint64 {
-	if t > TagLastValidValue {
-		panic(fmt.Sprintf("warning: unknown tag type %d", t))
-	}
-	return c.tags[t].(uint64)
-}
-
-// String returns the named string value
-func (c *TagCollection) String(t Tag) string {
-	if t > TagLastValidValue {
-		panic(fmt.Sprintf("warning: unknown tag type %d", t))
-	}
-	return c.tags[t].(string)
-}
-
-// Location returns the named location value
-func (c *TagCollection) Location(t Tag) uo.Location {
-	if t > TagLastValidValue {
-		panic(fmt.Sprintf("warning: unknown tag type %d", t))
-	}
-	return c.tags[t].(uo.Location)
-}
-
-// Bounds returns the named bounds value
-func (c *TagCollection) Bounds(t Tag) uo.Bounds {
-	if t > TagLastValidValue {
-		panic(fmt.Sprintf("warning: unknown tag type %d", t))
-	}
-	return c.tags[t].(uo.Bounds)
-}
-
-// ReferenceSlice returns the named slice of references
-func (c *TagCollection) ReferenceSlice(t Tag) []uo.Serial {
-	if t > TagLastValidValue {
-		panic(fmt.Sprintf("warning: unknown tag type %d", t))
-	}
-	v := c.tags[t]
-	if v == nil {
-		return make([]uo.Serial, 0)
-	}
-	return v.([]uo.Serial)
-}
-
-// ShortSlice returns the named slice of shorts
-func (c *TagCollection) ShortSlice(t Tag) []int16 {
-	if t > TagLastValidValue {
-		panic(fmt.Sprintf("warning: unknown tag type %d", t))
-	}
-	v := c.tags[t]
-	if v == nil {
-		return make([]int16, 0)
-	}
-	return v.([]int16)
-}
-
-// TagObject manages all of the information for one object.
-type TagObject struct {
-	Type     ObjectType
-	Serial   uo.Serial
-	Template string
-	Parent   uo.Serial
-	Name     string
-	Hue      uo.Hue
-	Location uo.Location
-	Events   map[string]string
-	Tags     *TagCollection
+	// Self-serial and dataset insertion
+	ss := uo.Serial(s.Int())
+	um.SetSerial(ss)
+	insertFunction(um)
+	// Template deserialization handling
+	tn := s.String()
+	t := template.FindTemplate(tn)
+	um.Deserialize(t, false)
+	// Data unmarshaling
+	um.Unmarshal(s)
+	return um
 }

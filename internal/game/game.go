@@ -1,6 +1,7 @@
 package game
 
 import (
+	"github.com/qbradq/sharduo/lib/marshal"
 	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/uo"
 )
@@ -82,6 +83,9 @@ func Remove(o Object) {
 	world.Delete(o)
 	o.RemoveChildren()
 }
+
+// ObjectType returns the marshal type code of the object
+func ObjectType(o Object) marshal.ObjectType { return o.ObjectType() }
 
 // SetEventHandlerGetter sets the function used to get event handler functions
 // by name.

@@ -293,29 +293,33 @@ func (o *BaseMobile) SerialType() uo.SerialType {
 
 // Marshal implements the marshal.Marshaler interface.
 func (m *BaseMobile) Marshal(s *marshal.TagFileSegment) {
-	cs := uo.SerialZero
-	if m.cursor.item != nil {
-		cs = m.cursor.item.Serial()
-	}
 	m.BaseObject.Marshal(s)
-	s.PutTag(marshal.TagViewRange, marshal.TagValueByte, byte(m.viewRange))
-	s.PutTag(marshal.TagIsPlayerCharacter, marshal.TagValueBool, m.isPlayerCharacter)
-	s.PutTag(marshal.TagIsFemale, marshal.TagValueBool, m.isFemale)
-	s.PutTag(marshal.TagBody, marshal.TagValueShort, uint16(m.body))
-	s.PutTag(marshal.TagNotoriety, marshal.TagValueByte, byte(m.notoriety))
-	s.PutTag(marshal.TagStrength, marshal.TagValueShort, uint16(m.baseStrength))
-	s.PutTag(marshal.TagDexterity, marshal.TagValueShort, uint16(m.baseDexterity))
-	s.PutTag(marshal.TagIntelligence, marshal.TagValueShort, uint16(m.baseIntelligence))
-	s.PutTag(marshal.TagHitPoints, marshal.TagValueShort, uint16(m.hitPoints))
-	s.PutTag(marshal.TagStamina, marshal.TagValueShort, uint16(m.stamina))
-	s.PutTag(marshal.TagMana, marshal.TagValueShort, uint16(m.mana))
-	s.PutTag(marshal.TagCursor, marshal.TagValueInt, uint32(cs))
-	s.PutTag(marshal.TagSkills, marshal.TagValueShortSlice, m.skills)
-	equipment := make([]uo.Serial, 0)
+	// Base stats
+	s.PutByte(byte(m.viewRange))
+	s.PutBool(m.isPlayerCharacter)
+	s.PutBool(m.isFemale)
+	s.PutShort(uint16(m.body))
+	s.PutByte(byte(m.notoriety))
+	s.PutShort(uint16(m.baseStrength))
+	s.PutShort(uint16(m.baseDexterity))
+	s.PutShort(uint16(m.baseIntelligence))
+	s.PutShort(uint16(m.hitPoints))
+	s.PutShort(uint16(m.mana))
+	s.PutShort(uint16(m.stamina))
+	// Skills
+	s.PutShortSlice(m.skills)
+	// Equipment handling
+	s.PutByte(byte(len(m.equipment.equipment)))
 	for _, w := range m.equipment.equipment {
-		equipment = append(equipment, w.Serial())
+		s.PutObject(w)
 	}
-	s.PutTag(marshal.TagEquipment, marshal.TagValueReferenceSlice, equipment)
+	// Cursor handling
+	if m.cursor.item != nil {
+		s.PutBool(true)
+		s.PutObject(m.cursor.item)
+	} else {
+		s.PutBool(false)
+	}
 }
 
 // Deserialize implements the util.Serializeable interface.
@@ -347,54 +351,48 @@ func (m *BaseMobile) Deserialize(t *template.Template, create bool) {
 }
 
 // Unmarshal implements the marshal.Unmarshaler interface.
-func (m *BaseMobile) Unmarshal(s *marshal.TagFileSegment) *marshal.TagCollection {
-	tags := m.BaseObject.Unmarshal(s)
+func (m *BaseMobile) Unmarshal(s *marshal.TagFileSegment) {
+	m.BaseObject.Unmarshal(s)
 	m.cursor = &Cursor{}
-	m.viewRange = uo.BoundViewRange(int16(tags.Byte(marshal.TagViewRange)))
-	m.isPlayerCharacter = tags.Bool(marshal.TagIsPlayerCharacter)
-	m.isFemale = tags.Bool(marshal.TagIsFemale)
-	m.body = uo.Body(tags.Short(marshal.TagBody))
-	m.notoriety = uo.Notoriety(tags.Byte(marshal.TagNotoriety))
-	m.baseStrength = int(tags.Short(marshal.TagStrength))
-	m.baseDexterity = int(tags.Short(marshal.TagDexterity))
-	m.baseIntelligence = int(tags.Short(marshal.TagIntelligence))
-	m.hitPoints = int(tags.Short(marshal.TagStrength))
-	m.stamina = int(tags.Short(marshal.TagStrength))
-	m.mana = int(tags.Short(marshal.TagStrength))
-	m.skills = tags.ShortSlice(marshal.TagSkills)
+	// Base stats
+	m.viewRange = uo.BoundViewRange(int16(s.Byte()))
+	m.isPlayerCharacter = s.Bool()
+	m.isFemale = s.Bool()
+	m.body = uo.Body(s.Short())
+	m.notoriety = uo.Notoriety(s.Byte())
+	m.baseStrength = int(s.Short())
+	m.baseDexterity = int(s.Short())
+	m.baseIntelligence = int(s.Short())
+	m.hitPoints = int(s.Short())
+	m.mana = int(s.Short())
+	m.stamina = int(s.Short())
+	// Skills
+	m.skills = s.ShortSlice()
 	if len(m.skills) < int(uo.SkillCount) {
 		s := make([]int16, uo.SkillCount)
 		copy(s, m.skills)
 	} else if len(m.skills) > int(uo.SkillCount) {
 		m.skills = m.skills[0:uo.SkillCount]
 	}
-	return tags
-}
-
-// AfterUnmarshal implements the marshal.Unmarshaler interface.
-func (m *BaseMobile) AfterUnmarshal(tags *marshal.TagCollection) {
-	m.BaseObject.AfterUnmarshal(tags)
-	m.equipment = NewEquipmentCollectionWith(tags.ReferenceSlice(marshal.TagEquipment), m)
-	// If we had an item on the cursor at the time of the save we drop it at
-	// our feet just so we don't leak it.
-	incs := uo.Serial(tags.Int(marshal.TagCursor))
-	if incs != 0 {
-		o := world.Find(incs)
-		if o != nil {
-			m.DropToFeet(o)
+	// Equipment handling
+	m.equipment = NewEquipmentCollection()
+	count := int(s.Byte())
+	for i := 0; i < count; i++ {
+		wum := s.Object()
+		w, ok := wum.(Wearable)
+		if !ok {
+			panic("equipment object not wearable")
 		}
+		m.equipment.equipment[w.Layer()] = w
 	}
-	// Make sure all mobiles have a backpack, this should be covered in the template
-	if !m.equipment.IsLayerOccupied(uo.LayerBackpack) {
-		log.Printf("error: mobile %s does not have a backpack, removing", m.Serial().String())
-		Remove(m)
-		return
-	}
-	// Make sure all players have a bank box
-	if m.IsPlayerCharacter() && !m.equipment.IsLayerOccupied(uo.LayerBankBox) {
-		log.Printf("error: player mobile %s does not have a bank box, removing", m.Serial().String())
-		Remove(m)
-		return
+	// Cursor handling
+	if s.Bool() {
+		oum := s.Object()
+		o, ok := oum.(Object)
+		if !ok {
+			panic("object on cursor does not implement Object")
+		}
+		m.DropToFeet(o)
 	}
 }
 

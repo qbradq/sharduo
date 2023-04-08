@@ -14,6 +14,7 @@ import (
 
 	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/internal/game/events"
+	"github.com/qbradq/sharduo/lib/marshal"
 	"github.com/qbradq/sharduo/lib/template"
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/uo/file"
@@ -154,6 +155,15 @@ func initialize() {
 		return events.GetEventHandlerIndex(which)
 	})
 
+	// Marshal system initialization
+	marshal.SetInsertFunction(func(i interface{}) {
+		o, ok := i.(game.Object)
+		if !ok {
+			return
+		}
+		world.Insert(o)
+	})
+
 	// Load object templates
 	log.Println("Loading templates...")
 	errs := template.Initialize(configuration.TemplatesDirectory,
@@ -208,6 +218,15 @@ func Main() {
 	go cron.Main(wg)
 	go LoginServerMain(wg)
 	go GameServerMain(wg)
+
+	// TODO DEBUG REMOVE
+	o := template.Create("Rock").(game.Object)
+	o.SetLocation(uo.Location{X: 3630, Y: 2582, Z: 0})
+	world.Map().SetNewParent(o, nil)
+	o = template.Create("Rock").(game.Object)
+	o.SetLocation(uo.Location{X: 3631, Y: 2582, Z: 0})
+	world.Map().SetNewParent(o, nil)
+
 	wg.Wait()
 
 	// Always save right before we go down

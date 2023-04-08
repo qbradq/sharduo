@@ -2,8 +2,8 @@ package game
 
 import (
 	"fmt"
-	"log"
 	"sort"
+	"sync"
 
 	"github.com/qbradq/sharduo/lib/marshal"
 	"github.com/qbradq/sharduo/lib/serverpacket"
@@ -69,43 +69,57 @@ func (m *Map) LoadFromMuls(mapmul *file.MapMul, staticsmul *file.StaticsMul) {
 	}
 }
 
-// Marshal writes out all object references of objects that are directly on the
-// map.
-func (m *Map) Marshal(s *marshal.TagFileSegment) {
-	// List of objects on the map, this is what the record count refers to
-	for _, c := range m.chunks {
-		for _, item := range c.items {
-			s.PutInt(uint32(item.Serial()))
+// MarshalObjects writes out all objects that are directly on the map split into
+// pools to facilitate multi-goroutine saving.
+func (m *Map) MarshalObjects(wg *sync.WaitGroup, s *marshal.TagFileSegment, pool, pools int) {
+	defer wg.Done()
+	l := len(m.chunks)
+	for i := pool; i < l; i += pools {
+		c := m.chunks[i]
+		for _, o := range c.items {
+			if o.Removed() || o.NoRent() {
+				continue
+			}
+			s.PutObject(o)
 			s.IncrementRecordCount()
 		}
-		for _, mobile := range c.mobiles {
-			s.PutInt(uint32(mobile.Serial()))
+		for _, o := range c.mobiles {
+			if o.Removed() || o.NoRent() {
+				continue
+			}
+			s.PutObject(o)
 			s.IncrementRecordCount()
 		}
 	}
-	// Ore map is next
+}
+
+// Marshal writes out top-level map information
+func (m *Map) Marshal(wg *sync.WaitGroup, s *marshal.TagFileSegment) {
+	defer wg.Done()
+	// Ore map
 	for _, c := range m.chunks {
 		s.PutByte(byte(c.ore))
 	}
 }
 
-// Unmarshal reads all object references of the objects that are parented
-// directly to the map.
-func (m *Map) Unmarshal(s *marshal.TagFileSegment) {
+// UnmarshalObjects unmarshals all of the objects directly parented to the map.
+func (m *Map) UnmarshalObjects(s *marshal.TagFileSegment) {
 	// Place all map objects onto the map
 	for i := uint32(0); i < s.RecordCount(); i++ {
-		serial := uo.Serial(s.Int())
-		o := world.Find(serial)
-		if o == nil {
-			log.Printf("warning: map referenced leaked object %s", serial.String())
-			continue
+		oum := s.Object()
+		o, ok := oum.(Object)
+		if !ok {
+			panic("map object did not implement the Object interface")
 		}
 		c := m.GetChunk(o.Location())
 		c.Add(o)
 	}
-	// Call AfterUnmarshalOntoMap for all map objects. We do this with a pre-
-	// compiled list of objects so that calls to AfterUnmarshalOntoMap can call
-	// world.Remove() if needed.
+}
+
+// AfterUnmarshal calls AfterUnmarshalOntoMap calls for all map objects. We do
+// this with a pre-compiled list of objects so that calls to
+// AfterUnmarshalOntoMap can call world.Remove() if needed.
+func (m *Map) AfterUnmarshal() {
 	var objs []Object
 	for _, c := range m.chunks {
 		for _, item := range c.items {
@@ -118,6 +132,10 @@ func (m *Map) Unmarshal(s *marshal.TagFileSegment) {
 	for _, o := range objs {
 		o.AfterUnmarshalOntoMap()
 	}
+}
+
+// Unmarshal reads in top-level map information
+func (m *Map) Unmarshal(s *marshal.TagFileSegment) {
 	// Load the ore map data
 	for _, c := range m.chunks {
 		c.ore = uint8(s.Byte())

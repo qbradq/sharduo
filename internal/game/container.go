@@ -84,15 +84,19 @@ func (i *BaseContainer) RemoveChildren() {
 // Marshal implements the marshal.Marshaler interface.
 func (i *BaseContainer) Marshal(s *marshal.TagFileSegment) {
 	i.BaseItem.Marshal(s)
-	contentSerials := make([]uo.Serial, len(i.contents))
+	l := len(i.contents)
+	if l > 255 {
+		log.Printf("warning: container %s has way too many items", i.serial.String())
+		l = 255
+	}
+	s.PutByte(byte(l))
 	for idx, o := range i.contents {
-		// Sanity check: slices over 255 members will panic the marshal package.
+		// Sanity check
 		if idx > 255 {
 			break
 		}
-		contentSerials[idx] = o.Serial()
+		s.PutObject(o)
 	}
-	s.PutTag(marshal.TagContents, marshal.TagValueReferenceSlice, contentSerials)
 }
 
 // Deserialize implements the util.Serializeable interface.
@@ -104,22 +108,17 @@ func (c *BaseContainer) Deserialize(t *template.Template, create bool) {
 	c.bounds = t.GetBounds("Bounds", uo.Bounds{X: 44, Y: 65, W: 142, H: 94})
 }
 
-// AfterUnmarshal implements the marshal.Unmarshaler interface.
-func (c *BaseContainer) AfterUnmarshal(tags *marshal.TagCollection) {
-	c.BaseItem.AfterUnmarshal(tags)
-	serials := tags.ReferenceSlice(marshal.TagContents)
-	for _, s := range serials {
-		o := world.Find(s)
-		if o == nil {
-			log.Printf("warning: object %s not found linking container contents", s.String())
-			continue
-		}
-		item, ok := o.(Item)
+// Unmarshal implements the marshal.Unmarshaler interface.
+func (i *BaseContainer) Unmarshal(s *marshal.TagFileSegment) {
+	i.BaseItem.Unmarshal(s)
+	l := int(s.Byte())
+	for idx := 0; idx < l; idx++ {
+		ium := s.Object()
+		item, ok := ium.(Item)
 		if !ok {
-			log.Printf("warning: object %s was not an item linking container contents", s.String())
-			continue
+			panic("container object does not implement the Item interface")
 		}
-		c.contents = c.contents.Append(item)
+		i.contents = append(i.contents, item)
 	}
 }
 

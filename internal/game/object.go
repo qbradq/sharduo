@@ -62,8 +62,6 @@ type Object interface {
 	SetParent(Object)
 	// RemoveChildren is responsible for calling Remove() for all child objects.
 	RemoveChildren()
-	// ObjectType returns the marshal.ObjectType associated with this struct.
-	ObjectType() marshal.ObjectType
 	// TemplateName returns the name of the template used to create this object.
 	TemplateName() string
 	// SetTemplateName sets the name of the template used to create this object.
@@ -222,7 +220,7 @@ func (o *BaseObject) Marshal(s *marshal.TagFileSegment) {
 	s.PutString(o.name)
 	s.PutShort(uint16(o.hue))
 	s.PutLocation(o.location)
-	s.PutTag(marshal.TagFacing, marshal.TagValueByte, byte(o.facing))
+	s.PutByte(byte(o.facing))
 }
 
 // Deserialize implements the util.Serializeable interface.
@@ -271,7 +269,7 @@ func (o *BaseObject) Deserialize(t *template.Template, create bool) {
 }
 
 // Unmarshal implements the marshal.Unmarshaler interface.
-func (o *BaseObject) Unmarshal(s *marshal.TagFileSegment) *marshal.TagCollection {
+func (o *BaseObject) Unmarshal(s *marshal.TagFileSegment) {
 	// Parent object resolution
 	ps := uo.Serial(s.Int())
 	if ps == uo.SerialSystem {
@@ -289,13 +287,8 @@ func (o *BaseObject) Unmarshal(s *marshal.TagFileSegment) *marshal.TagCollection
 	o.name = s.String()
 	o.hue = uo.Hue(s.Short())
 	o.location = s.Location()
-	tags := s.Tags()
-	o.facing = uo.Direction(tags.Byte(marshal.TagFacing))
-	return tags
+	o.facing = uo.Direction(s.Byte())
 }
-
-// AfterUnmarshal implements the marshal.Unmarshaler interface.
-func (o *BaseObject) AfterUnmarshal(tags *marshal.TagCollection) {}
 
 // Parent implements the Object interface
 func (o *BaseObject) Parent() Object { return o.parent }
