@@ -36,3 +36,7 @@ func (o *Spawner) NoRent() bool { return true }
 func (o *Spawner) Visibility() uo.Visibility {
 	return uo.VisibilityStaff
 }
+
+// Update implements the Object interface.
+func (o *Spawner) Update(t uo.Time) {
+}

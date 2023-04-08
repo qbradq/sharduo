@@ -31,9 +31,9 @@ including all features required to mine ore and smelt it into ingots.
 * Going up too steep a hill will block, see location 1554x651x6 to 1554x652x11
 * Weight is not recalculated after save
 * Weight seems to stay on cursor after drop to container reject on too much weight
+* Hues are off-by-one, fix it
 
 ### Required Features and Tasks ###
-* Implement Removed interface
 
 ### Nice to Haves ###
 * Object spawner
