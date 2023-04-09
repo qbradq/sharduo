@@ -31,7 +31,9 @@ const (
 	SGGemButtonDefault   SGGemButton = 14
 	SGGemButtonOK        SGGemButton = 15
 	SGGemButtonStrategy  SGGemButton = 16
-	sgGemButtonCount     int         = 17
+	SGGemButtonAdd       SGGemButton = 17
+	SGGemButtonDelete    SGGemButton = 18
+	sgGemButtonCount     int         = 19
 )
 
 // sgGemDef defines the graphics and offsets for a gem button for the
@@ -66,6 +68,8 @@ var sgGemDefs [sgGemButtonCount]sgGemDef = [sgGemButtonCount]sgGemDef{
 	{n: 2125, p: 2126, h: 4, v: 5},
 	{n: 2128, p: 2129, h: 4, v: 5},
 	{n: 2131, p: 2131, h: -1, v: 5},
+	{n: 2460, p: 2461, h: 5, v: 8},
+	{n: 2463, p: 2464, h: -2, v: 8},
 }
 
 // SGFlag describes the flags that a StandardGUMP object understands.
@@ -497,4 +501,17 @@ func (g *StandardGUMP) TextEntry(x, y, w int, hue uo.Hue, text string, limit int
 	x += sgTEEndCapApparentWidth
 	w -= sgTEEndCapApparentWidth * 2
 	g.g.TextEntry(x, y, w, h, hue, text, limit, id)
+}
+
+// Image places the given GUMP image at the location with the given offsets.
+func (g *StandardGUMP) Image(x, y, v, h int, hue uo.Hue, id uo.GUMP) {
+	// Convert dimensions from cells
+	if x < 0 || y < 0 {
+		return
+	}
+	x *= sgCellWidth
+	x += sgLeft + h
+	y *= sgCellHeight
+	y += sgTop + v
+	g.g.Image(x, y, id, hue)
 }

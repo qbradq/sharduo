@@ -26,6 +26,7 @@ func init() {
 	regcmd(&cmdesc{"broadcast", nil, commandBroadcast, game.RoleAdministrator, "broadcast text", "Broadcasts the given text to all connected players"})
 	regcmd(&cmdesc{"chat", []string{"c", "global", "g"}, commandChat, game.RolePlayer, "chat", "Sends global chat speech"})
 	regcmd(&cmdesc{"debug", nil, commandDebug, game.RoleGameMaster, "debug command [arguments]", "Executes debug commands"})
+	regcmd(&cmdesc{"edit", nil, commandEdit, game.RoleGameMaster, "edit", "Opens the targeted object's edit GUMP if any"})
 	regcmd(&cmdesc{"location", nil, commandLocation, game.RoleAdministrator, "location", "Tells the absolute location of the targeted location or object"})
 	regcmd(&cmdesc{"logMemStats", nil, commandLogMemStats, game.RoleAdministrator, "logMemStats", "Forces the server to log memory statistics and echo that to the caller"})
 	regcmd(&cmdesc{"new", []string{"add"}, commandNew, game.RoleGameMaster, "new template_name [stack_amount]", "Creates a new item with an optional stack amount"})
@@ -592,5 +593,17 @@ func commandRemove(n *NetState, args CommandArgs, cl string) {
 	n.TargetSendCursor(uo.TargetTypeObject, func(tr *clientpacket.TargetResponse) {
 		o := world.Find(tr.TargetObject)
 		game.Remove(o)
+	})
+}
+
+func commandEdit(n *NetState, args CommandArgs, cl string) {
+	if n == nil || n.m == nil {
+		return
+	}
+	n.TargetSendCursor(uo.TargetTypeObject, func(tr *clientpacket.TargetResponse) {
+		o := world.Find(tr.TargetObject)
+		if spawner, ok := o.(*game.Spawner); ok {
+			n.GUMP(gumps.New("spawner"), n.m, spawner)
+		}
 	})
 }

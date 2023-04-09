@@ -218,15 +218,6 @@ func Main() {
 	go cron.Main(wg)
 	go LoginServerMain(wg)
 	go GameServerMain(wg)
-
-	// TODO DEBUG REMOVE
-	o := template.Create("Rock").(game.Object)
-	o.SetLocation(uo.Location{X: 3630, Y: 2582, Z: 0})
-	world.Map().SetNewParent(o, nil)
-	o = template.Create("Rock").(game.Object)
-	o.SetLocation(uo.Location{X: 3631, Y: 2582, Z: 0})
-	world.Map().SetNewParent(o, nil)
-
 	wg.Wait()
 
 	// Always save right before we go down

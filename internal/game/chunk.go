@@ -93,7 +93,9 @@ func (c *Chunk) Update(t uo.Time) {
 		c.oreDeadline = t + uo.DurationMinute*30
 	}
 	// Item updates for items on the ground
-	for _, i := range c.items {
+	items := make([]Item, len(c.items))
+	copy(items, c.items)
+	for _, i := range items {
 		i.Update(t)
 	}
 }
