@@ -81,6 +81,8 @@ type NetState interface {
 	// Gumps
 	//
 
+	// GUMP sends a generic GUMP to the client.
+	GUMP(g interface{}, target, param Object)
 	// CloseGump closes the named gump on the client
 	CloseGump(gump uo.Serial)
 	// OpenPaperDoll opens the paper doll of the given mobile

@@ -12,14 +12,14 @@ import (
 // gumpDefinition ties together a GUMP's type code and constructor
 type gumpDefinition struct {
 	typeCode uo.Serial
-	ctor     func() game.GUMP
+	ctor     func() GUMP
 }
 
 // Registry of all GUMPs
 var gumpDefs = map[string]gumpDefinition{}
 
 // reg registers a GUMP constructor and generates its type code
-func reg(name string, fn func() game.GUMP) {
+func reg(name string, fn func() GUMP) {
 	if _, duplicate := gumpDefs[name]; duplicate {
 		panic(fmt.Sprintf("duplicate GUMP definition %s", name))
 	}
@@ -36,7 +36,7 @@ func reg(name string, fn func() game.GUMP) {
 }
 
 // New creates a new GUMP by name
-func New(name string) game.GUMP {
+func New(name string) GUMP {
 	d, ok := gumpDefs[name]
 	if !ok {
 		log.Printf("error: GUMP %s not found", name)
@@ -47,4 +47,14 @@ func New(name string) game.GUMP {
 	}
 	g.SetTypeCode(d.typeCode)
 	return g
+}
+
+// Edit opens the editing GUMP for the object if any
+func Edit(m game.Mobile, o game.Object) {
+	if m == nil || o == nil || m.NetState() == nil {
+		return
+	}
+	if spawner, ok := o.(*game.Spawner); ok {
+		m.NetState().GUMP(New("spawner"), m, spawner)
+	}
 }

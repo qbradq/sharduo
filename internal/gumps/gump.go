@@ -1,10 +1,11 @@
-package game
+package gumps
 
 import (
 	"fmt"
 	"regexp"
 	"strings"
 
+	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/lib/clientpacket"
 	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/uo"
@@ -25,7 +26,7 @@ func MungHTMLForGUMP(in string) string {
 type GUMP interface {
 	// Layout executes all of the layout functions that comprise this GUMP.
 	// Must be called before Packet().
-	Layout(target, param Object)
+	Layout(target, param game.Object)
 	// InvalidateLayout resets the internal state so that Layout() may be called
 	// again.
 	InvalidateLayout()
@@ -35,7 +36,7 @@ type GUMP interface {
 	// is not expected to handle GUMP close requests. The server keeping track
 	// of open GUMPs should do that. Additionally the server needs to call
 	// Layout again and send the new GUMP packet back to the client.
-	HandleReply(n NetState, p *clientpacket.GUMPReply)
+	HandleReply(n game.NetState, p *clientpacket.GUMPReply)
 	// TypeCode returns the GUMP's type code.
 	TypeCode() uo.Serial
 	// SetTypeCode sets the GUMP's type code.

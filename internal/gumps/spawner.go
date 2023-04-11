@@ -9,21 +9,21 @@ import (
 )
 
 func init() {
-	reg("spawner", func() game.GUMP {
+	reg("spawner", func() GUMP {
 		return &spawner{}
 	})
 }
 
 // spawner edits a Spawner object
 type spawner struct {
-	game.StandardGUMP
+	StandardGUMP
 	Spawner *game.Spawner // The spawner we are editing
 }
 
 // Layout implements the GUMP interface.
 func (g *spawner) Layout(target, param game.Object) {
 	var ok bool
-	g.Window(25, 12, "Spawner Editor", game.SGFlagNoPageButtons)
+	g.Window(23, 12, "Spawner Editor", SGFlagNoPageButtons)
 	g.Page(1)
 	g.Spawner, ok = param.(*game.Spawner)
 	if !ok {
@@ -34,7 +34,7 @@ func (g *spawner) Layout(target, param game.Object) {
 	g.TextEntry(3, 0, 3, uo.HueDefault, strconv.Itoa(g.Spawner.Radius), 5, 9999)
 	for i, e := range g.Spawner.Entries {
 		// Delete buttons start at 2000
-		g.GemButton(0, 2+i, game.SGGemButtonDelete, uint32(2000+i))
+		g.GemButton(0, 2+i, SGGemButtonDelete, uint32(2000+i))
 		g.Image(2, 2+i, 6, 6, uo.HueDefault, uo.GUMP(2225+i))
 		// Template names start at 0
 		g.TextEntry(3, 2+i, 8, uo.HueDefault, e.Template, 64, uint32(i))
@@ -42,18 +42,20 @@ func (g *spawner) Layout(target, param game.Object) {
 		g.ReplyButton(11, 2+i, 2, 1, uo.HueDefault, "#", uint32(3000+i))
 		// Amount starts at 4000
 		g.TextEntry(13, 2+i, 3, uo.HueDefault, strconv.Itoa(e.Amount), 3, uint32(4000+i))
-		g.Text(16, 2+i, 3, uo.HueDefault, "Delay")
+		g.Text(16, 2+i, 1, uo.HueDefault, "Delay")
 		// Delay starts at 5000
-		g.TextEntry(19, 2+i, 3, uo.HueDefault, strconv.Itoa(int(e.Delay/uo.DurationMinute)), 6, uint32(5000+i))
-		g.Text(22, 2+i, 3, uo.HueDefault, "Minutes")
+		g.TextEntry(17, 2+i, 3, uo.HueDefault, strconv.Itoa(int(e.Delay/uo.DurationMinute)), 6, uint32(5000+i))
+		g.Text(20, 2+i, 3, uo.HueDefault, "Minutes")
 	}
 	if len(g.Spawner.Entries) < 8 {
 		i := len(g.Spawner.Entries)
 		// The add button is 1000
-		g.GemButton(0, 2+i, game.SGGemButtonAdd, 1000)
+		g.GemButton(0, 2+i, SGGemButtonAdd, 1000)
 	}
 	// Apply button is 1001
-	g.GemButton(23, 11, game.SGGemButtonApply, 1001)
+	g.GemButton(20, 11, SGGemButtonApply, 1001)
+	// Total respawn button is 1002
+	g.ReplyButton(16, 11, 4, 1, uo.HueDefault, "Full Respawn", 1002)
 }
 
 // HandleReply implements the GUMP interface.
@@ -74,13 +76,23 @@ func (g *spawner) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 			return
 		}
 		g.Spawner.Entries = append(g.Spawner.Entries, game.SpawnerEntry{
-			Delay:  30,
+			Delay:  uo.DurationMinute * 30,
 			Amount: 1,
 		})
 		return
 	}
 	// Apply button, does nothing
 	if p.Button == 1001 {
+		return
+	}
+	// TODO Full test button
+	if p.Button == 1002 {
+		return
+	}
+	// Delete button
+	if p.Button >= 2000 && p.Button < 3000 {
+		i := p.Button - 2000
+		g.Spawner.Entries = append(g.Spawner.Entries[:i], g.Spawner.Entries[i+1:]...)
 		return
 	}
 }
@@ -93,6 +105,9 @@ func (g *spawner) updateRowData(i int, p *clientpacket.GUMPReply) {
 	e.Template = p.Text(uint16(i))
 	e.Amount, _ = strconv.Atoi(p.Text(uint16(4000 + i)))
 	mins, _ := strconv.Atoi(p.Text(uint16(5000 + i)))
+	if mins < 1 {
+		mins = 1
+	}
 	e.Delay = uo.DurationMinute * uo.Time(mins)
 	g.Spawner.Entries[i] = e
 }

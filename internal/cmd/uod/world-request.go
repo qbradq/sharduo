@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/qbradq/sharduo/internal/cmd/uod/gumps"
 	"github.com/qbradq/sharduo/internal/game"
+	"github.com/qbradq/sharduo/internal/gumps"
 	"github.com/qbradq/sharduo/lib/clientpacket"
 	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/template"

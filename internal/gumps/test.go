@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	reg("test", func() game.GUMP {
+	reg("test", func() GUMP {
 		g := &test{
 			switches: make([]bool, 6),
 			email:    "email@domain.com",
@@ -24,7 +24,7 @@ func init() {
 // test is a test GUMP that uses all of the GUMP features I am aware of and
 // support.
 type test struct {
-	game.StandardGUMP
+	StandardGUMP
 	switches []bool
 	email    string
 }
@@ -38,7 +38,7 @@ func (g *test) Layout(target, param game.Object) {
 	g.Window(24, 18, "Welcome to the Trammel Time test GUMP", 0)
 	g.Page(1)
 	g.Text(5, 2, 4, uo.HueDefault, "Page 1 HTML")
-	g.HTML(0, 5, 24, 10, game.MungHTMLForGUMP(string(motd)), true)
+	g.HTML(0, 5, 24, 10, MungHTMLForGUMP(string(motd)), true)
 	g.Page(2)
 	g.Text(5, 2, 14, uo.HueDefault, "Page 2 Buttons")
 	g.Text(2, 4, 10, uo.HueDefault, "Check Switches")
@@ -52,7 +52,7 @@ func (g *test) Layout(target, param game.Object) {
 	g.RadioSwitch(2, 12, 10, 1, uo.HueDefault, "Radio Switch 2", 1005, g.switches[5])
 	g.Text(20, 0, 4, uo.HueDefault, "Gem Buttons")
 	for i := 0; i < 17; i++ {
-		g.GemButton(21, i+1, game.SGGemButton(i), 2000+uint32(i))
+		g.GemButton(21, i+1, SGGemButton(i), 2000+uint32(i))
 	}
 	g.Page(3)
 	g.Text(5, 2, 4, uo.HueDefault, "Page 3 Text Entry")

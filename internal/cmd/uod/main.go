@@ -12,8 +12,8 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/qbradq/sharduo/internal/events"
 	"github.com/qbradq/sharduo/internal/game"
-	"github.com/qbradq/sharduo/internal/game/events"
 	"github.com/qbradq/sharduo/lib/marshal"
 	"github.com/qbradq/sharduo/lib/template"
 	"github.com/qbradq/sharduo/lib/uo"

@@ -12,9 +12,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/qbradq/sharduo/internal/cmd/uod/gumps"
+	"github.com/qbradq/sharduo/internal/events"
 	"github.com/qbradq/sharduo/internal/game"
-	"github.com/qbradq/sharduo/internal/game/events"
+	"github.com/qbradq/sharduo/internal/gumps"
 	"github.com/qbradq/sharduo/lib/clientpacket"
 	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/template"
@@ -602,8 +602,6 @@ func commandEdit(n *NetState, args CommandArgs, cl string) {
 	}
 	n.TargetSendCursor(uo.TargetTypeObject, func(tr *clientpacket.TargetResponse) {
 		o := world.Find(tr.TargetObject)
-		if spawner, ok := o.(*game.Spawner); ok {
-			n.GUMP(gumps.New("spawner"), n.m, spawner)
-		}
+		gumps.Edit(n.m, o)
 	})
 }

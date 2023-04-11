@@ -10,14 +10,14 @@ import (
 )
 
 func init() {
-	reg("welcome", func() game.GUMP {
+	reg("welcome", func() GUMP {
 		return &welcome{}
 	})
 }
 
 // Welcome implements the standard welcome GUMP.
 type welcome struct {
-	game.StandardGUMP
+	StandardGUMP
 	email string
 }
 
@@ -40,11 +40,11 @@ func (g *welcome) Layout(target, param game.Object) {
 	}
 	g.Window(12, 16, "Welcome to Trammel Time!", 0)
 	g.Page(1)
-	g.HTML(0, 0, 12, 12, game.MungHTMLForGUMP(string(motd)), true)
+	g.HTML(0, 0, 12, 12, MungHTMLForGUMP(string(motd)), true)
 	g.Text(0, 12, 12, uo.HueDefault, "Please provide your email address below. It will only be")
 	g.Text(0, 13, 12, uo.HueDefault, "used for password recovery and account information.")
 	g.TextEntry(0, 15, 10, uo.HueDefault, email, 128, 3001)
-	g.GemButton(10, 15, game.SGGemButtonApply, 1001)
+	g.GemButton(10, 15, SGGemButtonApply, 1001)
 }
 
 // HandleReply implements the GUMP interface.

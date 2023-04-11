@@ -32,7 +32,36 @@ type Spawner struct {
 }
 
 // NoRent implements the Object interface.
-func (o *Spawner) NoRent() bool { return true }
+func (o *Spawner) NoRent() bool { return false }
+
+// ObjectType implements the Object interface.
+func (o *Spawner) ObjectType() marshal.ObjectType { return marshal.ObjectTypeSpawner }
+
+// Marshal implements the marshal.Marshaler interface.
+func (o *Spawner) Marshal(s *marshal.TagFileSegment) {
+	o.BaseItem.Marshal(s)
+	s.PutInt(uint32(o.Radius))
+	s.PutByte(byte(len(o.Entries)))
+	for _, e := range o.Entries {
+		s.PutString(e.Template)
+		s.PutInt(uint32(e.Amount))
+		s.PutLong(uint64(e.Delay))
+	}
+}
+
+// Unmarshal implements the marshal.Unmarshaler interface.
+func (o *Spawner) Unmarshal(s *marshal.TagFileSegment) {
+	o.BaseItem.Unmarshal(s)
+	o.Radius = int(s.Int())
+	count := int(s.Byte())
+	for i := 0; i < count; i++ {
+		o.Entries = append(o.Entries, SpawnerEntry{
+			Template: s.String(),
+			Amount:   int(s.Int()),
+			Delay:    uo.Time(s.Long()),
+		})
+	}
+}
 
 // Visibility implements the Object interface.
 func (o *Spawner) Visibility() uo.Visibility {

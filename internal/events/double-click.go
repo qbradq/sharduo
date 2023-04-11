@@ -6,11 +6,13 @@ import (
 	"strconv"
 
 	"github.com/qbradq/sharduo/internal/game"
+	"github.com/qbradq/sharduo/internal/gumps"
 	"github.com/qbradq/sharduo/lib/clientpacket"
 	"github.com/qbradq/sharduo/lib/uo"
 )
 
 func init() {
+	reg("Edit", Edit)
 	reg("Mount", Mount)
 	reg("OpenBackpack", OpenBackpack)
 	reg("OpenBankBox", OpenBankBox)
@@ -160,4 +162,12 @@ func TransferHue(receiver, source game.Object, v any) {
 		o.SetHue(receiver.Hue())
 		game.GetWorld().Update(o)
 	})
+}
+
+func Edit(receiver, source game.Object, v any) {
+	sm, ok := source.(game.Mobile)
+	if !ok {
+		return
+	}
+	gumps.Edit(sm, receiver)
 }

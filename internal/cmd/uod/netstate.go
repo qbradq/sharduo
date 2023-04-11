@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/qbradq/sharduo/internal/game"
+	"github.com/qbradq/sharduo/internal/gumps"
 	"github.com/qbradq/sharduo/lib/clientpacket"
 	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/uo"
@@ -25,7 +26,7 @@ var ErrWrongPacket = errors.New("wrong packet")
 // gumpDescription describes a GUMP instance.
 type gumpDescription struct {
 	// The GUMP being managed
-	g game.GUMP
+	g gumps.GUMP
 	// Serial of the target object
 	t uo.Serial
 	// Serial of the parameter object
@@ -806,7 +807,11 @@ func (n *NetState) Animate(mob game.Mobile, at uo.AnimationType, aa uo.Animation
 }
 
 // GUMP sends a generic GUMP to the client.
-func (n *NetState) GUMP(g game.GUMP, target, param game.Object) {
+func (n *NetState) GUMP(gi interface{}, target, param game.Object) {
+	g, ok := gi.(gumps.GUMP)
+	if !ok {
+		return
+	}
 	s := g.TypeCode()
 	ts := uo.SerialSystem
 	if target != nil {

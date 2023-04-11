@@ -1,8 +1,8 @@
 package uod
 
 import (
+	"github.com/qbradq/sharduo/internal/events"
 	"github.com/qbradq/sharduo/internal/game"
-	"github.com/qbradq/sharduo/internal/game/events"
 	"github.com/qbradq/sharduo/lib/clientpacket"
 	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/util"
