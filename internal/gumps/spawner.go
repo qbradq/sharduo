@@ -85,15 +85,22 @@ func (g *spawner) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 	if p.Button == 1001 {
 		return
 	}
-	// TODO Full test button
+	// Full test button
 	if p.Button == 1002 {
+		g.Spawner.FullRespawn()
 		return
 	}
 	// Delete button
 	if p.Button >= 2000 && p.Button < 3000 {
 		i := p.Button - 2000
+		// TODO proper delete functionality
 		g.Spawner.Entries = append(g.Spawner.Entries[:i], g.Spawner.Entries[i+1:]...)
 		return
+	}
+	// Test button
+	if p.Button >= 3000 && p.Button < 4000 {
+		i := p.Button - 3000
+		g.Spawner.RespawnEntry(int(i))
 	}
 }
 

@@ -31,6 +31,7 @@ func init() {
 	regcmd(&cmdesc{"logMemStats", nil, commandLogMemStats, game.RoleAdministrator, "logMemStats", "Forces the server to log memory statistics and echo that to the caller"})
 	regcmd(&cmdesc{"new", []string{"add"}, commandNew, game.RoleGameMaster, "new template_name [stack_amount]", "Creates a new item with an optional stack amount"})
 	regcmd(&cmdesc{"remove", []string{"rem", "delete", "del"}, commandRemove, game.RoleGameMaster, "remove", "Removes the targeted object and all of its children from the game world"})
+	regcmd(&cmdesc{"respawn", nil, commandRespawn, game.RoleGameMaster, "respawn", "Respawns the targeted spawner"})
 	regcmd(&cmdesc{"save", nil, commandSave, game.RoleAdministrator, "save", "Executes a world save immediately"})
 	regcmd(&cmdesc{"shutdown", nil, commandShutdown, game.RoleAdministrator, "shutdown", "Shuts down the server immediately"})
 	regcmd(&cmdesc{"snapshot_clean", nil, commandSnapshotClean, game.RoleAdministrator, "snapshot_clean", "internal command, please do not use"})
@@ -603,5 +604,19 @@ func commandEdit(n *NetState, args CommandArgs, cl string) {
 	n.TargetSendCursor(uo.TargetTypeObject, func(tr *clientpacket.TargetResponse) {
 		o := world.Find(tr.TargetObject)
 		gumps.Edit(n.m, o)
+	})
+}
+
+func commandRespawn(n *NetState, args CommandArgs, cl string) {
+	if n == nil || n.m == nil {
+		return
+	}
+	n.TargetSendCursor(uo.TargetTypeObject, func(tr *clientpacket.TargetResponse) {
+		s, ok := world.Find(tr.TargetObject).(*game.Spawner)
+		if !ok {
+			n.Speech(nil, "Must target a spawner")
+			return
+		}
+		s.FullRespawn()
 	})
 }

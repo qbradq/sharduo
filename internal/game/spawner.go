@@ -1,7 +1,10 @@
 package game
 
 import (
+	"log"
+
 	"github.com/qbradq/sharduo/lib/marshal"
+	"github.com/qbradq/sharduo/lib/template"
 	"github.com/qbradq/sharduo/lib/uo"
 )
 
@@ -81,4 +84,76 @@ func (o *Spawner) Weight() float32 {
 func (o *Spawner) AddObject(c Object) bool {
 	o.SetParent(c)
 	return false
+}
+
+// FullRespawn respawns all objects
+func (o *Spawner) FullRespawn() {
+	for i := range o.Entries {
+		o.RespawnEntry(i)
+	}
+}
+
+// RespawnEntry respawns all objects for entry n
+func (o *Spawner) RespawnEntry(n int) {
+	if n < 0 || n >= len(o.Entries) {
+		return
+	}
+	e := o.Entries[n]
+	// Initialize the object descriptors if needed
+	if len(e.Objects) == 0 && e.Amount != 0 {
+		for i := 0; i < e.Amount; i++ {
+			e.Objects = append(e.Objects, SpawnedObject{
+				Object:            nil,
+				NextSpawnDeadline: uo.TimeZero,
+			})
+		}
+	}
+	// Scan the object descriptors and spawn objects
+	for i, so := range e.Objects {
+		if so.Object != nil && !so.Object.Removed() {
+			Remove(so.Object)
+		}
+		so.Object = nil
+		so.NextSpawnDeadline = world.Time() + e.Delay
+		if len(e.Template) == 0 {
+			continue
+		}
+		so.Object = o.Spawn(e.Template)
+		so.NextSpawnDeadline = uo.TimeZero
+		e.Objects[i] = so
+	}
+}
+
+func (o *Spawner) Spawn(which string) Object {
+	so := template.Create(which).(Object)
+	if so == nil {
+		log.Printf("warning: template %s not found in Spawner.Spawn()", which)
+	}
+	for tries := 0; tries < 8; tries++ {
+		nl := uo.Location{
+			X: o.location.X + int16(world.Random().Random(-o.Radius, o.Radius)),
+			Y: o.location.Y + int16(world.Random().Random(-o.Radius, o.Radius)),
+			Z: o.location.Z,
+		}
+		floor, ceiling := world.Map().GetFloorAndCeiling(nl, false)
+		if floor == nil {
+			if ceiling == nil {
+				continue
+			}
+			floor, _ = world.Map().GetFloorAndCeiling(uo.Location{
+				X: nl.X,
+				Y: nl.Y,
+				Z: ceiling.Z() + ceiling.Highest(),
+			}, false)
+			if floor == nil {
+				continue
+			}
+		}
+		nl.Z = floor.Z() + floor.StandingHeight()
+		so.SetLocation(nl)
+		if world.Map().AddObject(so) {
+			break
+		}
+	}
+	return so
 }
