@@ -127,10 +127,10 @@ func (c *BaseContainer) RecalculateStats() {
 	c.contentWeight = 0
 	c.contentItems = len(c.contents)
 	for _, item := range c.contents {
+		item.RecalculateStats()
 		c.contentWeight += item.Weight()
 		c.contentItems++
 		if container, ok := item.(Container); ok {
-			container.RecalculateStats()
 			c.contentItems += container.ItemCount()
 			c.contentWeight += container.ContentWeight()
 		}

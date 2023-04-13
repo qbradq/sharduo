@@ -99,6 +99,7 @@ func (c *EquipmentCollection) recalculateStats() {
 		if w.Layer() == uo.LayerBankBox {
 			continue
 		}
+		w.RecalculateStats()
 		c.weight += w.Weight()
 	}
 }
