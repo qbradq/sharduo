@@ -75,8 +75,8 @@ func (g *spawner) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 			// Sanity check
 			return
 		}
-		g.Spawner.Entries = append(g.Spawner.Entries, game.SpawnerEntry{
-			Delay:  uo.DurationMinute * 30,
+		g.Spawner.Entries = append(g.Spawner.Entries, &game.SpawnerEntry{
+			Delay:  uo.DurationMinute * 5,
 			Amount: 1,
 		})
 		return

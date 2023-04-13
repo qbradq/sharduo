@@ -32,6 +32,11 @@ including all features required to mine ore and smelt it into ingots.
 * Weight seems to stay on cursor after drop to container reject on too much weight
 
 ### Required Features and Tasks ###
+* Remove range checking from packet handlers and let the event handlers do it
+* Make starting location configurable
+* Start the player with reasonable stats
+* Starter pack functionality
+* Mining starter pack
 
 ### Nice to Haves ###
 * Object spawner
@@ -40,6 +45,9 @@ including all features required to mine ore and smelt it into ingots.
 * Bank gold support
 * Checks
 * Stable Master NPC
+* Stable functionality
+* Claim functionality
+* Claim list GUMP
 * Walk Random AI
 * Follow Master AI
 * Miner NPC
