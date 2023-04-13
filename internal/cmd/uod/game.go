@@ -110,7 +110,7 @@ func Broadcast(format string, args ...interface{}) {
 }
 
 // GlobalChat sends a global chat message to all connected clients.
-func GlobalChat(who, text string) {
+func GlobalChat(hue uo.Hue, who, text string) {
 	s := fmt.Sprintf("%s: %s", who, text)
 	gameNetStates.Range(func(key, value interface{}) bool {
 		n := key.(*NetState)
@@ -118,7 +118,7 @@ func GlobalChat(who, text string) {
 			Speaker: uo.SerialSystem,
 			Body:    uo.BodySystem,
 			Font:    uo.FontNormal,
-			Hue:     1166,
+			Hue:     hue,
 			Name:    "",
 			Text:    s,
 			Type:    uo.SpeechTypeSystem,

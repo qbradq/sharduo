@@ -27,12 +27,14 @@ func init() {
 	regcmd(&cmdesc{"chat", []string{"c", "global", "g"}, commandChat, game.RolePlayer, "chat", "Sends global chat speech"})
 	regcmd(&cmdesc{"debug", nil, commandDebug, game.RoleGameMaster, "debug command [arguments]", "Executes debug commands"})
 	regcmd(&cmdesc{"edit", nil, commandEdit, game.RoleGameMaster, "edit", "Opens the targeted object's edit GUMP if any"})
+	regcmd(&cmdesc{"hue", nil, commandHue, game.RolePlayer, "hue", "Tells you the hue number of the object"})
 	regcmd(&cmdesc{"location", nil, commandLocation, game.RoleAdministrator, "location", "Tells the absolute location of the targeted location or object"})
 	regcmd(&cmdesc{"logMemStats", nil, commandLogMemStats, game.RoleAdministrator, "logMemStats", "Forces the server to log memory statistics and echo that to the caller"})
 	regcmd(&cmdesc{"new", []string{"add"}, commandNew, game.RoleGameMaster, "new template_name [stack_amount]", "Creates a new item with an optional stack amount"})
 	regcmd(&cmdesc{"remove", []string{"rem", "delete", "del"}, commandRemove, game.RoleGameMaster, "remove", "Removes the targeted object and all of its children from the game world"})
 	regcmd(&cmdesc{"respawn", nil, commandRespawn, game.RoleGameMaster, "respawn", "Respawns the targeted spawner"})
 	regcmd(&cmdesc{"save", nil, commandSave, game.RoleAdministrator, "save", "Executes a world save immediately"})
+	regcmd(&cmdesc{"sethue", nil, commandSetHue, game.RoleGameMaster, "sethue", "Sets the hue of an object"})
 	regcmd(&cmdesc{"shutdown", nil, commandShutdown, game.RoleAdministrator, "shutdown", "Shuts down the server immediately"})
 	regcmd(&cmdesc{"snapshot_clean", nil, commandSnapshotClean, game.RoleAdministrator, "snapshot_clean", "internal command, please do not use"})
 	regcmd(&cmdesc{"snapshot_daily", nil, commandSnapshotDaily, game.RoleAdministrator, "snapshot_daily", "internal command, please do not use"})
@@ -105,11 +107,22 @@ func commandChat(n *NetState, args CommandArgs, cl string) {
 	if n.m == nil {
 		return
 	}
-	parts := strings.SplitN(cl, " ", 2)
-	if len(parts) != 2 {
-		return
+	hue := uo.Hue(args.Int(1))
+	line := ""
+	if hue != uo.HueDefault {
+		parts := strings.SplitN(cl, " ", 3)
+		if len(parts) != 3 {
+			return
+		}
+		line = parts[2]
+	} else {
+		parts := strings.SplitN(cl, " ", 2)
+		if len(parts) != 2 {
+			return
+		}
+		line = parts[1]
 	}
-	GlobalChat(n.m.DisplayName(), parts[1])
+	GlobalChat(hue, n.m.DisplayName(), line)
 }
 
 func commandLocation(n *NetState, args CommandArgs, cl string) {
@@ -618,5 +631,36 @@ func commandRespawn(n *NetState, args CommandArgs, cl string) {
 			return
 		}
 		s.FullRespawn()
+	})
+}
+
+func commandHue(n *NetState, args CommandArgs, cl string) {
+	if n == nil || n.m == nil {
+		return
+	}
+	n.TargetSendCursor(uo.TargetTypeObject, func(tr *clientpacket.TargetResponse) {
+		o := world.Find(tr.TargetObject)
+		if o == nil {
+			return
+		}
+		n.Speech(n.m, "Hue %d", o.Hue())
+	})
+}
+
+func commandSetHue(n *NetState, args CommandArgs, cl string) {
+	if n == nil || n.m == nil {
+		return
+	}
+	if len(args) != 2 {
+		return
+	}
+	hue := uo.Hue(args.Int(1))
+	n.TargetSendCursor(uo.TargetTypeObject, func(tr *clientpacket.TargetResponse) {
+		o := world.Find(tr.TargetObject)
+		if o == nil {
+			return
+		}
+		o.SetHue(hue)
+		world.Update(o)
 	})
 }

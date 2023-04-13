@@ -19,6 +19,15 @@ type Packet interface {
 	Write(w io.Writer)
 }
 
+// Utility function to properly write a hue value.
+func putHue(w io.Writer, hue uo.Hue) {
+	if hue == uo.HueDefault {
+		dc.PutUint16(w, 0)
+	} else {
+		dc.PutUint16(w, uint16(hue+1))
+	}
+}
+
 // ServerListEntry represents one entry in the server list.
 type ServerListEntry struct {
 	// Name of the server
@@ -194,7 +203,7 @@ func (p *Speech) Write(w io.Writer) {
 	dc.PutUint32(w, uint32(p.Speaker))
 	dc.PutUint16(w, uint16(p.Body))
 	dc.PutByte(w, byte(p.Type))
-	dc.PutUint16(w, uint16(p.Hue))
+	putHue(w, p.Hue)
 	dc.PutUint16(w, uint16(p.Font))
 	dc.PutStringN(w, p.Name, 30)
 	dc.PutString(w, p.Text)
@@ -289,14 +298,14 @@ func (p *EquippedMobile) Write(w io.Writer) {
 	} else {
 		dc.PutByte(w, byte(p.Facing.StripRunningFlag()))
 	}
-	dc.PutUint16(w, uint16(p.Hue))
+	putHue(w, p.Hue)
 	dc.PutByte(w, byte(p.Flags))
 	dc.PutByte(w, byte(p.Notoriety))
 	for _, item := range p.Equipment {
 		dc.PutUint32(w, uint32(item.ID))
 		dc.PutUint16(w, uint16(item.Graphic.SetHueFlag()))
 		dc.PutByte(w, uint8(item.Layer))
-		dc.PutUint16(w, uint16(item.Hue))
+		putHue(w, item.Hue)
 	}
 	dc.PutUint32(w, 0x00000000) // End of list marker
 }
@@ -449,7 +458,7 @@ func (p *ObjectInfo) Write(w io.Writer) {
 	if p.IsMulti {
 		dc.PutUint16(w, 0)
 	} else {
-		dc.PutUint16(w, uint16(p.Hue))
+		putHue(w, p.Hue)
 	}
 	// Flags
 	flags := byte(0)
@@ -539,7 +548,7 @@ func (p *DrawPlayer) Write(w io.Writer) {
 	dc.PutUint32(w, uint32(p.ID))
 	dc.PutUint16(w, uint16(p.Body))
 	dc.Pad(w, 1)
-	dc.PutUint16(w, uint16(p.Hue))
+	putHue(w, p.Hue)
 	dc.PutByte(w, byte(p.Flags))
 	dc.PutUint16(w, uint16(p.Location.X))
 	dc.PutUint16(w, uint16(p.Location.Y))
@@ -579,7 +588,7 @@ func (p *WornItem) Write(w io.Writer) {
 	dc.Pad(w, 1)
 	dc.PutByte(w, byte(p.Layer))
 	dc.PutUint32(w, uint32(p.Wearer))
-	dc.PutUint16(w, uint16(p.Hue))
+	putHue(w, p.Hue)
 }
 
 // MoveItemReject rejects a pick-up, drop, or equip request
@@ -627,7 +636,7 @@ func (p *MoveMobile) Write(w io.Writer) {
 	} else {
 		dc.PutByte(w, byte(p.Facing.StripRunningFlag()))
 	}
-	dc.PutUint16(w, uint16(p.Hue))
+	putHue(w, p.Hue)
 	dc.PutByte(w, byte(p.Flags))
 	dc.PutByte(w, byte(p.Notoriety))
 }
@@ -659,7 +668,7 @@ func (p *DragItem) Write(w io.Writer) {
 	dc.PutByte(w, 0x23) // Packet ID
 	dc.PutUint16(w, uint16(p.Graphic))
 	dc.PutByte(w, byte(p.GraphicOffset))
-	dc.PutUint16(w, uint16(p.Hue))
+	putHue(w, p.Hue)
 	dc.PutUint16(w, uint16(p.Amount))
 	dc.PutUint32(w, uint32(p.Source))
 	dc.PutUint16(w, uint16(p.SourceLocation.X))
@@ -716,7 +725,7 @@ func (p *AddItemToContainer) Write(w io.Writer) {
 	dc.PutUint16(w, uint16(p.Location.Y))
 	dc.Pad(w, 1) // Grid index
 	dc.PutUint32(w, uint32(p.Container))
-	dc.PutUint16(w, uint16(p.Hue))
+	putHue(w, p.Hue)
 }
 
 // ContentsItem represents one item in a Contents packet.
@@ -765,8 +774,7 @@ func (p *Contents) Write(w io.Writer) {
 			dc.PutUint16(w, uint16(item.Location.Y))
 			dc.Pad(w, 1) // Grid index
 			dc.PutUint32(w, uint32(item.Container))
-			dc.PutUint16(w, uint16(item.Hue))
-
+			putHue(w, item.Hue)
 		}
 	} else {
 		for _, item := range p.Items {
@@ -778,7 +786,7 @@ func (p *Contents) Write(w io.Writer) {
 			dc.PutUint16(w, uint16(item.Location.Y))
 			dc.Pad(w, 1) // Grid index
 			dc.PutUint32(w, uint32(item.Container))
-			dc.PutUint16(w, uint16(item.Hue))
+			putHue(w, item.Hue)
 		}
 	}
 }
@@ -897,7 +905,7 @@ func (p *ClilocMessage) Write(w io.Writer) {
 	} else {
 		dc.PutByte(w, byte(0x07))
 	}
-	dc.PutUint16(w, uint16(p.Hue))    // Message hue
+	putHue(w, p.Hue)                  // Message hue
 	dc.PutUint16(w, uint16(p.Font))   // Message font
 	dc.PutUint32(w, uint32(p.Cliloc)) // Message index number
 	dc.PutStringN(w, p.Name, 30)
@@ -1161,7 +1169,8 @@ func (p *GraphicalEffect) Write(w io.Writer) {
 	dc.Pad(w, 2)
 	dc.PutBool(w, p.Fixed)
 	dc.PutBool(w, p.Explodes)
-	dc.PutUint32(w, uint32(p.Hue))
+	dc.Pad(w, 2)
+	putHue(w, p.Hue)
 	dc.PutUint32(w, uint32(p.GFXBlendMode))
 }
 
@@ -1281,7 +1290,7 @@ func (p *SellWindow) Write(w io.Writer) {
 	for _, i := range p.Items {
 		dc.PutUint32(w, uint32(i.Serial))                   // Item serial
 		dc.PutUint16(w, uint16(i.Graphic))                  // Item graphic
-		dc.PutUint16(w, uint16(i.Hue))                      // Item hue
+		putHue(w, i.Hue)                                    // Item hue
 		dc.PutUint16(w, uint16(i.Amount))                   // Item amount
 		dc.PutUint16(w, uint16(i.Price)/2)                  // Item price per unit
 		dc.PutUint16(w, uint16(len(i.Description)))         // Length of the description string
