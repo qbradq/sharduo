@@ -130,6 +130,17 @@ func (o *Spawner) deleteRemovedObjects(t uo.Time) {
 // Update implements the Object interface.
 func (o *Spawner) Update(t uo.Time) {
 	o.deleteRemovedObjects(t)
+	// Spawn new objects when needed
+	for _, e := range o.Entries {
+		for _, so := range e.Objects {
+			if so.Object == nil && t >= so.NextSpawnDeadline {
+				so.Object = o.Spawn(e.Template)
+				if so.Object != nil {
+					so.NextSpawnDeadline = uo.TimeZero
+				} // Else we will try to spawn again on next Update() call
+			}
+		}
+	}
 }
 
 // Weight implements the Object interface
@@ -174,7 +185,11 @@ func (o *Spawner) RespawnEntry(n int) {
 			continue
 		}
 		so.Object = o.Spawn(e.Template)
-		so.NextSpawnDeadline = uo.TimeZero
+		if so.Object != nil {
+			so.NextSpawnDeadline = uo.TimeZero
+		} else {
+			so.NextSpawnDeadline = world.Time() + e.Delay
+		}
 	}
 }
 

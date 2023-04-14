@@ -90,7 +90,7 @@ func (c *Chunk) Update(t uo.Time) {
 	// Ore respawn
 	if t >= c.oreDeadline {
 		c.ore = uint8(world.Random().Random(10, 24))
-		c.oreDeadline = t + uo.DurationMinute*30
+		c.oreDeadline = t + uo.DurationMinute*uo.Time(world.Random().Random(25, 35))
 	}
 	// Item updates for items on the ground
 	items := make([]Item, len(c.items))
