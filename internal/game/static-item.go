@@ -53,6 +53,12 @@ func (o *StaticItem) Serial() uo.Serial { return o.serial }
 // SetSerial implements the Object interface.
 func (o *StaticItem) SetSerial(s uo.Serial) { o.serial = s }
 
+// Owner implements the Object interface.
+func (o *StaticItem) Owner() Object { return nil }
+
+// SetOwner implements the Object interface.
+func (o *StaticItem) SetOwner(owner Object) {}
+
 // Item interface
 // BaseGraphic implements the Item interface.
 func (i *StaticItem) BaseGraphic() uo.Graphic { return i.graphic }

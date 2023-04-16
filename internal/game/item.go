@@ -392,12 +392,26 @@ func (i *BaseItem) SetDropLocation(l uo.Location) { i.dropLocation = l }
 
 // RefreshDecayDeadline implements the Item interface
 func (i *BaseItem) RefreshDecayDeadline() {
+	if i.owner != nil {
+		// If we are being managed by a spawner we don't decay
+		if _, ok := i.owner.(*Spawner); ok {
+			i.decayDeadline = uo.TimeNever
+			return
+		}
+	}
+	// If this is a spawned object it never decays
 	i.decayDeadline = world.Time() + uo.DurationMinute*15
 }
 
 // Update implements the Object interface.
 func (i *BaseItem) Update(t uo.Time) {
 	if t >= i.decayDeadline {
+		if i.owner != nil {
+			// If we are being managed by a spawner we don't decay
+			if _, ok := i.owner.(*Spawner); ok {
+				return
+			}
+		}
 		Remove(i)
 	}
 }

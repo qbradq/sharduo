@@ -663,6 +663,7 @@ func (m *BaseMobile) doAddObject(obj Object, force bool) bool {
 	if obj == nil {
 		return force
 	}
+	obj.SetOwner(m)
 	// Handle items coming in from other sources
 	if m.cursor.item == nil || m.cursor.item.Serial() != obj.Serial() {
 		// Try to equip the item

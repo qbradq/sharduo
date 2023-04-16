@@ -38,8 +38,7 @@ func (g *spawner) Layout(target, param game.Object) {
 		g.Image(2, 2+i, 6, 6, uo.HueDefault, uo.GUMP(2225+i))
 		// Template names start at 0
 		g.TextEntry(3, 2+i, 8, uo.HueDefault, e.Template, 64, uint32(i))
-		// Test button starts at 3000
-		g.ReplyButton(11, 2+i, 2, 1, uo.HueDefault, "#", uint32(3000+i))
+		g.Text(11, 2+i, 2, uo.HueDefault, "Amount")
 		// Amount starts at 4000
 		g.TextEntry(13, 2+i, 3, uo.HueDefault, strconv.Itoa(e.Amount), 3, uint32(4000+i))
 		g.Text(16, 2+i, 1, uo.HueDefault, "Delay")
@@ -65,6 +64,8 @@ func (g *spawner) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 	for i := 0; i < 8; i++ {
 		g.updateRowData(i, p)
 	}
+	// Have to do a full respawn to sync spawner with changes
+	g.Spawner.FullRespawn()
 	// Standard behavior handling
 	if g.StandardReplyHandler(p) {
 		return
@@ -97,11 +98,6 @@ func (g *spawner) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 		g.Spawner.Entries = append(g.Spawner.Entries[:i], g.Spawner.Entries[i+1:]...)
 		return
 	}
-	// Test button
-	if p.Button >= 3000 && p.Button < 4000 {
-		i := p.Button - 3000
-		g.Spawner.RespawnEntry(int(i))
-	}
 }
 
 func (g *spawner) updateRowData(i int, p *clientpacket.GUMPReply) {
@@ -116,5 +112,4 @@ func (g *spawner) updateRowData(i int, p *clientpacket.GUMPReply) {
 		mins = 1
 	}
 	e.Delay = uo.DurationMinute * uo.Time(mins)
-	g.Spawner.Entries[i] = e
 }

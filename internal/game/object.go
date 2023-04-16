@@ -40,6 +40,10 @@ type Object interface {
 	// NoRent returns true if this object should not persist through server
 	// restart.
 	NoRent() bool
+	// Owner returns a pointer to the object that owns this one if any.
+	Owner() Object
+	// SetOwner sets the owner object.
+	SetOwner(Object)
 
 	//
 	// Parent / child relationships
@@ -185,6 +189,8 @@ type BaseObject struct {
 	templateContextMenuEntries []ContextMenuEntry
 	// If true this object has already been removed from the datastore
 	removed bool
+	// Owner of the object if any
+	owner Object
 }
 
 // ObjectType implements the Object interface.
@@ -455,3 +461,9 @@ func (o *BaseObject) Visibility() uo.Visibility {
 
 // Update implements the Object interface.
 func (o *BaseObject) Update(t uo.Time) {}
+
+// Owner implements the Object interface.
+func (o *BaseObject) Owner() Object { return o.owner }
+
+// SetOwner implements the Object interface.
+func (o *BaseObject) SetOwner(owner Object) { o.owner = owner }

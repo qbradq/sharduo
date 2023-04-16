@@ -299,6 +299,7 @@ func (m *Map) ForceAddObject(o Object) {
 	if o == nil {
 		return
 	}
+	o.SetOwner(nil)
 	o.SetParent(nil)
 	c := m.GetChunk(o.Location())
 	c.Add(o)

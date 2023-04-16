@@ -273,6 +273,7 @@ func (c *BaseContainer) ForceAddObject(o Object) {
 	if o == nil {
 		return
 	}
+	o.SetOwner(c)
 	o.SetParent(c)
 	item, ok := o.(Item)
 	if !ok {

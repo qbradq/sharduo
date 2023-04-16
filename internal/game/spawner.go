@@ -102,9 +102,12 @@ func (o *Spawner) Unmarshal(s *marshal.TagFileSegment) {
 				}
 				obj.SetLocation(l)
 				world.Map().ForceAddObject(obj)
+				obj.SetOwner(o)
 				so.Object = obj
 			} // Else deadline is in the future so we don't need an object
+			e.Objects = append(e.Objects, so)
 		}
+		o.Entries = append(o.Entries, e)
 	}
 }
 
@@ -118,10 +121,17 @@ func (o *Spawner) Visibility() uo.Visibility {
 func (o *Spawner) deleteRemovedObjects(t uo.Time) {
 	for _, e := range o.Entries {
 		for _, so := range e.Objects {
-			// TODO account for objects that have a new controller, like items picked up off the floor or tamed animals
-			if so.Object != nil && so.Object.Removed() {
-				so.Object = nil
-				so.NextSpawnDeadline = t + e.Delay
+			r := false
+			if so.Object != nil {
+				if so.Object.Removed() {
+					r = true
+				} else if so.Object.Owner() != nil && so.Object.Owner().Serial() != o.Serial() {
+					r = true
+				}
+				if r {
+					so.Object = nil
+					so.NextSpawnDeadline = t + e.Delay
+				}
 			}
 		}
 	}
@@ -167,29 +177,26 @@ func (o *Spawner) RespawnEntry(n int) {
 		return
 	}
 	e := o.Entries[n]
-	// Initialize the object descriptors if needed
-	if len(e.Objects) == 0 && e.Amount != 0 {
-		for i := 0; i < e.Amount; i++ {
-			e.Objects = append(e.Objects, &SpawnedObject{
-				Object:            nil,
-				NextSpawnDeadline: uo.TimeZero,
-			})
-		}
-	}
-	// Scan the object descriptors and spawn objects
+	// Remove objects
 	for _, so := range e.Objects {
 		Remove(so.Object)
-		so.Object = nil
-		so.NextSpawnDeadline = world.Time() + e.Delay
+	}
+	// Initialize the object descriptors
+	e.Objects = nil
+	if e.Amount > 0 {
+		e.Objects = make([]*SpawnedObject, e.Amount)
+		for i := range e.Objects {
+			e.Objects[i] = &SpawnedObject{}
+		}
+	}
+	// Spawn objects
+	for _, so := range e.Objects {
 		if len(e.Template) == 0 {
 			continue
 		}
 		so.Object = o.Spawn(e.Template)
-		if so.Object != nil {
-			so.NextSpawnDeadline = uo.TimeZero
-		} else {
-			so.NextSpawnDeadline = world.Time() + e.Delay
-		}
+		// If Spawn() fails to place the object it will try again on the next
+		// call to Update()
 	}
 }
 
@@ -222,8 +229,11 @@ func (o *Spawner) Spawn(which string) Object {
 		nl.Z = floor.Z() + floor.StandingHeight()
 		so.SetLocation(nl)
 		if world.Map().AddObject(so) {
-			break
+			so.SetOwner(o)
+			return so
 		}
 	}
-	return so
+	// If we got here we've tried too many times to place the object on the map
+	// and are just going to give up. The next Update() call will try again.
+	return nil
 }

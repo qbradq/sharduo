@@ -31,7 +31,8 @@ func init() {
 	pf.Add(0xBF, newGeneralInformation)
 	pf.Add(0xC8, newClientViewRange)
 	pf.Add(0xEF, newLoginSeed)
-	pf.Add(0xF0, newProtocolExtension)
+	// pf.Add(0xF0, newProtocolExtension)
+	pf.Ignore(0xF0) // New protocol extensions, used by world map programs
 }
 
 // Packet is the interface all client packets implement.
