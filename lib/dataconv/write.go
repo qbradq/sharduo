@@ -31,6 +31,14 @@ func PutStringN(w io.Writer, s string, n int) {
 	w.Write(b)
 }
 
+// Writes a fixed-length string that always ends with a null
+func PutStringNWithNull(w io.Writer, s string, n int) {
+	var b = make([]byte, n)
+	copy(b, s)
+	b[n-1] = 0
+	w.Write(b)
+}
+
 // Writes zero-padding
 func Pad(w io.Writer, l int) {
 	var buf [1024]byte

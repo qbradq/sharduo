@@ -25,6 +25,7 @@ func init() {
 	packetHandlers.Add(0x3B, handleBuyRequest)
 	packetHandlers.Add(0x6C, handleTargetResponse)
 	packetHandlers.Add(0x73, handlePing)
+	packetHandlers.Add(0x98, handleNameRequest)
 	packetHandlers.Add(0x9F, handleSellRequest)
 	packetHandlers.Add(0xAD, handleSpeech)
 	packetHandlers.Add(0xB1, handleGUMPReply)
@@ -408,4 +409,19 @@ func handleSellRequest(n *NetState, cp clientpacket.Packet) {
 	if !n.m.DropToBackpack(gc, false) {
 		n.m.DropToFeet(gc)
 	}
+}
+
+func handleNameRequest(n *NetState, cp clientpacket.Packet) {
+	if n == nil {
+		return
+	}
+	p := cp.(*clientpacket.NameRequest)
+	o := world.Find(p.Serial)
+	if o == nil {
+		return
+	}
+	n.Send(&serverpacket.NameResponse{
+		Serial: p.Serial,
+		Name:   o.DisplayName(),
+	})
 }

@@ -22,6 +22,7 @@ func init() {
 	pf.Add(0x73, newPing)
 	pf.Add(0x80, newAccountLogin)
 	pf.Add(0x91, newGameServerLogin)
+	pf.Add(0x98, newNameRequest)
 	pf.Add(0x9F, newSellResponse)
 	pf.Add(0xA0, newSelectServer)
 	pf.Add(0xAD, newSpeech)
@@ -486,13 +487,13 @@ type ProtocolExtension struct {
 	RequestType uo.ProtocolExtensionRequest
 }
 
-func newProtocolExtension(in []byte) Packet {
-	p := &ProtocolExtension{
-		basePacket:  basePacket{id: 0xF0},
-		RequestType: uo.ProtocolExtensionRequest(in[0]),
-	}
-	return p
-}
+// func newProtocolExtension(in []byte) Packet {
+// 	p := &ProtocolExtension{
+// 		basePacket:  basePacket{id: 0xF0},
+// 		RequestType: uo.ProtocolExtensionRequest(in[0]),
+// 	}
+// 	return p
+// }
 
 // GUMPReply describes a client's response to a generic GUMP form.
 type GUMPReply struct {
@@ -624,6 +625,20 @@ func newSellResponse(in []byte) Packet {
 			Amount: int(dc.GetUint16(in[ofs+4 : ofs+6])),
 		})
 		ofs += 6
+	}
+	return p
+}
+
+// NameRequest is sent by the client to request the name of an object.
+type NameRequest struct {
+	basePacket
+	Serial uo.Serial // Serial of the object who's name is being requested.
+}
+
+func newNameRequest(in []byte) Packet {
+	p := &NameRequest{
+		basePacket: basePacket{id: 0x98},
+		Serial:     uo.Serial(dc.GetUint32(in[0:4])),
 	}
 	return p
 }

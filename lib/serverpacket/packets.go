@@ -1297,3 +1297,17 @@ func (p *SellWindow) Write(w io.Writer) {
 		dc.PutStringN(w, i.Description, len(i.Description)) // Item descrition
 	}
 }
+
+// NameResponse is sent to the client in response to a NameRequest.
+type NameResponse struct {
+	Serial uo.Serial // Serial of the object who's name we are sending.
+	Name   string    // Name of the object
+}
+
+// Write implements the Packet interface.
+func (p *NameResponse) Write(w io.Writer) {
+	dc.PutByte(w, 0x98)                  // General packet ID
+	dc.PutUint16(w, 37)                  // Packet length
+	dc.PutUint32(w, uint32(p.Serial))    // Serial of the object
+	dc.PutStringNWithNull(w, p.Name, 30) // Name of the object
+}

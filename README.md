@@ -22,6 +22,7 @@ A huge thank you goes out to the following groups, in no particular order.
 * Generic GUMPs
 * Mining
 * Vendors
+* Spawners
 
 ## Next Milestone - Mining Vertical ##
 The next milestone set for ShardUO is to implement the Mining skill vertical
@@ -41,7 +42,6 @@ including all features required to mine ore and smelt it into ingots.
 * Mining starter pack
 
 ### Nice to Haves ###
-* Object spawner
 * Feedback GUMP
 * Help GUMP
 * Bank gold support
