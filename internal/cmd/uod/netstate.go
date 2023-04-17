@@ -378,6 +378,7 @@ func (n *NetState) itemInfo(item game.Item) {
 			Movable:          item.Movable(),
 		})
 	}
+	// TODO OPL support
 }
 
 // sendMobile sends packets to send a mobile to the client.
@@ -406,6 +407,7 @@ func (n *NetState) sendMobile(mobile game.Mobile) {
 		return nil
 	})
 	n.Send(p)
+	// TODO OPL support
 }
 
 // updateMobile sends a StatusBarInfo packet for the mobile.
@@ -596,6 +598,7 @@ func (n *NetState) ContainerOpen(c game.Container) {
 			})
 		}
 		n.Send(p)
+		// TODO OPL support
 	}
 }
 
@@ -628,6 +631,7 @@ func (n *NetState) ContainerItemAdded(c game.Container, item game.Item) {
 		Container:     c.Serial(),
 		Hue:           item.Hue(),
 	})
+	// TODO OPL support
 }
 
 // ContainerItemRemoved implements the game.ContainerObserver interface
