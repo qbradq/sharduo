@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/qbradq/sharduo/lib/marshal"
+	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/template"
 	"github.com/qbradq/sharduo/lib/uo"
 )
@@ -123,6 +124,14 @@ type Object interface {
 	// object. The function may append any entries it needs with the
 	// ContextMenu.Append function.
 	AppendContextMenuEntries(*ContextMenu)
+
+	//
+	// Object Property List functionality
+	//
+
+	// OPLPacket returns the current OPLPacket for this object.
+	OPLPacket() *serverpacket.OPLPacket
+	//
 
 	//
 	// Generic accessors

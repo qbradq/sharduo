@@ -1306,8 +1306,43 @@ type NameResponse struct {
 
 // Write implements the Packet interface.
 func (p *NameResponse) Write(w io.Writer) {
-	dc.PutByte(w, 0x98)                  // General packet ID
+	dc.PutByte(w, 0x98)                  // Packet ID
 	dc.PutUint16(w, 37)                  // Packet length
 	dc.PutUint32(w, uint32(p.Serial))    // Serial of the object
 	dc.PutStringNWithNull(w, p.Name, 30) // Name of the object
+}
+
+// OPLPacket is sent in response to generic packet 0x10 and populates object
+// tooltips.
+type OPLPacket struct {
+	Serial  uo.Serial     // Serial of the object this packet is for
+	Hash    uint32        // Hash of the packet
+	Entries []string      // List of all tooltip entries
+	buf     *bytes.Buffer // Internal data buffer for caching
+}
+
+func (p *OPLPacket) Write(w io.Writer) {
+	// Calculate packet length
+	l := 15                       // Fixed packet header
+	for _, e := range p.Entries { // Entries
+		l += 6                             // Entry header
+		l += utf8.RuneCountInString(e) * 2 // Runes of the string
+	}
+	l += 4 // Terminating null entry ID
+	// Write the packet to a temporary buffer
+	b := bytes.NewBuffer(make([]byte, l))
+	dc.PutByte(b, 0xD6)               // Packet ID
+	dc.PutUint16(b, uint16(l))        // Packet length in bytes
+	dc.PutUint16(b, 1)                // Unknown 1
+	dc.PutUint32(b, uint32(p.Serial)) // Object serial
+	dc.Pad(b, 6)                      // Unknown 2 and padding for hash value
+	for _, e := range p.Entries {
+		dc.PutUint32(b, 1042971) // ~1_NOTHING~
+		lrc := utf8.RuneCountInString(e)
+		dc.PutUint16(b, uint16(lrc))    // String length in runes
+		dc.PutUTF16LEStringN(b, e, lrc) // Little-endian string, no NULL termination
+	}
+	dc.Pad(b, 4) // Terminating NULL cliloc ID
+	// Calculate and insert the buffer hash
+
 }

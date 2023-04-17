@@ -91,9 +91,10 @@ func PutUTF16String(w io.Writer, s string) {
 func PutUTF16StringN(w io.Writer, s string, n int) {
 	var buf [2]byte
 	utf := utf16.Encode([]rune(s))
-	for idx, r := range utf {
-		if idx >= n {
-			break
+	for idx := 0; idx < n; idx++ {
+		r := uint16(0)
+		if idx < len(utf) {
+			r = utf[idx]
 		}
 		binary.BigEndian.PutUint16(buf[:], r)
 		w.Write(buf[:])
@@ -110,4 +111,18 @@ func PutUTF16LEString(w io.Writer, s string) {
 		w.Write(buf[:])
 	}
 	w.Write(zeroBuf[:])
+}
+
+// Writes a UTF16 string in Little Endian format with no terminator
+func PutUTF16LEStringN(w io.Writer, s string, n int) {
+	var buf [2]byte
+	utf := utf16.Encode([]rune(s))
+	for idx := 0; idx < n; idx++ {
+		r := uint16(0)
+		if idx < len(utf) {
+			r = utf[idx]
+		}
+		binary.BigEndian.PutUint16(buf[:], r)
+		w.Write(buf[:])
+	}
 }
