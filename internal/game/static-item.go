@@ -2,6 +2,7 @@ package game
 
 import (
 	"github.com/qbradq/sharduo/lib/marshal"
+	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/template"
 	"github.com/qbradq/sharduo/lib/uo"
 )
@@ -119,6 +120,11 @@ func (i *StaticItem) SingleClick(m Mobile) {
 		m.NetState().Speech(m, i.DisplayName())
 	}
 }
+func (i *StaticItem) OPLPackets(self Object) (*serverpacket.OPLPacket, *serverpacket.OPLInfo) {
+	return nil, nil
+}
+func (i *StaticItem) InvalidateOPL()                                            {}
+func (i *StaticItem) AppendOPLEntires(p *serverpacket.OPLPacket)                {}
 func (i *StaticItem) AppendTemplateContextMenuEntry(event string, cl uo.Cliloc) {}
 func (i *StaticItem) AppendContextMenuEntries(m *ContextMenu)                   {}
 func (i *StaticItem) Parent() Object                                            { return nil }

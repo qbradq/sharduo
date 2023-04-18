@@ -122,7 +122,7 @@ func PutUTF16LEStringN(w io.Writer, s string, n int) {
 		if idx < len(utf) {
 			r = utf[idx]
 		}
-		binary.BigEndian.PutUint16(buf[:], r)
+		binary.LittleEndian.PutUint16(buf[:], r)
 		w.Write(buf[:])
 	}
 }

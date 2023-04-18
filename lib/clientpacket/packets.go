@@ -31,6 +31,7 @@ func init() {
 	pf.Add(0xBD, newVersion)
 	pf.Add(0xBF, newGeneralInformation)
 	pf.Add(0xC8, newClientViewRange)
+	pf.Add(0xD6, newOPLCacheMiss)
 	pf.Add(0xEF, newLoginSeed)
 	// pf.Add(0xF0, newProtocolExtension)
 	pf.Ignore(0xF0) // New protocol extensions, used by world map programs
@@ -639,6 +640,24 @@ func newNameRequest(in []byte) Packet {
 	p := &NameRequest{
 		basePacket: basePacket{id: 0x98},
 		Serial:     uo.Serial(dc.GetUint32(in[0:4])),
+	}
+	return p
+}
+
+// OPLCacheMiss is sent by the client to request OPL packets for objects.
+type OPLCacheMiss struct {
+	basePacket
+	Serials []uo.Serial // Object serials of all objects the client requested OPL packets for.
+}
+
+func newOPLCacheMiss(in []byte) Packet {
+	p := &OPLCacheMiss{
+		basePacket: basePacket{id: 0xD6},
+	}
+	n := len(in) / 4
+	p.Serials = make([]uo.Serial, n)
+	for i := 0; i < n; i++ {
+		p.Serials[i] = uo.Serial(dc.GetUint32(in[i*4 : i*4+4]))
 	}
 	return p
 }

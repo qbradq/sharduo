@@ -32,6 +32,7 @@ func init() {
 	packetHandlers.Add(0xBD, handleVersion)
 	packetHandlers.Add(0xBF, handleGeneralInformation)
 	packetHandlers.Add(0xC8, handleViewRange)
+	packetHandlers.Add(0xD6, handleOPLCacheMiss)
 }
 
 // Registry of packet handler functions
@@ -424,4 +425,19 @@ func handleNameRequest(n *NetState, cp clientpacket.Packet) {
 		Serial: p.Serial,
 		Name:   o.DisplayName(),
 	})
+}
+
+func handleOPLCacheMiss(n *NetState, cp clientpacket.Packet) {
+	if n == nil {
+		return
+	}
+	p := cp.(*clientpacket.OPLCacheMiss)
+	for _, s := range p.Serials {
+		o := world.Find(s)
+		if o == nil {
+			continue
+		}
+		opl, _ := o.OPLPackets(o)
+		n.Send(opl)
+	}
 }

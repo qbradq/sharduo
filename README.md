@@ -35,6 +35,7 @@ including all features required to mine ore and smelt it into ingots.
 * Men wearing dresses sometimes, I think there may be a bug in the template or in IsFemale variable
 
 ### Required Features and Tasks ###
+* Persist object owner
 * Remove range checking from packet handlers and let the event handlers do it
 * Make starting location configurable
 * Start the player with reasonable stats

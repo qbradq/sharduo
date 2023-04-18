@@ -433,6 +433,7 @@ func (w *World) GetItemDefinition(g uo.Graphic) *uo.StaticDefinition {
 
 // Update implements the game.World interface.
 func (w *World) Update(o game.Object) {
+	o.InvalidateOPL()
 	w.updateList[o.Serial()] = o
 }
 

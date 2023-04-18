@@ -1,6 +1,7 @@
 package game
 
 import (
+	"image/color"
 	"log"
 	"strconv"
 	"strings"
@@ -129,9 +130,16 @@ type Object interface {
 	// Object Property List functionality
 	//
 
-	// OPLPacket returns the current OPLPacket for this object.
-	OPLPacket() *serverpacket.OPLPacket
-	//
+	// OPLPackets returns the current OPL packets for this object. The Object
+	// parameter must be a self-reference to this object.
+	OPLPackets(Object) (*serverpacket.OPLPacket, *serverpacket.OPLInfo)
+	// InvalidateOPL flags the OPLPacket for this object as stale and in need of
+	// rebuilding.
+	InvalidateOPL()
+	// AppendOPLEntires is called when building the object property list of an
+	// object. The function may append any entries it needs with the
+	// OPLPacket.Append and OPLPacket.AppendColor functions.
+	AppendOPLEntires(*serverpacket.OPLPacket)
 
 	//
 	// Generic accessors
@@ -172,6 +180,10 @@ type Object interface {
 // BaseObject is the base of all game objects and implements the Object
 // interface
 type BaseObject struct {
+	//
+	// Persistent values
+	//
+
 	// Unique serial of the object
 	serial uo.Serial
 	// Name of the template this object was constructed from
@@ -192,6 +204,11 @@ type BaseObject struct {
 	location uo.Location
 	// Facing is the direction the object is facing
 	facing uo.Direction
+
+	//
+	// Non-persistent values
+	//
+
 	// Collection of all event handler names
 	eventHandlers map[string]string
 	// List of all the context menu entries from the template
@@ -200,6 +217,10 @@ type BaseObject struct {
 	removed bool
 	// Owner of the object if any
 	owner Object
+	// OPLPacket cache
+	opl *serverpacket.OPLPacket
+	// OPLInfo cache
+	oplinfo *serverpacket.OPLInfo
 }
 
 // ObjectType implements the Object interface.
@@ -395,6 +416,33 @@ func (o *BaseObject) AppendContextMenuEntries(m *ContextMenu) {
 	for _, e := range o.templateContextMenuEntries {
 		m.Append(e.Event, e.Cliloc)
 	}
+}
+
+// OPLPackets implements the Object interface.
+func (o *BaseObject) OPLPackets(self Object) (*serverpacket.OPLPacket, *serverpacket.OPLInfo) {
+	if o.opl == nil {
+		o.opl = &serverpacket.OPLPacket{
+			Serial: o.serial,
+		}
+		self.AppendOPLEntires(o.opl)
+		o.opl.Compile()
+		o.oplinfo = &serverpacket.OPLInfo{
+			Serial: o.serial,
+			Hash:   o.opl.Hash,
+		}
+	}
+	return o.opl, o.oplinfo
+}
+
+// InvalidateOPL implements the Object interface.
+func (o *BaseObject) InvalidateOPL() {
+	o.opl = nil
+	o.oplinfo = nil
+}
+
+// AppendOPLEntries implements the Object interface.
+func (o *BaseObject) AppendOPLEntires(p *serverpacket.OPLPacket) {
+	p.AppendColor(color.White, o.DisplayName())
 }
 
 // Location implements the Object interface

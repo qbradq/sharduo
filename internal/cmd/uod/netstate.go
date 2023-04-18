@@ -94,6 +94,9 @@ func (n *NetState) Update() {
 // Send attempts to add a packet to the client's send queue and returns false if
 // the queue is full.
 func (n *NetState) Send(sp serverpacket.Packet) bool {
+	if sp == nil {
+		return true
+	}
 	if n.conn != nil {
 		select {
 		case n.sendQueue <- sp:
@@ -378,7 +381,9 @@ func (n *NetState) itemInfo(item game.Item) {
 			Movable:          item.Movable(),
 		})
 	}
-	// TODO OPL support
+	// OPL support
+	_, oi := item.OPLPackets(item)
+	n.Send(oi)
 }
 
 // sendMobile sends packets to send a mobile to the client.
@@ -407,7 +412,9 @@ func (n *NetState) sendMobile(mobile game.Mobile) {
 		return nil
 	})
 	n.Send(p)
-	// TODO OPL support
+	// OPL support
+	_, oi := mobile.OPLPackets(mobile)
+	n.Send(oi)
 }
 
 // updateMobile sends a StatusBarInfo packet for the mobile.
@@ -598,7 +605,11 @@ func (n *NetState) ContainerOpen(c game.Container) {
 			})
 		}
 		n.Send(p)
-		// TODO OPL support
+		// OPL support
+		for _, item := range c.Contents() {
+			_, oi := item.OPLPackets(item)
+			n.Send(oi)
+		}
 	}
 }
 
@@ -631,7 +642,8 @@ func (n *NetState) ContainerItemAdded(c game.Container, item game.Item) {
 		Container:     c.Serial(),
 		Hue:           item.Hue(),
 	})
-	// TODO OPL support
+	_, oi := item.OPLPackets(item)
+	n.Send(oi)
 }
 
 // ContainerItemRemoved implements the game.ContainerObserver interface

@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/qbradq/sharduo/lib/marshal"
+	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/template"
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
@@ -452,4 +453,11 @@ func (c *BaseContainer) UpdateItem(i Item) {
 	for o := range c.observers {
 		o.ContainerItemAdded(c, i)
 	}
+}
+
+// AppendOPLEntries implements the Object interface.
+func (c *BaseContainer) AppendOPLEntires(p *serverpacket.OPLPacket) {
+	c.BaseItem.AppendOPLEntires(p)
+	p.Append(fmt.Sprintf("%d/%d items, %d/%d stones", c.contentItems,
+		c.maxContainerItems, int(c.ContentWeight()), int(c.maxContainerWeight)))
 }
