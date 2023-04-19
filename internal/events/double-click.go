@@ -18,6 +18,7 @@ func init() {
 	reg("OpenBankBox", OpenBankBox)
 	reg("OpenContainer", OpenContainer)
 	reg("OpenPaperDoll", OpenPaperDoll)
+	reg("OpenTeleportGUMP", OpenTeleportGUMP)
 	reg("PlayerDoubleClick", PlayerDoubleClick)
 	reg("TransferHue", TransferHue)
 }
@@ -170,4 +171,18 @@ func Edit(receiver, source game.Object, v any) {
 		return
 	}
 	gumps.Edit(sm, receiver)
+}
+
+func OpenTeleportGUMP(receiver, source game.Object, v any) {
+	if source == nil {
+		return
+	}
+	sm, ok := source.(game.Mobile)
+	if !ok {
+		return
+	}
+	if sm.NetState() == nil {
+		return
+	}
+	sm.NetState().GUMP(gumps.New("teleport"), source, nil)
 }

@@ -40,6 +40,7 @@ including all features required to mine ore and smelt it into ingots.
 * Mining starter pack
 
 ### Nice to Haves ###
+* Teleport locations and GUMP
 * Feedback GUMP
 * Help GUMP
 * Bank gold support
