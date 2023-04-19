@@ -36,7 +36,6 @@ including all features required to mine ore and smelt it into ingots.
 
 ### Required Features and Tasks ###
 * Remove range checking from packet handlers and let the event handlers do it
-* Make starting location configurable
 * Start the player with reasonable stats
 * Starter pack functionality
 * Mining starter pack

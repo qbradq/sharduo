@@ -71,7 +71,7 @@ func (r *CharacterLoginRequest) Execute() error {
 	if player == nil {
 		player = template.Create("Player").(game.Mobile)
 		// TODO New player setup
-		player.SetLocation(uo.Location{X: 3630, Y: 2580, Z: 100})
+		player.SetLocation(configuration.StartingLocation)
 	}
 	world.Map().SetNewParent(player, nil)
 	r.NetState.m = player

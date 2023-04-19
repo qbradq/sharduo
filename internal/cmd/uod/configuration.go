@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/qbradq/sharduo/data"
+	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
 )
 
@@ -70,6 +71,13 @@ type Configuration struct {
 
 	// If true we should generate all of the debug maps at server start
 	GenerateDebugMaps bool
+
+	//
+	// Game configuration
+	//
+
+	// Starting location
+	StartingLocation uo.Location
 }
 
 // newConfiguration returns a new Configuration object
@@ -128,6 +136,12 @@ func (c *Configuration) LoadConfiguration() error {
 	c.GameSaveType = tfo.GetString("GameSaveType", "Flat")
 	// Debug flags
 	c.GenerateDebugMaps = tfo.GetBool("GenerateDebugMaps", false)
+	// Game configuration
+	c.StartingLocation = tfo.GetLocation("StartingLocation", uo.Location{
+		X: 0,
+		Y: 0,
+		Z: 0,
+	})
 
 	return nil
 }
