@@ -354,6 +354,7 @@ func (m *Map) ForceRemoveObject(o Object) {
 func (m *Map) canMoveTo(mob Mobile, d uo.Direction) (bool, uo.Location, uo.CommonObject) {
 	ol := mob.Location()
 	nl := ol.Forward(d.Bound()).WrapAndBound(ol)
+	nl.Z = mob.StandingOn().Highest()
 	floor, ceiling := m.GetFloorAndCeiling(nl, false)
 	// No floor to stand on, bail
 	if floor == nil {
