@@ -64,6 +64,7 @@ func (g *spawner) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 	for i := 0; i < 8; i++ {
 		g.updateRowData(i, p)
 	}
+	game.GetWorld().Update(g.Spawner)
 	// Have to do a full respawn to sync spawner with changes
 	g.Spawner.FullRespawn()
 	// Standard behavior handling

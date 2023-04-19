@@ -1,9 +1,11 @@
 package game
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/qbradq/sharduo/lib/marshal"
+	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/template"
 	"github.com/qbradq/sharduo/lib/uo"
 )
@@ -236,4 +238,14 @@ func (o *Spawner) Spawn(which string) Object {
 	// If we got here we've tried too many times to place the object on the map
 	// and are just going to give up. The next Update() call will try again.
 	return nil
+}
+
+// AppendOPLEntries implements the Object interface.
+func (o *Spawner) AppendOPLEntires(p *serverpacket.OPLPacket) {
+	o.BaseItem.AppendOPLEntires(p)
+	p.Append(fmt.Sprintf("Radius %d", o.Radius))
+	for _, e := range o.Entries {
+		p.Append(fmt.Sprintf("%s x%d @ %d mins", e.Template, e.Amount,
+			e.Delay/uo.DurationMinute))
+	}
 }

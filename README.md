@@ -64,7 +64,6 @@ including all features required to mine ore and smelt it into ingots.
 * Agricultural crops
 * Decoration GUMP
 * Start decorating
-* MegaCliloc roll-over info
 * Line of sight checks
 
 ### Nerdy Things I Might Do for Fun ###

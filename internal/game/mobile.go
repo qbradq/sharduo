@@ -1,9 +1,11 @@
 package game
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/qbradq/sharduo/lib/marshal"
+	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/template"
 	"github.com/qbradq/sharduo/lib/uo"
 )
@@ -1270,4 +1272,10 @@ func (m *BaseMobile) CanSee(o Object) bool {
 func (m *BaseMobile) NoRent() bool {
 	// TODO check if this mobile is controlled by a player
 	return !m.isPlayerCharacter
+}
+
+// AppendOPLEntries implements the Object interface.
+func (m *BaseMobile) AppendOPLEntires(p *serverpacket.OPLPacket) {
+	m.BaseObject.AppendOPLEntires(p)
+	p.Append(fmt.Sprintf("%d stones", int(m.Weight())))
 }
