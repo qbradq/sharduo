@@ -204,6 +204,8 @@ type BaseObject struct {
 	location uo.Location
 	// Facing is the direction the object is facing
 	facing uo.Direction
+	// Owner of the object if any
+	owner Object
 
 	//
 	// Non-persistent values
@@ -215,8 +217,6 @@ type BaseObject struct {
 	templateContextMenuEntries []ContextMenuEntry
 	// If true this object has already been removed from the datastore
 	removed bool
-	// Owner of the object if any
-	owner Object
 	// OPLPacket cache
 	opl *serverpacket.OPLPacket
 	// OPLInfo cache
@@ -252,7 +252,12 @@ func (o *BaseObject) Marshal(s *marshal.TagFileSegment) {
 	if o.parent != nil {
 		ps = o.parent.Serial()
 	}
+	os := uo.SerialSystem
+	if o.owner != nil {
+		os = o.owner.Serial()
+	}
 	s.PutInt(uint32(ps))
+	s.PutInt(uint32(os))
 	s.PutString(o.name)
 	s.PutShort(uint16(o.hue))
 	s.PutLocation(o.location)
@@ -318,6 +323,18 @@ func (o *BaseObject) Unmarshal(s *marshal.TagFileSegment) {
 		o.parent = nil
 	} else {
 		o.parent = world.Find(ps)
+	}
+	// Owner object resolution
+	os := uo.Serial(s.Int())
+	if os == uo.SerialSystem {
+		o.owner = nil
+	} else if ps == uo.SerialTheVoid {
+		o.owner = TheVoid
+	} else if ps == uo.SerialZero {
+		log.Printf("warning: object %s has no owner", o.Serial().String())
+		o.owner = nil
+	} else {
+		o.owner = world.Find(os)
 	}
 	// Unmarshal all dynamic values
 	o.name = s.String()
