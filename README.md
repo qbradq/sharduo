@@ -35,8 +35,6 @@ including all features required to mine ore and smelt it into ingots.
 
 ### Required Features and Tasks ###
 * Remove range checking from packet handlers and let the event handlers do it
-* Starter pack functionality
-* Mining starter pack
 
 ### Nice to Haves ###
 * Feedback GUMP
@@ -66,6 +64,7 @@ including all features required to mine ore and smelt it into ingots.
 ### Nerdy Things I Might Do for Fun ###
 * Player movement packet throttling
 * Day/Night cycles
+* Light sources
 * Weather patterns
 * Fall damage
 

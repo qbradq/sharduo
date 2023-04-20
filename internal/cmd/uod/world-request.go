@@ -69,9 +69,20 @@ func (r *CharacterLoginRequest) Execute() error {
 	}
 	// Create a new character if needed
 	if player == nil {
+		// New player setup
 		player = template.Create("Player").(game.Mobile)
-		// TODO New player setup
 		player.SetLocation(configuration.StartingLocation)
+		i := template.Create("Pickaxe").(game.Item)
+		player.DropToBackpack(i, true)
+		i = template.Create("GoldCoin").(game.Item)
+		i.SetAmount(1000)
+		player.DropToBackpack(i, true)
+		i = template.Create("IronOre").(game.Item)
+		i.SetAmount(5)
+		player.DropToBackpack(i, true)
+		i = template.Create("IronIngot").(game.Item)
+		i.SetAmount(10)
+		player.DropToBackpack(i, true)
 	}
 	world.Map().SetNewParent(player, nil)
 	r.NetState.m = player
