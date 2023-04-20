@@ -35,12 +35,10 @@ including all features required to mine ore and smelt it into ingots.
 
 ### Required Features and Tasks ###
 * Remove range checking from packet handlers and let the event handlers do it
-* Start the player with reasonable stats
 * Starter pack functionality
 * Mining starter pack
 
 ### Nice to Haves ###
-* Teleport locations and GUMP
 * Feedback GUMP
 * Help GUMP
 * Bank gold support
@@ -63,6 +61,7 @@ including all features required to mine ore and smelt it into ingots.
 * Decoration GUMP
 * Start decorating
 * Line of sight checks
+* Teleport locations around alpha area
 
 ### Nerdy Things I Might Do for Fun ###
 * Player movement packet throttling
