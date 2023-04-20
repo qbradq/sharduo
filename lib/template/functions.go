@@ -25,7 +25,7 @@ func randomBool() bool {
 }
 
 func templateNew(name string) string {
-	o := Create(name)
+	o := Create[Object](name)
 	if o == nil {
 		return "0"
 	}
@@ -80,7 +80,7 @@ func dressHuman() string {
 
 func equipVendor(list string) string {
 	ret := templateNew("NPCBackpack") + "," + templateNew("NPCBoughtContainer")
-	o := Create("NPCForSaleContainer")
+	o := Create[Object]("NPCForSaleContainer")
 	if o == nil {
 		log.Println("error: template NPCForSaleContainer not found")
 		return ret
@@ -92,7 +92,7 @@ func equipVendor(list string) string {
 		return ret
 	}
 	for _, tn := range l {
-		no := Create(tn)
+		no := Create[Object](tn)
 		if no == nil {
 			log.Printf("warning: template %s not found\n", tn)
 			continue

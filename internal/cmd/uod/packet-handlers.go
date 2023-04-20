@@ -3,6 +3,7 @@ package uod
 import (
 	"log"
 	"strconv"
+	"strings"
 
 	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/lib/clientpacket"
@@ -358,11 +359,32 @@ func handleBuyRequest(n *NetState, cp clientpacket.Packet) {
 	// Give items
 	for _, bi := range p.BoughtItems {
 		i := game.Find[game.Item](bi.Item)
-		ni := template.Create(i.TemplateName()).(game.Item)
-		ni.SetAmount(bi.Amount)
-		ni.SetDropLocation(uo.RandomContainerLocation)
-		if !n.m.DropToBackpack(ni, false) {
-			n.m.DropToFeet(ni)
+		if i == nil {
+			continue
+		}
+		// Dirty hack for stablemaster NPCs
+		tn := i.TemplateName()
+		if strings.HasPrefix(tn, "StablemasterPlaceholder") {
+			tn = strings.TrimPrefix(tn, "StablemasterPlaceholder")
+			m := template.Create[game.Mobile](tn)
+			if m == nil {
+				// Something very wrong
+				continue
+			}
+			m.SetLocation(n.m.Location())
+			// TODO ownership
+			world.Map().AddObject(m)
+		} else {
+			ni := template.Create[game.Item](tn)
+			if ni == nil {
+				// Something very wrong
+				continue
+			}
+			ni.SetAmount(bi.Amount)
+			ni.SetDropLocation(uo.RandomContainerLocation)
+			if !n.m.DropToBackpack(ni, false) {
+				n.m.DropToFeet(ni)
+			}
 		}
 	}
 	world.Map().SendCliloc(vendor, uo.SpeechNormalRange, 1080013, strconv.Itoa(total)) // The total of thy purchase is ~1_VAL~ gold,
@@ -405,7 +427,7 @@ func handleSellRequest(n *NetState, cp clientpacket.Packet) {
 	}
 	// Payment
 	// TODO check support
-	gc := template.Create("GoldCoin").(game.Item)
+	gc := template.Create[game.Item]("GoldCoin")
 	gc.SetAmount(total)
 	if !n.m.DropToBackpack(gc, false) {
 		n.m.DropToFeet(gc)

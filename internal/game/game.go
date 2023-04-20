@@ -19,7 +19,9 @@ func RootParent(o Object) Object {
 		return nil
 	}
 	for {
-		if o.Parent() == nil {
+		p := o.Parent()
+		if p == nil || p.Serial() == uo.SerialZero {
+			// p.Serial() == uo.SerialZero for TheVoid
 			return o
 		}
 		o = o.Parent()

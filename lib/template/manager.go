@@ -130,10 +130,18 @@ func GenerateObject(which string) Object {
 // a unique serial of the correct type and added to the data stores. It does not
 // yet have a parent nor has it been placed on the map. One of these things must
 // be done otherwise the data store will leak this object.
-func Create(which string) Object {
+func Create[K Object](which string) K {
+	var zero K
 	o := GenerateObject(which)
-	tm.storeObject(o)
-	return o
+	if o == nil {
+		return zero
+	}
+	ro, ok := o.(K)
+	if !ok {
+		return zero
+	}
+	tm.storeObject(ro)
+	return ro
 }
 
 // loadListFile loads a single list file and merges that list with the current.

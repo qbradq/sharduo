@@ -286,7 +286,7 @@ func (i *BaseItem) Split(n int) Item {
 		return nil
 	}
 	// Create the new item
-	item := template.Create(i.templateName).(Item)
+	item := template.Create[Item](i.templateName)
 	// Remove this item from its parent
 	failed := false
 	if i.parent == nil {

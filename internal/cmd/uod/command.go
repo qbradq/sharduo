@@ -130,7 +130,7 @@ func commandLocation(n *NetState, args CommandArgs, cl string) {
 		return
 	}
 	n.TargetSendCursor(uo.TargetTypeLocation, func(r *clientpacket.TargetResponse) {
-		n.Speech(nil, "Location X=%d Y=%d Z=%d", r.Location.X, r.Location.Y, r.Location.Z)
+		n.Speech(n.m, "Location X=%d Y=%d Z=%d", r.Location.X, r.Location.Y, r.Location.Z)
 	})
 }
 
@@ -139,24 +139,23 @@ func commandNew(n *NetState, args CommandArgs, cl string) {
 		return
 	}
 	if len(args) < 2 || len(args) > 3 {
-		n.Speech(nil, "new command requires 2 or 3 arguments, got %d", len(args))
+		n.Speech(n.m, "new command requires 2 or 3 arguments, got %d", len(args))
 	}
 	n.TargetSendCursor(uo.TargetTypeLocation, func(r *clientpacket.TargetResponse) {
-		to := template.Create(args[1])
-		if to == nil {
-			n.Speech(nil, "failed to create object with template %s", args[1])
+		o := template.Create[game.Object](args[1])
+		if o == nil {
+			n.Speech(n.m, "failed to create object with template %s", args[1])
 			return
 		}
-		o := to.(game.Object)
 		o.SetLocation(r.Location)
 		if len(args) == 3 {
-			item, ok := to.(game.Item)
+			item, ok := o.(game.Item)
 			if !ok {
-				n.Speech(nil, "amount specified for non-item %s", args[1])
+				n.Speech(n.m, "amount specified for non-item %s", args[1])
 				return
 			}
 			if !item.Stackable() {
-				n.Speech(nil, "amount specified for non-stackable item %s", args[1])
+				n.Speech(n.m, "amount specified for non-stackable item %s", args[1])
 				return
 			}
 			v := args.Int(2)
@@ -182,7 +181,7 @@ func commandTeleport(n *NetState, args CommandArgs, cl string) {
 	l := uo.Location{}
 	l.Z = uo.MapMaxZ
 	if len(args) > 4 {
-		n.Speech(nil, "teleport command expects a maximum of 3 arguments")
+		n.Speech(n.m, "teleport command expects a maximum of 3 arguments")
 		return
 	}
 	if len(args) == 4 {
@@ -197,7 +196,7 @@ func commandTeleport(n *NetState, args CommandArgs, cl string) {
 			targeted = true
 			multi = true
 		} else {
-			n.Speech(nil, "incorrect usage of teleport command. Use [teleport (multi|X Y|X Y Z)")
+			n.Speech(n.m, "incorrect usage of teleport command. Use [teleport (multi|X Y|X Y Z)")
 			return
 		}
 	}
@@ -209,13 +208,13 @@ func commandTeleport(n *NetState, args CommandArgs, cl string) {
 		if l.Z == uo.MapMaxZ {
 			floor, _ := world.Map().GetFloorAndCeiling(l, false)
 			if floor == nil {
-				n.Speech(nil, "location has no floor")
+				n.Speech(n.m, "location has no floor")
 				return
 			}
 			l.Z = floor.Z()
 		}
 		if !world.Map().TeleportMobile(n.m, l) {
-			n.Speech(nil, "something is blocking that location")
+			n.Speech(n.m, "something is blocking that location")
 		}
 		return
 	}
@@ -226,7 +225,7 @@ func commandTeleport(n *NetState, args CommandArgs, cl string) {
 			return
 		}
 		if !world.Map().TeleportMobile(n.m, r.Location) {
-			n.Speech(nil, "something is blocking that location")
+			n.Speech(n.m, "something is blocking that location")
 		}
 		if multi {
 			n.TargetSendCursor(uo.TargetTypeLocation, fn)
@@ -294,7 +293,10 @@ func commandDebug(n *NetState, args CommandArgs, cl string) {
 		hue := 1
 		for iy := 0; iy < 10; iy++ {
 			for ix := 0; ix < 300; ix++ {
-				r := template.Create("HueSelector").(game.Item)
+				r := template.Create[game.Item]("HueSelector")
+				if r == nil {
+					continue
+				}
 				r.SetHue(uo.Hue(hue))
 				hue++
 				if hue >= 3000 {
@@ -369,7 +371,10 @@ func commandDebug(n *NetState, args CommandArgs, cl string) {
 	case "memory_test":
 		start := time.Now()
 		for i := 0; i < 1_000_000; i++ {
-			o := template.Create("FancyShirt").(game.Object)
+			o := template.Create[game.Object]("FancyShirt")
+			if o == nil {
+				continue
+			}
 			nl := uo.Location{
 				X: int16(world.Random().Random(100, uo.MapWidth-101)),
 				Y: int16(world.Random().Random(100, uo.MapHeight-101)),
@@ -383,7 +388,10 @@ func commandDebug(n *NetState, args CommandArgs, cl string) {
 			world.Map().ForceAddObject(o)
 		}
 		for i := 0; i < 150_000; i++ {
-			o := template.Create("Banker").(game.Object)
+			o := template.Create[game.Object]("Banker")
+			if o == nil {
+				continue
+			}
 			nl := uo.Location{
 				X: int16(world.Random().Random(100, uo.MapWidth-101)),
 				Y: int16(world.Random().Random(100, uo.MapHeight-101)),
@@ -397,7 +405,7 @@ func commandDebug(n *NetState, args CommandArgs, cl string) {
 			world.Map().ForceAddObject(o)
 		}
 		end := time.Now()
-		log.Printf("operation completed in %s", end.Sub(start))
+		n.Speech(n.m, fmt.Sprintf("operation completed in %s", end.Sub(start)))
 	case "delay_test":
 		game.NewTimer(uo.DurationSecond*5, "WhisperTime", n.m, n.m, false, nil)
 		game.NewTimer(uo.DurationSecond*10, "WhisperTime", n.m, n.m, false, nil)
@@ -413,20 +421,29 @@ func commandDebug(n *NetState, args CommandArgs, cl string) {
 		game.NewTimer(uo.DurationSecond*60, "WhisperTime", n.m, n.m, false, nil)
 		game.NewTimer(uo.DurationSecond*65, "WhisperTime", n.m, n.m, false, nil)
 	case "mount":
-		llama := template.Create("Llama").(game.Mobile)
+		llama := template.Create[game.Mobile]("Llama")
+		if llama == nil {
+			break
+		}
 		llama.SetLocation(n.m.Location())
 		llama.SetHue(0x76) // Llama Energy Vortex hue
 		world.Map().AddObject(llama)
 		n.m.Mount(llama)
 	case "shirtbag":
-		backpack := template.Create("Backpack").(game.Container)
+		backpack := template.Create[game.Container]("Backpack")
+		if backpack == nil {
+			break
+		}
 		backpack.SetLocation(n.m.Location())
 		world.m.SetNewParent(backpack, nil)
 		for i := 0; i < 125; i++ {
-			shirt := template.Create("FancyShirt").(game.Object)
+			shirt := template.Create[game.Object]("FancyShirt")
+			if shirt == nil {
+				continue
+			}
 			shirt.SetLocation(uo.RandomContainerLocation)
 			if !world.Map().SetNewParent(shirt, backpack) {
-				n.Speech(nil, "failed to add an item to the backpack")
+				n.Speech(n.m, "failed to add an item to the backpack")
 				break
 			}
 		}
@@ -435,9 +452,9 @@ func commandDebug(n *NetState, args CommandArgs, cl string) {
 		count := 0
 		for iy := n.m.Location().Y - 50; iy < n.m.Location().Y+50; iy++ {
 			for ix := n.m.Location().X - 50; ix < n.m.Location().X+50; ix++ {
-				o := template.Create(args[2]).(game.Object)
+				o := template.Create[game.Object](args[2])
 				if o == nil {
-					n.Speech(nil, "debug splat failed to create object with template %s", args[2])
+					n.Speech(n.m, "debug splat failed to create object with template %s", args[2])
 				}
 				o.SetLocation(uo.Location{
 					X: ix,
@@ -449,7 +466,7 @@ func commandDebug(n *NetState, args CommandArgs, cl string) {
 			}
 		}
 		end := time.Now()
-		n.Speech(nil, "generated %d items in %d milliseconds\n", count, end.Sub(start).Milliseconds())
+		n.Speech(n.m, "generated %d items in %d milliseconds\n", count, end.Sub(start).Milliseconds())
 	}
 }
 
@@ -472,17 +489,12 @@ func commandStatic(n *NetState, args CommandArgs, cl string) {
 	}
 	g := uo.Graphic(args.Int(1))
 	if g.IsNoDraw() {
-		n.Speech(nil, "refusing to create no-draw static 0x%04X", g)
+		n.Speech(n.m, "refusing to create no-draw static 0x%04X", g)
 	}
 	n.TargetSendCursor(uo.TargetTypeLocation, func(r *clientpacket.TargetResponse) {
-		o := template.Create("StaticItem")
-		if o == nil {
-			n.Speech(nil, "StaticItem template not found")
-			return
-		}
-		i, ok := o.(game.Item)
-		if !ok {
-			n.Speech(nil, "StaticItem template was not an item")
+		i := template.Create[*game.StaticItem]("StaticItem")
+		if i == nil {
+			n.Speech(n.m, "StaticItem template not found")
 			return
 		}
 		i.SetBaseGraphic(g)
@@ -627,7 +639,7 @@ func commandRespawn(n *NetState, args CommandArgs, cl string) {
 	n.TargetSendCursor(uo.TargetTypeObject, func(tr *clientpacket.TargetResponse) {
 		s, ok := world.Find(tr.TargetObject).(*game.Spawner)
 		if !ok {
-			n.Speech(nil, "Must target a spawner")
+			n.Speech(n.m, "Must target a spawner")
 			return
 		}
 		s.FullRespawn()

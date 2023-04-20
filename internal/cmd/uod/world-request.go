@@ -70,17 +70,17 @@ func (r *CharacterLoginRequest) Execute() error {
 	// Create a new character if needed
 	if player == nil {
 		// New player setup
-		player = template.Create("Player").(game.Mobile)
+		player = template.Create[game.Mobile]("Player")
 		player.SetLocation(configuration.StartingLocation)
-		i := template.Create("Pickaxe").(game.Item)
+		i := template.Create[game.Item]("Pickaxe")
 		player.DropToBackpack(i, true)
-		i = template.Create("GoldCoin").(game.Item)
+		i = template.Create[game.Item]("GoldCoin")
 		i.SetAmount(1000)
 		player.DropToBackpack(i, true)
-		i = template.Create("IronOre").(game.Item)
+		i = template.Create[game.Item]("IronOre")
 		i.SetAmount(5)
 		player.DropToBackpack(i, true)
-		i = template.Create("IronIngot").(game.Item)
+		i = template.Create[game.Item]("IronIngot")
 		i.SetAmount(10)
 		player.DropToBackpack(i, true)
 	}

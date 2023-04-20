@@ -1041,7 +1041,11 @@ func (m *BaseMobile) Mount(mount Mobile) {
 	if mount == nil || m.IsMounted() {
 		return
 	}
-	mi := template.Create("MountItem").(*MountItem)
+	mi := template.Create[*MountItem]("MountItem")
+	if mi == nil {
+		// Something very wrong
+		return
+	}
 	mi.SetBaseGraphicForBody(mount.Body())
 	mi.SetHue(mount.Hue())
 	if !m.Equip(mi) {

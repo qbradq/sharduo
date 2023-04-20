@@ -71,7 +71,9 @@ func (c *EquipmentCollection) Equip(o Wearable) bool {
 		return false
 	}
 	c.equipment[o.Layer()] = o
-	c.weight += o.Weight()
+	if o.Layer() < uo.LayerMount {
+		c.weight += o.Weight()
+	}
 	return true
 }
 
@@ -84,7 +86,9 @@ func (c *EquipmentCollection) Unequip(o Wearable) bool {
 	if equipped, ok := c.equipment[o.Layer()]; ok {
 		if equipped.Serial() == o.Serial() {
 			delete(c.equipment, o.Layer())
-			c.weight -= equipped.Weight()
+			if o.Layer() < uo.LayerMount {
+				c.weight -= equipped.Weight()
+			}
 			return true
 		}
 	}
@@ -96,7 +100,7 @@ func (c *EquipmentCollection) recalculateStats() {
 	c.weight = 0
 	for _, w := range c.equipment {
 		// Ignore the bank box
-		if w.Layer() == uo.LayerBankBox {
+		if w.Layer() >= uo.LayerMount {
 			continue
 		}
 		w.RecalculateStats()

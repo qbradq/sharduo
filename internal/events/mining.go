@@ -182,7 +182,11 @@ func FinishMining(receiver, source game.Object, v any) {
 	game.GetWorld().Map().PlaySound(s, p.Location)
 	// Skill check
 	if miner.SkillCheck(uo.SkillMining, 0, 1000) {
-		ore := template.Create("IronOre").(game.Item)
+		ore := template.Create[game.Item]("IronOre")
+		if ore == nil {
+			// Something very wrong
+			return
+		}
 		ore.SetAmount(game.GetWorld().Map().ConsumeOre(p.Location, 2))
 		if !miner.DropToBackpack(ore, false) {
 			ore.SetLocation(miner.Location())
@@ -231,7 +235,11 @@ func SmeltOre(receiver, source game.Object, v any) {
 		ore.Consume(1)
 		return
 	}
-	ingot := template.Create("IronIngot").(game.Item)
+	ingot := template.Create[game.Item]("IronIngot")
+	if ingot == nil {
+		// Something very bad
+		return
+	}
 	ingot.SetAmount(ore.Amount() * 2)
 	game.Remove(ore)
 	if !smelter.DropToBackpack(ingot, false) {

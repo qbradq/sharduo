@@ -96,6 +96,7 @@ func Mount(receiver, source game.Object, v any) {
 	if !ok {
 		return
 	}
+	// TODO ownership
 	sm.Mount(rm)
 }
 

@@ -97,8 +97,8 @@ func (o *Spawner) Unmarshal(s *marshal.TagFileSegment) {
 				// The object was spawned when we saved so create a replacement
 				// now.
 				l := s.Location()
-				obj, ok := template.Create(e.Template).(Object)
-				if !ok {
+				obj := template.Create[Object](e.Template)
+				if obj == nil {
 					log.Printf("warning: failed to create object from template %s", e.Template)
 					continue
 				}
@@ -203,7 +203,7 @@ func (o *Spawner) RespawnEntry(n int) {
 }
 
 func (o *Spawner) Spawn(which string) Object {
-	so := template.Create(which).(Object)
+	so := template.Create[Object](which)
 	if so == nil {
 		log.Printf("warning: template %s not found in Spawner.Spawn()", which)
 		return nil
