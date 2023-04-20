@@ -73,6 +73,9 @@ func NewNetState(conn *net.TCPConn) *NetState {
 	}
 }
 
+// Mobile returns the mobile associated with the state if any.
+func (n *NetState) Mobile() game.Mobile { return n.m }
+
 // Update should be called once per real-world second to search for stale net
 // states, expired targeting cursors, etc.
 func (n *NetState) Update() {

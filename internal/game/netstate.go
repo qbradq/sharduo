@@ -25,6 +25,8 @@ type NetState interface {
 	// equipping items. This method assumes that the action will be taken after
 	// this call and sets internal states to limit action speed.
 	TakeAction() bool
+	// Mobile returns the mobile associated with this state if any.
+	Mobile() Mobile
 
 	//
 	// Speech and messaging

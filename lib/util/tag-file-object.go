@@ -1,7 +1,6 @@
 package util
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -31,19 +30,11 @@ func (o *TagFileObject) TypeName() string {
 
 // HandlePropertyLine attempts to handle a single property line in the file.
 func (o *TagFileObject) HandlePropertyLine(line string) error {
-	parts := strings.SplitN(line, "=", 2)
-	var key, value string
-	if len(parts) == 1 {
-		key = strings.TrimSpace(parts[0])
-		value = ""
-	} else if len(parts) == 2 {
-		key = strings.TrimSpace(parts[0])
-		value = strings.TrimSpace(parts[1])
-	} else if len(parts) != 2 {
-		return errors.New("syntax error")
+	key, value, err := ParseTagLine(line)
+	if err == nil {
+		o.p[key] = value
 	}
-	o.p[key] = value
-	return nil
+	return err
 }
 
 // HasErrors returns true if the object has encountered any errors.
@@ -190,32 +181,9 @@ func (o *TagFileObject) GetObjectReferences(name string) []uo.Serial {
 // named tag is not found.
 func (o *TagFileObject) GetLocation(name string, def uo.Location) uo.Location {
 	if v, found := o.p[name]; found {
-		parts := strings.Split(v, ",")
-		if len(parts) != 3 {
-			o.errs = append(o.errs, fmt.Errorf("GetLocation(%s) did not find three values", name))
-			return def
-		}
-		hasErrors := false
-		var l uo.Location
-		v, err := strconv.ParseInt(parts[0], 0, 16)
+		l, err := ParseLocation(v)
 		if err != nil {
 			o.errs = append(o.errs, err)
-			hasErrors = true
-		}
-		l.X = int16(v)
-		v, err = strconv.ParseInt(parts[1], 0, 16)
-		if err != nil {
-			o.errs = append(o.errs, err)
-			hasErrors = true
-		}
-		l.Y = int16(v)
-		v, err = strconv.ParseInt(parts[2], 0, 8)
-		if err != nil {
-			o.errs = append(o.errs, err)
-			hasErrors = true
-		}
-		l.Z = int8(v)
-		if hasErrors {
 			return def
 		}
 		return l
