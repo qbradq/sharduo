@@ -25,7 +25,7 @@ func (i *MountItem) ObjectType() marshal.ObjectType {
 // Marshal implements the marshal.Marshaler interface.
 func (i *MountItem) Marshal(s *marshal.TagFileSegment) {
 	i.BaseWearable.Marshal(s)
-	i.m.Marshal(s)
+	s.PutObject(i.m)
 }
 
 // Unmarshal implements the marshal.Unmarshaler interface.
