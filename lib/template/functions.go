@@ -60,7 +60,7 @@ func partialHue(hue string) string {
 
 func dressHuman() string {
 	ret := randomNew("Shoes")
-	if templateContext["IsFemale"] != "" {
+	if tm.CurrentContext()["IsFemale"] != "" {
 		if tm.rng.Random(1, 20) > 17 {
 			// 15% of women in Britannia wear pants
 			ret += "," + randomNew("Shirt") +

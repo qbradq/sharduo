@@ -45,16 +45,11 @@ type Object interface {
 
 // Template contains all of the property lines of the template.
 type Template struct {
-	// Name of the object constructor used to create the object.
-	TypeName string
-	// Unique name of the template.
-	TemplateName string
-	// Name of the base template. The empty string means a root template.
-	BaseTemplate string
-	// True if the template's inheritance chain has already been satisfied.
-	IsResolved bool
-	// List of all properties
-	properties map[string]any
+	TypeName     string         // Name of the object constructor used to create the object.
+	TemplateName string         // Unique name of the template.
+	BaseTemplate string         // Name of the base template. The empty string means a root template.
+	IsResolved   bool           // True if the template's inheritance chain has already been satisfied.
+	properties   map[string]any // List of all properties
 }
 
 // New creates a new template.T object from the provided TagFileObject. The
@@ -96,7 +91,8 @@ func New(tfo *util.TagFileObject, tm *TemplateManager) (*Template, []error) {
 }
 
 // GetString returns the named property as a string or the default if not
-// found.
+// found. This function panics if no context is on the stack. See PushContext
+// and PopContext.
 func (t *Template) GetString(name, def string) string {
 	p, ok := t.properties[name]
 	if !ok {
@@ -109,7 +105,7 @@ func (t *Template) GetString(name, def string) string {
 		return v
 	case *template.Template:
 		buf := bytes.NewBuffer(nil)
-		if err := v.Execute(buf, templateContext); err != nil {
+		if err := v.Execute(buf, tm.CurrentContext()); err != nil {
 			log.Println(err)
 			return def
 		}
