@@ -12,25 +12,22 @@ import (
 	"github.com/qbradq/sharduo/lib/util"
 )
 
-// Global context for constants in templates. This is built from
-// data/template-variables.ini
-var templateContext = map[string]string{}
+const (
+	MaxRecursion int = 16
+)
 
 // Global template manager instance
 var tm *TemplateManager
 
 // TemplateManager manages a collection of templates
 type TemplateManager struct {
-	// Registry of templates in the manager
-	templates *util.Registry[string, *Template]
-	// Registry of pre-compiled go templates
-	pctp *util.Registry[string, *txtmp.Template]
-	// Collection of lists used by the random object creation methods
-	lists *util.Registry[string, []string]
-	// Source of randomness for randomly generating things
-	rng uo.RandomSource
-	// Adds the object to game datastores
-	storeObject func(Object)
+	ctxStack    []map[string]string                     // Stack of contexts used for creating new objects
+	nextCtx     int                                     // Index of the next context to be popped
+	templates   *util.Registry[string, *Template]       // Registry of templates in the manager
+	pctp        *util.Registry[string, *txtmp.Template] // Registry of pre-compiled go templates
+	lists       *util.Registry[string, []string]        // Collection of lists used by the random object creation methods
+	rng         uo.RandomSource                         // Source of randomness for randomly generating things
+	storeObject func(Object)                            // Adds the object to game datastores
 }
 
 // Initialize initializes the template package and must be called prior to all
@@ -39,6 +36,7 @@ type TemplateManager struct {
 func Initialize(templatePath, listPath, variablesFilePath string, rng uo.RandomSource, fn func(Object)) []error {
 	// Initialize the manager
 	tm = &TemplateManager{
+		ctxStack:    make([]map[string]string, MaxRecursion),
 		templates:   util.NewRegistry[string, *Template]("templates"),
 		pctp:        util.NewRegistry[string, *txtmp.Template]("template-pre-cache"),
 		lists:       util.NewRegistry[string, []string]("template-lists"),
@@ -60,7 +58,10 @@ func Initialize(templatePath, listPath, variablesFilePath string, rng uo.RandomS
 	if len(errs) > 0 {
 		return errs
 	}
-	// Load all variables
+	// Load all pre-defined variables for the entire context stack
+	for i := range tm.ctxStack {
+		tm.ctxStack[i] = make(map[string]string)
+	}
 	vd, err := data.FS.Open(variablesFilePath)
 	if err != nil {
 		return []error{err}
@@ -72,7 +73,9 @@ func Initialize(templatePath, listPath, variablesFilePath string, rng uo.RandomS
 		return []error{errors.New("failed to read template variables list")}
 	}
 	tfo.Map(func(name, value string) error {
-		templateContext[name] = value
+		for i := range tm.ctxStack {
+			tm.ctxStack[i][name] = value
+		}
 		return nil
 	})
 
@@ -89,25 +92,52 @@ func FindTemplate(which string) *Template {
 	return t
 }
 
-// UpdateContextValues randomizes the values of all context variables with
+// pushContext pushes a context onto the stack. This function panics on stack
+// overflow.
+func (m *TemplateManager) pushContext() {
+	if m.nextCtx >= len(m.ctxStack) {
+		panic("template manager context stack overflow")
+	}
+	m.nextCtx++
+}
+
+// popContext decrements the stack pointer by one. This function panics if the
+// stack pointer is decremented below zero.
+func (m *TemplateManager) popContext() {
+	m.nextCtx--
+	if m.nextCtx < 0 {
+		panic("template manager context stack underflow")
+	}
+}
+
+// CurrentContext returns the current template execution context. This function
+// panics if the context stack is empty.
+func (m *TemplateManager) CurrentContext() map[string]string {
+	if m.nextCtx == 0 {
+		panic("template manager context stack underflow")
+	}
+	return m.ctxStack[m.nextCtx-1]
+}
+
+// updateDynamicValues randomizes the values of all context variables with
 // random or changing values.
-func UpdateContextValues() {
+func (m *TemplateManager) updateDynamicValues(ctx map[string]string) {
 	// Inject dynamic values into the template context
 	if tm.rng.RandomBool() {
-		templateContext["IsFemale"] = "true"
+		ctx["IsFemale"] = "true"
 	} else {
-		templateContext["IsFemale"] = ""
+		ctx["IsFemale"] = ""
 	}
 }
 
 // GenerateObject returns a pointer to a newly constructed object as in Create()
 // but the object is not added to the data stores.
 func GenerateObject(which string) Object {
+	// Bind the template
 	t := FindTemplate(which)
 	if t == nil {
 		return nil
 	}
-	UpdateContextValues()
 	// Create the object
 	ctor := GetConstructor(t.TypeName)
 	if ctor == nil {
@@ -120,7 +150,10 @@ func GenerateObject(which string) Object {
 		return nil
 	}
 	// Deserialize the object.
+	tm.pushContext()
+	tm.updateDynamicValues(tm.CurrentContext())
 	s.Deserialize(t, true)
+	tm.popContext()
 	// Recalculate stats
 	s.RecalculateStats()
 	return s

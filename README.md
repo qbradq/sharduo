@@ -31,7 +31,6 @@ including all features required to mine ore and smelt it into ingots.
 ### Known Defects ###
 * Weight seems to stay on cursor after drop to container reject on too much weight
 * Skin hues are off-by-one, fix it
-* Men wearing dresses sometimes, I think there may be a bug in the template or in IsFemale variable
 
 ### Required Features and Tasks ###
 * Remove range checking from packet handlers and let the event handlers do it
