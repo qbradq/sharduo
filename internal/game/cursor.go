@@ -17,14 +17,11 @@ const (
 
 // Cursor represents a mobile's cursor
 type Cursor struct {
-	// The current state of the cursor
-	State CursorState
-	// Item on the cursor
-	item Item
-	// Previous parent of the object on the cursor before we picked it up
-	previousParent Object
-	// Previous location of the object
-	previousLocation uo.Location
+	State            CursorState // The current state of the cursor
+	item             Item        // Item on the cursor
+	previousParent   Object      // Previous parent of the object on the cursor before we picked it up
+	previousLocation uo.Location // Previous location of the object
+	m                Mobile      // The mobile this cursor belongs to
 }
 
 // Occupied returns true if there is already an item on the cursor
@@ -32,6 +29,7 @@ func (c *Cursor) Occupied() bool { return c.item != nil }
 
 // PickUp attempts to pick up the object. Returns true if successful.
 func (c *Cursor) PickUp(o Object) bool {
+	world.Update(c.m)
 	if o == nil {
 		c.previousLocation = uo.Location{}
 		c.State = CursorStateNormal
@@ -55,6 +53,7 @@ func (c *Cursor) PickUp(o Object) bool {
 
 // Return send the item on the cursor back to it's previous parent.
 func (c *Cursor) Return() {
+	world.Update(c.m)
 	oldLocation := c.previousLocation
 	oldParent := c.previousParent
 	item := c.item

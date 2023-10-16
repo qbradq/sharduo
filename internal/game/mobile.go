@@ -327,7 +327,9 @@ func (m *BaseMobile) Marshal(s *marshal.TagFileSegment) {
 // Deserialize implements the util.Serializeable interface.
 func (m *BaseMobile) Deserialize(t *template.Template, create bool) {
 	m.skills = make([]int16, uo.SkillCount)
-	m.cursor = &Cursor{}
+	m.cursor = &Cursor{
+		m: m,
+	}
 	m.BaseObject.Deserialize(t, create)
 	m.viewRange = int16(t.GetNumber("ViewRange", int(uo.MaxViewRange)))
 	m.isPlayerCharacter = t.GetBool("IsPlayerCharacter", false)
@@ -355,7 +357,9 @@ func (m *BaseMobile) Deserialize(t *template.Template, create bool) {
 // Unmarshal implements the marshal.Unmarshaler interface.
 func (m *BaseMobile) Unmarshal(s *marshal.TagFileSegment) {
 	m.BaseObject.Unmarshal(s)
-	m.cursor = &Cursor{}
+	m.cursor = &Cursor{
+		m: m,
+	}
 	// Base stats
 	m.viewRange = uo.BoundViewRange(int16(s.Byte()))
 	m.isPlayerCharacter = s.Bool()

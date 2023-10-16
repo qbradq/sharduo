@@ -29,8 +29,7 @@ The next milestone set for ShardUO is to implement the Mining skill vertical
 including all features required to mine ore and smelt it into ingots.
 
 ### Known Defects ###
-* Weight seems to stay on cursor after drop to container reject on too much weight
-* Skin hues are off-by-one, fix it
+None currently. I should start using the issue tracker for this anyway.
 
 ### Required Features and Tasks ###
 * Remove range checking from packet handlers and let the event handlers do it

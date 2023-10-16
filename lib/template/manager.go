@@ -23,6 +23,7 @@ var tm *TemplateManager
 type TemplateManager struct {
 	ctxStack    []map[string]string                     // Stack of contexts used for creating new objects
 	nextCtx     int                                     // Index of the next context to be popped
+	defaultCtx  map[string]string                       // Default context used during save file loading
 	templates   *util.Registry[string, *Template]       // Registry of templates in the manager
 	pctp        *util.Registry[string, *txtmp.Template] // Registry of pre-compiled go templates
 	lists       *util.Registry[string, []string]        // Collection of lists used by the random object creation methods
@@ -37,6 +38,7 @@ func Initialize(templatePath, listPath, variablesFilePath string, rng uo.RandomS
 	// Initialize the manager
 	tm = &TemplateManager{
 		ctxStack:    make([]map[string]string, MaxRecursion),
+		defaultCtx:  make(map[string]string),
 		templates:   util.NewRegistry[string, *Template]("templates"),
 		pctp:        util.NewRegistry[string, *txtmp.Template]("template-pre-cache"),
 		lists:       util.NewRegistry[string, []string]("template-lists"),
@@ -73,6 +75,7 @@ func Initialize(templatePath, listPath, variablesFilePath string, rng uo.RandomS
 		return []error{errors.New("failed to read template variables list")}
 	}
 	tfo.Map(func(name, value string) error {
+		tm.defaultCtx[name] = value
 		for i := range tm.ctxStack {
 			tm.ctxStack[i][name] = value
 		}
@@ -114,7 +117,7 @@ func (m *TemplateManager) popContext() {
 // panics if the context stack is empty.
 func (m *TemplateManager) CurrentContext() map[string]string {
 	if m.nextCtx == 0 {
-		panic("template manager context stack underflow")
+		return m.defaultCtx
 	}
 	return m.ctxStack[m.nextCtx-1]
 }
