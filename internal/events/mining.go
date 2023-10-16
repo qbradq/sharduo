@@ -52,77 +52,78 @@ func startMiningLoop(miner game.Mobile, tool game.Weapon, p *clientpacket.Target
 	game.NewTimer(12, "ContinueMining", tool, miner, true, p)
 }
 
-func BeginMining(receiver, source game.Object, v any) {
+func BeginMining(receiver, source game.Object, v any) bool {
 	if receiver == nil || source == nil {
-		return
+		return false
 	}
 	miner, ok := source.(game.Mobile)
 	if !ok || miner.NetState() == nil {
-		return
+		return false
 	}
 	tool, ok := receiver.(game.Weapon)
 	if !ok {
-		return
+		return false
 	}
 	// Sanity checks
 	if miner.NetState() == nil {
-		return
+		return false
 	}
 	if !miner.NetState().TakeAction() {
 		miner.NetState().Cliloc(nil, 500119) // You must wait to perform another action.
-		return
+		return false
 	}
 	if !miner.IsEquipped(tool) {
 		miner.NetState().Cliloc(nil, 1149764) // You must have that equipped to use it.
-		return
+		return false
 	}
 	if miner.IsMounted() {
 		miner.NetState().Cliloc(nil, 501864) // You can't dig while riding or flying.
-		return
+		return false
 	}
 	if _, found := regMiners[miner.Serial()]; found {
 		miner.NetState().Speech(nil, "You are already mining.")
-		return
+		return false
 	}
 	// Targeting
 	miner.NetState().TargetSendCursor(uo.TargetTypeLocation, func(p *clientpacket.TargetResponse) {
 		startMiningLoop(miner, tool, p)
 	})
+	return true
 }
 
-func ContinueMining(receiver, source game.Object, v any) {
+func ContinueMining(receiver, source game.Object, v any) bool {
 	if receiver == nil || source == nil {
-		return
+		return false
 	}
 	p := v.(*clientpacket.TargetResponse)
 	miner, ok := source.(game.Mobile)
 	if !ok {
-		return
+		return false
 	}
 	if miner.NetState() == nil {
 		delete(regMiners, miner.Serial())
-		return
+		return false
 	}
 	tool, ok := receiver.(game.Weapon)
 	if !ok {
 		delete(regMiners, miner.Serial())
-		return
+		return false
 	}
 	// Sanity checks
 	if !miner.IsEquipped(tool) {
 		miner.NetState().Cliloc(nil, 1149764) // You must have that equipped to use it.
 		delete(regMiners, miner.Serial())
-		return
+		return false
 	}
 	if miner.IsMounted() {
 		miner.NetState().Cliloc(nil, 501864) // You can't dig while riding or flying.
 		delete(regMiners, miner.Serial())
-		return
+		return false
 	}
 	if miner.Location().XYDistance(p.Location) > 2 {
 		miner.NetState().Cliloc(nil, 500251) // That location is too far away.
 		delete(regMiners, miner.Serial())
-		return
+		return false
 	}
 	// Play the hit sound
 	s := uo.Sound(0x125)
@@ -133,46 +134,47 @@ func ContinueMining(receiver, source game.Object, v any) {
 	// Queue up the last hit
 	game.GetWorld().Map().PlayAnimation(miner, uo.AnimationTypeAttack, tool.AnimationAction())
 	game.NewTimer(12, "FinishMining", receiver, source, true, p)
+	return true
 }
 
-func FinishMining(receiver, source game.Object, v any) {
+func FinishMining(receiver, source game.Object, v any) bool {
 	if receiver == nil || source == nil {
-		return
+		return false
 	}
 	p := v.(*clientpacket.TargetResponse)
 	miner, ok := source.(game.Mobile)
 	if !ok {
-		return
+		return false
 	}
 	if miner.NetState() == nil {
 		delete(regMiners, miner.Serial())
-		return
+		return false
 	}
 	tool, ok := receiver.(game.Weapon)
 	if !ok {
 		delete(regMiners, miner.Serial())
-		return
+		return false
 	}
 	// Sanity checks
 	if !miner.IsEquipped(tool) {
 		miner.NetState().Cliloc(nil, 1149764) // You must have that equipped to use it.
 		delete(regMiners, miner.Serial())
-		return
+		return false
 	}
 	if miner.IsMounted() {
 		miner.NetState().Cliloc(nil, 501864) // You can't dig while riding or flying.
 		delete(regMiners, miner.Serial())
-		return
+		return false
 	}
 	if miner.Location().XYDistance(p.Location) > 2 {
 		miner.NetState().Cliloc(nil, 500251) // That location is too far away.
 		delete(regMiners, miner.Serial())
-		return
+		return false
 	}
 	if !game.GetWorld().Map().HasOre(p.Location) {
 		miner.NetState().Cliloc(nil, 503040) // There is no metal here to mine.
 		delete(regMiners, miner.Serial())
-		return
+		return false
 	}
 	// Play the hit sound
 	s := uo.Sound(0x125)
@@ -185,7 +187,7 @@ func FinishMining(receiver, source game.Object, v any) {
 		ore := template.Create[game.Item]("IronOre")
 		if ore == nil {
 			// Something very wrong
-			return
+			return false
 		}
 		ore.SetAmount(game.GetWorld().Map().ConsumeOre(p.Location, 2))
 		if !miner.DropToBackpack(ore, false) {
@@ -205,40 +207,41 @@ func FinishMining(receiver, source game.Object, v any) {
 	} else {
 		delete(regMiners, miner.Serial())
 	}
+	return true
 }
 
-func SmeltOre(receiver, source game.Object, v any) {
+func SmeltOre(receiver, source game.Object, v any) bool {
 	smelter, ok := source.(game.Mobile)
 	if !ok || smelter.NetState() == nil {
 		// Something is very wrong
-		return
+		return false
 	}
 	// The only scenario in which we would reject the request is if the ore
 	// belongs to a mobile other than the smelter.
 	root := game.RootParent(receiver)
 	if root.Serial().IsMobile() && root.Serial() != smelter.Serial() {
 		smelter.NetState().Cliloc(nil, 500685) // You can't use that, it belongs to someone else.
-		return
+		return false
 	}
 	if !game.GetWorld().Map().Query(source.Location(), 3, forgeItemSet) {
 		smelter.NetState().Cliloc(nil, 500420) // You are not near a forge.
-		return
+		return false
 	}
 	ore, ok := receiver.(game.Item)
 	if !ok {
 		// Something is very wrong
-		return
+		return false
 	}
 	if !smelter.SkillCheck(uo.SkillMining, 0, 750) {
 		// Skill check failed, burn some ore
-		smelter.NetState().Cliloc(nil, 501989)
+		smelter.NetState().Cliloc(nil, 501989) // You burn away the impurities but are left with no useable metal.
 		ore.Consume(1)
-		return
+		return true
 	}
 	ingot := template.Create[game.Item]("IronIngot")
 	if ingot == nil {
 		// Something very bad
-		return
+		return false
 	}
 	ingot.SetAmount(ore.Amount() * 2)
 	game.Remove(ore)
@@ -246,6 +249,7 @@ func SmeltOre(receiver, source game.Object, v any) {
 		smelter.DropToFeet(ingot)
 	}
 	smelter.NetState().Cliloc(nil, 501988)
+	return true
 }
 
 var forgeItemSet = map[uo.Graphic]struct{}{

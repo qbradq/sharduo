@@ -7,7 +7,7 @@ import (
 )
 
 // EventHandler is the function signature of event handlers
-type EventHandler func(Object, Object, any)
+type EventHandler func(Object, Object, any) bool
 
 var eventHandlerGetter func(string) *EventHandler
 var eventIndexGetter func(string) uint16
@@ -31,23 +31,25 @@ func RootParent(o Object) Object {
 // DynamicDispatch attempts to execute the named dynamic dispatch function on
 // the given object with the receiver. The receiver may not be nil, but the
 // source can.
-func DynamicDispatch(which string, receiver, source Object, v any) {
+func DynamicDispatch(which string, receiver, source Object, v any) bool {
 	if receiver == nil {
-		return
+		return true
 	}
 	fn := receiver.GetEventHandler(which)
-	if fn != nil {
-		(*fn)(receiver, source, v)
+	if fn == nil {
+		return true
 	}
+	return (*fn)(receiver, source, v)
 }
 
 // ExecuteEventHandler executes the named event handler with the given receiver
 // and source. Both the receiver and source can be nil.
-func ExecuteEventHandler(which string, receiver, source Object, v any) {
+func ExecuteEventHandler(which string, receiver, source Object, v any) bool {
 	fn := eventHandlerGetter(which)
-	if fn != nil {
-		(*fn)(receiver, source, v)
+	if fn == nil {
+		return true
 	}
+	return (*fn)(receiver, source, v)
 }
 
 // BuildContextMenu builds the context menu for the given object.

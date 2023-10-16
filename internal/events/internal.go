@@ -11,30 +11,32 @@ func init() {
 }
 
 // WhisperTime whispers the current Sossarian time to the source.
-func WhisperTime(receiver, source game.Object, v any) {
+func WhisperTime(receiver, source game.Object, v any) bool {
 	if source == nil {
-		return
+		return false
 	}
 	m, ok := source.(game.Mobile)
 	if !ok {
-		return
+		return false
 	}
 	if m.NetState() == nil {
-		return
+		return false
 	}
 	m.NetState().Speech(source, "%d", game.GetWorld().Time())
+	return true
 }
 
 // PlayerLogout logs out the player mobile receiver.
-func PlayerLogout(receiver, source game.Object, v any) {
+func PlayerLogout(receiver, source game.Object, v any) bool {
 	if receiver == nil {
-		return
+		return false
 	}
 	rm, ok := receiver.(game.Mobile)
 	if !ok || rm.NetState() != nil {
-		return
+		return false
 	}
 	game.GetWorld().Map().SetNewParent(receiver, game.TheVoid)
 	game.GetWorld().Map().PlayEffect(uo.GFXTypeFixed, receiver, receiver, 0x3728,
 		15, 10, true, false, uo.HueDefault, uo.GFXBlendModeNormal)
+	return true
 }

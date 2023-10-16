@@ -89,7 +89,6 @@ func (r *CharacterLoginRequest) Execute() error {
 	r.NetState.account.SetPlayer(player.Serial())
 	r.NetState.m.SetNetState(r.NetState)
 	Broadcast("Welcome %s to Trammel Time!", r.NetState.m.DisplayName())
-
 	// Send the EnterWorld packet
 	facing := r.NetState.m.Facing()
 	if r.NetState.m.IsRunning() {
@@ -111,10 +110,7 @@ func (r *CharacterLoginRequest) Execute() error {
 	})
 	world.Map().SendEverything(r.NetState.m)
 	r.NetState.SendObject(r.NetState.m)
-
-	// TODO Send welcome GUMP
 	r.NetState.GUMP(gumps.New("welcome"), r.NetState.m, nil)
-
 	return nil
 }
 

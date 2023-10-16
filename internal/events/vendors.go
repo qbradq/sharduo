@@ -12,35 +12,38 @@ func init() {
 }
 
 // VendorBuy opens the vendor buy screen for a vendor.
-func VendorBuy(receiver, source game.Object, v any) {
+func VendorBuy(receiver, source game.Object, v any) bool {
 	if source == nil || receiver == nil {
-		return
+		return false
 	}
 	sm, ok := source.(game.Mobile)
 	if !ok || sm.NetState() == nil {
-		return
+		return false
 	}
 	rm, ok := receiver.(game.Mobile)
 	if !ok {
-		return
+		return false
+	}
+	if game.RootParent(sm).Location().XYDistance(rm.Location()) > uo.MaxViewRange {
+		return false
 	}
 	w := rm.EquipmentInSlot(uo.LayerNPCBuyRestockContainer)
 	if w == nil {
 		// Mobile is not a vendor
-		return
+		return false
 	}
 	fsc, ok := w.(game.Container)
 	if !ok {
-		return
+		return false
 	}
 	w = rm.EquipmentInSlot(uo.LayerNPCBuyNoRestockContainer)
 	if w == nil {
 		// Mobile is not a vendor
-		return
+		return false
 	}
 	bc, ok := w.(game.Container)
 	if !ok {
-		return
+		return false
 	}
 	items := make([]serverpacket.ContentsItem, 0, len(fsc.Contents()))
 	for _, item := range fsc.Contents() {
@@ -64,10 +67,11 @@ func VendorBuy(receiver, source game.Object, v any) {
 		BoughtItems:  nil,
 	}
 	sm.NetState().Send(p)
+	return true
 }
 
 // VendorSell opens the vendor sell screen for a vendor.
-func VendorSell(receiver, source game.Object, v any) {
+func VendorSell(receiver, source game.Object, v any) bool {
 	var items []serverpacket.ContentsItem
 	var fn func(c game.Container)
 	fn = func(c game.Container) {
@@ -94,28 +98,29 @@ func VendorSell(receiver, source game.Object, v any) {
 	}
 	sm, ok := source.(game.Mobile)
 	if !ok {
-		return
+		return false
 	}
 	if sm.NetState() == nil {
-		return
+		return false
 	}
 	rm, ok := receiver.(game.Mobile)
 	if !ok {
-		return
+		return false
 	}
 	w := sm.EquipmentInSlot(uo.LayerBackpack)
 	bp, ok := w.(game.Container)
 	if !ok {
-		return
+		return false
 	}
 	items = make([]serverpacket.ContentsItem, 0, bp.ItemCount())
 	fn(bp)
 	if len(items) == 0 {
 		game.GetWorld().Map().SendCliloc(rm, uo.SpeechNormalRange, 1080012) // You have nothing I would be interested in.
-		return
+		return false
 	}
 	sm.NetState().Send(&serverpacket.SellWindow{
 		Vendor: rm.Serial(),
 		Items:  items,
 	})
+	return true
 }

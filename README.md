@@ -32,23 +32,26 @@ including all features required to mine ore and smelt it into ingots.
 None currently. I should start using the issue tracker for this anyway.
 
 ### Required Features and Tasks ###
-* Remove range checking from packet handlers and let the event handlers do it
-
-### Nice to Haves ###
-* Feedback GUMP
-* Help GUMP
-* Bank gold support
-* Checks
+* Refactor the DropTo method into an event
 * Stable Master NPC
 * Stable functionality
 * Claim functionality
 * Claim list GUMP
 * Walk Random AI
 * Follow Master AI
+* Stay AI
+* AI voice commands
+* Item durability
+* Teleport locations around alpha area
+* Line of sight checks
+* Access checks
+
+### Nice to Haves ###
+* Feedback GUMP
+* Help GUMP
 * Miner NPC
 * Miner Guildmaster NPC
 * Miner's Guild
-* Item durability
 * Regions
 * Region spawning
 * Passive fauna
@@ -56,8 +59,6 @@ None currently. I should start using the issue tracker for this anyway.
 * Agricultural crops
 * Decoration GUMP
 * Start decorating
-* Line of sight checks
-* Teleport locations around alpha area
 
 ### Nerdy Things I Might Do for Fun ###
 * Player movement packet throttling
@@ -97,6 +98,9 @@ things work with ShardUO.
 ## Feature Packages ##
 Below are feature verticals that I want to implement next in priority order.
 
+* Banking
+  * Checks
+  * Pay vendors from gold in bank
 * Blacksmithing
   * Crafting GUMP
   * Crafting system

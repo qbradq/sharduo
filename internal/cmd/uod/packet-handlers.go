@@ -158,12 +158,6 @@ func handleDoubleClickRequest(n *NetState, cp clientpacket.Packet) {
 	if !n.m.CanAccess(o) {
 		return
 	}
-	// Range check
-	targetLocation := game.RootParent(o).Location()
-	if n.m.Location().XYDistance(targetLocation) > uo.MaxUseRange {
-		return
-	}
-	// TODO Line of sight check
 	game.DynamicDispatch("DoubleClick", o, n.m, nil)
 }
 

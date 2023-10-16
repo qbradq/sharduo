@@ -25,135 +25,157 @@ func init() {
 
 // PlayerDoubleClick selects between the open paper doll and dismount actions
 // based on the identity of the source.
-func PlayerDoubleClick(receiver, source game.Object, v any) {
+func PlayerDoubleClick(receiver, source game.Object, v any) bool {
 	rm, ok := receiver.(game.Mobile)
 	if !ok {
-		return
+		return false
 	}
 	sm, ok := source.(game.Mobile)
 	if !ok {
-		return
+		return false
 	}
 	if receiver.Serial() != source.Serial() {
 		// Someone is trying to open our paper doll, just send it
-		if sm.NetState() == nil {
-			return
+		if sm.NetState() != nil {
+			sm.NetState().OpenPaperDoll(rm)
 		}
-		sm.NetState().OpenPaperDoll(rm)
-		return
+		return true
 	}
 	if rm.IsMounted() {
 		rm.Dismount()
 	} else {
 		sm.NetState().OpenPaperDoll(rm)
 	}
+	return true
 }
 
 // OpenPaperDoll opens the paper doll of the receiver mobile to the source.
-func OpenPaperDoll(receiver, source game.Object, v any) {
+func OpenPaperDoll(receiver, source game.Object, v any) bool {
 	rm, ok := receiver.(game.Mobile)
 	if !ok {
-		return
+		return false
 	}
 	sm, ok := source.(game.Mobile)
 	if !ok {
-		return
+		return false
 	}
-	if sm.NetState() == nil {
-		return
+	if sm.NetState() != nil {
+		sm.NetState().OpenPaperDoll(rm)
 	}
-	sm.NetState().OpenPaperDoll(rm)
+	return true
 }
 
 // OpenContainer opens this container for the mobile. As an additional
 // restriction it checks the Z distance against the uo.ContainerOpen* limits.
-func OpenContainer(receiver, source game.Object, v any) {
+func OpenContainer(receiver, source game.Object, v any) bool {
 	rc, ok := receiver.(game.Container)
 	if !ok {
-		return
+		return false
 	}
 	sm, ok := source.(game.Mobile)
 	if !ok || sm.NetState() == nil {
-		return
+		return false
 	}
 	rl := game.RootParent(receiver).Location()
 	sl := game.RootParent(source).Location()
 	dz := rl.Z - sl.Z
+	if game.RootParent(sm).Location().XYDistance(rc.Location()) > uo.MaxUseRange {
+		sm.NetState().Cliloc(nil, 500312) // You cannot reach that.
+		return false
+	}
 	if dz < uo.ContainerOpenLowerLimit || dz > uo.ContainerOpenUpperLimit {
-		sm.NetState().Cliloc(nil, 500312)
-		return
+		sm.NetState().Cliloc(nil, 500312) // You cannot reach that.
+		return false
 	}
 	rc.Open(sm)
+	return true
 }
 
 // Mount attempts to mount the source mobile onto the receiver.
-func Mount(receiver, source game.Object, v any) {
+func Mount(receiver, source game.Object, v any) bool {
 	rm, ok := receiver.(game.Mobile)
 	if !ok {
-		return
+		return false
 	}
 	sm, ok := source.(game.Mobile)
 	if !ok {
-		return
+		return false
 	}
+	// Range check
+	if game.RootParent(sm).Location().XYDistance(rm.Location()) > uo.MaxUseRange {
+		sm.NetState().Cliloc(nil, 502803) // It's too far away.
+		return false
+	}
+	// TODO Line of sight check
 	// TODO ownership
 	sm.Mount(rm)
+	return true
 }
 
 // OpenBackpack attempts to open the backpack of the receiver as in snooping or
 // pack animals.
-func OpenBackpack(receiver, source game.Object, v any) {
+func OpenBackpack(receiver, source game.Object, v any) bool {
 	sm, ok := source.(game.Mobile)
 	if !ok {
-		return
+		return false
 	}
 	if sm.NetState() == nil {
-		return
+		return false
 	}
 	rm, ok := receiver.(game.Mobile)
 	if !ok {
-		return
+		return false
 	}
+	// Range check
+	if game.RootParent(sm).Location().XYDistance(rm.Location()) > uo.MaxUseRange {
+		sm.NetState().Cliloc(nil, 502803) // It's too far away.
+		return false
+	}
+	// TODO Line of sight check
 	bpo := rm.EquipmentInSlot(uo.LayerBackpack)
 	if bpo == nil {
-		return
+		// Something very wrong
+		return false
 	}
 	bp, ok := bpo.(game.Container)
 	if !ok {
-		return
+		// Something very wrong
+		return false
 	}
 	bp.Open(sm)
+	return true
 }
 
 // OpenBankBox attempts to open the bank box of the source.
-func OpenBankBox(receiver, source game.Object, v any) {
+func OpenBankBox(receiver, source game.Object, v any) bool {
 	m, ok := source.(game.Mobile)
 	if !ok {
-		return
+		return false
 	}
 	if m.NetState() == nil {
-		return
+		return false
 	}
 	bbo := m.EquipmentInSlot(uo.LayerBankBox)
 	if bbo == nil {
-		return
+		return false
 	}
 	bb, ok := bbo.(game.Container)
 	if !ok {
-		return
+		return false
 	}
 	bb.Open(m)
 	game.GetWorld().Map().SendCliloc(receiver, uo.SpeechNormalRange, 1080021,
 		strconv.Itoa(bb.ItemCount()), strconv.Itoa(int(bb.Weight()))) // Bank container has ~1_VAL~ items, ~2_VAL~ stones
+	return true
 }
 
-func TransferHue(receiver, source game.Object, v any) {
+func TransferHue(receiver, source game.Object, v any) bool {
 	if receiver == nil || source == nil {
-		return
+		return false
 	}
 	sm, ok := source.(game.Mobile)
 	if !ok || sm.NetState() == nil {
-		return
+		return false
 	}
 	sm.NetState().Speech(source, "Target object to set hue %d", receiver.Hue())
 	sm.NetState().TargetSendCursor(uo.TargetTypeObject, func(tr *clientpacket.TargetResponse) {
@@ -164,26 +186,29 @@ func TransferHue(receiver, source game.Object, v any) {
 		o.SetHue(receiver.Hue())
 		game.GetWorld().Update(o)
 	})
+	return true
 }
 
-func Edit(receiver, source game.Object, v any) {
+func Edit(receiver, source game.Object, v any) bool {
 	sm, ok := source.(game.Mobile)
 	if !ok {
-		return
+		return false
 	}
 	gumps.Edit(sm, receiver)
+	return true
 }
 
-func OpenTeleportGUMP(receiver, source game.Object, v any) {
+func OpenTeleportGUMP(receiver, source game.Object, v any) bool {
 	if source == nil {
-		return
+		return false
 	}
 	sm, ok := source.(game.Mobile)
 	if !ok {
-		return
+		return false
 	}
 	if sm.NetState() == nil {
-		return
+		return false
 	}
 	sm.NetState().GUMP(gumps.New("teleport"), source, nil)
+	return true
 }

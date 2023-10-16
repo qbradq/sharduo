@@ -427,7 +427,6 @@ func (n *NetState) updateMobile(mobile game.Mobile) {
 		return
 	}
 	if n.m.Serial() == mobile.Serial() {
-		// TODO try to detect when just sending the hp/mp/sp deltas would be sufficient
 		// Full status update for the player
 		n.Send(&serverpacket.StatusBarInfo{
 			Mobile:         mobile.Serial(),

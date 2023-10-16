@@ -6,7 +6,7 @@ import (
 )
 
 // EventHandler is the function signature of event handlers
-type EventHandler func(game.Object, game.Object, any)
+type EventHandler func(game.Object, game.Object, any) bool
 
 // Event handler registrar
 var evreg *util.Registry[string, *EventHandler] = util.NewRegistry[string, *EventHandler]("events")
