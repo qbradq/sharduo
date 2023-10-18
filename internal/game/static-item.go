@@ -141,7 +141,6 @@ func (i *StaticItem) AddObject(o Object) bool                                   
 func (i *StaticItem) ForceAddObject(o Object)                                   {}
 func (i *StaticItem) InsertObject(o any)                                        {}
 func (i *StaticItem) ForceRemoveObject(o Object)                                {}
-func (i *StaticItem) DropObject(o Object, l uo.Location, m Mobile) bool         { return false }
 func (i *StaticItem) Location() uo.Location                                     { return i.location }
 func (i *StaticItem) SetLocation(l uo.Location)                                 { i.location = l }
 func (i *StaticItem) Hue() uo.Hue                                               { return i.hue }

@@ -113,11 +113,6 @@ type Object interface {
 	// This is used for recalculating dynamic values that require spatial
 	// awareness, such as the surface a mobile is standing on.
 	AfterUnmarshalOntoMap()
-	// DropObject is called when another object is dropped onto / into this
-	// object by a mobile. A nil mobile usually means a script is generating
-	// items directly into a container. This returns false if the drop action
-	// is rejected for any reason.
-	DropObject(Object, uo.Location, Mobile) bool
 	// AppendTemplateContextMenuEntry is used to add a context menu entry to the
 	// list of context menu entries from the template's Events line.
 	AppendTemplateContextMenuEntry(string, uo.Cliloc)
@@ -266,7 +261,7 @@ func (o *BaseObject) Marshal(s *marshal.TagFileSegment) {
 
 // Deserialize implements the util.Serializeable interface.
 func (o *BaseObject) Deserialize(t *template.Template, create bool) {
-	o.templateName = t.GetString("TemplateName", "")
+	o.templateName = t.TemplateName
 	if o.templateName == "" {
 		// Something is very wrong
 		log.Printf("warning: object %s has no TemplateName property", o.Serial().String())
@@ -414,12 +409,6 @@ func (o *BaseObject) ForceRemoveObject(obj Object) {
 // AfterUnmarshalOntoMap implements the Object interface.
 func (o *BaseObject) AfterUnmarshalOntoMap() {}
 
-// DropObject implements the Object interface
-func (o *BaseObject) DropObject(obj Object, l uo.Location, from Mobile) bool {
-	// This makes no sense for a base object
-	return false
-}
-
 // AppendTemplateContextMenuEntry implements the Object interface
 func (o *BaseObject) AppendTemplateContextMenuEntry(event string, cl uo.Cliloc) {
 	o.templateContextMenuEntries = append(o.templateContextMenuEntries, ContextMenuEntry{
@@ -524,8 +513,15 @@ func (o *BaseObject) GetEventHandler(which string) *EventHandler {
 	if o.eventHandlers == nil {
 		return nil
 	}
-	eventHandler := o.eventHandlers[which]
-	return eventHandlerGetter(eventHandler)
+	eventHandler, found := o.eventHandlers[which]
+	if !found {
+		return nil
+	}
+	h := eventHandlerGetter(eventHandler)
+	if h == nil {
+		log.Printf("reference to unregistered event handler \"%s\"", eventHandler)
+	}
+	return h
 }
 
 // Visibility implements the Object interface.

@@ -169,16 +169,6 @@ func (c *BaseContainer) Open(m Mobile) {
 	observer.ContainerOpen(c)
 }
 
-// DropObject implements the Object interface.
-func (c *BaseContainer) DropObject(o Object, l uo.Location, from Mobile) bool {
-	// TODO Access calculations
-	if item, ok := o.(Item); ok {
-		item.SetDropLocation(l)
-		return world.Map().SetNewParent(o, c)
-	}
-	return false
-}
-
 // StopAllObservers forces all observers of this container to stop observing it.
 func (c *BaseContainer) StopAllObservers() {
 	for o := range c.observers {

@@ -347,16 +347,10 @@ func (i *BaseItem) CanCombineWith(item Item) bool {
 	if i.templateName != item.TemplateName() {
 		return false
 	}
-	return true
-}
-
-// DropObject implements the Object interface.
-func (i *BaseItem) DropObject(obj Object, l uo.Location, from Mobile) bool {
-	item, ok := obj.(Item)
-	if !ok {
+	if i.amount+item.Amount() > int(uo.MaxStackAmount) {
 		return false
 	}
-	return i.Combine(item)
+	return true
 }
 
 // Height implements the Item interface.

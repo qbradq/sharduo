@@ -33,11 +33,11 @@ func RootParent(o Object) Object {
 // source can.
 func DynamicDispatch(which string, receiver, source Object, v any) bool {
 	if receiver == nil {
-		return true
+		return false
 	}
 	fn := receiver.GetEventHandler(which)
 	if fn == nil {
-		return true
+		return false
 	}
 	return (*fn)(receiver, source, v)
 }

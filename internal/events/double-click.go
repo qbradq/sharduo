@@ -79,7 +79,7 @@ func OpenContainer(receiver, source game.Object, v any) bool {
 	rl := game.RootParent(receiver).Location()
 	sl := game.RootParent(source).Location()
 	dz := rl.Z - sl.Z
-	if game.RootParent(sm).Location().XYDistance(rc.Location()) > uo.MaxUseRange {
+	if game.RootParent(rc).Location().XYDistance(sm.Location()) > uo.MaxUseRange {
 		sm.NetState().Cliloc(nil, 500312) // You cannot reach that.
 		return false
 	}

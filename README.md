@@ -26,14 +26,14 @@ A huge thank you goes out to the following groups, in no particular order.
 
 ## Next Milestone - Mining Vertical ##
 The next milestone set for ShardUO is to implement the Mining skill vertical
-including all features required to mine ore and smelt it into ingots.
+including all features required to mine ore and smelt it into ingots. Many other
+basic supporting features are also slated before the first alpha including
+vendors, mounts, pack animals, and banking.
 
 ### Known Defects ###
 None currently. I should start using the issue tracker for this anyway.
 
 ### Required Features and Tasks ###
-* Refactor the DropTo method into an event
-* Stable Master NPC
 * Stable functionality
 * Claim functionality
 * Claim list GUMP
@@ -98,9 +98,10 @@ things work with ShardUO.
 ## Feature Packages ##
 Below are feature verticals that I want to implement next in priority order.
 
-* Banking
+* Banking and Trade
   * Checks
   * Pay vendors from gold in bank
+  * Secure trade
 * Blacksmithing
   * Crafting GUMP
   * Crafting system

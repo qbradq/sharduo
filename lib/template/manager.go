@@ -212,7 +212,7 @@ func (m *TemplateManager) loadTemplateFile(filePath string, d []byte) []error {
 			errs = append(errs, tfr.Errors()...)
 			break
 		}
-		t, terrs := New(tfo, m)
+		t, terrs := NewTemplate(tfo, m)
 		if len(terrs) > 0 {
 			errs = append(errs, terrs...)
 		} else {
@@ -231,6 +231,7 @@ func (m *TemplateManager) resolveTemplate(t *Template) error {
 
 	// This is a primary template, nothing to resolve
 	if t.BaseTemplate == "" {
+		t.compileExpressions()
 		t.IsResolved = true
 		return nil
 	}
@@ -247,12 +248,21 @@ func (m *TemplateManager) resolveTemplate(t *Template) error {
 	}
 
 	// Integrate the base template's properties into our own
-	for k, v := range base.properties {
-		// If we are not overriding the value from the base, use the base value
+	for k, e := range base.properties {
 		if _, found := t.properties[k]; !found {
-			t.properties[k] = v
+			// If we are not overriding the expression from the base we just use
+			// the base expression
+			t.properties[k] = e
+		} else {
+			// We are overriding the base expression in some way, handle that
+			ne := t.properties[k]
+			if len(ne.text) > 1 && ne.text[0] == '+' {
+				// This is a list addition to the base expression
+				ne.text = e.text + "," + ne.text[1:]
+			} // Else this is a normal override
 		}
 	}
+	t.compileExpressions()
 	t.IsResolved = true
 
 	return nil

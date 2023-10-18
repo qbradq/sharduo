@@ -254,18 +254,9 @@ func handleDropRequest(n *NetState, cp clientpacket.Packet) {
 			n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		}
 		newLocation := game.RootParent(target).Location()
-		if n.m.Location().XYDistance(newLocation) > uo.MaxDropRange {
-			n.m.DropItemInCursor()
-			n.DropReject(uo.MoveItemRejectReasonOutOfRange)
-			return
-		}
-		if !n.m.CanAccess(target) {
-			n.m.DropItemInCursor()
-			n.DropReject(uo.MoveItemRejectReasonOutOfRange)
-			return
-		}
-		// TODO Line of sight check
-		if !target.DropObject(item, p.Location, n.m) {
+		item.SetDropLocation(p.Location)
+		item.SetLocation(newLocation)
+		if !game.DynamicDispatch("Drop", target, n.m, item) {
 			n.m.PickUp(nil)
 			n.DropReject(uo.MoveItemRejectReasonUnspecified)
 			return

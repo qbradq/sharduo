@@ -1,12 +1,10 @@
 package template
 
 import (
-	"bytes"
 	"fmt"
 	"log"
 	"strconv"
 	"strings"
-	"text/template"
 
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
@@ -45,20 +43,20 @@ type Object interface {
 
 // Template contains all of the property lines of the template.
 type Template struct {
-	TypeName     string         // Name of the object constructor used to create the object.
-	TemplateName string         // Unique name of the template.
-	BaseTemplate string         // Name of the base template. The empty string means a root template.
-	IsResolved   bool           // True if the template's inheritance chain has already been satisfied.
-	properties   map[string]any // List of all properties
+	TypeName     string                 // Name of the object constructor used to create the object.
+	TemplateName string                 // Unique name of the template.
+	BaseTemplate string                 // Name of the base template. The empty string means a root template.
+	IsResolved   bool                   // True if the template's inheritance chain has already been satisfied.
+	properties   map[string]*expression // List of all property expressions
 }
 
-// New creates a new template.T object from the provided TagFileObject. The
-// inheritance chain has not been resolved for this object, but all text
-// templates have been pre-compiled and are ready to run.
-func New(tfo *util.TagFileObject, tm *TemplateManager) (*Template, []error) {
+// NewTemplate creates a new template.T object from the provided TagFileObject. The
+// inheritance chain has not been resolved for this object and the text template
+// has not been created or compiled.
+func NewTemplate(tfo *util.TagFileObject, tm *TemplateManager) (*Template, []error) {
 	t := &Template{
 		TypeName:   tfo.TypeName(),
-		properties: make(map[string]any),
+		properties: make(map[string]*expression),
 	}
 	templateName := tfo.GetString("TemplateName", "")
 	if templateName == "" {
@@ -69,50 +67,40 @@ func New(tfo *util.TagFileObject, tm *TemplateManager) (*Template, []error) {
 			t.TemplateName = value
 		} else if name == "BaseTemplate" {
 			t.BaseTemplate = value
+		} else {
+			t.properties[name] = &expression{
+				text: value,
+			}
 		}
-		if !strings.Contains(value, "{{") {
-			t.properties[name] = value
-			return nil
-		}
-		if tm.pctp.Contains(value) {
-			return nil
-		}
-		tt := template.New(value)
-		tt = tt.Funcs(templateFuncMap)
-		tt, err := tt.Parse(value)
-		if err != nil {
-			return err
-		}
-		tm.pctp.Add(value, tt)
-		t.properties[name] = tt
 		return nil
 	})
 	return t, errs
+}
+
+// compileExpressions prepares every expression for execution and must be done
+// once before any values methods are called
+func (t *Template) compileExpressions() {
+	for _, e := range t.properties {
+		if err := e.compile(); err != nil {
+			log.Println(err)
+		}
+	}
 }
 
 // GetString returns the named property as a string or the default if not
 // found. This function panics if no context is on the stack. See PushContext
 // and PopContext.
 func (t *Template) GetString(name, def string) string {
-	p, ok := t.properties[name]
+	e, ok := t.properties[name]
 	if !ok {
 		return def
 	}
-	switch v := p.(type) {
-	case nil:
+	v, err := e.execute()
+	if err != nil {
+		log.Println(err)
 		return def
-	case string:
-		return v
-	case *template.Template:
-		buf := bytes.NewBuffer(nil)
-		if err := v.Execute(buf, tm.CurrentContext()); err != nil {
-			log.Println(err)
-			return def
-		}
-		return buf.String()
-	default:
-		panic("unhandled type in generateTagFileObject")
 	}
+	return v
 }
 
 // GetNumber returns the named property as a number or the default if not
