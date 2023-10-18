@@ -594,8 +594,7 @@ func commandSnapshotWeekly(n *NetState, args CommandArgs, cl string) {
 func commandSnapshotClean(n *NetState, args CommandArgs, cl string) {
 	t := time.Now().Add(time.Hour * 72 * -1)
 	filepath.WalkDir(configuration.SaveDirectory, func(p string, d fs.DirEntry, e error) error {
-		log.Println(p)
-		if d.IsDir() {
+		if d == nil || d.IsDir() {
 			return nil
 		}
 		di, err := d.Info()

@@ -161,13 +161,6 @@ func (w *World) Unmarshal() error {
 	}
 	// Map data
 	w.m.Unmarshal(tf.Segment(marshal.SegmentMap))
-	// Rebuild accounts dataset
-	s = tf.Segment(marshal.SegmentAccounts)
-	for i := uint32(0); i < s.RecordCount(); i++ {
-		a := &game.Account{}
-		a.Unmarshal(s)
-		w.accounts[a.Username()] = a
-	}
 	// Done
 	end = time.Now()
 	elapsed = end.Sub(start)

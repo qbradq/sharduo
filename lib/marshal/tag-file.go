@@ -224,6 +224,22 @@ func (s *TagFileSegment) PutShortSlice(v []int16) {
 	s.buf.Write(s.tbuf[:ofs])
 }
 
+// PutSerialSlice writes all of the values in the slice to the segment preceded
+// by the number of shorts (8-bit value).
+func (s *TagFileSegment) PutSerialSlice(v []uo.Serial) {
+	l := len(v)
+	if l > 255 {
+		panic("slice too big for PutShortSlice")
+	}
+	s.tbuf[0] = byte(l)
+	ofs := 1
+	for _, v := range v {
+		binary.LittleEndian.PutUint32(s.tbuf[ofs+0:ofs+4], uint32(v))
+		ofs += 4
+	}
+	s.buf.Write(s.tbuf[:ofs])
+}
+
 // PutLocation writes a location value to the segment as a tuple of
 // int16,int16,int8.
 func (s *TagFileSegment) PutLocation(l uo.Location) {
@@ -336,6 +352,21 @@ func (s *TagFileSegment) ShortSlice() []int16 {
 	for i := 0; i < count; i++ {
 		v := int16(binary.LittleEndian.Uint16(d[ofs+0 : ofs+2]))
 		ofs += 2
+		ret = append(ret, v)
+	}
+	s.buf.Next(ofs)
+	return ret
+}
+
+// SerialSlice returns the next []uo.Serial encoded into the segment.
+func (s *TagFileSegment) SerialSlice() []uo.Serial {
+	d := s.buf.Bytes()
+	var ret []uo.Serial
+	count := int(d[0])
+	ofs := 1
+	for i := 0; i < count; i++ {
+		v := uo.Serial(binary.LittleEndian.Uint32(d[ofs+0 : ofs+4]))
+		ofs += 4
 		ret = append(ret, v)
 	}
 	s.buf.Next(ofs)

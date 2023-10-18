@@ -13,6 +13,10 @@ func init() {
 	marshal.RegisterCtor(marshal.ObjectTypeAccount, func() interface{} { return &Account{} })
 }
 
+const (
+	MaxStabledPets int = 10 // Maximum number of pets to hold in the stables
+)
+
 // Role describes the roles that an account may have.
 type Role byte
 
@@ -42,6 +46,8 @@ type Account struct {
 	// Serial of the player's permanent mobile (not the currently controlled
 	// mobile)
 	player uo.Serial
+	// List of serials of the player's pets in stable
+	stabledPets []uo.Serial
 	// The roles this account has been assigned
 	roles Role
 }
@@ -68,6 +74,7 @@ func (a *Account) Marshal(s *marshal.TagFileSegment) {
 	s.PutString(a.passwordHash)
 	s.PutString(a.emailAddress)
 	s.PutByte(byte(a.roles))
+	s.PutSerialSlice(a.stabledPets)
 }
 
 // Deserialize does nothing
@@ -80,6 +87,7 @@ func (a *Account) Unmarshal(s *marshal.TagFileSegment) {
 	a.passwordHash = s.String()
 	a.emailAddress = s.String()
 	a.roles = Role(s.Byte())
+	a.stabledPets = s.SerialSlice()
 }
 
 // Username returns the username of the account
@@ -106,3 +114,37 @@ func (a *Account) EmailAddress() string { return a.emailAddress }
 
 // SetEmailAddress sets the email address for the account
 func (a *Account) SetEmailAddress(e string) { a.emailAddress = e }
+
+// AddStabledPet attempts to add a pet to the account's stable list, returning
+// an Error object describing why the action could not be performed on error
+func (a *Account) AddStabledPet(p Mobile) *Error {
+	if len(a.stabledPets) >= MaxStabledPets {
+		return &Error{
+			String: "You have too many animals in the stables already!",
+		}
+	}
+	a.stabledPets = append(a.stabledPets, p.Serial())
+	return nil
+}
+
+// RemoveStabledPet attempts to remove the given pet from the account's stable
+// list, returning true on success
+func (a *Account) RemoveStabledPet(p Mobile) bool {
+	idx := -1
+	ts := p.Serial()
+	for i, s := range a.stabledPets {
+		if s == ts {
+			idx = i
+			break
+		}
+	}
+	if idx < 0 {
+		return false
+	}
+	a.stabledPets = append(a.stabledPets[:idx], a.stabledPets[idx+1:]...)
+	return true
+}
+
+// StabledPets returns a slice of the serials of all of the pets in this
+// account's stable
+func (a *Account) StabledPets() []uo.Serial { return a.stabledPets }

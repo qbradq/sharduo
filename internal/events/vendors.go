@@ -2,6 +2,8 @@ package events
 
 import (
 	"github.com/qbradq/sharduo/internal/game"
+	"github.com/qbradq/sharduo/internal/gumps"
+	"github.com/qbradq/sharduo/lib/clientpacket"
 	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/uo"
 )
@@ -9,6 +11,8 @@ import (
 func init() {
 	reg("VendorBuy", VendorBuy)
 	reg("VendorSell", VendorSell)
+	reg("StablePet", StablePet)
+	reg("ClaimAllPets", ClaimAllPets)
 }
 
 // VendorBuy opens the vendor buy screen for a vendor.
@@ -122,5 +126,45 @@ func VendorSell(receiver, source game.Object, v any) bool {
 		Vendor: rm.Serial(),
 		Items:  items,
 	})
+	return true
+}
+
+// StablePet presents a targeting cursor for stabling a pet
+func StablePet(receiver, source game.Object, v any) bool {
+	sm, ok := source.(game.Mobile)
+	if !ok || sm.NetState() == nil {
+		return false
+	}
+	sm.NetState().TargetSendCursor(uo.TargetTypeObject, func(tr *clientpacket.TargetResponse) {
+		o := game.GetWorld().Find(tr.TargetObject)
+		pm, ok := o.(game.Mobile)
+		if !ok {
+			sm.NetState().Cliloc(receiver, 1048053) // You can't stable that!
+			return
+		}
+		if pm.IsPlayerCharacter() {
+			sm.NetState().Speech(receiver, "I believe there are inns in the area...")
+			return
+		}
+		// TODO Control master check
+		if err := sm.NetState().Account().AddStabledPet(pm); err != nil {
+			err.SendTo(sm.NetState(), receiver)
+		} else {
+			game.GetWorld().Map().SetNewParent(pm, game.TheVoid)
+		}
+	})
+	return true
+}
+
+// ClaimAllPets presents a GUMP for claiming pets
+func ClaimAllPets(receiver, source game.Object, v any) bool {
+	sm, ok := source.(game.Mobile)
+	if !ok || sm.NetState() == nil {
+		return false
+	}
+	if len(sm.NetState().Account().StabledPets()) == 0 {
+		return false
+	}
+	sm.NetState().GUMP(gumps.New("claim"), sm, nil)
 	return true
 }

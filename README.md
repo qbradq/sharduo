@@ -41,6 +41,8 @@ None currently. I should start using the issue tracker for this anyway.
 * Follow Master AI
 * Stay AI
 * AI voice commands
+* AI context menu commands
+* Rename pet functionality
 * Item durability
 * Teleport locations around alpha area
 * Line of sight checks
