@@ -146,7 +146,10 @@ func StablePet(receiver, source game.Object, v any) bool {
 			sm.NetState().Speech(receiver, "I believe there are inns in the area...")
 			return
 		}
-		// TODO Control master check
+		if pm.ControlMaster() == nil || pm.ControlMaster().Serial() != sm.Serial() {
+			sm.NetState().Cliloc(receiver, 1048053) // You can't stable that!
+			return
+		}
 		if err := sm.NetState().Account().AddStabledPet(pm); err != nil {
 			err.SendTo(sm.NetState(), receiver)
 		} else {

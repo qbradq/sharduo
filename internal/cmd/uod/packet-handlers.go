@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/qbradq/sharduo/internal/commands"
 	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/lib/clientpacket"
 	"github.com/qbradq/sharduo/lib/serverpacket"
@@ -61,7 +62,7 @@ func handleSpeech(n *NetState, cp clientpacket.Packet) {
 			if len(p.Text) > 1 {
 				cl = p.Text[1:]
 			}
-			ExecuteCommand(n, cl)
+			commands.Execute(n, cl)
 		} else {
 			// Normal speech request
 			world.Map().SendSpeech(n.m, uo.SpeechNormalRange, p.Text)
@@ -357,6 +358,7 @@ func handleBuyRequest(n *NetState, cp clientpacket.Packet) {
 				continue
 			}
 			m.SetLocation(n.m.Location())
+			m.SetControlMaster(n.m)
 			// TODO ownership
 			world.Map().AddObject(m)
 		} else {

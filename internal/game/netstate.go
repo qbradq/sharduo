@@ -41,6 +41,8 @@ type NetState interface {
 	// Effects and random stuff
 	//
 
+	// Animate
+	Animate(Mobile, uo.AnimationType, uo.AnimationAction)
 	// Send sends a custom packet to the client
 	Send(serverpacket.Packet) bool
 	// Sound sends a sound to the client from the specified location

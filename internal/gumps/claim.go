@@ -1,8 +1,6 @@
 package gumps
 
 import (
-	"log"
-
 	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/lib/clientpacket"
 	"github.com/qbradq/sharduo/lib/uo"
@@ -30,13 +28,7 @@ func (g *claim) Layout(target, param game.Object) {
 	sp := tm.NetState().Account().StabledPets()
 	g.Window(10, len(sp), "Claim Pets", 0)
 	g.Page(1)
-	for i, s := range sp {
-		pm := game.Find[game.Mobile](s)
-		if pm == nil {
-			log.Printf("error: account %s referenced stabled pet %s that does not exist",
-				tm.NetState().Account().Username(), s.String())
-			continue
-		}
+	for i, pm := range sp {
 		g.ReplyButton(0, i, 10, 1, uo.HueDefault, pm.DisplayName(), uint32(1001+i))
 	}
 }
@@ -51,14 +43,10 @@ func (g *claim) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 	if idx < 0 || idx >= len(sp) {
 		return
 	}
-	pm := game.Find[game.Mobile](sp[idx])
-	if pm == nil {
-		log.Printf("error: account %s referenced stabled pet %s that does not exist",
-			n.Account().Username(), sp[idx].String())
-		return
-	}
+	pm := sp[idx]
 	if n.Account().RemoveStabledPet(pm) {
 		pm.SetLocation(g.tm.Location())
+		pm.SetControlMaster(n.Mobile())
 		game.GetWorld().Map().ForceAddObject(pm)
 	}
 }

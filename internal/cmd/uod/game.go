@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/qbradq/sharduo/internal/configuration"
 	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/uo"
 )

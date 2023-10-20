@@ -34,9 +34,6 @@ vendors, mounts, pack animals, and banking.
 None currently. I should start using the issue tracker for this anyway.
 
 ### Required Features and Tasks ###
-* Stable functionality
-* Claim functionality
-* Claim list GUMP
 * Walk Random AI
 * Follow Master AI
 * Stay AI

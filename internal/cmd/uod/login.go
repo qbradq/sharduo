@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/qbradq/sharduo/internal/configuration"
 	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/lib/clientpacket"
 	"github.com/qbradq/sharduo/lib/serverpacket"

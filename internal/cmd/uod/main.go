@@ -8,10 +8,11 @@ import (
 	"os"
 	"os/signal"
 	"path"
-	"runtime"
 	"sync"
 	"syscall"
 
+	"github.com/qbradq/sharduo/internal/commands"
+	"github.com/qbradq/sharduo/internal/configuration"
 	"github.com/qbradq/sharduo/internal/events"
 	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/lib/marshal"
@@ -19,8 +20,6 @@ import (
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/uo/file"
 	"github.com/qbradq/sharduo/lib/util"
-	"golang.org/x/text/language"
-	"golang.org/x/text/message"
 )
 
 // Tile data
@@ -28,21 +27,6 @@ var tiledatamul *file.TileDataMul
 
 // The world we are running
 var world *World
-
-// The configuration
-var configuration *Configuration
-
-// memStats returns a string describing current memory utilization
-func memStats() string {
-	mb := func(n uint64) uint64 {
-		return n / 1024 / 1024
-	}
-	var m runtime.MemStats
-	runtime.ReadMemStats(&m)
-	p := message.NewPrinter(language.English)
-	return p.Sprintf("stats: HeapAlloc=%dMB, LiveObjects=%d", mb(m.HeapAlloc),
-		m.Mallocs-m.Frees)
-}
 
 // gracefulShutdown initiates a graceful systems shutdown
 func gracefulShutdown() {
@@ -83,8 +67,7 @@ func initialize() {
 	log.Println("ShardUO initializing...")
 
 	// Load configuration
-	configuration = newConfiguration()
-	if err := configuration.LoadConfiguration(); err != nil {
+	if err := configuration.Load(); err != nil {
 		log.Fatal(err)
 	}
 
@@ -154,6 +137,14 @@ func initialize() {
 	game.SetEventIndexGetter(func(which string) uint16 {
 		return events.GetEventHandlerIndex(which)
 	})
+
+	// Command system initialization
+	commands.RegisterCallbacks(
+		GlobalChat,
+		func() { world.Marshal() },
+		Broadcast,
+		gracefulShutdown,
+		func() string { return world.LatestSavePath() })
 
 	// Marshal system initialization
 	marshal.SetInsertFunction(func(i interface{}) {

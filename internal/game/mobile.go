@@ -78,6 +78,10 @@ type Mobile interface {
 	// AI-related
 	//
 
+	// ControlMaster returns the mobile that controls this one, or nil.
+	ControlMaster() Mobile
+	// SetControlMaster sets the control master of this mobile which may be nil.
+	SetControlMaster(Mobile)
 	// Think implements the AI of the mobile.
 	Think()
 	// ViewRange returns the number of tiles this mobile can see and visually
@@ -230,6 +234,8 @@ type BaseMobile struct {
 	// Current view range of the mobile. Please note that the zero value IS NOT
 	// SANE for this variable!
 	viewRange int16
+	// Current control master if any
+	controlMaster Mobile
 	// isPlayerCharacter is true if the mobile is attached to a player's account
 	isPlayerCharacter bool
 	// isFemale is true if the mobile is female
@@ -1278,8 +1284,13 @@ func (m *BaseMobile) CanSee(o Object) bool {
 
 // NoRent implements the Object interface.
 func (m *BaseMobile) NoRent() bool {
-	// TODO check if this mobile is controlled by a player
-	return !m.isPlayerCharacter
+	if m.controlMaster != nil && m.controlMaster.IsPlayerCharacter() {
+		return false
+	}
+	if m.isPlayerCharacter {
+		return false
+	}
+	return true
 }
 
 // AppendOPLEntries implements the Object interface.
@@ -1287,3 +1298,9 @@ func (m *BaseMobile) AppendOPLEntires(p *serverpacket.OPLPacket) {
 	m.BaseObject.AppendOPLEntires(p)
 	p.Append(fmt.Sprintf("%d stones", int(m.Weight())))
 }
+
+// ControlMaster implements the Mobile interface.
+func (m *BaseMobile) ControlMaster() Mobile { return m.controlMaster }
+
+// SetControlMaster implements the Mobile interface.
+func (m *BaseMobile) SetControlMaster(cm Mobile) { m.controlMaster = cm }

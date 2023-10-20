@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"github.com/qbradq/sharduo/data"
+	"github.com/qbradq/sharduo/internal/commands"
+	"github.com/qbradq/sharduo/internal/configuration"
 )
 
 // cronJob represents one cron job.
@@ -148,7 +150,7 @@ func (c *Cron) Main(wg *sync.WaitGroup) {
 				}
 				// Execute the command
 				n.account = world.superUser
-				ExecuteCommand(n, j.command)
+				commands.Execute(n, j.command)
 			}
 		case <-c.done:
 			return
