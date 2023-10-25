@@ -447,6 +447,9 @@ func handleOPLCacheMiss(n *NetState, cp clientpacket.Packet) {
 			continue
 		}
 		opl, _ := o.OPLPackets(o)
+		if opl == nil {
+			continue
+		}
 		n.Send(opl)
 	}
 }

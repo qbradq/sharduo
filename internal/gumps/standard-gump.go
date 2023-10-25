@@ -471,6 +471,35 @@ func (g *StandardGUMP) GemButton(x, y int, which SGGemButton, id uint32) {
 	g.g.ReplyButton(x, y, d.n, d.p, id)
 }
 
+// Separator like HorizontalBar but forces the bar to cover the entire width of
+// the GUMP.
+func (g *StandardGUMP) Separator(y int) {
+	g.HorizontalBar(0, y, g.w)
+}
+
+// HorizontalBar creates a horizontal element within the background that may be
+// used to separate vertical sections of a GUMP.
+func (g *StandardGUMP) HorizontalBar(x, y, w int) {
+	bw := w - 2
+	// Convert dimensions from cells
+	if x < 0 || y < 0 || bw < 1 {
+		return
+	}
+	x *= sgCellWidth
+	x += sgLeft
+	y *= sgCellHeight
+	y += sgTop
+	w *= sgCellWidth
+	// Create the bar
+	bx := x
+	bw *= sgCellWidth
+	g.g.Image(bx+sgTELeftEndCapHOffset, y+sgTEVOffset, sgTEBarLeft, uo.HueDefault)
+	bx += sgCellWidth
+	g.g.TiledImage(bx, y+sgTEVOffset, bw, sgTEBarMidHeight, sgTEBarMid)
+	bx += bw
+	g.g.Image(bx, y+sgTEVOffset, sgTEBarRight, uo.HueDefault)
+}
+
 // TextEntry creates a text entry element. Text entries are always one line
 // tall and does not support newlines.
 func (g *StandardGUMP) TextEntry(x, y, w int, hue uo.Hue, text string, limit int, id uint32) {
@@ -514,4 +543,17 @@ func (g *StandardGUMP) Image(x, y, v, h int, hue uo.Hue, id uo.GUMP) {
 	y *= sgCellHeight
 	y += sgTop + v
 	g.g.Image(x, y, id, hue)
+}
+
+// Item places the given item image at the location with the given offsets.
+func (g *StandardGUMP) Item(x, y, v, h int, hue uo.Hue, id uo.Graphic) {
+	// Convert dimensions from cells
+	if x < 0 || y < 0 {
+		return
+	}
+	x *= sgCellWidth
+	x += sgLeft + h
+	y *= sgCellHeight
+	y += sgTop + v
+	g.g.Item(x, y, id, hue)
 }

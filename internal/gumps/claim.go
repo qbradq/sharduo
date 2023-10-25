@@ -12,7 +12,7 @@ func init() {
 	})
 }
 
-// Welcome implements the standard welcome GUMP.
+// claim implements a list that lets players claim stabled pets
 type claim struct {
 	StandardGUMP
 	tm game.Mobile // Target mobile

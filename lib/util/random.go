@@ -5,6 +5,13 @@ import (
 	"time"
 )
 
+// RandomSource is the interface sources of psuedo-random numbers that the
+// Random* functions expect.
+type RandomSource interface {
+	// Random returns a random int value between min and max inclusive
+	Random(int, int) int
+}
+
 // RNG is a statefull, NON-thread-safe random number generator
 type RNG struct {
 	r *rand.Rand

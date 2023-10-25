@@ -100,14 +100,6 @@ func (n *NetState) Send(sp serverpacket.Packet) bool {
 	if sp == nil {
 		return true
 	}
-	if n.conn != nil {
-		select {
-		case n.sendQueue <- sp:
-			return true
-		default:
-			return false
-		}
-	}
 	// Packet filtering for internal net states
 	switch p := sp.(type) {
 	case *serverpacket.Speech:
@@ -116,6 +108,14 @@ func (n *NetState) Send(sp serverpacket.Packet) bool {
 			log.Printf("info: %s", p.Text)
 		} else {
 			log.Printf("info: %s: %s", p.Name, p.Text)
+		}
+	}
+	if n.conn != nil {
+		select {
+		case n.sendQueue <- sp:
+			return true
+		default:
+			return false
 		}
 	}
 	return true
@@ -386,7 +386,9 @@ func (n *NetState) itemInfo(item game.Item) {
 	}
 	// OPL support
 	_, oi := item.OPLPackets(item)
-	n.Send(oi)
+	if oi != nil {
+		n.Send(oi)
+	}
 }
 
 // sendMobile sends packets to send a mobile to the client.
@@ -417,7 +419,9 @@ func (n *NetState) sendMobile(mobile game.Mobile) {
 	n.Send(p)
 	// OPL support
 	_, oi := mobile.OPLPackets(mobile)
-	n.Send(oi)
+	if oi != nil {
+		n.Send(oi)
+	}
 }
 
 // updateMobile sends a StatusBarInfo packet for the mobile.
@@ -610,6 +614,9 @@ func (n *NetState) ContainerOpen(c game.Container) {
 		// OPL support
 		for _, item := range c.Contents() {
 			_, oi := item.OPLPackets(item)
+			if oi == nil {
+				continue
+			}
 			n.Send(oi)
 		}
 	}
@@ -645,7 +652,9 @@ func (n *NetState) ContainerItemAdded(c game.Container, item game.Item) {
 		Hue:           item.Hue(),
 	})
 	_, oi := item.OPLPackets(item)
-	n.Send(oi)
+	if oi != nil {
+		n.Send(oi)
+	}
 }
 
 // ContainerItemRemoved implements the game.ContainerObserver interface

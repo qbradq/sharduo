@@ -1079,3 +1079,34 @@ func (m *Map) ConsumeOre(l uo.Location, n int) int {
 
 // HasOre returns true if the chunk at the given location has any ore.
 func (m *Map) HasOre(l uo.Location) bool { return m.GetChunk(l).ore != 0 }
+
+// ItemQuery returns a slice of all of the items matching the given template
+// name. The second parameter may be the zero value, in which case the entire
+// map is searched. WARNING: This can be expensive and will hang the server.
+func (m *Map) ItemQuery(tn string, bounds uo.Bounds) []Item {
+	var ret []Item
+	if bounds == uo.BoundsZero {
+		// Full map query
+		for _, c := range m.chunks {
+			for _, i := range c.items {
+				if i.TemplateName() == tn {
+					ret = append(ret, i)
+				}
+			}
+		}
+		return ret
+	}
+	// Spacial query
+	chunks := m.getChunksInBounds(bounds)
+	for _, c := range chunks {
+		for _, item := range c.items {
+			if !bounds.Contains(item.Location()) {
+				continue
+			}
+			if item.TemplateName() == tn {
+				ret = append(ret, item)
+			}
+		}
+	}
+	return ret
+}

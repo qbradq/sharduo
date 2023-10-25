@@ -187,13 +187,21 @@ func initialize() {
 	// Try to load the most recent save
 	if err := world.Unmarshal(); err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			log.Println("warning: no save files found")
+			log.Println("warning: no save files found, executing first-start routine")
+			firstStart()
 		} else {
 			log.Fatal("error while trying to load data stores from main goroutine", err)
 		}
 	}
 
 	log.Println("End of initialization")
+}
+
+// Executed on the first start of a new server.
+func firstStart() {
+	n := NewNetState(nil)
+	n.account = world.AuthenticateAccount("root", game.HashPassword("password"))
+	commands.Execute(n, "loadstatics")
 }
 
 // Main is the entry point for uod.

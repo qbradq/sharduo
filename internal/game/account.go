@@ -25,7 +25,8 @@ const (
 	RolePlayer        Role = 0b00000001 // Access most game functions
 	RoleModerator     Role = 0b00000010 // Global chat moderation commands
 	RoleAdministrator Role = 0b00000100 // Server administration commands
-	RoleGameMaster    Role = 0b00001000 // All other commands and actions
+	RoleGameMaster    Role = 0b00001000 // Most other commands and actions
+	RoleDeveloper     Role = 0b00010000 // Commands and actions that can be dangerous on a live shard
 	RoleSuperUser     Role = 0b10000000 // Marks the account as the super user
 	RoleAll           Role = 0b11111111 // All roles current and future
 )
@@ -144,3 +145,8 @@ func (a *Account) RemoveStabledPet(p Mobile) bool {
 
 // StabledPets returns a slice of the all of the pets in this account's stable
 func (a *Account) StabledPets() []Mobile { return a.stabledPets }
+
+// UpdatePasswordByHash updates the account's password by hash value.
+func (a *Account) UpdatePasswordByHash(hash string) {
+	a.passwordHash = hash
+}
