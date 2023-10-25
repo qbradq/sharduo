@@ -193,14 +193,17 @@ func initialize() {
 			log.Fatal("error while trying to load data stores from main goroutine", err)
 		}
 	}
-
-	log.Println("End of initialization")
 }
 
 // Executed on the first start of a new server.
 func firstStart() {
+	world.AuthenticateAccount("root", game.HashPassword("password"))
+}
+
+// Commands executed at every start.
+func startCommands() {
 	n := NewNetState(nil)
-	n.account = world.AuthenticateAccount("root", game.HashPassword("password"))
+	n.account = world.superUser
 	commands.Execute(n, "loadstatics")
 }
 
@@ -208,6 +211,7 @@ func firstStart() {
 func Main() {
 	trap()
 	initialize()
+	startCommands()
 
 	wg := &sync.WaitGroup{}
 

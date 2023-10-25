@@ -100,22 +100,23 @@ func (n *NetState) Send(sp serverpacket.Packet) bool {
 	if sp == nil {
 		return true
 	}
-	// Packet filtering for internal net states
-	switch p := sp.(type) {
-	case *serverpacket.Speech:
-		// Log all messages
-		if p.Name == "" {
-			log.Printf("info: %s", p.Text)
-		} else {
-			log.Printf("info: %s: %s", p.Name, p.Text)
-		}
-	}
 	if n.conn != nil {
 		select {
 		case n.sendQueue <- sp:
 			return true
 		default:
 			return false
+		}
+	} else {
+		// Packet filtering for internal net states
+		switch p := sp.(type) {
+		case *serverpacket.Speech:
+			// Log all messages
+			if p.Name == "" {
+				log.Printf("info: %s", p.Text)
+			} else {
+				log.Printf("info: %s: %s", p.Name, p.Text)
+			}
 		}
 	}
 	return true

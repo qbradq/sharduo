@@ -41,7 +41,7 @@ None currently. I should start using the issue tracker for this anyway.
 * AI context menu commands
 * Rename pet functionality
 * Item durability
-* Teleport locations around alpha area
+* Teleport locations around Haven
 * Line of sight checks
 * Access checks
 
@@ -56,7 +56,6 @@ None currently. I should start using the issue tracker for this anyway.
 * Passive fauna
 * Wild flora
 * Agricultural crops
-* Decoration GUMP
 * Start decorating
 
 ### Nerdy Things I Might Do for Fun ###
@@ -70,7 +69,6 @@ None currently. I should start using the issue tracker for this anyway.
 This is a list of known tasks that must be completed before the server may be
 opened to outside connections.
 
-* Evaluate all TODO tags remaining in the source code, create tasks for them and assign them to milestones
 * Create homepage site and service
 * Make client available for download somehow
 
@@ -138,6 +136,4 @@ repository or its associated services who share that appreciation.
 
 That said below are some things I have learned about administrating this shard.
 
-* Cron jobs will fail to run until the super-user account is created.
-* The first account created will be flagged as the super-user.
 * It takes about a minute after first shard start for all of the ore to spawn.

@@ -2,12 +2,16 @@ package game
 
 import (
 	"fmt"
+	"io"
 	"log"
+	"strconv"
+	"strings"
 
 	"github.com/qbradq/sharduo/lib/marshal"
 	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/template"
 	"github.com/qbradq/sharduo/lib/uo"
+	"github.com/qbradq/sharduo/lib/util"
 )
 
 func init() {
@@ -41,6 +45,57 @@ func (o *Spawner) NoRent() bool { return false }
 
 // ObjectType implements the Object interface.
 func (o *Spawner) ObjectType() marshal.ObjectType { return marshal.ObjectTypeSpawner }
+
+// Write writes the basic information about the spawner in a hybrid ini/csv
+// format. This is used to capture the spawners as code for versioning.
+func (o *Spawner) Write(w io.Writer) {
+	w.Write([]byte(fmt.Sprintf("[%d,%d,%d,%d]\n",
+		o.location.X,
+		o.location.Y,
+		o.location.Z,
+		o.Radius,
+	)))
+	for _, e := range o.Entries {
+		w.Write([]byte(fmt.Sprintf("%s,%d,%d\n",
+			e.Template,
+			e.Amount,
+			e.Delay,
+		)))
+	}
+	w.Write([]byte("\n"))
+}
+
+// Read reads the basic information about a spawner.
+func (o *Spawner) Read(lfs *util.ListFileSegment) {
+	var fn = func(s string) int64 {
+		v, err := strconv.ParseInt(s, 0, 64)
+		if err != nil {
+			panic(err)
+		}
+		return v
+	}
+	parts := strings.Split(lfs.Name, ",")
+	if len(parts) != 4 {
+		panic("syntax error in spawners.ini")
+	}
+	o.location.X = int16(fn(parts[0]))
+	o.location.Y = int16(fn(parts[1]))
+	o.location.Z = int8(fn(parts[2]))
+	o.Radius = int(fn(parts[3]))
+	o.Entries = make([]*SpawnerEntry, len(lfs.Contents))
+	for i, s := range lfs.Contents {
+		parts := strings.Split(s, ",")
+		if len(parts) != 3 {
+			panic("syntax error in spawners.ini")
+		}
+		e := &SpawnerEntry{
+			Template: parts[0],
+			Amount:   int(fn(parts[1])),
+			Delay:    uo.Time(fn(parts[2])),
+		}
+		o.Entries[i] = e
+	}
+}
 
 // Marshal implements the marshal.Marshaler interface.
 func (o *Spawner) Marshal(s *marshal.TagFileSegment) {

@@ -46,7 +46,7 @@ func (o *StaticItem) Removed() bool { return o.removed }
 func (o *StaticItem) Remove() { o.removed = true }
 
 // NoRent implements the Object interface.
-func (o *StaticItem) NoRent() bool { return false }
+func (o *StaticItem) NoRent() bool { return true }
 
 // Serial implements the Object interface.
 func (o *StaticItem) Serial() uo.Serial { return o.serial }
