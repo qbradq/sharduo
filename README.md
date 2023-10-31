@@ -31,14 +31,13 @@ basic supporting features are also slated before the first alpha including
 vendors, mounts, pack animals, and banking.
 
 ### Known Defects ###
-None currently. I should start using the issue tracker for this anyway.
+* When picking up gold off the ground it under-flows the gold counter.
+* I think player mobiles leak on logout, need to figure out a different way to
+  handle logouts.
 
 ### Required Features and Tasks ###
 * Walk Random AI
-* Follow Master AI
-* Stay AI
 * AI voice commands
-* AI context menu commands
 * Rename pet functionality
 * Item durability
 * Teleport locations around Haven

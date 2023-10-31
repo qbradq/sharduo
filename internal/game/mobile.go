@@ -78,12 +78,19 @@ type Mobile interface {
 	// AI-related
 	//
 
+	// SetAIGoal sets the object that is the goal of the AI model
+	SetAIGoal(Object)
+	// AIGoal returns the object that is the goal of the AI model
+	AIGoal() Object
+	// SetAI sets the AI model for the mobile to use.
+	SetAI(string)
 	// ControlMaster returns the mobile that controls this one, or nil.
 	ControlMaster() Mobile
 	// SetControlMaster sets the control master of this mobile which may be nil.
 	SetControlMaster(Mobile)
-	// Think implements the AI of the mobile.
-	Think()
+	// CanBeCommandedBy returns true if this mobile can be commanded by the
+	// argument mobile.
+	CanBeCommandedBy(Mobile) bool
 	// ViewRange returns the number of tiles this mobile can see and visually
 	// observe objects in the world. If this mobile has an attached NetState,
 	// this value can change at any time at the request of the player.
@@ -97,6 +104,10 @@ type Mobile interface {
 	Facing() uo.Direction
 	// SetFacing sets the current facing of the mobile.
 	SetFacing(uo.Direction)
+	// CanTakeStep returns true if the mobile is able to move this tick.
+	CanTakeStep() bool
+	// Step attempts to step the mobile in the given direction.
+	Step(uo.Direction) bool
 	// SetRunning sets the running flag of the mobile.
 	SetRunning(bool)
 	// StandOn sets the surface that the mobile is standing on.
@@ -234,8 +245,16 @@ type BaseMobile struct {
 	// Current view range of the mobile. Please note that the zero value IS NOT
 	// SANE for this variable!
 	viewRange int16
+	// Name of the AI model currently in use
+	aiName string
+	// Thinker for the AI model in use
+	ai AIModel
+	// Goal of the AI routine
+	aiGoal Object
 	// Current control master if any
 	controlMaster Mobile
+	// aumcms is a temporary value used for restoring control masters
+	aumcms uo.Serial
 	// isPlayerCharacter is true if the mobile is attached to a player's account
 	isPlayerCharacter bool
 	// isFemale is true if the mobile is female
@@ -248,6 +267,8 @@ type BaseMobile struct {
 	floor uo.CommonObject
 	// Notoriety of the mobile
 	notoriety uo.Notoriety
+	// Last time this mobile took a step
+	lastStepTime uo.Time
 
 	//
 	// User interface stuff
@@ -314,6 +335,13 @@ func (m *BaseMobile) Marshal(s *marshal.TagFileSegment) {
 	s.PutShort(uint16(m.hitPoints))
 	s.PutShort(uint16(m.mana))
 	s.PutShort(uint16(m.stamina))
+	// AI
+	s.PutString(m.aiName)
+	if m.controlMaster != nil {
+		s.PutInt(uint32(m.controlMaster.Serial()))
+	} else {
+		s.PutInt(uint32(uo.SerialZero))
+	}
 	// Skills
 	s.PutShortSlice(m.skills)
 	// Equipment handling
@@ -348,6 +376,8 @@ func (m *BaseMobile) Deserialize(t *template.Template, create bool) {
 	m.hitPoints = t.GetNumber("HitPoints", 1)
 	m.mana = t.GetNumber("Mana", 1)
 	m.stamina = t.GetNumber("Stamina", 1)
+	m.aiName = t.GetString("AI", "Stay")
+	m.ai = aiGetter(m.aiName)
 	// Load default skill values
 	for s := uo.SkillFirst; s <= uo.SkillLast; s++ {
 		m.skills[s] = int16(t.GetNumber("Skill"+uo.SkillNames[s], 0))
@@ -378,6 +408,10 @@ func (m *BaseMobile) Unmarshal(s *marshal.TagFileSegment) {
 	m.hitPoints = int(s.Short())
 	m.mana = int(s.Short())
 	m.stamina = int(s.Short())
+	// AI
+	m.aiName = s.String()
+	m.ai = aiGetter(m.aiName)
+	m.aumcms = uo.Serial(s.Int())
 	// Skills
 	m.skills = s.ShortSlice()
 	if len(m.skills) < int(uo.SkillCount) {
@@ -418,6 +452,13 @@ func (m *BaseMobile) AfterUnmarshalOntoMap() {
 		Remove(m)
 	}
 	m.floor = floor
+	// Find our control master if any
+	if m.aumcms != uo.SerialZero {
+		m.controlMaster = Find[Mobile](m.aumcms)
+		// Make sure any controlled creature is following its master
+		m.SetAI("Follow")
+		m.SetAIGoal(m.controlMaster)
+	}
 }
 
 // NetState implements the Mobile interface.
@@ -1254,11 +1295,14 @@ func (m *BaseMobile) Update(t uo.Time) {
 			world.Update(m)
 		}
 	}
-}
-
-// Think implements the Mobile interface.
-func (m *BaseMobile) Think() {
-
+	// AI handling
+	if m.ai != nil {
+		// Target selection every 15 seconds
+		if t%(uo.DurationSecond%15) == 0 {
+			m.ai.Target(m, t)
+		}
+		m.ai.Act(m, t)
+	}
 }
 
 // CanSee implements the Mobile interface.
@@ -1304,3 +1348,72 @@ func (m *BaseMobile) ControlMaster() Mobile { return m.controlMaster }
 
 // SetControlMaster implements the Mobile interface.
 func (m *BaseMobile) SetControlMaster(cm Mobile) { m.controlMaster = cm }
+
+// SetAI implements the Mobile interface.
+func (m *BaseMobile) SetAI(which string) {
+	m.aiName = which
+	m.ai = aiGetter(which)
+}
+
+// SetAIGoal implements the Mobile interface.
+func (m *BaseMobile) SetAIGoal(o Object) { m.aiGoal = o }
+
+// AIGoal implements the Mobile interface.
+func (m *BaseMobile) AIGoal() Object { return m.aiGoal }
+
+// CanTakeStep implements the Mobile interface.
+func (m *BaseMobile) CanTakeStep() bool {
+	var rd uo.Time
+	if !m.IsMounted() {
+		if !m.IsRunning() {
+			rd = uo.WalkDelay
+		} else {
+			rd = uo.RunDelay
+		}
+	} else {
+		if !m.IsRunning() {
+			rd = uo.MountedWalkDelay
+		} else {
+			rd = uo.MountedRunDelay
+		}
+	}
+	d := world.Time() - m.lastStepTime
+	return d >= rd
+}
+
+// Step implements the Mobile interface.
+func (m *BaseMobile) Step(d uo.Direction) bool {
+	f := m.facing
+	m.facing = d
+	ret := world.Map().MoveMobile(m, d)
+	if !ret {
+		m.facing = f
+	} else {
+		m.lastStepTime = world.Time()
+	}
+	return ret
+}
+
+// AppendContextMenuEntries implements the Object interface.
+func (m *BaseMobile) AppendContextMenuEntries(c *ContextMenu, src Mobile) {
+	m.BaseObject.AppendContextMenuEntries(c, src)
+	if m.controlMaster != nil && m.controlMaster == src {
+		c.Append("CommandKill", 3006111)
+		c.Append("CommandFollow", 3006108)
+		c.Append("CommandGuard", 3006107)
+		c.Append("CommandDrop", 3006109)
+		c.Append("CommandStop", 3006112)
+		c.Append("CommandAddFriend", 3006110)
+		c.Append("CommandRemoveFriend", 3006099)
+		c.Append("CommandTransfer", 3006113)
+		c.Append("CommandRelease", 3006118)
+	}
+}
+
+// CanBeCommandedBy implements the Mobile interface.
+func (m *BaseMobile) CanBeCommandedBy(om Mobile) bool {
+	if m.controlMaster != nil && m.controlMaster.Serial() == om.Serial() {
+		return true
+	}
+	return false
+}

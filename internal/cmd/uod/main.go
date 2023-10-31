@@ -11,6 +11,7 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/qbradq/sharduo/internal/ai"
 	"github.com/qbradq/sharduo/internal/commands"
 	"github.com/qbradq/sharduo/internal/configuration"
 	"github.com/qbradq/sharduo/internal/events"
@@ -129,6 +130,11 @@ func initialize() {
 
 	// RNG initialization
 	rng := util.NewRNG()
+
+	// AI system initialization
+	game.SetAIGetter(func(s string) game.AIModel {
+		return ai.GetModel(s)
+	})
 
 	// Event system initialization
 	game.SetEventHandlerGetter(func(which string) *game.EventHandler {

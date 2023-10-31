@@ -433,9 +433,11 @@ func (c *BaseContainer) DropInto(i Item) bool {
 }
 
 // AppendContextMenuEntries implements the Object interface.
-func (c *BaseContainer) AppendContextMenuEntries(m *ContextMenu) {
-	c.BaseItem.AppendContextMenuEntries(m)
-	m.Append("OpenContainer", 3000362)
+func (c *BaseContainer) AppendContextMenuEntries(m *ContextMenu, src Mobile) {
+	c.BaseItem.AppendContextMenuEntries(m, src)
+	if src.CanAccess(c) {
+		m.Append("OpenContainer", 3000362)
+	}
 }
 
 // UpdateItem implements the Container interface.

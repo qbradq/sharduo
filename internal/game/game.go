@@ -12,6 +12,14 @@ type EventHandler func(Object, Object, any) bool
 var eventHandlerGetter func(string) *EventHandler
 var eventIndexGetter func(string) uint16
 
+// AIModel is the interface all AI models implement
+type AIModel interface {
+	Act(Mobile, uo.Time)
+	Target(Mobile, uo.Time)
+}
+
+var aiGetter func(string) AIModel
+
 // RootParent returns the top-most parent of the object who's parent is the map.
 // If this object's parent is the map this object is returned.
 func RootParent(o Object) Object {
@@ -53,10 +61,10 @@ func ExecuteEventHandler(which string, receiver, source Object, v any) bool {
 }
 
 // BuildContextMenu builds the context menu for the given object.
-func BuildContextMenu(o Object) *ContextMenu {
+func BuildContextMenu(o Object, m Mobile) *ContextMenu {
 	p := &ContextMenu{}
 	(*serverpacket.ContextMenu)(p).Serial = o.Serial()
-	o.AppendContextMenuEntries(p)
+	o.AppendContextMenuEntries(p, m)
 	return p
 }
 
@@ -101,4 +109,9 @@ func SetEventHandlerGetter(fn func(string) *EventHandler) {
 // by name.
 func SetEventIndexGetter(fn func(string) uint16) {
 	eventIndexGetter = fn
+}
+
+// SetAIGetter sets the function used to get the Thinker by name.
+func SetAIGetter(fn func(string) AIModel) {
+	aiGetter = fn
 }

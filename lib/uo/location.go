@@ -1,5 +1,7 @@
 package uo
 
+import "math"
+
 // Location identifies an absolute location in the universe.
 type Location struct {
 	// Absolute X position on the map [0-)
@@ -112,4 +114,36 @@ func (l Location) Forward(d Direction) Location {
 		Y: l.Y + dirOfs[d][1],
 		Z: l.Z,
 	}
+}
+
+// DirectionTo returns the direction code that most closely matches the
+// direction of the argument location.
+func (l Location) DirectionTo(a Location) Direction {
+	r := math.Atan2(float64(a.X-l.X), float64(a.Y-l.Y)) * 180 / math.Pi
+	b := -157.5
+	if r < b+45*0 {
+		return DirectionNorth
+	}
+	if r < b+45*1 {
+		return DirectionNorthWest
+	}
+	if r < b+45*2 {
+		return DirectionWest
+	}
+	if r < b+45*3 {
+		return DirectionSouthWest
+	}
+	if r < b+45*4 {
+		return DirectionSouth
+	}
+	if r < b+45*5 {
+		return DirectionSouthEast
+	}
+	if r < b+45*6 {
+		return DirectionEast
+	}
+	if r < b+45*7 {
+		return DirectionNorthEast
+	}
+	return DirectionNorth
 }

@@ -118,8 +118,10 @@ type Object interface {
 	AppendTemplateContextMenuEntry(string, uo.Cliloc)
 	// AppendContextMenuEntries is called when building the context menu of an
 	// object. The function may append any entries it needs with the
-	// ContextMenu.Append function.
-	AppendContextMenuEntries(*ContextMenu)
+	// ContextMenu.Append function. The second parameter represents the mobile
+	// requesting the context menu, which should always be a player's mobile
+	// with attached NetState.
+	AppendContextMenuEntries(*ContextMenu, Mobile)
 
 	//
 	// Object Property List functionality
@@ -418,7 +420,7 @@ func (o *BaseObject) AppendTemplateContextMenuEntry(event string, cl uo.Cliloc) 
 }
 
 // AppendContextMenuEntries implements the Object interface
-func (o *BaseObject) AppendContextMenuEntries(m *ContextMenu) {
+func (o *BaseObject) AppendContextMenuEntries(m *ContextMenu, src Mobile) {
 	for _, e := range o.templateContextMenuEntries {
 		m.Append(e.Event, e.Cliloc)
 	}

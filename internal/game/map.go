@@ -1053,10 +1053,12 @@ func (m *Map) Update(t uo.Time) {
 		c.Update(t)
 	}
 	// Update all mobiles
+	var mobs []Mobile
 	for _, c := range m.chunks {
-		for _, mob := range c.mobiles {
-			mob.Update(t)
-		}
+		mobs = append(mobs, c.mobiles...)
+	}
+	for _, mob := range mobs {
+		mob.Update(t)
 	}
 }
 

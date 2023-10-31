@@ -28,7 +28,7 @@ var dirOfs = [][]int16{
 	{-1, -1},
 }
 
-// Bound returns the direction code bounded to valid values while presearving
+// Bound returns the direction code bounded to valid values while preserving
 // the running flag.
 func (d Direction) Bound() Direction {
 	isRunning := d.IsRunning()

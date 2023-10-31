@@ -359,6 +359,8 @@ func handleBuyRequest(n *NetState, cp clientpacket.Packet) {
 			}
 			m.SetLocation(n.m.Location())
 			m.SetControlMaster(n.m)
+			m.SetAI("Follow")
+			m.SetAIGoal(n.m)
 			// TODO ownership
 			world.Map().AddObject(m)
 		} else {

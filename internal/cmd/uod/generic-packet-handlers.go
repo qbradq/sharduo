@@ -29,7 +29,7 @@ func handleContextMenuRequest(n *NetState, cp clientpacket.GeneralInformationPac
 	if o == nil {
 		return
 	}
-	menu := game.BuildContextMenu(o)
+	menu := game.BuildContextMenu(o, n.m)
 	if menu != nil {
 		n.Send((*serverpacket.ContextMenu)(menu))
 	}

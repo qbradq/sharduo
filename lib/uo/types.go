@@ -37,6 +37,10 @@ const (
 	SpeechNormalRange         int16  = 12
 	SpeechEmoteRange          int16  = SpeechNormalRange
 	SpeechYellRange           int16  = MaxViewRange
+	WalkDelay                 Time   = 6
+	RunDelay                  Time   = 3
+	MountedWalkDelay          Time   = 4
+	MountedRunDelay           Time   = 2
 )
 
 // BoundViewRange bounds a view range value
