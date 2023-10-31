@@ -31,7 +31,6 @@ basic supporting features are also slated before the first alpha including
 vendors, mounts, pack animals, and banking.
 
 ### Known Defects ###
-* When picking up gold off the ground it under-flows the gold counter.
 * I think player mobiles leak on logout, need to figure out a different way to
   handle logouts.
 

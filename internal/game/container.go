@@ -420,7 +420,7 @@ func (c *BaseContainer) DropInto(i Item) bool {
 				other.SetAmount(other.Amount() + i.Amount())
 				if c.TemplateName() != "PlayerBankBox" && i.TemplateName() == "GoldCoin" {
 					if mobile, ok := RootParent(c).(Mobile); ok {
-						mobile.AdjustGold(-i.Amount())
+						mobile.AdjustGold(i.Amount())
 					}
 				}
 				world.Update(other)
