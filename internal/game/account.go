@@ -7,7 +7,6 @@ import (
 	"github.com/qbradq/sharduo/lib/marshal"
 	"github.com/qbradq/sharduo/lib/template"
 	"github.com/qbradq/sharduo/lib/uo"
-	"github.com/qbradq/sharduo/lib/util"
 )
 
 func init() {
@@ -48,8 +47,6 @@ type Account struct {
 	// Serial of the player's permanent mobile (not the currently controlled
 	// mobile)
 	player uo.Serial
-	// List of serials of the player's pets in stable
-	stabledPets util.Slice[Mobile]
 	// The roles this account has been assigned
 	roles Role
 }
@@ -76,10 +73,6 @@ func (a *Account) Marshal(s *marshal.TagFileSegment) {
 	s.PutString(a.passwordHash)
 	s.PutString(a.emailAddress)
 	s.PutByte(byte(a.roles))
-	s.PutByte(byte(len(a.stabledPets)))
-	for _, pm := range a.stabledPets {
-		s.PutObject(pm)
-	}
 }
 
 // Deserialize does nothing
@@ -92,11 +85,6 @@ func (a *Account) Unmarshal(s *marshal.TagFileSegment) {
 	a.passwordHash = s.String()
 	a.emailAddress = s.String()
 	a.roles = Role(s.Byte())
-	n := int(s.Byte())
-	a.stabledPets = make(util.Slice[Mobile], n)
-	for i := 0; i < n; i++ {
-		a.stabledPets[i] = s.Object().(Mobile)
-	}
 }
 
 // Username returns the username of the account
@@ -123,28 +111,6 @@ func (a *Account) EmailAddress() string { return a.emailAddress }
 
 // SetEmailAddress sets the email address for the account
 func (a *Account) SetEmailAddress(e string) { a.emailAddress = e }
-
-// AddStabledPet attempts to add a pet to the account's stable list, returning
-// an Error object describing why the action could not be performed on error
-func (a *Account) AddStabledPet(p Mobile) *Error {
-	if len(a.stabledPets) >= MaxStabledPets {
-		return &Error{
-			String: "You have too many animals in the stables already!",
-		}
-	}
-	a.stabledPets = a.stabledPets.Append(p)
-	return nil
-}
-
-// RemoveStabledPet attempts to remove the given pet from the account's stable
-// list, returning true on success
-func (a *Account) RemoveStabledPet(p Mobile) bool {
-	a.stabledPets = a.stabledPets.Remove(p)
-	return true
-}
-
-// StabledPets returns a slice of the all of the pets in this account's stable
-func (a *Account) StabledPets() []Mobile { return a.stabledPets }
 
 // UpdatePasswordByHash updates the account's password by hash value.
 func (a *Account) UpdatePasswordByHash(hash string) {

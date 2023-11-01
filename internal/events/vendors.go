@@ -150,10 +150,10 @@ func StablePet(receiver, source game.Object, v any) bool {
 			sm.NetState().Cliloc(receiver, 1048053) // You can't stable that!
 			return
 		}
-		if err := sm.NetState().Account().AddStabledPet(pm); err != nil {
+		if err := sm.Stable(pm); err != nil {
 			err.SendTo(sm.NetState(), receiver)
 		} else {
-			game.GetWorld().Map().SetNewParent(pm, game.TheVoid)
+			game.GetWorld().Map().StoreObject(pm)
 		}
 	})
 	return true
@@ -165,7 +165,7 @@ func ClaimAllPets(receiver, source game.Object, v any) bool {
 	if !ok || sm.NetState() == nil {
 		return false
 	}
-	if len(sm.NetState().Account().StabledPets()) == 0 {
+	if len(sm.StabledPets()) == 0 {
 		return false
 	}
 	sm.NetState().GUMP(gumps.New("claim"), sm, nil)

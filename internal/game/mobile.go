@@ -8,6 +8,7 @@ import (
 	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/template"
 	"github.com/qbradq/sharduo/lib/uo"
+	"github.com/qbradq/sharduo/lib/util"
 )
 
 func init() {
@@ -189,6 +190,12 @@ type Mobile interface {
 	// BankBoxOpen returns true if the mobile is currently observing its bank
 	// box.
 	BankBoxOpen() bool
+	// Stable attempts to stable the given mobile.
+	Stable(Mobile) *Error
+	// Claim attempts to claim the given mobile.
+	Claim(Mobile) *Error
+	// StabledPets returns a slice of all of the stabled pets of this mobile.
+	StabledPets() []Mobile
 
 	//
 	// Mount support
@@ -282,6 +289,8 @@ type BaseMobile struct {
 
 	// The collection of equipment this mobile is wearing, if any
 	equipment *EquipmentCollection
+	// All of the pets in the mobile's stable
+	stabledPets util.Slice[Mobile]
 
 	//
 	// Stats and attributes
@@ -355,6 +364,11 @@ func (m *BaseMobile) Marshal(s *marshal.TagFileSegment) {
 		s.PutObject(m.cursor.item)
 	} else {
 		s.PutBool(false)
+	}
+	// Stables
+	s.PutByte(byte(len(m.stabledPets)))
+	for _, pm := range m.stabledPets {
+		s.PutObject(pm)
 	}
 }
 
@@ -439,6 +453,12 @@ func (m *BaseMobile) Unmarshal(s *marshal.TagFileSegment) {
 			panic("object on cursor does not implement Object")
 		}
 		m.DropToFeet(o)
+	}
+	// Stabled pets
+	n := int(s.Byte())
+	m.stabledPets = make(util.Slice[Mobile], n)
+	for i := 0; i < n; i++ {
+		m.stabledPets[i] = s.Object().(Mobile)
 	}
 }
 
@@ -1416,4 +1436,26 @@ func (m *BaseMobile) CanBeCommandedBy(om Mobile) bool {
 		return true
 	}
 	return false
+}
+
+// Stable implements the Mobile interface.
+func (m *BaseMobile) Stable(p Mobile) *Error {
+	if len(m.stabledPets) >= MaxStabledPets {
+		return &Error{
+			String: "You have too many animals in the stables already!",
+		}
+	}
+	m.stabledPets = m.stabledPets.Append(p)
+	return nil
+}
+
+// Claim implements the Mobile interface.
+func (m *BaseMobile) Claim(p Mobile) *Error {
+	m.stabledPets = m.stabledPets.Remove(p)
+	return nil
+}
+
+// StabledPets implements the Mobile interface.
+func (m *BaseMobile) StabledPets() []Mobile {
+	return m.stabledPets
 }

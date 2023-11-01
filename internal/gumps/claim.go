@@ -25,7 +25,7 @@ func (g *claim) Layout(target, param game.Object) {
 		return
 	}
 	g.tm = tm
-	sp := tm.NetState().Account().StabledPets()
+	sp := tm.StabledPets()
 	g.Window(10, len(sp), "Claim Pets", 0)
 	g.Page(1)
 	for i, pm := range sp {
@@ -38,15 +38,20 @@ func (g *claim) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 	if g.StandardReplyHandler(p) {
 		return
 	}
-	sp := n.Account().StabledPets()
+	sp := n.Mobile().StabledPets()
 	idx := int(p.Button - 1001)
 	if idx < 0 || idx >= len(sp) {
 		return
 	}
 	pm := sp[idx]
-	if n.Account().RemoveStabledPet(pm) {
+	if err := n.Mobile().Claim(pm); err != nil {
+		err.SendTo(n, n.Mobile())
+	} else {
+		game.GetWorld().Map().RetrieveObject(pm.Serial())
 		pm.SetLocation(g.tm.Location())
 		pm.SetControlMaster(n.Mobile())
+		pm.SetAI("Follow")
+		pm.SetAIGoal(n.Mobile())
 		game.GetWorld().Map().ForceAddObject(pm)
 	}
 }
