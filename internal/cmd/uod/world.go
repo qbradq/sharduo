@@ -143,6 +143,9 @@ func (w *World) Unmarshal() error {
 			w.superUser = a
 		}
 	}
+	// Unmarshal map deep storage
+	s = tf.Segment(marshal.SegmentDeepStorage)
+	w.m.UnmarshalDeepStorage(s)
 	// Unmarshal objects on the map
 	segStart := marshal.SegmentObjectsStart
 	segEnd := marshal.SegmentObjectsStart + marshal.Segment(nThreads)
@@ -230,6 +233,9 @@ func (w *World) Marshal() (*sync.WaitGroup, error) {
 	s = tf.Segment(marshal.SegmentMap)
 	wg.Add(1)
 	go w.m.Marshal(wg, s)
+	s = tf.Segment(marshal.SegmentDeepStorage)
+	wg.Add(1)
+	go w.m.MarshalDeepStorage(wg, s)
 	// The main goroutine is blocked at this point
 	wg.Wait()
 	end := time.Now()

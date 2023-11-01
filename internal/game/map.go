@@ -15,12 +15,15 @@ import (
 type Map struct {
 	// The chunks of the map
 	chunks []*Chunk
+	// Deep storage for objects like stabled pets and logged out characters
+	deepStorage map[uo.Serial]Object
 }
 
 // NewMap creates and returns a new Map
 func NewMap() *Map {
 	m := &Map{
-		chunks: make([]*Chunk, uo.MapChunksWidth*uo.MapChunksHeight),
+		chunks:      make([]*Chunk, uo.MapChunksWidth*uo.MapChunksHeight),
+		deepStorage: make(map[uo.Serial]Object),
 	}
 	for cx := 0; cx < uo.MapChunksWidth; cx++ {
 		for cy := 0; cy < uo.MapChunksHeight; cy++ {
@@ -139,6 +142,27 @@ func (m *Map) Unmarshal(s *marshal.TagFileSegment) {
 	// Load the ore map data
 	for _, c := range m.chunks {
 		c.ore = uint8(s.Byte())
+	}
+}
+
+// MarshalDeepStorage writes out the off-map objects
+func (m *Map) MarshalDeepStorage(wg *sync.WaitGroup, s *marshal.TagFileSegment) {
+	defer wg.Done()
+	for _, o := range m.deepStorage {
+		s.PutObject(o)
+		s.IncrementRecordCount()
+	}
+}
+
+// UnmarshalDeepStorage unmarshals all of the objects in map deep storage.
+func (m *Map) UnmarshalDeepStorage(s *marshal.TagFileSegment) {
+	for i := uint32(0); i < s.RecordCount(); i++ {
+		oum := s.Object()
+		o, ok := oum.(Object)
+		if !ok {
+			panic("deep storage object did not implement the Object interface")
+		}
+		m.deepStorage[o.Serial()] = o
 	}
 }
 
@@ -1111,4 +1135,19 @@ func (m *Map) ItemQuery(tn string, bounds uo.Bounds) []Item {
 		}
 	}
 	return ret
+}
+
+// StoreObject places an object into deep storage.
+func (m *Map) StoreObject(o Object) {
+	m.SetNewParent(o, TheVoid)
+	m.deepStorage[o.Serial()] = o
+}
+
+// RetrieveObject retrieves and object from deep storage.
+func (m *Map) RetrieveObject(s uo.Serial) Object {
+	o, found := m.deepStorage[s]
+	if found {
+		delete(m.deepStorage, s)
+	}
+	return o
 }

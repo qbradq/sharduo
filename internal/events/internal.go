@@ -35,8 +35,8 @@ func PlayerLogout(receiver, source game.Object, v any) bool {
 	if !ok || rm.NetState() != nil {
 		return false
 	}
-	game.GetWorld().Map().SetNewParent(receiver, game.TheVoid)
 	game.GetWorld().Map().PlayEffect(uo.GFXTypeFixed, receiver, receiver, 0x3728,
 		15, 10, true, false, uo.HueDefault, uo.GFXBlendModeNormal)
+	game.GetWorld().Map().StoreObject(receiver)
 	return true
 }

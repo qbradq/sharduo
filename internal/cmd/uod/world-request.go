@@ -67,6 +67,8 @@ func (r *CharacterLoginRequest) Execute() error {
 		if p, ok := o.(game.Mobile); ok {
 			player = p
 		}
+		// In case the player mobile was in deep storage we try to remove it
+		game.GetWorld().Map().RetrieveObject(player.Serial())
 	}
 	// Create a new character if needed
 	if player == nil {
