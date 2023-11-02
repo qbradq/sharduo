@@ -20,6 +20,7 @@ func init() {
 	pf.Add(0x5D, newCharacterLogin)
 	pf.Add(0x6C, newTargetResponse)
 	pf.Add(0x73, newPing)
+	pf.Add(0x75, newRenameRequest)
 	pf.Add(0x80, newAccountLogin)
 	pf.Add(0x91, newGameServerLogin)
 	pf.Add(0x98, newNameRequest)
@@ -660,4 +661,20 @@ func newOPLCacheMiss(in []byte) Packet {
 		p.Serials[i] = uo.Serial(dc.GetUint32(in[i*4 : i*4+4]))
 	}
 	return p
+}
+
+// RenameRequest is sent by the client when renaming a mobile via their status
+// bar.
+type RenameRequest struct {
+	basePacket
+	Serial uo.Serial // Serial of the mobile to rename.
+	Name   string    // The new name of the mobile, truncated to 30 characters.
+}
+
+func newRenameRequest(in []byte) Packet {
+	return &RenameRequest{
+		basePacket: basePacket{id: 0x75},
+		Serial:     uo.Serial(dc.GetUint32(in[0:4])),
+		Name:       dc.NullString(in[4:34]),
+	}
 }

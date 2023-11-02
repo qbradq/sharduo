@@ -27,6 +27,7 @@ func init() {
 	packetHandlers.Add(0x3B, handleBuyRequest)
 	packetHandlers.Add(0x6C, handleTargetResponse)
 	packetHandlers.Add(0x73, handlePing)
+	packetHandlers.Add(0x75, handleRenameRequest)
 	packetHandlers.Add(0x98, handleNameRequest)
 	packetHandlers.Add(0x9F, handleSellRequest)
 	packetHandlers.Add(0xAD, handleSpeech)
@@ -91,7 +92,8 @@ func handleStatusRequest(n *NetState, cp clientpacket.Packet) {
 	p := cp.(*clientpacket.PlayerStatusRequest)
 	switch p.StatusRequestType {
 	case uo.StatusRequestTypeBasic:
-		n.UpdateObject(n.m)
+		m := game.Find[game.Mobile](p.PlayerMobileID)
+		n.UpdateObject(m)
 	case uo.StatusRequestTypeSkills:
 		n.SendAllSkills()
 	}
@@ -454,4 +456,18 @@ func handleOPLCacheMiss(n *NetState, cp clientpacket.Packet) {
 		}
 		n.Send(opl)
 	}
+}
+
+func handleRenameRequest(n *NetState, cp clientpacket.Packet) {
+	if n == nil || n.m == nil {
+		return
+	}
+	p := cp.(*clientpacket.RenameRequest)
+	m := game.Find[game.Mobile](p.Serial)
+	if m == nil || m.ControlMaster() == nil || m.ControlMaster().Serial() != n.m.Serial() {
+		return
+	}
+	m.SetName(p.Name)
+	m.InvalidateOPL()
+	game.GetWorld().Update(m)
 }

@@ -1375,3 +1375,20 @@ func (p *OPLInfo) Write(w io.Writer) {
 	dc.PutUint32(w, uint32(p.Serial)) // Object serial
 	dc.PutUint32(w, p.Hash)           // OPL hash
 }
+
+// UpdateHealth is sent to notify the client of the current HP levels of another
+// mobile. The health is normalized to a 4% resolution.
+type UpdateHealth struct {
+	Serial  uo.Serial // Serial of the object this packet pertains to.
+	Hits    int       // Current hit points
+	MaxHits int       // Maximum hit points
+}
+
+// Write implements the Packet interface.
+func (p *UpdateHealth) Write(w io.Writer) {
+	dc.PutByte(w, 0xA1) // Packet ID
+	dc.PutUint32(w, uint32(p.Serial))
+	dc.PutUint16(w, 25)
+	r := float64(p.Hits) / float64(p.MaxHits)
+	dc.PutUint16(w, uint16(r*25))
+}

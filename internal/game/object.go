@@ -164,8 +164,10 @@ type Object interface {
 	// Complex accessors
 	//
 
-	// DisplayName returns the name of the object with any articles attached
+	// DisplayName returns the name of the object with any articles attached.
 	DisplayName() string
+	// SetName sets the name of the object and clears all article flags.
+	SetName(string)
 	// Weight returns the total weight of the object. For an item, this is the
 	// base weight of the item times the amount. For container items this is the
 	// base weight of the item plus the weight of the contents. For mobiles this
@@ -539,3 +541,11 @@ func (o *BaseObject) Owner() Object { return o.owner }
 
 // SetOwner implements the Object interface.
 func (o *BaseObject) SetOwner(owner Object) { o.owner = owner }
+
+// SetName implements the Object interface.
+func (o *BaseObject) SetName(name string) {
+	o.name = name
+	o.articleA = false
+	o.articleAn = false
+	o.InvalidateOPL()
+}

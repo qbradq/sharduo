@@ -455,8 +455,24 @@ func (n *NetState) updateMobile(mobile game.Mobile) {
 			MaxFollowers:   uo.MaxFollowers,
 		})
 		return
+	} else if mobile.ControlMaster() != nil && mobile.ControlMaster().Serial() == n.m.Serial() {
+		// Send rename-able status bar
+		n.Send(&serverpacket.StatusBarInfo{
+			Mobile:         mobile.Serial(),
+			Name:           mobile.DisplayName(),
+			Female:         mobile.IsFemale(),
+			HP:             mobile.HitPoints(),
+			MaxHP:          mobile.MaxHitPoints(),
+			NameChangeFlag: true,
+		})
+	} else {
+		// Send hp delta for other mobiles
+		n.Send(&serverpacket.UpdateHealth{
+			Serial:  mobile.Serial(),
+			Hits:    mobile.HitPoints(),
+			MaxHits: mobile.MaxHitPoints(),
+		})
 	}
-	// TODO send hp delta for other mobiles
 }
 
 // UpdateObject implements the game.NetState interface.

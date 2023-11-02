@@ -148,6 +148,7 @@ func (i *StaticItem) SetHue(hue uo.Hue)                                         
 func (i *StaticItem) Facing() uo.Direction                                      { return uo.DirectionNorth }
 func (i *StaticItem) SetFacing(d uo.Direction)                                  {}
 func (i *StaticItem) DisplayName() string                                       { return i.def.Name }
+func (i *StaticItem) SetName(string)                                            {}
 func (i *StaticItem) Weight() float32                                           { return 255.0 }
 
 // Marshal implements the marshal.Marshaler interface.
