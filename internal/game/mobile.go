@@ -992,6 +992,7 @@ func (m *BaseMobile) AdjustWeight(n float32) {
 	if m.equipment != nil {
 		m.equipment.weight += n
 	}
+	m.InvalidateOPL()
 	world.Update(m)
 }
 

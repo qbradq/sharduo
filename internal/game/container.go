@@ -15,6 +15,31 @@ func init() {
 	reg("BaseContainer", marshal.ObjectTypeContainer, func() any { return &BaseContainer{} })
 }
 
+// ContainerObserver is implemented by anything that can be notified of changes
+// to the contents of a container.
+type ContainerObserver interface {
+	// ContainerOpen sends the open container gump packet and all of the
+	// contents of the container to the observer. The observer should keep track
+	// of all open containers so they can close then when needed.
+	ContainerOpen(Container)
+	// ContainerClose closes the container on the client side as well as all
+	// child containers this observer may be observing.
+	ContainerClose(Container)
+	// ContainerItemAdded notifies the observer of a new item in the container.
+	ContainerItemAdded(Container, Item)
+	// ContainerItemRemoved notifies the observer of a item being removed from
+	// the container.
+	ContainerItemRemoved(Container, Item)
+	// ContainerItemOPLChanged notifies the observer of an item's OPL changing.
+	ContainerItemOPLChanged(Container, Item)
+	// ContainerRangeCheck asks the observer to close all out-of-range
+	// containers.
+	ContainerRangeCheck()
+	// ContainerIsObserving returns true if the given container is being
+	// observed by the observer.
+	ContainerIsObserving(Object) bool
+}
+
 // Container is the interface all objects implement that can contain other
 // other objects within an inventory.
 type Container interface {
@@ -49,6 +74,9 @@ type Container interface {
 	// UpdateItem must be called when an item contained in this container
 	// changes.
 	UpdateItem(Item)
+	// UpdateItemOPL must be called when an item contained in this container
+	// has an OPL change.
+	UpdateItemOPL(Item)
 }
 
 // BaseContainer implements the base implementation of the Container interface.
@@ -125,6 +153,7 @@ func (i *BaseContainer) Unmarshal(s *marshal.TagFileSegment) {
 
 // RecalculateStats implements the Object interface
 func (c *BaseContainer) RecalculateStats() {
+	c.InvalidateOPL()
 	c.contentWeight = 0
 	c.contentItems = len(c.contents)
 	for _, item := range c.contents {
@@ -199,8 +228,8 @@ func (c *BaseContainer) doRemove(o Object, force bool) bool {
 		observer.ContainerItemRemoved(c, item)
 	}
 	// Gold calculations
-	// TODO check support
-	// TODO bank gold support
+	// TODO Check support
+	// TODO Bank gold support
 	if c.TemplateName() != "PlayerBankBox" && item.TemplateName() == "GoldCoin" {
 		if mobile, ok := RootParent(c).(Mobile); ok {
 			mobile.AdjustGold(-item.Amount())
@@ -278,6 +307,7 @@ func (c *BaseContainer) ForceAddObject(o Object) {
 	if item.Stackable() && l.X == uo.RandomDropX && l.Y == uo.RandomDropY {
 		for _, i := range c.contents {
 			if i.CanCombineWith(item) && i.Combine(item) {
+				c.InvalidateOPL()
 				return
 			}
 		}
@@ -369,6 +399,7 @@ func (c *BaseContainer) Weight() float32 {
 
 // AdjustWeightAndCount implements the Container interface.
 func (c *BaseContainer) AdjustWeightAndCount(w float32, n int) {
+	c.InvalidateOPL()
 	c.contentWeight += w
 	c.contentItems += n
 	if c.templateName == "PlayerBankBox" {
@@ -379,6 +410,7 @@ func (c *BaseContainer) AdjustWeightAndCount(w float32, n int) {
 		// We are a sub-container, propagate the adjustment up
 		container.AdjustWeightAndCount(w, n)
 	} else if mobile, ok := c.parent.(Mobile); ok {
+		mobile.InvalidateOPL()
 		if mobile.IsItemOnCursor() && mobile.ItemInCursor().Serial() == c.Serial() {
 			// We are being held by a mobile's cursor, don't need to do anything
 			return
@@ -444,6 +476,13 @@ func (c *BaseContainer) AppendContextMenuEntries(m *ContextMenu, src Mobile) {
 func (c *BaseContainer) UpdateItem(i Item) {
 	for o := range c.observers {
 		o.ContainerItemAdded(c, i)
+	}
+}
+
+// UpdateItemOPL implements the Container interface.
+func (c *BaseContainer) UpdateItemOPL(i Item) {
+	for o := range c.observers {
+		o.ContainerItemOPLChanged(c, i)
 	}
 }
 

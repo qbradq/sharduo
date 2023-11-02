@@ -681,6 +681,14 @@ func (n *NetState) ContainerItemRemoved(c game.Container, item game.Item) {
 	})
 }
 
+// ContainerItemOPLChanged implements the game.ContainerObserver interface.
+func (n *NetState) ContainerItemOPLChanged(c game.Container, item game.Item) {
+	_, info := item.OPLPackets(item)
+	if info != nil {
+		n.Send(info)
+	}
+}
+
 // ContainerRangeCheck implements the game.ContainerObserver interface
 func (n *NetState) ContainerRangeCheck() {
 	if len(n.observedContainers) == 0 || n.m == nil {

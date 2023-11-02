@@ -468,6 +468,5 @@ func handleRenameRequest(n *NetState, cp clientpacket.Packet) {
 		return
 	}
 	m.SetName(p.Name)
-	m.InvalidateOPL()
 	game.GetWorld().Update(m)
 }

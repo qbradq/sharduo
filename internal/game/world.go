@@ -19,6 +19,10 @@ type World interface {
 	// send update packets for. It is safe to update the same object rapidly in
 	// succession. No duplicate packets will be sent.
 	Update(Object)
+	// UpdateOPLInfo adds the object to the world's list of objects that need to
+	// have OPLInfo packets sent for. It is safe to call this method in rapid
+	// succession. No duplicate packets will be sent.
+	UpdateOPLInfo(Object)
 	// Map returns the map the world is using.
 	Map() *Map
 	// GetItemDefinition returns the uo.StaticDefinition that holds the static

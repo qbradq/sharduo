@@ -47,6 +47,8 @@ type World struct {
 	savePath string
 	// Collection of all objects that need to be updated
 	updateList map[uo.Serial]game.Object
+	// Collection of all objects that need to have OPLInfo packets sent
+	oplUpdateList map[uo.Serial]game.Object
 	// Current time in the Sossarian universe in seconds
 	time uo.Time
 	// Current time on the server
@@ -65,6 +67,7 @@ func NewWorld(savePath string, rng uo.RandomSource) *World {
 		requestQueue:  make(chan WorldRequest, 1024*16),
 		savePath:      savePath,
 		updateList:    make(map[uo.Serial]game.Object),
+		oplUpdateList: make(map[uo.Serial]game.Object),
 		time:          uo.TimeEpoch,
 		wallClockTime: time.Now(),
 	}
@@ -386,17 +389,39 @@ func (w *World) Main(wg *sync.WaitGroup) {
 			UpdateNetStates(int(w.time % uo.DurationSecond))
 			// Interleaved chunk updates, mobile think, etc
 			w.m.Update(w.time)
-			// Update objects
-			for _, o := range w.updateList {
-				if o.Parent() == nil {
-					for _, m := range w.m.GetNetStatesInRange(o.Location(), uo.MaxViewRange) {
-						if o.Location().XYDistance(m.Location()) <= m.ViewRange() {
-							m.NetState().UpdateObject(o)
+			// OPLInfo updates
+			for _, o := range w.oplUpdateList {
+				if c, ok := o.Parent().(game.Container); ok {
+					oi := world.Find(o.Serial())
+					if i, ok := oi.(game.Item); ok {
+						c.UpdateItemOPL(i)
+					}
+				} else {
+					rp := game.RootParent(o)
+					for _, m := range w.m.GetNetStatesInRange(rp.Location(), uo.MaxViewRange) {
+						if rp.Location().XYDistance(m.Location()) <= m.ViewRange() {
+							oi := w.Find(o.Serial())
+							_, info := oi.OPLPackets(oi)
+							if info != nil {
+								m.NetState().Send(info)
+							}
 						}
 					}
-				} else if c, ok := o.Parent().(game.Container); ok {
+				}
+			}
+			w.oplUpdateList = make(map[uo.Serial]game.Object)
+			// Update objects
+			for _, o := range w.updateList {
+				if c, ok := o.Parent().(game.Container); ok {
 					if i, ok := o.(game.Item); ok {
 						c.UpdateItem(i)
+					}
+				} else {
+					rp := game.RootParent(o)
+					for _, m := range w.m.GetNetStatesInRange(rp.Location(), uo.MaxViewRange) {
+						if rp.Location().XYDistance(m.Location()) <= m.ViewRange() {
+							m.NetState().UpdateObject(o)
+						}
 					}
 				}
 			}
@@ -432,7 +457,6 @@ func (w *World) GetItemDefinition(g uo.Graphic) *uo.StaticDefinition {
 
 // Update implements the game.World interface.
 func (w *World) Update(o game.Object) {
-	o.InvalidateOPL()
 	w.updateList[o.Serial()] = o
 }
 
@@ -475,4 +499,8 @@ func (w *World) BroadcastMessage(speaker game.Object, fmtstr string, args ...int
 // unmarshalling.
 func (w *World) Insert(o game.Object) {
 	w.ods.Insert(o)
+}
+
+func (w *World) UpdateOPLInfo(o game.Object) {
+	w.oplUpdateList[o.Serial()] = o
 }

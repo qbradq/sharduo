@@ -336,6 +336,7 @@ func (i *BaseItem) Combine(other Item) bool {
 		iparent.ForceAddObject(other)
 	}
 	Remove(i)
+	i.InvalidateOPL()
 	return true
 }
 

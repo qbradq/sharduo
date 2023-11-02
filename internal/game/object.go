@@ -448,6 +448,7 @@ func (o *BaseObject) OPLPackets(self Object) (*serverpacket.OPLPacket, *serverpa
 func (o *BaseObject) InvalidateOPL() {
 	o.opl = nil
 	o.oplinfo = nil
+	world.UpdateOPLInfo(o)
 }
 
 // AppendOPLEntries implements the Object interface.
