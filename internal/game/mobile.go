@@ -818,24 +818,6 @@ func (m *BaseMobile) ForceRemoveObject(o Object) {
 	m.doRemove(o, true)
 }
 
-// DropObject implements the Object interface
-func (m *BaseMobile) DropObject(obj Object, l uo.Location, from Mobile) bool {
-	bpo := m.EquipmentInSlot(uo.LayerBackpack)
-	if bpo != nil && bpo.TemplateName() == "PackAnimalBackpack" {
-		// We are a pack animal, try to put the item in our pack
-		// TODO check master
-		return m.DropToBackpack(obj, false)
-	}
-	if from.Serial() == m.Serial() {
-		// We are dropping something onto ourselves, try to put it in our
-		// backpack
-		return m.DropToBackpack(obj, false)
-	}
-	// TODO try to feed tamed animals
-	// This is a regular mobile, dropping things on them makes no sense
-	return false
-}
-
 // DropToBackpack implements the Mobile interface.
 func (m *BaseMobile) DropToBackpack(o Object, force bool) bool {
 	item, ok := o.(Item)
@@ -983,7 +965,10 @@ func (m *BaseMobile) MapEquipment(fn func(Wearable) error) []error {
 // GetNotorietyFor implements the Mobile interface.
 func (m *BaseMobile) GetNotorietyFor(other Mobile) uo.Notoriety {
 	// TODO Guild system
-	// TODO If this is a player's mobile return innocent
+	// If this is a player's mobile return innocent
+	if other.IsPlayerCharacter() {
+		return uo.NotorietyInnocent
+	}
 	return m.notoriety
 }
 

@@ -107,7 +107,6 @@ func Mount(receiver, source game.Object, v any) bool {
 		return false
 	}
 	// TODO Line of sight check
-	// TODO ownership
 	sm.Mount(rm)
 	return true
 }

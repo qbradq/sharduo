@@ -65,14 +65,17 @@ func DropToPackAnimal(receiver, source game.Object, v any) bool {
 	if !ok {
 		return false
 	}
-	// sm, ok := source.(game.Mobile)
-	// if !ok {
-	// 	return false
-	// }
+	sm, ok := source.(game.Mobile)
+	if !ok {
+		return false
+	}
+	// Check control master
+	if rm.ControlMaster().Serial() != sm.Serial() {
+		return false
+	}
 	item, ok := v.(game.Item)
 	if !ok {
 		return false
 	}
-	// TODO Check control master
 	return rm.DropToBackpack(item, false)
 }

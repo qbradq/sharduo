@@ -285,6 +285,12 @@ func handleWearItemRequest(n *NetState, cp clientpacket.Packet) {
 		n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		return
 	}
+	// Check if we are allowed to equip items to this mobile
+	if wearer.Serial() != n.m.Serial() {
+		n.m.DropItemInCursor()
+		n.DropReject(uo.MoveItemRejectReasonUnspecified)
+		return
+	}
 	if item.Serial() != n.m.ItemInCursor().Serial() {
 		n.m.DropItemInCursor()
 		n.DropReject(uo.MoveItemRejectReasonUnspecified)
@@ -296,7 +302,6 @@ func handleWearItemRequest(n *NetState, cp clientpacket.Packet) {
 		n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		return
 	}
-	// TODO Check if we are allowed to equip items to this mobile
 	n.m.RequestCursorState(game.CursorStateEquip)
 	if !n.m.Equip(wearable) {
 		n.m.PickUp(nil)

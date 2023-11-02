@@ -95,7 +95,7 @@ func (g *spawner) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 	// Delete button
 	if p.Button >= 2000 && p.Button < 3000 {
 		i := p.Button - 2000
-		// TODO proper delete functionality
+		g.Spawner.Entries[i] = nil
 		g.Spawner.Entries = append(g.Spawner.Entries[:i], g.Spawner.Entries[i+1:]...)
 		return
 	}

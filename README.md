@@ -31,7 +31,6 @@ basic supporting features are also slated before the first alpha including
 vendors, mounts, pack animals, and banking.
 
 ### Known Defects ###
-* OPLInfo packets are not being distributed on OPL invalidation.
 
 ### Required Features and Tasks ###
 * Walk Random AI
@@ -39,7 +38,6 @@ vendors, mounts, pack animals, and banking.
 * Item durability
 * Teleport locations around Haven
 * Line of sight checks
-* Access checks
 
 ### Nice to Haves ###
 * Feedback GUMP
