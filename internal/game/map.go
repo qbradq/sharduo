@@ -1151,3 +1151,34 @@ func (m *Map) RetrieveObject(s uo.Serial) Object {
 	}
 	return o
 }
+
+// GetSpawnableSurface returns the surface on which something should be spawned
+// in the given location, or nil if no suitable surface for the object was
+// found. If the parameter object is nil, the height of the object is assumed
+// to be 0.
+func (m *Map) GetSpawnableSurface(l uo.Location, o Object) uo.CommonObject {
+	f, c := m.GetFloorAndCeiling(l, false)
+	if f == nil {
+		return nil
+	}
+	// Flag checks
+	if f.Wet() || !f.Surface() || f.Impassable() {
+		return nil
+	}
+	// Height check
+	if c == nil {
+		return f
+	}
+	oh := 0
+	if o != nil {
+		if _, ok := o.(Mobile); ok {
+			oh = int(uo.PlayerHeight)
+		} else if item, ok := o.(Item); ok {
+			oh = int(item.Height())
+		}
+	}
+	if int(c.Z())-int(f.Z()+f.StandingHeight()) < oh {
+		return nil
+	}
+	return f
+}

@@ -1,6 +1,8 @@
 package uo
 
-import "math"
+import (
+	"math"
+)
 
 // Location identifies an absolute location in the universe.
 type Location struct {
@@ -146,4 +148,17 @@ func (l Location) DirectionTo(a Location) Direction {
 		return DirectionNorthEast
 	}
 	return DirectionNorth
+}
+
+// BoundsByRadius returns a Bounds value that contains this location and the
+// locations within the radius r. The Z portion of the bounds will be maximized.
+func (l Location) BoundsByRadius(r int) Bounds {
+	return Bounds{
+		X: l.X - int16(r),
+		Y: l.Y - int16(r),
+		Z: MapMinZ,
+		W: int16(r*2 + 1),
+		H: int16(r*2 + 1),
+		D: int16(MapMaxZ) - int16(MapMinZ),
+	}
 }

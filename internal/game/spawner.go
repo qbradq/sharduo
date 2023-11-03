@@ -269,19 +269,9 @@ func (o *Spawner) Spawn(which string) Object {
 			Y: o.location.Y + int16(world.Random().Random(-o.Radius, o.Radius)),
 			Z: o.location.Z,
 		}
-		floor, ceiling := world.Map().GetFloorAndCeiling(nl, false)
+		floor := world.Map().GetSpawnableSurface(nl, so)
 		if floor == nil {
-			if ceiling == nil {
-				continue
-			}
-			floor, _ = world.Map().GetFloorAndCeiling(uo.Location{
-				X: nl.X,
-				Y: nl.Y,
-				Z: ceiling.Z() + ceiling.Highest(),
-			}, false)
-			if floor == nil {
-				continue
-			}
+			continue
 		}
 		nl.Z = floor.Z() + floor.StandingHeight()
 		so.SetLocation(nl)

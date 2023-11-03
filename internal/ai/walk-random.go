@@ -31,7 +31,16 @@ func (a *walkRandom) Act(m game.Mobile, t uo.Time) {
 		a.walkDirection = uo.Direction(game.GetWorld().Random().Random(0, 7))
 	}
 	if a.walking && m.CanTakeStep() {
-		if !m.Step(a.walkDirection) {
+		outOfBounds := false
+		o := m.Owner()
+		if o != nil {
+			if s, ok := o.(*game.Spawner); ok {
+				outOfBounds = m.Location().Forward(a.walkDirection).XYDistance(s.Location()) > int16(s.Radius)
+			}
+		}
+		if outOfBounds {
+			a.walkDirection = uo.Direction(game.GetWorld().Random().Random(0, 7))
+		} else if !m.Step(a.walkDirection) {
 			a.walking = false
 			a.stepsLeft = 0
 			a.nextWalkDeadline = t + uo.Time(game.GetWorld().Random().Random(

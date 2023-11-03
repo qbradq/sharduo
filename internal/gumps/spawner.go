@@ -5,6 +5,7 @@ import (
 
 	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/lib/clientpacket"
+	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/uo"
 )
 
@@ -32,6 +33,8 @@ func (g *spawner) Layout(target, param game.Object) {
 	g.Text(0, 0, 3, uo.HueDefault, "Radius")
 	// Radius field is 9999
 	g.TextEntry(3, 0, 3, uo.HueDefault, strconv.Itoa(g.Spawner.Radius), 5, 9999)
+	// Show button is 9998
+	g.ReplyButton(6, 0, 5, 1, uo.HueDefault, "Show", 9998)
 	for i, e := range g.Spawner.Entries {
 		// Delete buttons start at 2000
 		g.GemButton(0, 2+i, SGGemButtonDelete, uint32(2000+i))
@@ -64,11 +67,38 @@ func (g *spawner) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 	for i := 0; i < 8; i++ {
 		g.updateRowData(i, p)
 	}
+	g.Spawner.InvalidateOPL()
 	game.GetWorld().Update(g.Spawner)
 	// Have to do a full respawn to sync spawner with changes
 	g.Spawner.FullRespawn()
 	// Standard behavior handling
 	if g.StandardReplyHandler(p) {
+		return
+	}
+	// Show radius button
+	if p.Button == 9998 {
+		l := g.Spawner.Location()
+		b := l.BoundsByRadius(g.Spawner.Radius)
+		for l.Y = b.Y; l.Y < b.Y+b.H; l.Y++ {
+			for l.X = b.X; l.X < b.X+b.W; l.X++ {
+				l.Z = g.Spawner.Location().Z
+				f := game.GetWorld().Map().GetSpawnableSurface(l, nil)
+				if f == nil {
+					continue
+				}
+				l.Z = f.Z() + f.StandingHeight()
+				n.Send(&serverpacket.GraphicalEffect{
+					GFXType:        uo.GFXTypeFixed,
+					Graphic:        0x0495,
+					SourceLocation: l,
+					TargetLocation: l,
+					Speed:          15,
+					Duration:       75,
+					Hue:            62,
+					GFXBlendMode:   uo.GFXBlendModeNormal,
+				})
+			}
+		}
 		return
 	}
 	// Add button

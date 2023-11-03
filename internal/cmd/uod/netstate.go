@@ -477,7 +477,7 @@ func (n *NetState) updateMobile(mobile game.Mobile) {
 
 // UpdateObject implements the game.NetState interface.
 func (n *NetState) UpdateObject(o game.Object) {
-	if n.m == nil || !n.m.CanSee(o) {
+	if n.m == nil || o == nil || !n.m.CanSee(o) {
 		return
 	}
 	if item, ok := o.(game.Item); ok {

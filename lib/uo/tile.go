@@ -132,7 +132,7 @@ func (t Tile) Wall() bool         { return t.def.TileFlags&TileFlagsWall != 0 }
 func (t Tile) Damaging() bool     { return t.def.TileFlags&TileFlagsDamaging != 0 }
 func (t Tile) Impassable() bool   { return t.def.TileFlags&TileFlagsImpassable != 0 }
 func (t Tile) Wet() bool          { return t.def.TileFlags&TileFlagsWet != 0 }
-func (t Tile) Surface() bool      { return t.def.TileFlags&TileFlagsSurface != 0 }
+func (t Tile) Surface() bool      { return !t.Impassable() }
 func (t Tile) Bridge() bool       { return t.def.TileFlags&TileFlagsBridge != 0 }
 func (t Tile) Generic() bool      { return t.def.TileFlags&TileFlagsGeneric != 0 }
 func (t Tile) Window() bool       { return t.def.TileFlags&TileFlagsWindow != 0 }
