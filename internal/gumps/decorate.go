@@ -247,7 +247,19 @@ func (g *decorate) placeSingle(n game.NetState) {
 			return
 		}
 		item.SetBaseGraphic(uo.Graphic(util.RangeExpression(g.item.expression, game.GetWorld().Random())))
-		item.SetLocation(tr.Location)
+		l := tr.Location
+		f, c := game.GetWorld().Map().GetFloorAndCeiling(l, true)
+		if f != nil {
+			l.Z = f.Highest()
+		}
+		if c != nil {
+			if int(c.Z())-int(f.Highest()) < int(item.Height()) {
+				// Not enough room to fit the static within the other statics in
+				// that location, refuse to place the object.
+				return
+			}
+		}
+		item.SetLocation(l)
 		game.GetWorld().Map().ForceAddObject(item)
 		g.placeSingle(n)
 	})
