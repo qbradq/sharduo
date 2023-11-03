@@ -23,6 +23,7 @@ A huge thank you goes out to the following groups, in no particular order.
 * Mining
 * Vendors
 * Spawners
+* AI models
 
 ## Next Milestone - Mining Vertical ##
 The next milestone set for ShardUO is to implement the Mining skill vertical
@@ -33,7 +34,6 @@ vendors, mounts, pack animals, and banking.
 ### Known Defects ###
 
 ### Required Features and Tasks ###
-* Walk Random AI
 * AI voice commands
 * Item durability
 * Teleport locations around Haven

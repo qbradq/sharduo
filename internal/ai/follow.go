@@ -9,7 +9,7 @@ func init() {
 	reg("Follow", func() AIModel { return &follow{} })
 }
 
-// follow implements a Thinker that stands in place and reacts to nothing.
+// follow implements a Thinker that follows its goal.
 type follow struct {
 }
 
