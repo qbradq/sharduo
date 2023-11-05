@@ -3,6 +3,7 @@ package game
 import (
 	"fmt"
 	"sort"
+	"strings"
 	"sync"
 
 	"github.com/qbradq/sharduo/lib/marshal"
@@ -57,15 +58,17 @@ func (m *Map) LoadFromMuls(mapmul *file.MapMul, staticsmul *file.StaticsMul) {
 		c := m.GetChunk(static.Location)
 		c.statics = append(c.statics, static)
 	}
-	// Sort statics by top Z
+	// Sort statics by bottom Z
 	for iy := int16(0); iy < int16(uo.MapChunksHeight); iy++ {
 		for ix := int16(0); ix < int16(uo.MapChunksWidth); ix++ {
 			c := m.GetChunk(uo.Location{X: ix * int16(uo.ChunkWidth), Y: iy * int16(uo.ChunkHeight)})
 			sort.Slice(c.statics, func(i, j int) bool {
 				si := c.statics[i]
 				sj := c.statics[j]
-				sit := si.Location.Z + si.Height()
-				sjt := sj.Location.Z + sj.Height()
+				// sit := si.Location.Z + si.Height()
+				// sjt := sj.Location.Z + sj.Height()
+				sit := si.Location.Z
+				sjt := sj.Location.Z
 				return sit < sjt
 			})
 		}
@@ -1049,12 +1052,18 @@ func (m *Map) SendSpeech(from Object, r int16, format string, args ...any) {
 		return mobs[i].Location().XYDistance(from.Location()) <
 			mobs[j].Location().XYDistance(from.Location())
 	})
+	isAllCommand := len(text) >= 4 && strings.ToLower(text[:4]) == "all "
+	speechEventHandled := false
 	for _, mob := range mobs {
 		if from.Location().XYDistance(mob.Location()) <= mob.ViewRange() {
 			if mob.NetState() != nil {
 				mob.NetState().Speech(from, text)
 			}
-			DynamicDispatch("Speech", mob, from, text)
+			// Make sure we don't trigger every listener in range, just the
+			// closest, unless it is an "all" command.
+			if !speechEventHandled {
+				speechEventHandled = DynamicDispatch("Speech", mob, from, text) && !isAllCommand
+			}
 		}
 	}
 }

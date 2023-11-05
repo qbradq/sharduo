@@ -9,6 +9,7 @@ import (
 
 func init() {
 	reg("KeywordsBanker", KeywordsBanker)
+	reg("KeywordsCommand", KeywordsCommand)
 	reg("KeywordsStablemaster", KeywordsStablemaster)
 	reg("KeywordsVendor", KeywordsVendor)
 }
@@ -95,11 +96,33 @@ func KeywordsStablemaster(receiver, source game.Object, v any) bool {
 	}, receiver, source, words)
 }
 
+// KeywordsCommand handles command-able creature speech triggers.
+func KeywordsCommand(receiver, source game.Object, v any) bool {
+	f, words := speechTarget(nil, receiver, source, v)
+	if !f {
+		return false
+	}
+	return doKeywords([]string{
+		"come",
+		"drop",
+		"follow",
+		"release",
+		"stay",
+		"stop",
+	}, receiver, source, words)
+}
+
 // keywordEvents maps keywords to the event handlers they belong to
 var keywordEvents = map[string]EventHandler{
-	"bank":   OpenBankBox,
-	"buy":    VendorBuy,
-	"sell":   VendorSell,
-	"stable": StablePet,
-	"claim":  ClaimAllPets,
+	"bank":    OpenBankBox,
+	"buy":     VendorBuy,
+	"claim":   ClaimAllPets,
+	"come":    CommandFollowMe,
+	"drop":    CommandDrop,
+	"follow":  CommandFollow,
+	"release": CommandRelease,
+	"sell":    VendorSell,
+	"stable":  StablePet,
+	"stay":    CommandStay,
+	"stop":    CommandStay,
 }

@@ -258,6 +258,16 @@ func (o *Spawner) RespawnEntry(n int) {
 }
 
 func (o *Spawner) Spawn(which string) Object {
+	// Sanity checks
+	if len(which) < 1 {
+		log.Println("warning: Spawner.Spawn() called with empty string")
+		return nil
+	}
+	// List detection and expansion
+	if which[0] == '+' {
+		which = template.RandomListMember(which[1:])
+	}
+	// Object creation
 	so := template.Create[Object](which)
 	if so == nil {
 		log.Printf("warning: template %s not found in Spawner.Spawn()", which)

@@ -36,12 +36,14 @@ func (a *follow) Act(m game.Mobile, t uo.Time) {
 		return
 	}
 	// Something is blocking us, try to step around
-	d = (d - 1).Bound()
-	if m.Step(d) {
+	step := 1
+	if !d.IsDiagonal() {
+		step++
+	}
+	if m.Step(d.RotateCounterclockwise(step)) {
 		return
 	}
-	d = (d + 2).Bound()
-	m.Step(d)
+	m.Step(d.RotateClockwise(step))
 	// If we couldn't get around the blocking object we're stuck
 	// TODO Path finding?
 }

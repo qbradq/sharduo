@@ -659,7 +659,7 @@ func (m *BaseMobile) DropItemInCursor() {
 	m.cursor.PickUp(nil)
 	item.SetLocation(m.location)
 	item.SetParent(nil)
-	world.Map().AddObject(item)
+	world.Map().ForceAddObject(item)
 	world.Update(m)
 }
 
@@ -802,6 +802,7 @@ func (m *BaseMobile) doRemove(o Object, force bool) bool {
 	// If we are removing the cursor item we return true, otherwise we do not
 	// own the object and return false.
 	if m.cursor.item != nil && m.cursor.item.Serial() == item.Serial() {
+		m.PickUp(nil)
 		return true
 	}
 	return force
@@ -847,6 +848,19 @@ func (m *BaseMobile) DropToBackpack(o Object, force bool) bool {
 		}
 		return force
 	}
+	if item.Parent() == nil {
+		if force {
+			world.Map().ForceRemoveObject(item)
+		} else if !world.Map().RemoveObject(item) {
+			return false
+		}
+	} else {
+		if force {
+			item.Parent().ForceRemoveObject(item)
+		} else if !item.Parent().RemoveObject(item) {
+			return false
+		}
+	}
 	item.SetDropLocation(uo.RandomContainerLocation)
 	if !force {
 		return backpack.DropInto(item)
@@ -859,6 +873,11 @@ func (m *BaseMobile) DropToBackpack(o Object, force bool) bool {
 
 // DropToFeet implements the Mobile interface.
 func (m *BaseMobile) DropToFeet(o Object) {
+	if o.Parent() != nil {
+		o.Parent().ForceRemoveObject(o)
+	} else {
+		world.Map().ForceRemoveObject(o)
+	}
 	o.SetLocation(m.location)
 	world.Map().ForceAddObject(o)
 }
@@ -1404,14 +1423,11 @@ func (m *BaseMobile) Step(d uo.Direction) bool {
 func (m *BaseMobile) AppendContextMenuEntries(c *ContextMenu, src Mobile) {
 	m.BaseObject.AppendContextMenuEntries(c, src)
 	if m.controlMaster != nil && m.controlMaster == src {
-		c.Append("CommandKill", 3006111)
+		// c.Append("CommandKill", 3006111)
 		c.Append("CommandFollow", 3006108)
-		c.Append("CommandGuard", 3006107)
+		// c.Append("CommandGuard", 3006107)
 		c.Append("CommandDrop", 3006109)
 		c.Append("CommandStop", 3006112)
-		c.Append("CommandAddFriend", 3006110)
-		c.Append("CommandRemoveFriend", 3006099)
-		c.Append("CommandTransfer", 3006113)
 		c.Append("CommandRelease", 3006118)
 	}
 }

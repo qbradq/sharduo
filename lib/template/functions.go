@@ -17,7 +17,7 @@ var templateFuncMap = txtmp.FuncMap{
 	"PartialHue":  partialHue,       // Sets the partial hue flag
 	"RandomNew":   randomNew,        // RandomNew creates a new object of a template randomly selected from the named list
 	"RandomBool":  randomBool,       // RandomBool returns a random boolean value
-	"Random":      randomListMember, // Random returns a random string from the named list, or an empty string if the named list was not found
+	"Random":      RandomListMember, // Random returns a random string from the named list, or an empty string if the named list was not found
 }
 
 func randomBool() bool {
@@ -32,7 +32,7 @@ func templateNew(name string) string {
 	return o.Serial().String()
 }
 
-func randomListMember(list string) string {
+func RandomListMember(list string) string {
 	l, ok := tm.lists.Get(list)
 	if !ok || len(l) == 0 {
 		log.Printf("list %s not found\n", list)
@@ -42,7 +42,7 @@ func randomListMember(list string) string {
 }
 
 func randomNew(list string) string {
-	tn := randomListMember(list)
+	tn := RandomListMember(list)
 	if tn == "" {
 		return "0"
 	}

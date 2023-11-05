@@ -1,7 +1,7 @@
 package uo
 
 // A Dir is a 3-bit value indicating the direction a mobile is facing
-type Direction byte
+type Direction uint8
 
 // Direction value meanings
 const (
@@ -31,12 +31,34 @@ var dirOfs = [][]int16{
 // Bound returns the direction code bounded to valid values while preserving
 // the running flag.
 func (d Direction) Bound() Direction {
-	isRunning := d.IsRunning()
-	dirpart := d & 0x07
-	if isRunning {
-		return dirpart.SetRunningFlag()
+	r := d.IsRunning()
+	d = d & 0x07
+	if r {
+		d = d.SetRunningFlag()
 	}
-	return dirpart.StripRunningFlag()
+	return d
+}
+
+// RotateClockwise rotates the direction clockwise by n steps while preserving
+// the running flag.
+func (d Direction) RotateClockwise(n int) Direction {
+	r := d.IsRunning()
+	d = Direction((int(d.StripRunningFlag()) + n)) % 8
+	if r {
+		d = d.SetRunningFlag()
+	}
+	return d
+}
+
+// RotateCounterclockwise rotates the direction counterclockwise by n steps
+// while preserving the running flag.
+func (d Direction) RotateCounterclockwise(n int) Direction {
+	r := d.IsRunning()
+	d = Direction((int(d.StripRunningFlag()) - n)) % 8
+	if r {
+		d = d.SetRunningFlag()
+	}
+	return d
 }
 
 // IsRunning returns true if the running flag is set
