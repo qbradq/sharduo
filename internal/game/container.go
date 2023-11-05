@@ -449,12 +449,14 @@ func (c *BaseContainer) DropInto(i Item) bool {
 				i.Hue() == other.Hue() &&
 				i.TemplateName() == other.TemplateName() &&
 				other.Amount()+i.Amount() <= int(uo.MaxStackAmount) {
+				c.AdjustWeightAndCount(i.Weight(), 0)
 				other.SetAmount(other.Amount() + i.Amount())
 				if c.TemplateName() != "PlayerBankBox" && i.TemplateName() == "GoldCoin" {
 					if mobile, ok := RootParent(c).(Mobile); ok {
 						mobile.AdjustGold(i.Amount())
 					}
 				}
+				Remove(i)
 				world.Update(other)
 				return true
 			}

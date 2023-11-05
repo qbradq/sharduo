@@ -32,12 +32,10 @@ basic supporting features are also slated before the first alpha including
 vendors, mounts, pack animals, and banking.
 
 ### Known Defects ###
-* Mobile weight is not properly updated on drop-to-player.
 * OPL name display does not include stack count.
 * No sounds on remove from / drop to container.
 
 ### Required Features and Tasks ###
-* AI voice commands
 * Item durability
 * Teleport locations around Britannia
 * Line of sight checks
