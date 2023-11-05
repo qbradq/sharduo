@@ -273,7 +273,7 @@ func (o *Spawner) Spawn(which string) Object {
 		if floor == nil {
 			continue
 		}
-		nl.Z = floor.Z() + floor.StandingHeight()
+		nl.Z = floor.StandingHeight()
 		so.SetLocation(nl)
 		if world.Map().AddObject(so) {
 			so.SetOwner(o)

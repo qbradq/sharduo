@@ -17,7 +17,7 @@ func init() {
 // The second return value is the list of words following the name of this
 // object.
 func speechTarget(names []string, receiver, source game.Object, v any) (bool, []string) {
-	names = append(names, receiver.Name())
+	names = append(names, strings.ToLower(receiver.Name()))
 	if rm, ok := receiver.(game.Mobile); ok && rm.ControlMaster() != nil &&
 		rm.ControlMaster().Serial() == source.Serial() {
 		names = append(names, "all")
@@ -34,7 +34,7 @@ func speechTarget(names []string, receiver, source game.Object, v any) (bool, []
 			}
 		}
 	}
-	return false, nil
+	return false, words
 }
 
 // doKeywords handles the available keywords in a standardized way
@@ -90,6 +90,8 @@ func KeywordsStablemaster(receiver, source game.Object, v any) bool {
 	}
 	return doKeywords([]string{
 		"buy",
+		"stable",
+		"claim",
 	}, receiver, source, words)
 }
 

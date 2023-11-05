@@ -86,7 +86,7 @@ func (g *spawner) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 				if f == nil {
 					continue
 				}
-				l.Z = f.Z() + f.StandingHeight()
+				l.Z = f.StandingHeight()
 				n.Send(&serverpacket.GraphicalEffect{
 					GFXType:        uo.GFXTypeFixed,
 					Graphic:        0x0495,

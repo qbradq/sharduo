@@ -1182,7 +1182,7 @@ func (m *Map) GetSpawnableSurface(l uo.Location, o Object) uo.CommonObject {
 			oh = int(item.Height())
 		}
 	}
-	if int(c.Z())-int(f.Z()+f.StandingHeight()) < oh {
+	if int(c.Z())-int(f.StandingHeight()) < oh {
 		return nil
 	}
 	return f
