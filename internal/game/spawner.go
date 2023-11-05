@@ -296,8 +296,8 @@ func (o *Spawner) Spawn(which string) Object {
 }
 
 // AppendOPLEntries implements the Object interface.
-func (o *Spawner) AppendOPLEntires(p *serverpacket.OPLPacket) {
-	o.BaseItem.AppendOPLEntires(p)
+func (o *Spawner) AppendOPLEntires(r Object, p *serverpacket.OPLPacket) {
+	o.BaseItem.AppendOPLEntires(r, p)
 	p.Append(fmt.Sprintf("Radius %d", o.Radius))
 	for _, e := range o.Entries {
 		p.Append(fmt.Sprintf("%s x%d @ %d mins", e.Template, e.Amount,

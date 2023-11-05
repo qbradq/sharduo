@@ -135,8 +135,9 @@ type Object interface {
 	InvalidateOPL()
 	// AppendOPLEntires is called when building the object property list of an
 	// object. The function may append any entries it needs with the
-	// OPLPacket.Append and OPLPacket.AppendColor functions.
-	AppendOPLEntires(*serverpacket.OPLPacket)
+	// OPLPacket.Append and OPLPacket.AppendColor functions. The first parameter
+	// must be the object self-reference.
+	AppendOPLEntires(Object, *serverpacket.OPLPacket)
 
 	//
 	// Generic accessors
@@ -436,7 +437,7 @@ func (o *BaseObject) OPLPackets(self Object) (*serverpacket.OPLPacket, *serverpa
 		o.opl = &serverpacket.OPLPacket{
 			Serial: o.serial,
 		}
-		self.AppendOPLEntires(o.opl)
+		self.AppendOPLEntires(self, o.opl)
 		o.opl.Compile()
 		o.oplinfo = &serverpacket.OPLInfo{
 			Serial: o.serial,
@@ -454,8 +455,8 @@ func (o *BaseObject) InvalidateOPL() {
 }
 
 // AppendOPLEntries implements the Object interface.
-func (o *BaseObject) AppendOPLEntires(p *serverpacket.OPLPacket) {
-	p.AppendColor(color.White, o.DisplayName())
+func (o *BaseObject) AppendOPLEntires(r Object, p *serverpacket.OPLPacket) {
+	p.AppendColor(color.White, r.DisplayName())
 }
 
 // Location implements the Object interface

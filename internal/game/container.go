@@ -489,8 +489,8 @@ func (c *BaseContainer) UpdateItemOPL(i Item) {
 }
 
 // AppendOPLEntries implements the Object interface.
-func (c *BaseContainer) AppendOPLEntires(p *serverpacket.OPLPacket) {
-	c.BaseItem.AppendOPLEntires(p)
+func (c *BaseContainer) AppendOPLEntires(r Object, p *serverpacket.OPLPacket) {
+	c.BaseItem.AppendOPLEntires(r, p)
 	p.Append(fmt.Sprintf("%d/%d items, %d/%d stones", c.contentItems,
 		c.maxContainerItems, int(c.ContentWeight()), int(c.maxContainerWeight)))
 }

@@ -124,7 +124,7 @@ func (i *StaticItem) OPLPackets(self Object) (*serverpacket.OPLPacket, *serverpa
 	return nil, nil
 }
 func (i *StaticItem) InvalidateOPL()                                            {}
-func (i *StaticItem) AppendOPLEntires(p *serverpacket.OPLPacket)                {}
+func (i *StaticItem) AppendOPLEntires(r Object, p *serverpacket.OPLPacket)      {}
 func (i *StaticItem) AppendTemplateContextMenuEntry(event string, cl uo.Cliloc) {}
 func (i *StaticItem) AppendContextMenuEntries(m *ContextMenu, src Mobile)       {}
 func (i *StaticItem) Parent() Object                                            { return nil }
