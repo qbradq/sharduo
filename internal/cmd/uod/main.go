@@ -211,6 +211,7 @@ func startCommands() {
 	n := NewNetState(nil)
 	n.account = world.superUser
 	commands.Execute(n, "loadstatics")
+	commands.Execute(n, "loadspawners")
 }
 
 // Main is the entry point for uod.

@@ -173,8 +173,8 @@ func handleLoginConnection(conn *net.TCPConn) {
 	sp = &serverpacket.ServerList{
 		Entries: []serverpacket.ServerListEntry{
 			{
-				Name: "LOCAL DEV",
-				IP:   net.ParseIP("127.0.0.1"),
+				Name: configuration.GameServerName,
+				IP:   net.ParseIP(configuration.GameServerAddress),
 			},
 		},
 	}
@@ -198,7 +198,7 @@ func handleLoginConnection(conn *net.TCPConn) {
 
 	// Connect to game server packet
 	sp = &serverpacket.ConnectToGameServer{
-		IP:   net.ParseIP("127.0.0.1"),
+		IP:   net.ParseIP(configuration.GameServerPublicAddress),
 		Port: 7777,
 		Key:  0xBAADF00D,
 	}

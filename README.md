@@ -36,7 +36,7 @@ vendors, mounts, pack animals, and banking.
 ### Required Features and Tasks ###
 * AI voice commands
 * Item durability
-* Teleport locations around Haven
+* Teleport locations around Britannia
 * Line of sight checks
 
 ### Nice to Haves ###

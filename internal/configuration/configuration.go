@@ -67,11 +67,17 @@ var LoginServerPort int
 // IPv4 address to bind to
 var GameServerAddress string
 
+// IPv4 address to give to clients to connect to the game server
+var GameServerPublicAddress string
+
 // TCP port to bind to
 var GameServerPort int
 
 // Save file type
 var GameSaveType string
+
+// Name of the game server
+var GameServerName string
 
 //
 // Debug flags
@@ -86,6 +92,9 @@ var GenerateDebugMaps bool
 
 // Starting location
 var StartingLocation uo.Location
+
+// Starting facing
+var StartingFacing uo.Direction
 
 // Load loads the configuration from the file
 func Load() error {
@@ -129,8 +138,10 @@ func Load() error {
 	LoginServerPort = tfo.GetNumber("LoginServerPort", 7775)
 	// Game service configuration
 	GameServerAddress = tfo.GetString("GameServerAddress", "0.0.0.0")
+	GameServerPublicAddress = tfo.GetString("GameServerPublicAddress", "127.0.0.1")
 	GameServerPort = tfo.GetNumber("GameServerPort", 7777)
 	GameSaveType = tfo.GetString("GameSaveType", "Flat")
+	GameServerName = tfo.GetString("GameServerName", "ShardUO TC")
 	// Debug flags
 	GenerateDebugMaps = tfo.GetBool("GenerateDebugMaps", false)
 	// Game configuration
@@ -139,6 +150,7 @@ func Load() error {
 		Y: 0,
 		Z: 0,
 	})
+	StartingFacing = uo.Direction(tfo.GetNumber("StartingFacing", 4))
 
 	return nil
 }

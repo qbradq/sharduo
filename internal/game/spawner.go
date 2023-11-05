@@ -294,3 +294,12 @@ func (o *Spawner) AppendOPLEntires(p *serverpacket.OPLPacket) {
 			e.Delay/uo.DurationMinute))
 	}
 }
+
+// RemoveChildren implements the Object interface.
+func (o *Spawner) RemoveChildren() {
+	for _, e := range o.Entries {
+		for _, s := range e.Objects {
+			Remove(s.Object)
+		}
+	}
+}

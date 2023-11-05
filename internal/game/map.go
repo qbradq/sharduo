@@ -1044,7 +1044,12 @@ func (m *Map) PlayAnimation(who Mobile, at uo.AnimationType, aa uo.AnimationActi
 // SendSpeech sends speech to all mobiles in range.
 func (m *Map) SendSpeech(from Object, r int16, format string, args ...any) {
 	text := fmt.Sprintf(format, args...)
-	for _, mob := range m.GetMobilesInRange(from.Location(), r) {
+	mobs := m.GetMobilesInRange(from.Location(), r)
+	sort.Slice(mobs, func(i, j int) bool {
+		return mobs[i].Location().XYDistance(from.Location()) <
+			mobs[j].Location().XYDistance(from.Location())
+	})
+	for _, mob := range mobs {
 		if from.Location().XYDistance(mob.Location()) <= mob.ViewRange() {
 			if mob.NetState() != nil {
 				mob.NetState().Speech(from, text)

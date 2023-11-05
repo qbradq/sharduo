@@ -168,6 +168,8 @@ type Object interface {
 	DisplayName() string
 	// SetName sets the name of the object and clears all article flags.
 	SetName(string)
+	// Name returns the name of the object without any articles attached.
+	Name() string
 	// Weight returns the total weight of the object. For an item, this is the
 	// base weight of the item times the amount. For container items this is the
 	// base weight of the item plus the weight of the contents. For mobiles this
@@ -550,3 +552,6 @@ func (o *BaseObject) SetName(name string) {
 	o.articleAn = false
 	o.InvalidateOPL()
 }
+
+// Name implements the Object interface.
+func (o *BaseObject) Name() string { return o.name }

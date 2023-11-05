@@ -23,7 +23,7 @@ func help() {
 			"\n" +
 			"    Expands a 6144x4096 Felucca / Trammel map into a 7168x4096 map. Execute\n" +
 			"this program inside the Ultima Online directory containing the files you wish\n" +
-			"to modify. This program modifies map0.mul and staidx0.mul. The origional\n" +
+			"to modify. This program modifies map0.mul and staidx0.mul. The original\n" +
 			"files will be backed up as *.mul.bak.")
 }
 

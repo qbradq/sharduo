@@ -21,7 +21,7 @@ import (
 
 func init() {
 	regcmd(&cmdesc{"decorate", []string{"deco"}, commandDecorate, game.RoleDeveloper, "decorate", "Calls up the decoration GUMP"})
-	regcmd(&cmdesc{"loadspawners", nil, commandLoadSpawners, game.RoleDeveloper, "loadspawners", "Clears all spawners in the world, then loads data/misc/spawners.ini"})
+	regcmd(&cmdesc{"loadspawners", nil, commandLoadSpawners, game.RoleDeveloper, "loadspawners", "Clears all spawners in the world, then loads data/misc/spawners.ini and fully respawns all spawners"})
 	regcmd(&cmdesc{"loadstatics", nil, commandLoadStatics, game.RoleDeveloper, "loadstatics", "Clears all statics in the world, then loads data/misc/statics.csv"})
 	regcmd(&cmdesc{"savespawners", nil, commandSaveSpawners, game.RoleDeveloper, "savespawners", "Generates data/misc/spawners.ini"})
 	regcmd(&cmdesc{"savestatics", nil, commandSaveStatics, game.RoleDeveloper, "savestatics", "Generates data/misc/statics.csv"})
@@ -48,6 +48,7 @@ func commandLoadSpawners(n game.NetState, args CommandArgs, cl string) {
 		}
 		s.Read(lfs)
 		game.GetWorld().Map().ForceAddObject(s)
+		s.FullRespawn()
 	}
 }
 

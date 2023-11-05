@@ -75,9 +75,12 @@ func (r *CharacterLoginRequest) Execute() error {
 		// New player setup
 		player = template.Create[game.Mobile]("Player")
 		player.SetLocation(configuration.StartingLocation)
-		i := template.Create[game.Item]("Pickaxe")
-		player.DropToBackpack(i, true)
-		i = template.Create[game.Item]("GoldCoin")
+		player.SetFacing(configuration.StartingFacing)
+		w := template.Create[game.Wearable]("Pickaxe")
+		if !player.Equip(w) {
+			player.DropToBackpack(w, true)
+		}
+		i := template.Create[game.Item]("GoldCoin")
 		i.SetAmount(1000)
 		player.DropToBackpack(i, true)
 		i = template.Create[game.Item]("IronOre")
@@ -91,7 +94,8 @@ func (r *CharacterLoginRequest) Execute() error {
 	r.NetState.m = player
 	r.NetState.account.SetPlayer(player.Serial())
 	r.NetState.m.SetNetState(r.NetState)
-	Broadcast("Welcome %s to Trammel Time!", r.NetState.m.DisplayName())
+	Broadcast("Welcome %s to %s!", r.NetState.m.DisplayName(),
+		configuration.GameServerName)
 	// Send the EnterWorld packet
 	facing := r.NetState.m.Facing()
 	if r.NetState.m.IsRunning() {
