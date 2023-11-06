@@ -97,22 +97,26 @@ func (o *StaticItem) Update(t uo.Time) {}
 // RefreshDecayDeadline implements the Item interface
 func (i *StaticItem) RefreshDecayDeadline() {}
 
-func (i *StaticItem) GraphicOffset() int            { return 0 }
-func (i *StaticItem) Dyable() bool                  { return false }
-func (i *StaticItem) Flippable() bool               { return false }
-func (i *StaticItem) Stackable() bool               { return false }
-func (i *StaticItem) Movable() bool                 { return false }
-func (i *StaticItem) Amount() int                   { return i.def.Count }
-func (i *StaticItem) SetAmount(int)                 {}
-func (i *StaticItem) Value() int                    { return 1 }
-func (i *StaticItem) Consume(n int) bool            { return false }
-func (i *StaticItem) Split(n int) Item              { return nil }
-func (i *StaticItem) Combine(item Item) bool        { return false }
-func (i *StaticItem) CanCombineWith(Item) bool      { return false }
-func (i *StaticItem) Height() int8                  { return i.def.Height }
-func (i *StaticItem) Z() int8                       { return i.location.Z }
-func (i *StaticItem) DropLocation() uo.Location     { return uo.RandomContainerLocation }
-func (i *StaticItem) SetDropLocation(l uo.Location) {}
+func (i *StaticItem) GraphicOffset() int                    { return 0 }
+func (i *StaticItem) Dyable() bool                          { return false }
+func (i *StaticItem) Flippable() bool                       { return false }
+func (i *StaticItem) Stackable() bool                       { return false }
+func (i *StaticItem) Movable() bool                         { return false }
+func (i *StaticItem) Amount() int                           { return i.def.Count }
+func (i *StaticItem) SetAmount(int)                         {}
+func (i *StaticItem) Value() int                            { return 1 }
+func (i *StaticItem) Consume(n int) bool                    { return false }
+func (i *StaticItem) Split(n int) Item                      { return nil }
+func (i *StaticItem) Combine(item Item) bool                { return false }
+func (i *StaticItem) CanCombineWith(Item) bool              { return false }
+func (i *StaticItem) Height() int8                          { return i.def.Height }
+func (i *StaticItem) Z() int8                               { return i.location.Z }
+func (i *StaticItem) DropLocation() uo.Location             { return uo.RandomContainerLocation }
+func (i *StaticItem) SetDropLocation(l uo.Location)         {}
+func (i *StaticItem) LiftSound() uo.Sound                   { return uo.SoundDefaultLift }
+func (i *StaticItem) DropSoundOverride(s uo.Sound) uo.Sound { return s }
+func (i *StaticItem) Uses() int                             { return 0 }
+func (i *StaticItem) ConsumeUse() bool                      { return false }
 
 // Object interface
 func (i *StaticItem) SingleClick(m Mobile) {
@@ -176,9 +180,6 @@ func (i *StaticItem) Unmarshal(s *marshal.TagFileSegment) {
 
 // AfterUnmarshalOntoMap implements the Object interface.
 func (i *StaticItem) AfterUnmarshalOntoMap() {}
-
-func (i *StaticItem) LiftSound() uo.Sound                   { return uo.SoundDefaultLift }
-func (i *StaticItem) DropSoundOverride(s uo.Sound) uo.Sound { return s }
 
 // Flag accessors
 func (i *StaticItem) Background() bool   { return i.def.TileFlags&uo.TileFlagsBackground != 0 }

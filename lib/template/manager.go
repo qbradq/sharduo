@@ -251,7 +251,7 @@ func (m *TemplateManager) resolveTemplate(t *Template) error {
 	for k, e := range base.properties {
 		if _, found := t.properties[k]; !found {
 			// If we are not overriding the expression from the base we just use
-			// the base expression
+			// the base expression.
 			t.properties[k] = e
 		} else {
 			// We are overriding the base expression in some way, handle that

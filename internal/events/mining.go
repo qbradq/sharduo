@@ -17,7 +17,7 @@ func init() {
 // Registry of active miners
 var regMiners = map[uo.Serial]struct{}{}
 
-func startMiningLoop(miner game.Mobile, tool game.Weapon, p *clientpacket.TargetResponse) {
+func startMiningLoop(miner game.Mobile, tool game.Item, p *clientpacket.TargetResponse) {
 	// Register the miner blindly
 	regMiners[miner.Serial()] = struct{}{}
 	// Sanity checks
@@ -25,7 +25,7 @@ func startMiningLoop(miner game.Mobile, tool game.Weapon, p *clientpacket.Target
 		delete(regMiners, miner.Serial())
 		return
 	}
-	if !miner.IsEquipped(tool) {
+	if tool.TemplateName() == "Pickaxe" && !miner.IsEquipped(tool) {
 		miner.NetState().Cliloc(nil, 1149764) // You must have that equipped to use it.
 		delete(regMiners, miner.Serial())
 		return
@@ -52,7 +52,7 @@ func startMiningLoop(miner game.Mobile, tool game.Weapon, p *clientpacket.Target
 		return
 	}
 	// Animation and sound
-	game.GetWorld().Map().PlayAnimation(miner, uo.AnimationTypeAttack, tool.AnimationAction())
+	game.GetWorld().Map().PlayAnimation(miner, uo.AnimationTypeAttack, uo.AnimationActionSlash1H)
 	game.NewTimer(12, "ContinueMining", tool, miner, true, p)
 }
 
@@ -64,7 +64,7 @@ func BeginMining(receiver, source game.Object, v any) bool {
 	if !ok || miner.NetState() == nil {
 		return false
 	}
-	tool, ok := receiver.(game.Weapon)
+	tool, ok := receiver.(game.Item)
 	if !ok || tool.Removed() {
 		return false
 	}
@@ -76,7 +76,7 @@ func BeginMining(receiver, source game.Object, v any) bool {
 		miner.NetState().Cliloc(nil, 500119) // You must wait to perform another action.
 		return false
 	}
-	if !miner.IsEquipped(tool) {
+	if tool.TemplateName() == "Pickaxe" && !miner.IsEquipped(tool) {
 		miner.NetState().Cliloc(nil, 1149764) // You must have that equipped to use it.
 		return false
 	}
@@ -108,13 +108,13 @@ func ContinueMining(receiver, source game.Object, v any) bool {
 		delete(regMiners, miner.Serial())
 		return false
 	}
-	tool, ok := receiver.(game.Weapon)
+	tool, ok := receiver.(game.Item)
 	if !ok || tool.Removed() {
 		delete(regMiners, miner.Serial())
 		return false
 	}
 	// Sanity checks
-	if !miner.IsEquipped(tool) {
+	if tool.TemplateName() == "Pickaxe" && !miner.IsEquipped(tool) {
 		miner.NetState().Cliloc(nil, 1149764) // You must have that equipped to use it.
 		delete(regMiners, miner.Serial())
 		return false
@@ -136,7 +136,7 @@ func ContinueMining(receiver, source game.Object, v any) bool {
 	}
 	game.GetWorld().Map().PlaySound(s, p.Location)
 	// Queue up the last hit
-	game.GetWorld().Map().PlayAnimation(miner, uo.AnimationTypeAttack, tool.AnimationAction())
+	game.GetWorld().Map().PlayAnimation(miner, uo.AnimationTypeAttack, uo.AnimationActionSlash1H)
 	game.NewTimer(12, "FinishMining", receiver, source, true, p)
 	return true
 }
@@ -154,13 +154,13 @@ func FinishMining(receiver, source game.Object, v any) bool {
 		delete(regMiners, miner.Serial())
 		return false
 	}
-	tool, ok := receiver.(game.Weapon)
+	tool, ok := receiver.(game.Item)
 	if !ok || tool.Removed() {
 		delete(regMiners, miner.Serial())
 		return false
 	}
 	// Sanity checks
-	if !miner.IsEquipped(tool) {
+	if tool.TemplateName() == "Pickaxe" && !miner.IsEquipped(tool) {
 		miner.NetState().Cliloc(nil, 1149764) // You must have that equipped to use it.
 		delete(regMiners, miner.Serial())
 		return false
@@ -204,14 +204,17 @@ func FinishMining(receiver, source game.Object, v any) bool {
 	} else {
 		miner.NetState().Cliloc(nil, 503043) // You loosen some rocks but fail to find any useable ore.
 	}
-	// Item durability
-	if w, ok := receiver.(game.Wearable); ok {
-		w.DamageDurability(w, 1)
-		if w.Removed() {
-			miner.NetState().Cliloc(nil, 1044038) // You have worn out your tool!
-			delete(regMiners, miner.Serial())
-			return false
-		}
+	// Item uses
+	if !tool.ConsumeUse() {
+		// Something very wrong happened here
+		delete(regMiners, miner.Serial())
+		return false
+	}
+	if tool.Uses() < 1 {
+		game.Remove(tool)
+		miner.NetState().Cliloc(nil, 1044038) // You have worn out your tool!
+		delete(regMiners, miner.Serial())
+		return true
 	}
 	// Continue mining the spot if the player is still logged in
 	if miner.NetState() != nil {

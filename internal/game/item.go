@@ -1,9 +1,11 @@
 package game
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/qbradq/sharduo/lib/marshal"
+	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/template"
 	"github.com/qbradq/sharduo/lib/uo"
 )
@@ -81,6 +83,11 @@ type Item interface {
 	// DropSoundOverride returns the sound to play considering the item's
 	// override and the given sound.
 	DropSoundOverride(uo.Sound) uo.Sound
+	// Uses returns the number of generic uses / charges left on an item.
+	Uses() int
+	// ConsumeUse returns true if a generic use / charge was able to be consumed
+	// from the item.
+	ConsumeUse() bool
 
 	//
 	// Flag accessors
@@ -137,6 +144,8 @@ type BaseItem struct {
 	flipped bool
 	// Stack amount
 	amount int
+	// Uses left
+	uses int
 
 	//
 	// Non-persistent values
@@ -177,6 +186,7 @@ func (i *BaseItem) Marshal(s *marshal.TagFileSegment) {
 	i.BaseObject.Marshal(s)
 	s.PutBool(i.flipped)
 	s.PutShort(uint16(i.amount))
+	s.PutShort(uint16(i.uses))
 }
 
 // Deserialize implements the util.Serializeable interface.
@@ -193,6 +203,7 @@ func (i *BaseItem) Deserialize(t *template.Template, create bool) {
 	i.plural = t.GetString("Plural", "")
 	i.liftSound = uo.Sound(t.GetNumber("LiftSound", int(uo.SoundDefaultLift)))
 	i.dropSoundOverride = uo.Sound(t.GetNumber("DropSoundOverride", int(uo.SoundInvalidDrop)))
+	i.uses = t.GetNumber("Uses", 0)
 }
 
 // Unmarshal implements the marshal.Unmarshaler interface.
@@ -203,6 +214,7 @@ func (i *BaseItem) Unmarshal(s *marshal.TagFileSegment) {
 	if i.amount < 1 {
 		i.amount = 1
 	}
+	i.uses = int(s.Short())
 	i.def = world.GetItemDefinition(i.graphic)
 	// Instead of storing the decay deadline we just refresh everything on a
 	// world load.
@@ -422,15 +434,36 @@ func (i *BaseItem) Update(t uo.Time) {
 	}
 }
 
-// LiftSound implements the Object interface.
+// LiftSound implements the Item interface.
 func (i *BaseItem) LiftSound() uo.Sound { return i.liftSound }
 
-// DropSoundOverride implements the Object interface.
+// DropSoundOverride implements the Item interface.
 func (i *BaseItem) DropSoundOverride(s uo.Sound) uo.Sound {
 	if i.dropSoundOverride != uo.SoundInvalidDrop {
 		return i.dropSoundOverride
 	}
 	return s
+}
+
+// Uses implements the Item interface.
+func (i *BaseItem) Uses() int { return i.uses }
+
+// ConsumeUse implements the Item interface.
+func (i *BaseItem) ConsumeUse() bool {
+	if i.uses < 1 {
+		return false
+	}
+	i.uses--
+	i.InvalidateOPL()
+	return true
+}
+
+// AppendOPLEntries implements the Object interface.
+func (i *BaseItem) AppendOPLEntires(r Object, p *serverpacket.OPLPacket) {
+	i.BaseObject.AppendOPLEntires(r, p)
+	if i.uses > 0 {
+		p.Append(fmt.Sprintf("Uses: %d", i.uses), true)
+	}
 }
 
 // Flag accessors

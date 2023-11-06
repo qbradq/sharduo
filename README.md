@@ -32,9 +32,9 @@ basic supporting features are also slated before the first alpha including
 vendors, mounts, pack animals, and banking.
 
 ### Known Defects ###
+* OPL is not invalidated on item amount change
 
 ### Required Features and Tasks ###
-* Items with uses and the Shovel
 * Teleport locations around Britannia
 * Line of sight checks
 * Rate-limit lift requests

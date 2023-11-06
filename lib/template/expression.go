@@ -14,6 +14,10 @@ type expression struct {
 
 // compile preps the expression to execute
 func (e *expression) compile() error {
+	// Filter array appends onto empty arrays - kinda hacky to do it here
+	if len(e.text) > 0 && e.text[0] == '+' {
+		e.text = e.text[1:]
+	}
 	if strings.Contains(e.text, "{{") {
 		var err error
 		e.pct = template.New(e.text)
