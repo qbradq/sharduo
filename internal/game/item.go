@@ -76,6 +76,11 @@ type Item interface {
 	// RefreshDecayDeadline updates the decay deadline for this item based on
 	// the item's internal state.
 	RefreshDecayDeadline()
+	// LiftSound returns the sound to play when this item is lifted.
+	LiftSound() uo.Sound
+	// DropSoundOverride returns the sound to play considering the item's
+	// override and the given sound.
+	DropSoundOverride(uo.Sound) uo.Sound
 
 	//
 	// Flag accessors
@@ -158,6 +163,10 @@ type BaseItem struct {
 	value int
 	// Time at which this item decays on the ground.
 	decayDeadline uo.Time
+	// Lift sound of the item
+	liftSound uo.Sound
+	// Override of the container's drop sound if any
+	dropSoundOverride uo.Sound
 }
 
 // ObjectType implements the Object interface.
@@ -182,6 +191,8 @@ func (i *BaseItem) Deserialize(t *template.Template, create bool) {
 	i.amount = t.GetNumber("Amount", 1)
 	i.value = t.GetNumber("Value", 0)
 	i.plural = t.GetString("Plural", "")
+	i.liftSound = uo.Sound(t.GetNumber("LiftSound", int(uo.SoundDefaultLift)))
+	i.dropSoundOverride = uo.Sound(t.GetNumber("DropSoundOverride", int(uo.SoundInvalidDrop)))
 }
 
 // Unmarshal implements the marshal.Unmarshaler interface.
@@ -409,6 +420,17 @@ func (i *BaseItem) Update(t uo.Time) {
 		}
 		Remove(i)
 	}
+}
+
+// LiftSound implements the Object interface.
+func (i *BaseItem) LiftSound() uo.Sound { return i.liftSound }
+
+// DropSoundOverride implements the Object interface.
+func (i *BaseItem) DropSoundOverride(s uo.Sound) uo.Sound {
+	if i.dropSoundOverride != uo.SoundInvalidDrop {
+		return i.dropSoundOverride
+	}
+	return s
 }
 
 // Flag accessors

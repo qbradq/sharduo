@@ -177,6 +177,9 @@ func (i *StaticItem) Unmarshal(s *marshal.TagFileSegment) {
 // AfterUnmarshalOntoMap implements the Object interface.
 func (i *StaticItem) AfterUnmarshalOntoMap() {}
 
+func (i *StaticItem) LiftSound() uo.Sound                   { return uo.SoundDefaultLift }
+func (i *StaticItem) DropSoundOverride(s uo.Sound) uo.Sound { return s }
+
 // Flag accessors
 func (i *StaticItem) Background() bool   { return i.def.TileFlags&uo.TileFlagsBackground != 0 }
 func (i *StaticItem) Weapon() bool       { return i.def.TileFlags&uo.TileFlagsWeapon != 0 }

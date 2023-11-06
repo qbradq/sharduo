@@ -77,6 +77,8 @@ type Container interface {
 	// UpdateItemOPL must be called when an item contained in this container
 	// has an OPL change.
 	UpdateItemOPL(Item)
+	// DropSound returns the default drop sound for the container.
+	DropSound() uo.Sound
 }
 
 // BaseContainer implements the base implementation of the Container interface.
@@ -98,6 +100,8 @@ type BaseContainer struct {
 	observers map[ContainerObserver]struct{}
 	// Bounds of the container GUMP
 	bounds uo.Bounds
+	// Default sound of dropped objects
+	dropSound uo.Sound
 }
 
 // ObjectType implements the Object interface.
@@ -135,6 +139,7 @@ func (c *BaseContainer) Deserialize(t *template.Template, create bool) {
 	c.maxContainerWeight = t.GetFloat("MaxContainerWeight", float32(uo.DefaultMaxContainerWeight))
 	c.maxContainerItems = t.GetNumber("MaxContainerItems", uo.DefaultMaxContainerItems)
 	c.bounds = t.GetBounds("Bounds", uo.Bounds{X: 44, Y: 65, W: 142, H: 94})
+	c.dropSound = uo.Sound(t.GetNumber("DropSound", int(uo.SoundDefaultDrop)))
 }
 
 // Unmarshal implements the marshal.Unmarshaler interface.
@@ -494,3 +499,6 @@ func (c *BaseContainer) AppendOPLEntires(r Object, p *serverpacket.OPLPacket) {
 	p.Append(fmt.Sprintf("%d/%d items, %d/%d stones", c.contentItems,
 		c.maxContainerItems, int(c.ContentWeight()), int(c.maxContainerWeight)))
 }
+
+// DropSound implements the Container interface.
+func (c *BaseContainer) DropSound() uo.Sound { return c.dropSound }

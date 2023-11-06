@@ -32,8 +32,6 @@ basic supporting features are also slated before the first alpha including
 vendors, mounts, pack animals, and banking.
 
 ### Known Defects ###
-* OPL name display does not include stack count.
-* No sounds on remove from / drop to container.
 
 ### Required Features and Tasks ###
 * Item durability

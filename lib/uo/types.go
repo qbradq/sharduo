@@ -340,6 +340,13 @@ type Cliloc uint32
 // Sound is a code referencing a sound effect on the client side
 type Sound uint16
 
+const (
+	SoundInvalidDrop Sound = 0
+	SoundDefaultLift Sound = 0x57
+	SoundDefaultDrop Sound = 0x42
+	SoundBagDrop     Sound = 0x48
+)
+
 // Song is a code referencing a song on the client side
 type Song uint16
 

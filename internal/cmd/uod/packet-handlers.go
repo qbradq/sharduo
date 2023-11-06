@@ -213,6 +213,8 @@ func handleLiftRequest(n *NetState, cp clientpacket.Packet) {
 	if !n.m.PickUp(item) {
 		n.DropReject(uo.MoveItemRejectReasonUnspecified)
 	}
+	// Play lift sound
+	n.Sound(item.LiftSound(), game.RootParent(item).Location())
 }
 
 func handleDropRequest(n *NetState, cp clientpacket.Packet) {
@@ -246,6 +248,9 @@ func handleDropRequest(n *NetState, cp clientpacket.Packet) {
 		} else {
 			n.m.PickUp(nil)
 			n.Send(&serverpacket.DropApproved{})
+			// Play drop sound
+			n.Sound(item.DropSoundOverride(uo.SoundDefaultDrop), newLocation)
+			// Distribute drag packets
 			for _, mob := range world.Map().GetNetStatesInRange(n.m.Location(), uo.MaxViewRange) {
 				mob.NetState().DragItem(item, n.m, n.m.Location(), nil, newLocation)
 			}
@@ -266,6 +271,15 @@ func handleDropRequest(n *NetState, cp clientpacket.Packet) {
 		}
 		n.m.PickUp(nil)
 		n.Send(&serverpacket.DropApproved{})
+		// Play drop sound
+		if c, ok := target.(game.Container); ok {
+			n.Sound(item.DropSoundOverride(c.DropSound()), newLocation)
+		} else if _, ok := target.(game.Mobile); ok {
+			n.Sound(uo.SoundBagDrop, newLocation)
+		} else {
+			n.Sound(item.DropSoundOverride(uo.SoundDefaultDrop), newLocation)
+		}
+		// Distribute drag packets
 		for _, mob := range world.Map().GetNetStatesInRange(n.m.Location(), uo.MaxViewRange) {
 			mob.NetState().DragItem(item, n.m, n.m.Location(), nil, newLocation)
 		}
