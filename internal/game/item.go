@@ -252,6 +252,10 @@ func (i *BaseItem) Amount() int { return i.amount }
 
 // SetAmount implements the Item interface.
 func (i *BaseItem) SetAmount(n int) {
+	if i.amount == n {
+		return
+	}
+	i.InvalidateOPL()
 	if n < 1 {
 		i.amount = 1
 	} else if n > int(uo.MaxStackAmount) {
@@ -278,7 +282,7 @@ func (i *BaseItem) Consume(n int) bool {
 	if i.amount == 0 {
 		Remove(i)
 	} else {
-		world.Update(i)
+		i.InvalidateOPL()
 	}
 	return true
 }
@@ -321,7 +325,7 @@ func (i *BaseItem) Split(n int) Item {
 		return nil
 	}
 	item.SetAmount(i.amount - n)
-	i.amount = n
+	i.SetAmount(n)
 	// Force the remainder back where we came from
 	item.SetLocation(i.location)
 	item.SetDropLocation(i.location)
