@@ -34,9 +34,10 @@ vendors, mounts, pack animals, and banking.
 ### Known Defects ###
 
 ### Required Features and Tasks ###
-* Item durability
+* Items with uses and the Shovel
 * Teleport locations around Britannia
 * Line of sight checks
+* Rate-limit lift requests
 
 ### Nice to Haves ###
 * Feedback GUMP

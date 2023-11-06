@@ -21,6 +21,10 @@ func startMiningLoop(miner game.Mobile, tool game.Weapon, p *clientpacket.Target
 	// Register the miner blindly
 	regMiners[miner.Serial()] = struct{}{}
 	// Sanity checks
+	if tool.Removed() {
+		delete(regMiners, miner.Serial())
+		return
+	}
 	if !miner.IsEquipped(tool) {
 		miner.NetState().Cliloc(nil, 1149764) // You must have that equipped to use it.
 		delete(regMiners, miner.Serial())
@@ -61,7 +65,7 @@ func BeginMining(receiver, source game.Object, v any) bool {
 		return false
 	}
 	tool, ok := receiver.(game.Weapon)
-	if !ok {
+	if !ok || tool.Removed() {
 		return false
 	}
 	// Sanity checks
@@ -105,7 +109,7 @@ func ContinueMining(receiver, source game.Object, v any) bool {
 		return false
 	}
 	tool, ok := receiver.(game.Weapon)
-	if !ok {
+	if !ok || tool.Removed() {
 		delete(regMiners, miner.Serial())
 		return false
 	}
@@ -151,7 +155,7 @@ func FinishMining(receiver, source game.Object, v any) bool {
 		return false
 	}
 	tool, ok := receiver.(game.Weapon)
-	if !ok {
+	if !ok || tool.Removed() {
 		delete(regMiners, miner.Serial())
 		return false
 	}
@@ -200,7 +204,15 @@ func FinishMining(receiver, source game.Object, v any) bool {
 	} else {
 		miner.NetState().Cliloc(nil, 503043) // You loosen some rocks but fail to find any useable ore.
 	}
-	// TODO Item durability
+	// Item durability
+	if w, ok := receiver.(game.Wearable); ok {
+		w.DamageDurability(w, 1)
+		if w.Removed() {
+			miner.NetState().Cliloc(nil, 1044038) // You have worn out your tool!
+			delete(regMiners, miner.Serial())
+			return false
+		}
+	}
 	// Continue mining the spot if the player is still logged in
 	if miner.NetState() != nil {
 		startMiningLoop(miner, tool, p)

@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"math"
 
 	"github.com/qbradq/sharduo/lib/template"
 	"github.com/qbradq/sharduo/lib/uo"
@@ -168,6 +169,12 @@ func (s *TagFileSegment) PutLong(v uint64) {
 	s.buf.Write(s.tbuf[0:8])
 }
 
+// PutFloat writes a single 64-bit float value to the segment.
+func (s *TagFileSegment) PutFloat(v float64) {
+	binary.LittleEndian.PutUint64(s.tbuf[0:8], math.Float64bits(v))
+	s.buf.Write(s.tbuf[0:8])
+}
+
 // PutString writes a 32-bit string reference value to the segment, and inserts
 // the string into the dictionary if needed.
 func (s *TagFileSegment) PutString(v string) {
@@ -298,6 +305,12 @@ func (s *TagFileSegment) Int() uint32 {
 func (s *TagFileSegment) Long() uint64 {
 	s.buf.Read(s.tbuf[:8])
 	return binary.LittleEndian.Uint64(s.tbuf[:8])
+}
+
+// Float returns the next 64-bit float in the segment
+func (s *TagFileSegment) Float() float64 {
+	s.buf.Read(s.tbuf[:8])
+	return math.Float64frombits(binary.LittleEndian.Uint64(s.tbuf[:8]))
 }
 
 // String returns the next UTF-8 string in the segment by reading a 32-bit

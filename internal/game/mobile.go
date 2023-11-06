@@ -1365,7 +1365,7 @@ func (m *BaseMobile) NoRent() bool {
 // AppendOPLEntries implements the Object interface.
 func (m *BaseMobile) AppendOPLEntires(r Object, p *serverpacket.OPLPacket) {
 	m.BaseObject.AppendOPLEntires(r, p)
-	p.Append(fmt.Sprintf("%d stones", int(r.Weight())))
+	p.Append(fmt.Sprintf("%d stones", int(r.Weight())), true)
 }
 
 // ControlMaster implements the Mobile interface.

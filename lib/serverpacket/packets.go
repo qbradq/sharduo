@@ -1312,22 +1312,31 @@ func (p *NameResponse) Write(w io.Writer) {
 // OPLPacket is sent in response to generic packet 0x10 and populates object
 // tooltips.
 type OPLPacket struct {
-	Serial  uo.Serial // Serial of the object this packet is for
-	Hash    uint32    // Hash of the packet
-	Entries []string  // List of all tooltip entries
-	buf     []byte    // Internal data buffer for caching
+	Serial      uo.Serial // Serial of the object this packet is for
+	Hash        uint32    // Hash of the packet
+	Entries     []string  // List of all tooltip entries
+	TailEntries []string  // List of all tooltip entries that should be appended to the tail
+	buf         []byte    // Internal data buffer for caching
 }
 
 // Append adds an entry to the OPLPacket in the default font and color.
-func (p *OPLPacket) Append(text string) {
-	p.Entries = append(p.Entries, text)
+func (p *OPLPacket) Append(text string, tail bool) {
+	if !tail {
+		p.Entries = append(p.Entries, text)
+	} else {
+		p.TailEntries = append(p.TailEntries, text)
+	}
 }
 
 // AppendColor adds an entry to the OPLPacket in the given color.
-func (p *OPLPacket) AppendColor(c color.Color, text string) {
+func (p *OPLPacket) AppendColor(c color.Color, text string, tail bool) {
 	r, g, b, _ := c.RGBA()
 	s := fmt.Sprintf("<basefont color=#%02X%02X%02X>%s</basefont>", r&0xFF, g&0xFF, b&0xFF, text)
-	p.Entries = append(p.Entries, s)
+	if !tail {
+		p.Entries = append(p.Entries, s)
+	} else {
+		p.TailEntries = append(p.TailEntries, s)
+	}
 }
 
 // Write implements the Packet interface.
@@ -1348,7 +1357,8 @@ func (p *OPLPacket) Compile() {
 	dc.PutUint16(b, 1)                // Unknown 1
 	dc.PutUint32(b, uint32(p.Serial)) // Object serial
 	dc.Pad(b, 6)                      // Unknown 2 and padding for hash value
-	for _, e := range p.Entries {
+	entries := append(p.Entries, p.TailEntries...)
+	for _, e := range entries {
 		dc.PutUint32(b, 1042971) // ~1_NOTHING~
 		lrc := utf8.RuneCountInString(e)
 		dc.PutUint16(b, uint16(lrc*2))  // String length in bytes

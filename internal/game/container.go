@@ -497,7 +497,8 @@ func (c *BaseContainer) UpdateItemOPL(i Item) {
 func (c *BaseContainer) AppendOPLEntires(r Object, p *serverpacket.OPLPacket) {
 	c.BaseItem.AppendOPLEntires(r, p)
 	p.Append(fmt.Sprintf("%d/%d items, %d/%d stones", c.contentItems,
-		c.maxContainerItems, int(c.ContentWeight()), int(c.maxContainerWeight)))
+		c.maxContainerItems, int(c.ContentWeight()), int(c.maxContainerWeight)),
+		true)
 }
 
 // DropSound implements the Container interface.

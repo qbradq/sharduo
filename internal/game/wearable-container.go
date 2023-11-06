@@ -1,11 +1,8 @@
 package game
 
 import (
-	"log"
-
 	"github.com/qbradq/sharduo/lib/marshal"
 	"github.com/qbradq/sharduo/lib/template"
-	"github.com/qbradq/sharduo/lib/uo"
 )
 
 func init() {
@@ -16,8 +13,7 @@ func init() {
 // as inventory backpacks and the player's bank box.
 type WearableContainer struct {
 	BaseContainer
-	// Layer is the layer of the wearable
-	layer uo.Layer
+	BaseWearableImplementation
 }
 
 // ObjectType implements the Object interface.
@@ -26,13 +22,19 @@ func (i *WearableContainer) ObjectType() marshal.ObjectType {
 }
 
 // Deserialize implements the util.Serializeable interface.
-func (s *WearableContainer) Deserialize(t *template.Template, create bool) {
-	s.BaseContainer.Deserialize(t, create)
-	s.layer = uo.Layer(t.GetNumber("Layer", int(uo.LayerInvalid)))
-	if s.layer == uo.LayerInvalid {
-		log.Printf("error: wearable container %s no layer given", s.Serial().String())
-	}
+func (i *WearableContainer) Deserialize(t *template.Template, create bool) {
+	i.BaseContainer.Deserialize(t, create)
+	i.BaseWearableImplementation.Deserialize(t, create)
 }
 
-// Layer implements the Layerer interface.
-func (c *WearableContainer) Layer() uo.Layer { return c.layer }
+// Marshal implements the marshal.Marshaler interface.
+func (i *WearableContainer) Marshal(s *marshal.TagFileSegment) {
+	i.BaseContainer.Marshal(s)
+	i.BaseWearableImplementation.Marshal(s)
+}
+
+// Unmarshal implements the marshal.Unmarshaler interface.
+func (i *WearableContainer) Unmarshal(s *marshal.TagFileSegment) {
+	i.BaseContainer.Unmarshal(s)
+	i.BaseWearableImplementation.Unmarshal(s)
+}

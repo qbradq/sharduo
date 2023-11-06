@@ -456,7 +456,7 @@ func (o *BaseObject) InvalidateOPL() {
 
 // AppendOPLEntries implements the Object interface.
 func (o *BaseObject) AppendOPLEntires(r Object, p *serverpacket.OPLPacket) {
-	p.AppendColor(color.White, r.DisplayName())
+	p.AppendColor(color.White, r.DisplayName(), false)
 }
 
 // Location implements the Object interface

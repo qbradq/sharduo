@@ -16,7 +16,7 @@ type Weapon interface {
 
 	// Skill returns the weapon skill this weapon uses
 	Skill() uo.Skill
-	// Animation returns the animation action code used for an attack
+	// AnimationAction returns the animation action code used for an attack
 	AnimationAction() uo.AnimationAction
 }
 
