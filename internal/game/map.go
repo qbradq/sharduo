@@ -65,11 +65,12 @@ func (m *Map) LoadFromMuls(mapmul *file.MapMul, staticsmul *file.StaticsMul) {
 			sort.Slice(c.statics, func(i, j int) bool {
 				si := c.statics[i]
 				sj := c.statics[j]
-				// sit := si.Location.Z + si.Height()
-				// sjt := sj.Location.Z + sj.Height()
-				sit := si.Location.Z
-				sjt := sj.Location.Z
-				return sit < sjt
+				sit := si.Location.Z + si.Height()
+				sjt := sj.Location.Z + sj.Height()
+				if si.Location.Z == sj.Location.Z {
+					return sit < sjt
+				}
+				return si.Location.Z < sj.Location.Z
 			})
 		}
 	}

@@ -32,7 +32,6 @@ basic supporting features are also slated before the first alpha including
 vendors, mounts, pack animals, and banking.
 
 ### Known Defects ###
-* OPL is not invalidated on item amount change
 
 ### Required Features and Tasks ###
 * Teleport locations around Britannia
