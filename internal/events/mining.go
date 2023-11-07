@@ -72,10 +72,6 @@ func BeginMining(receiver, source game.Object, v any) bool {
 	if miner.NetState() == nil {
 		return false
 	}
-	if !miner.NetState().TakeAction() {
-		miner.NetState().Cliloc(nil, 500119) // You must wait to perform another action.
-		return false
-	}
 	if tool.TemplateName() == "Pickaxe" && !miner.IsEquipped(tool) {
 		miner.NetState().Cliloc(nil, 1149764) // You must have that equipped to use it.
 		return false

@@ -146,9 +146,9 @@ func (n *NetState) Disconnect() {
 func (n *NetState) Account() *game.Account { return n.account }
 
 // TakeAction returns true if an action is allowed at this time. Examples of
-// actions are double-clicking anything basically and moving and
-// equipping items. This method assumes that the action will be taken after
-// this call and sets internal states to limit action speed.
+// actions are double-clicking basically anything or lifting an item. This
+// method assumes that the action will be taken after this call and sets
+// internal states to limit action speed.
 func (n *NetState) TakeAction() bool {
 	now := world.Time()
 	if now < n.nextActionTime {

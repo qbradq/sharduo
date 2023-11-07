@@ -132,6 +132,10 @@ func handleSingleClickRequest(n *NetState, cp clientpacket.Packet) {
 }
 
 func handleDoubleClickRequest(n *NetState, cp clientpacket.Packet) {
+	if !n.TakeAction() {
+		n.Cliloc(nil, 500119) // You must wait to perform another action.
+		return
+	}
 	if n.m == nil {
 		return
 	}
@@ -176,6 +180,10 @@ func handleViewRange(n *NetState, cp clientpacket.Packet) {
 }
 
 func handleLiftRequest(n *NetState, cp clientpacket.Packet) {
+	if !n.TakeAction() {
+		n.Cliloc(nil, 500119) // You must wait to perform another action.
+		return
+	}
 	if n.m == nil {
 		n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		return

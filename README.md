@@ -35,7 +35,6 @@ vendors, mounts, pack animals, and banking.
 
 ### Required Features and Tasks ###
 * Line of sight checks
-* Rate-limit lift requests
 
 ### Nice to Haves ###
 * Feedback GUMP
