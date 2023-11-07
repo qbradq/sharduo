@@ -34,7 +34,11 @@ vendors, mounts, pack animals, and banking.
 ### Known Defects ###
 
 ### Required Features and Tasks ###
+* Doors and door placement tool
+* Signs and sign placement tool
 * Line of sight checks
+* Doors and signs around Britain
+* Start decorating Britain
 
 ### Nice to Haves ###
 * Feedback GUMP
@@ -47,7 +51,7 @@ vendors, mounts, pack animals, and banking.
 * Passive fauna
 * Wild flora
 * Agricultural crops
-* Start decorating
+* Complete decorating Britain
 
 ### Nerdy Things I Might Do for Fun ###
 * Player movement packet throttling
