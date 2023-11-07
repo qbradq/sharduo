@@ -345,7 +345,7 @@ func (m *Map) ForceAddObject(o Object) {
 	// tell it. This is the case when a mobile is first created from template
 	// and when loading from save.
 	if ok && mob.StandingOn() == nil {
-		floor, _ := m.GetFloorAndCeiling(o.Location(), false)
+		floor, _ := m.GetFloorAndCeiling(o.Location(), false, false)
 		mob.StandOn(floor)
 	}
 	// If this is an item we need to update the decay deadline.
@@ -383,7 +383,7 @@ func (m *Map) canMoveTo(mob Mobile, d uo.Direction) (bool, uo.Location, uo.Commo
 	ol := mob.Location()
 	nl := ol.Forward(d.Bound()).WrapAndBound(ol)
 	nl.Z = mob.StandingOn().Highest()
-	floor, ceiling := m.GetFloorAndCeiling(nl, false)
+	floor, ceiling := m.GetFloorAndCeiling(nl, false, true)
 	// No floor to stand on, bail
 	if floor == nil {
 		return false, ol, nil
@@ -508,12 +508,12 @@ func (m *Map) TeleportMobile(mob Mobile, l uo.Location) bool {
 		// Don't leak the mobile, just force it back where it came from.
 		mob.SetLocation(oldLocation)
 		world.Map().ForceAddObject(mob)
-		floor, _ := m.GetFloorAndCeiling(mob.Location(), false)
+		floor, _ := m.GetFloorAndCeiling(mob.Location(), false, false)
 		mob.StandOn(floor)
 		return false
 	}
 	// Update standing
-	floor, _ := m.GetFloorAndCeiling(mob.Location(), false)
+	floor, _ := m.GetFloorAndCeiling(mob.Location(), false, false)
 	mob.StandOn(floor)
 	// If this mobile has a net state attached we need to fully refresh the
 	// client's object collection.
@@ -770,7 +770,7 @@ func (m *Map) getTerrainElevations(x, y int16) (lowest, average, highest int8) {
 //     on top of the stack.
 func (m *Map) plop(toPlop Item) bool {
 	l := toPlop.Location()
-	floor, ceiling := m.GetFloorAndCeiling(l, true)
+	floor, ceiling := m.GetFloorAndCeiling(l, true, false)
 	if floor == nil {
 		// No floor to place item on, bail
 		return false
@@ -830,7 +830,7 @@ func (m *Map) plop(toPlop Item) bool {
 //     a. If the item's Z position is under the ceiling apply the offset.
 //     b. Make sure no item's Z position is set lower than the static floor.
 func (m *Map) plopItems(l uo.Location, drop int8) {
-	_, ceiling := m.GetFloorAndCeiling(l, true)
+	_, ceiling := m.GetFloorAndCeiling(l, true, false)
 	fz := l.Z
 	cz := uo.MapMaxZ
 	if ceiling != nil {
@@ -872,11 +872,13 @@ func (m *Map) plopItems(l uo.Location, drop int8) {
 // are certain places on the map - such as cave entrances - where the tile
 // matrix is ignored. In these cases both return values may be nil if there are
 // no items or statics to create a surface. If the ignoreDynamicItems argument
-// is true then only Items of concrete type *StaticItem are considered.
+// is true then only Items of concrete type *StaticItem are considered. If the
+// considerStepHeight parameter is true then gaps less than or equal to
+// uo.StepHeight will be ignored.
 //
 // NOTE: This function requires that all statics and items are z-sorted bottom
 // to top.
-func (m *Map) GetFloorAndCeiling(l uo.Location, ignoreDynamicItems bool) (uo.CommonObject, uo.CommonObject) {
+func (m *Map) GetFloorAndCeiling(l uo.Location, ignoreDynamicItems, considerStepHeight bool) (uo.CommonObject, uo.CommonObject) {
 	var floorObject uo.CommonObject
 	var ceilingObject uo.CommonObject
 	floor := uo.MapMinZ
@@ -912,12 +914,24 @@ func (m *Map) GetFloorAndCeiling(l uo.Location, ignoreDynamicItems bool) (uo.Com
 			continue
 		}
 		// Only select solid statics ignoring things like leaves
-		if !static.Surface() && !static.Wet() && !static.Impassable() {
+		if !static.Surface() && !static.Impassable() {
 			continue
 		}
 		sz := static.Z()
 		stz := static.Highest()
-		if stz <= footHeight {
+		if stz < floor {
+			// Static is below our current floor position, ignore
+			continue
+		}
+		if stz == floor {
+			// Static is even with our current floor position, so we need to
+			// try to defer to the object with the most passability
+			if floorObject.Impassable() {
+				floorObject = static
+			}
+			continue
+		}
+		if (considerStepHeight && stz <= footHeight+uo.StepHeight) || stz <= footHeight {
 			// Static is underfoot, consider it a possible floor
 			floor = stz
 			floorObject = static
@@ -950,12 +964,24 @@ func (m *Map) GetFloorAndCeiling(l uo.Location, ignoreDynamicItems bool) (uo.Com
 			continue
 		}
 		// Only select solid items. This ignores passible items like gold.
-		if !item.Surface() && !item.Wet() && !item.Impassable() {
+		if !item.Surface() && !item.Impassable() {
 			continue
 		}
 		iz := item.Z()
 		itz := item.Highest()
-		if itz <= footHeight {
+		if itz < floor {
+			// Item is below the current floor, ignore it
+			continue
+		}
+		if itz == floor {
+			// Item is even with our current floor, defer to the object with the
+			// most passability.
+			if floorObject.Impassable() {
+				floorObject = item
+			}
+			continue
+		}
+		if (considerStepHeight && itz <= footHeight+uo.StepHeight) || itz <= footHeight {
 			// Item is underfoot, consider it a possible floor
 			if itz >= floor {
 				// Surface of item is between the static floor and the foot
@@ -1172,7 +1198,7 @@ func (m *Map) RetrieveObject(s uo.Serial) Object {
 // found. If the parameter object is nil, the height of the object is assumed
 // to be 0.
 func (m *Map) GetSpawnableSurface(l uo.Location, o Object) uo.CommonObject {
-	f, c := m.GetFloorAndCeiling(l, false)
+	f, c := m.GetFloorAndCeiling(l, false, true)
 	if f == nil {
 		return nil
 	}

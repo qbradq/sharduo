@@ -248,7 +248,7 @@ func (g *decorate) placeSingle(n game.NetState) {
 		}
 		item.SetBaseGraphic(uo.Graphic(util.RangeExpression(g.item.expression, game.GetWorld().Random())))
 		l := tr.Location
-		f, c := game.GetWorld().Map().GetFloorAndCeiling(l, true)
+		f, c := game.GetWorld().Map().GetFloorAndCeiling(l, true, false)
 		if f != nil {
 			l.Z = f.Highest()
 		}

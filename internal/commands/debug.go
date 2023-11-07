@@ -164,7 +164,7 @@ func commandDebug(n game.NetState, args CommandArgs, cl string) {
 				Y: int16(game.GetWorld().Random().Random(100, uo.MapHeight-101)),
 				Z: uo.MapMaxZ,
 			}
-			f, _ := game.GetWorld().Map().GetFloorAndCeiling(nl, false)
+			f, _ := game.GetWorld().Map().GetFloorAndCeiling(nl, false, false)
 			if f != nil {
 				nl.Z = f.Z()
 			}
@@ -181,7 +181,7 @@ func commandDebug(n game.NetState, args CommandArgs, cl string) {
 				Y: int16(game.GetWorld().Random().Random(100, uo.MapHeight-101)),
 				Z: uo.MapMaxZ,
 			}
-			f, _ := game.GetWorld().Map().GetFloorAndCeiling(nl, false)
+			f, _ := game.GetWorld().Map().GetFloorAndCeiling(nl, false, false)
 			if f != nil {
 				nl.Z = f.Z()
 			}

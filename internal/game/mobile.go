@@ -481,7 +481,7 @@ func (m *BaseMobile) Unmarshal(s *marshal.TagFileSegment) {
 // AfterUnmarshalOntoMap implements the Object interface.
 func (m *BaseMobile) AfterUnmarshalOntoMap() {
 	// Find what we are standing on.
-	floor, _ := world.Map().GetFloorAndCeiling(m.location, false)
+	floor, _ := world.Map().GetFloorAndCeiling(m.location, false, true)
 	if floor == nil {
 		// We are below the ground or in the void which is an invalid state
 		log.Printf("error: mobile %s below the world or in the void, removing", m.serial.String())
