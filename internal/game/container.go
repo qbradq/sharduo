@@ -140,6 +140,15 @@ func (c *BaseContainer) Deserialize(t *template.Template, create bool) {
 	c.maxContainerItems = t.GetNumber("MaxContainerItems", uo.DefaultMaxContainerItems)
 	c.bounds = t.GetBounds("Bounds", uo.Bounds{X: 44, Y: 65, W: 142, H: 94})
 	c.dropSound = uo.Sound(t.GetNumber("DropSound", int(uo.SoundDefaultDrop)))
+	// Contents
+	for _, s := range t.GetObjectReferences("Contents") {
+		i := Find[Item](s)
+		if i == nil {
+			continue
+		}
+		i.SetDropLocation(uo.RandomContainerLocation)
+		c.ForceAddObject(i)
+	}
 }
 
 // Unmarshal implements the marshal.Unmarshaler interface.

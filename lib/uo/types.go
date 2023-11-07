@@ -247,6 +247,8 @@ const (
 	BodyHuman       Body = 400 // Human male body
 	BodyHumanMale   Body = 400
 	BodyHumanFemale Body = 401
+	BodyGhost       Body = 970
+	BodyCounselor   Body = 987 // GM body
 	BodyDefault     Body = 991 // Blackthorne
 	BodySystem      Body = 0x7fff
 )

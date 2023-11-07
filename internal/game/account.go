@@ -27,6 +27,7 @@ const (
 	RoleGameMaster    Role = 0b00001000 // Most other commands and actions
 	RoleDeveloper     Role = 0b00010000 // Commands and actions that can be dangerous on a live shard
 	RoleSuperUser     Role = 0b10000000 // Marks the account as the super user
+	RoleStaff         Role = 0b10011100 // All roles considered "staff", with a GM body
 	RoleAll           Role = 0b11111111 // All roles current and future
 )
 

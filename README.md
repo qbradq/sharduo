@@ -32,6 +32,7 @@ basic supporting features are also slated before the first alpha including
 vendors, mounts, pack animals, and banking.
 
 ### Known Defects ###
+* Unable to run over some blood stains on Fire Temple roof
 
 ### Required Features and Tasks ###
 * Teleport locations around Britannia

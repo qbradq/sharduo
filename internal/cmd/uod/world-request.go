@@ -73,16 +73,26 @@ func (r *CharacterLoginRequest) Execute() error {
 	// Create a new character if needed
 	if player == nil {
 		// New player setup
-		player = template.Create[game.Mobile]("Player")
+		tn := "PlayerMobile"
+		if r.NetState.account.HasRole(game.RoleSuperUser | game.RoleDeveloper) {
+			tn = "DeveloperMobile"
+		} else if r.NetState.account.HasRole(game.RoleGameMaster) {
+			tn = "GameMasterMobile"
+		} else {
+			tn = "AdministratorMobile"
+		}
+		player = template.Create[game.Mobile](tn)
 		player.SetLocation(configuration.StartingLocation)
 		player.SetFacing(configuration.StartingFacing)
+		// TODO Generic player starting equipment - gold, book, candle, dagger
+		i := template.Create[game.Item]("GoldCoin")
+		i.SetAmount(100)
+		player.DropToBackpack(i, true)
+		// TODO DEBUG REMOVE Mining alpha test equipment
 		w := template.Create[game.Wearable]("Pickaxe")
 		if !player.Equip(w) {
 			player.DropToBackpack(w, true)
 		}
-		i := template.Create[game.Item]("GoldCoin")
-		i.SetAmount(1000)
-		player.DropToBackpack(i, true)
 		i = template.Create[game.Item]("IronOre")
 		i.SetAmount(5)
 		player.DropToBackpack(i, true)

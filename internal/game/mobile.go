@@ -123,8 +123,10 @@ type Mobile interface {
 	// Graphics and display
 	//
 
-	// GetBody returns the animation body of the mobile.
+	// Body returns the animation body of the mobile.
 	Body() uo.Body
+	// SetBody sets the animation body of the mobile.
+	SetBody(uo.Body)
 	// IsPlayerCharacter returns true if this mobile is attached to a player's
 	// account.
 	IsPlayerCharacter() bool
@@ -396,11 +398,25 @@ func (m *BaseMobile) Deserialize(t *template.Template, create bool) {
 	for s := uo.SkillFirst; s <= uo.SkillLast; s++ {
 		m.skills[s] = int16(t.GetNumber("Skill"+uo.SkillNames[s], 0))
 	}
-	// Load default equipment collection
+	// Load equipment collection
 	if create {
 		m.equipment = NewEquipmentCollectionWith(t.GetObjectReferences("Equipment"), m)
 	} else {
 		m.equipment = NewEquipmentCollection()
+	}
+	// Load backpack contents
+	bpw := m.EquipmentInSlot(uo.LayerBackpack)
+	if bpw != nil {
+		if c, ok := bpw.(Container); ok {
+			for _, s := range t.GetObjectReferences("Contents") {
+				i := Find[Item](s)
+				if i == nil {
+					continue
+				}
+				i.SetDropLocation(uo.RandomContainerLocation)
+				c.ForceAddObject(i)
+			}
+		}
 	}
 }
 
@@ -1460,4 +1476,10 @@ func (m *BaseMobile) Claim(p Mobile) *Error {
 // StabledPets implements the Mobile interface.
 func (m *BaseMobile) StabledPets() []Mobile {
 	return m.stabledPets
+}
+
+// SetBody implements the Mobile interface.
+func (m *BaseMobile) SetBody(b uo.Body) {
+	m.body = b
+	world.Update(m)
 }

@@ -9,7 +9,7 @@ import (
 // Holds administrator-level commands
 
 func init() {
-	regcmd(&cmdesc{"location", nil, commandLocation, game.RoleAdministrator, "location", "Tells the absolute location of the targeted location or object"})
+	regcmd(&cmdesc{"location", []string{"loc"}, commandLocation, game.RoleAdministrator, "location", "Tells the absolute location of the targeted location or object"})
 	regcmd(&cmdesc{"save", nil, commandSave, game.RoleAdministrator, "save", "Executes a game.GetWorld() save immediately"})
 	regcmd(&cmdesc{"shutdown", nil, commandShutdown, game.RoleAdministrator, "shutdown", "Shuts down the server immediately"})
 }
