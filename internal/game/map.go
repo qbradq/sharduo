@@ -1178,6 +1178,38 @@ func (m *Map) ItemQuery(tn string, bounds uo.Bounds) []Item {
 	return ret
 }
 
+// ItemBaseQuery returns a slice of all of the items who's direct BaseTemplate
+// property matches the given template name. The second parameter may be the
+// zero value, in which case the entire map is searched. WARNING: This can be
+// expensive and will hang the server.
+func (m *Map) ItemBaseQuery(tn string, bounds uo.Bounds) []Item {
+	var ret []Item
+	if bounds == uo.BoundsZero {
+		// Full map query
+		for _, c := range m.chunks {
+			for _, i := range c.items {
+				if i.BaseTemplate() == tn {
+					ret = append(ret, i)
+				}
+			}
+		}
+		return ret
+	}
+	// Spacial query
+	chunks := m.getChunksInBounds(bounds)
+	for _, c := range chunks {
+		for _, item := range c.items {
+			if !bounds.Contains(item.Location()) {
+				continue
+			}
+			if item.BaseTemplate() == tn {
+				ret = append(ret, item)
+			}
+		}
+	}
+	return ret
+}
+
 // StoreObject places an object into deep storage.
 func (m *Map) StoreObject(o Object) {
 	m.SetNewParent(o, TheVoid)
@@ -1222,4 +1254,30 @@ func (m *Map) GetSpawnableSurface(l uo.Location, o Object) uo.CommonObject {
 		return nil
 	}
 	return f
+}
+
+// CanFit returns true if the object can fit between the statics and items in
+// the given new location.
+func (m *Map) CanFit(o Object, l uo.Location) bool {
+	z := l.Z
+	f, c := m.GetFloorAndCeiling(l, false, false)
+	if f != nil {
+		tz := f.Z() + f.Height()
+		if tz > z {
+			// Object had to be projected up through something
+			return false
+		}
+	}
+	if c != nil {
+		h := uo.PlayerHeight
+		if i, ok := o.(Item); ok {
+			h = i.Height()
+		}
+		bz := c.Z()
+		if bz < z+h {
+			// Ceiling is too low to fit the object
+			return false
+		}
+	}
+	return true
 }

@@ -29,4 +29,5 @@ const (
 	ObjectTypeMobile            ObjectType = 8  // BaseMobile
 	ObjectTypeAccount           ObjectType = 9  // Account
 	ObjectTypeSpawner           ObjectType = 10 // Spawner
+	ObjectTypeDoor              ObjectType = 11 // Door
 )

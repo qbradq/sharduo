@@ -35,6 +35,8 @@ var timerSerials = map[uo.Serial]*Timer{}
 type Timer struct {
 	// When the timer should trigger next
 	deadline uo.Time
+	// What pool the timer lives in
+	pool int
 	// Name of the event
 	event string
 	// Serial of the receiver of the event
@@ -48,8 +50,9 @@ type Timer struct {
 }
 
 // NewTimer creates a new timer with the given options, then adds the timer to
-// the update pool most suitable for it.
-func NewTimer(delay uo.Time, event string, receiver, source Object, noRent bool, parameter any) {
+// the update pool most suitable for it. A serial number uniquely identifying
+// the timer is returned. See CancelTimer().
+func NewTimer(delay uo.Time, event string, receiver, source Object, noRent bool, parameter any) uo.Serial {
 	receiverSerial := uo.SerialZero
 	sourceSerial := uo.SerialZero
 	if receiver != nil {
@@ -72,16 +75,25 @@ func NewTimer(delay uo.Time, event string, receiver, source Object, noRent bool,
 			// Duplicate serial
 			continue
 		}
-		pool := 0
 		if delay > uo.DurationSecond && delay < uo.DurationMinute {
-			pool = 1 + (int(serial) % mediumSpeedTimerPoolsCount)
+			t.pool = 1 + (int(serial) % mediumSpeedTimerPoolsCount)
 		} else if delay >= uo.DurationMinute {
-			pool = 1 + mediumSpeedTimerPoolsCount + (int(serial) % lowSpeedTimerPoolsCount)
+			t.pool = 1 + mediumSpeedTimerPoolsCount + (int(serial) % lowSpeedTimerPoolsCount)
 		} // Else delay <= uo.DurationSecond, pool stays 0
-		timerPools[pool][serial] = t
+		timerPools[t.pool][serial] = t
 		timerSerials[serial] = t
-		break
+		return serial
 	}
+}
+
+// CancelTimer cancels the timer identified by serial if it exists.
+func CancelTimer(s uo.Serial) {
+	t, found := timerSerials[s]
+	if !found {
+		return
+	}
+	delete(timerSerials, s)
+	delete(timerPools[t.pool], s)
 }
 
 // UpdateTimers updates every timer within the update pools suitable for time.
@@ -158,13 +170,13 @@ func (t *Timer) Execute() {
 	var source Object
 	if t.receiver != uo.SerialZero {
 		receiver = world.Find(t.receiver)
-		if receiver == nil {
+		if receiver == nil || receiver.Removed() {
 			return
 		}
 	}
 	if t.source != uo.SerialZero {
 		source = world.Find(t.source)
-		if source == nil {
+		if source == nil || source.Removed() {
 			return
 		}
 	}

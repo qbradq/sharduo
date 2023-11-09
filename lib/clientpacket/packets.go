@@ -1,6 +1,9 @@
 package clientpacket
 
 import (
+	"strconv"
+	"strings"
+
 	dc "github.com/qbradq/sharduo/lib/dataconv"
 	"github.com/qbradq/sharduo/lib/uo"
 )
@@ -14,6 +17,7 @@ func init() {
 	pf.Add(0x07, newLiftRequest)
 	pf.Add(0x08, newDropRequest)
 	pf.Add(0x09, newSingleClick)
+	pf.Add(0x12, newMacroRequest)
 	pf.Add(0x13, newWearItemRequest)
 	pf.Add(0x34, newPlayerStatusRequest)
 	pf.Add(0x3B, newBuyItems)
@@ -677,4 +681,54 @@ func newRenameRequest(in []byte) Packet {
 		Serial:     uo.Serial(dc.GetUint32(in[0:4])),
 		Name:       dc.NullString(in[4:34]),
 	}
+}
+
+// MacroRequest is sent by the client when requesting skill use, spell casts,
+// door open macro, or bow and salute actions.
+type MacroRequest struct {
+	basePacket
+	MacroType uo.MacroType // What type of macro action is requested
+	Offset    int          // Skill number, spell number, or action number
+}
+
+func newMacroRequest(in []byte) Packet {
+	p := &MacroRequest{
+		basePacket: basePacket{id: 0x12},
+	}
+	switch rune(in[0]) {
+	case '$':
+		p.MacroType = uo.MacroTypeSkill
+		parts := strings.Split(string(in[1:]), " ")
+		if len(parts) != 2 {
+			p.MacroType = uo.MacroTypeInvalid
+			break
+		}
+		v, err := strconv.ParseInt(parts[0], 0, 32)
+		if err != nil {
+			p.MacroType = uo.MacroTypeInvalid
+			break
+		}
+		p.Offset = int(v) - 1
+	case 'V':
+		p.MacroType = uo.MacroTypeSpell
+		v, err := strconv.ParseInt(string(in[1:]), 0, 32)
+		if err != nil {
+			p.MacroType = uo.MacroTypeInvalid
+			break
+		}
+		p.Offset = int(v) - 2
+	case 'X':
+		p.MacroType = uo.MacroTypeOpenDoor
+	case rune(0xC7):
+		p.MacroType = uo.MacroTypeAction
+		switch string(in[1:]) {
+		case "bow":
+			p.Offset = 0
+		case "salute":
+			p.Offset = 1
+		default:
+			p.MacroType = uo.MacroTypeInvalid
+		}
+	}
+	return p
 }

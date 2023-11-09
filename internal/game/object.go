@@ -73,6 +73,9 @@ type Object interface {
 	// SetTemplateName sets the name of the template used to create this object.
 	// For internal use only.
 	SetTemplateName(string)
+	// BaseTemplate returns the name of the direct base template used when
+	// creating this object.
+	BaseTemplate() string
 
 	//
 	// Callbacks
@@ -190,6 +193,8 @@ type BaseObject struct {
 	serial uo.Serial
 	// Name of the template this object was constructed from
 	templateName string
+	// Name of the base template used when constructing the object
+	baseTemplate string
 	// Parent object
 	parent Object
 	// Display name of the object
@@ -274,6 +279,7 @@ func (o *BaseObject) Deserialize(t *template.Template, create bool) {
 		log.Printf("warning: object %s has no TemplateName property", o.Serial().String())
 		return
 	}
+	o.baseTemplate = t.BaseTemplate
 	o.name = t.GetString("Name", "unknown entity")
 	o.articleA = t.GetBool("ArticleA", false)
 	o.articleAn = t.GetBool("ArticleAn", false)
@@ -471,7 +477,10 @@ func (o *BaseObject) SetLocation(l uo.Location) {
 func (o *BaseObject) Hue() uo.Hue { return o.hue }
 
 // SetHue implements the Object interface
-func (o *BaseObject) SetHue(hue uo.Hue) { o.hue = hue }
+func (o *BaseObject) SetHue(hue uo.Hue) {
+	o.hue = hue
+	world.Update(o)
+}
 
 // DisplayName implements the Object interface
 func (o *BaseObject) DisplayName() string {
@@ -496,6 +505,7 @@ func (o *BaseObject) Facing() uo.Direction { return o.facing }
 // SetFacing implements the Object interface
 func (o *BaseObject) SetFacing(f uo.Direction) {
 	o.facing = f.Bound()
+	world.Update(o)
 }
 
 // LinkEvent implements the Object interface
@@ -552,7 +562,11 @@ func (o *BaseObject) SetName(name string) {
 	o.articleA = false
 	o.articleAn = false
 	o.InvalidateOPL()
+	world.Update(o)
 }
 
 // Name implements the Object interface.
 func (o *BaseObject) Name() string { return o.name }
+
+// BaseTemplate implements the Object interface.
+func (o *BaseObject) BaseTemplate() string { return o.baseTemplate }

@@ -17,10 +17,13 @@ func init() {
 // Item is the interface that all non-static items implement.
 type Item interface {
 	Object
-	// BaseGraphic returns the graphic of the item
+	// BaseGraphic returns the base graphic of the item
 	BaseGraphic() uo.Graphic
 	// SetBaseGraphic sets the base graphic of the item
 	SetBaseGraphic(uo.Graphic)
+	// Graphic returns the current effective graphic of the item without the
+	// graphic offset
+	Graphic() uo.Graphic
 	// GraphicOffset returns the current graphic offset of the item, this will
 	// range 0-255 inclusive.
 	GraphicOffset() int
@@ -28,6 +31,14 @@ type Item interface {
 	Dyable() bool
 	// Flippable returns true if the item can be flipped / turned
 	Flippable() bool
+	// Flipped returns true if the item is currently flipped / turned
+	Flipped() bool
+	// Flip toggles the flipped / turned state
+	Flip()
+	// FlippedGraphic returns the flipped graphic for this item if any.
+	FlippedGraphic() uo.Graphic
+	// SetFlippedGraphic sets the flipped graphic for this item.
+	SetFlippedGraphic(uo.Graphic)
 	// Stackable returns true if the item can be stacked
 	Stackable() bool
 	// Movable returns true if the item can be moved
@@ -88,6 +99,10 @@ type Item interface {
 	// ConsumeUse returns true if a generic use / charge was able to be consumed
 	// from the item.
 	ConsumeUse() bool
+	// SetDefForGraphic forces a different static definition to be used for this
+	// item instead of the one associated with the base graphic. This is really
+	// hacky and was put in for southward counter-clockwise-opening doors.
+	SetDefForGraphic(uo.Graphic)
 
 	//
 	// Flag accessors
@@ -146,6 +161,8 @@ type BaseItem struct {
 	amount int
 	// Uses left
 	uses int
+	// Loot type
+	lootType uo.LootType
 
 	//
 	// Non-persistent values
@@ -176,6 +193,8 @@ type BaseItem struct {
 	liftSound uo.Sound
 	// Override of the container's drop sound if any
 	dropSoundOverride uo.Sound
+	// No-rent flag
+	noRent bool
 }
 
 // ObjectType implements the Object interface.
@@ -187,6 +206,7 @@ func (i *BaseItem) Marshal(s *marshal.TagFileSegment) {
 	s.PutBool(i.flipped)
 	s.PutShort(uint16(i.amount))
 	s.PutShort(uint16(i.uses))
+	s.PutByte(byte(i.lootType))
 }
 
 // Deserialize implements the util.Serializeable interface.
@@ -204,6 +224,8 @@ func (i *BaseItem) Deserialize(t *template.Template, create bool) {
 	i.liftSound = uo.Sound(t.GetNumber("LiftSound", int(uo.SoundDefaultLift)))
 	i.dropSoundOverride = uo.Sound(t.GetNumber("DropSoundOverride", int(uo.SoundInvalidDrop)))
 	i.uses = t.GetNumber("Uses", 0)
+	i.lootType = uo.LootType(t.GetNumber("LootType", int(uo.LootTypeNormal)))
+	i.noRent = t.GetBool("NoRent", false)
 }
 
 // Unmarshal implements the marshal.Unmarshaler interface.
@@ -215,6 +237,7 @@ func (i *BaseItem) Unmarshal(s *marshal.TagFileSegment) {
 		i.amount = 1
 	}
 	i.uses = int(s.Short())
+	i.lootType = uo.LootType(s.Byte())
 	i.def = world.GetItemDefinition(i.graphic)
 	// Instead of storing the decay deadline we just refresh everything on a
 	// world load.
@@ -228,6 +251,16 @@ func (i *BaseItem) BaseGraphic() uo.Graphic { return i.graphic }
 func (i *BaseItem) SetBaseGraphic(g uo.Graphic) {
 	i.graphic = g
 	i.def = world.GetItemDefinition(g)
+	i.InvalidateOPL()
+	world.Update(i)
+}
+
+// Graphic implements the Item interface.
+func (i *BaseItem) Graphic() uo.Graphic {
+	if i.flipped && i.flippedGraphic != uo.GraphicNone {
+		return i.flippedGraphic
+	}
+	return i.graphic
 }
 
 // GraphicOffset implements the Item interface.
@@ -240,6 +273,15 @@ func (i *BaseItem) Dyable() bool { return i.dyable }
 
 // Flippable implements the Item interface.
 func (i *BaseItem) Flippable() bool { return i.flippedGraphic != uo.GraphicNone }
+
+// Flipped implements the Item interface.
+func (i *BaseItem) Flipped() bool { return i.flipped }
+
+// Flip implements the Item interface.
+func (i *BaseItem) Flip() {
+	i.flipped = !i.flipped
+	world.Update(i)
+}
 
 // Stackable implements the Item interface.
 func (i *BaseItem) Stackable() bool { return i.stackable }
@@ -421,8 +463,16 @@ func (i *BaseItem) RefreshDecayDeadline() {
 			return
 		}
 	}
-	// If this is a spawned object it never decays
-	i.decayDeadline = world.Time() + uo.DurationMinute*15
+	switch i.lootType {
+	case uo.LootTypeNormal:
+		i.decayDeadline = world.Time() + uo.DurationHour
+	case uo.LootTypeBlessed:
+		i.decayDeadline = world.Time() + uo.DurationHour
+	case uo.LootTypeNewbied:
+		i.decayDeadline = world.Time() + uo.DurationSecond*15
+	case uo.LootTypeSystem:
+		i.decayDeadline = uo.TimeNever
+	}
 }
 
 // Update implements the Object interface.
@@ -469,6 +519,24 @@ func (i *BaseItem) AppendOPLEntires(r Object, p *serverpacket.OPLPacket) {
 		p.Append(fmt.Sprintf("Uses: %d", i.uses), true)
 	}
 }
+
+// FlippedGraphic implements the Item interface.
+func (i *BaseItem) FlippedGraphic() uo.Graphic { return i.flippedGraphic }
+
+// SetFlippedGraphic implements the Item interface.
+func (i *BaseItem) SetFlippedGraphic(g uo.Graphic) {
+	i.flippedGraphic = g
+	world.Update(i)
+}
+
+// SetDefForGraphic implements the Item interface.
+func (i *BaseItem) SetDefForGraphic(g uo.Graphic) {
+	i.def = world.GetItemDefinition(g)
+	world.Update(i)
+}
+
+// NoRent implements the Object interface.
+func (i *BaseItem) NoRent() bool { return i.noRent }
 
 // Flag accessors
 func (i *BaseItem) Background() bool   { return i.def.TileFlags&uo.TileFlagsBackground != 0 }

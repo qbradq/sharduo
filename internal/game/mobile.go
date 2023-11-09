@@ -1351,7 +1351,7 @@ func (m *BaseMobile) CanSee(o Object) bool {
 	switch o.Visibility() {
 	case uo.VisibilityVisible:
 		return true
-	case uo.VisibilityInvisibile:
+	case uo.VisibilityInvisible:
 		return false
 	case uo.VisibilityHidden:
 		return false

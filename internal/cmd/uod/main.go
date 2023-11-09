@@ -190,6 +190,9 @@ func initialize() {
 	world.Map().LoadFromMuls(mapmul, staticsmul)
 	game.RegisterWorld(world)
 
+	// Inject server-side dynamic objects
+	log.Println("Creating dynamic map objects...")
+
 	// Try to load the most recent save
 	if err := world.Unmarshal(); err != nil {
 		if errors.Is(err, os.ErrNotExist) {
@@ -211,6 +214,12 @@ func startCommands() {
 	n := NewNetState(nil)
 	n.account = world.superUser
 	commands.Execute(n, "loadstatics")
+	commands.Execute(n, "loaddoors")
+	// This is really hacky, but the mobiles need to update what they are
+	// standing on in this step and what they are standing on won't be there if
+	// it's a dynamic static object created by [loadstatics and friends.
+	world.m.AfterUnmarshal()
+	// Create the spawners last as that forces a full respawn.
 	commands.Execute(n, "loadspawners")
 }
 

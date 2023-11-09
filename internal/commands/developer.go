@@ -21,8 +21,10 @@ import (
 
 func init() {
 	regcmd(&cmdesc{"decorate", []string{"deco"}, commandDecorate, game.RoleDeveloper, "decorate", "Calls up the decoration GUMP"})
-	regcmd(&cmdesc{"loadspawners", nil, commandLoadSpawners, game.RoleDeveloper, "loadspawners", "Clears all spawners in the world, then loads data/misc/spawners.ini and fully respawns all spawners"})
-	regcmd(&cmdesc{"loadstatics", nil, commandLoadStatics, game.RoleDeveloper, "loadstatics", "Clears all statics in the world, then loads data/misc/statics.csv"})
+	regcmd(&cmdesc{"loaddoors", nil, commandLoadDoors, game.RoleDeveloper, "loaddoors", "Clears all doors then loads data/misc/doors.csv"})
+	regcmd(&cmdesc{"loadspawners", nil, commandLoadSpawners, game.RoleDeveloper, "loadspawners", "Clears all spawners then loads data/misc/spawners.ini and fully respawns all spawners"})
+	regcmd(&cmdesc{"loadstatics", nil, commandLoadStatics, game.RoleDeveloper, "loadstatics", "Clears all statics then loads data/misc/statics.csv"})
+	regcmd(&cmdesc{"savedoors", nil, commandSaveDoors, game.RoleDeveloper, "savedoors", "Generates data/misc/doors.csv"})
 	regcmd(&cmdesc{"savespawners", nil, commandSaveSpawners, game.RoleDeveloper, "savespawners", "Generates data/misc/spawners.ini"})
 	regcmd(&cmdesc{"savestatics", nil, commandSaveStatics, game.RoleDeveloper, "savestatics", "Generates data/misc/statics.csv"})
 }
@@ -163,7 +165,7 @@ func commandSaveStatics(n game.NetState, args CommandArgs, cl string) {
 		l := s.Location()
 		f.WriteString(fmt.Sprintf("%d,%d,%d,%d,%d\n",
 			l.X, l.Y, l.Z,
-			s.BaseGraphic(),
+			s.Graphic(),
 			s.Hue(),
 		))
 	}
@@ -172,4 +174,104 @@ func commandSaveStatics(n game.NetState, args CommandArgs, cl string) {
 
 func commandDecorate(n game.NetState, args CommandArgs, cl string) {
 	n.GUMP(gumps.New("decorate"), nil, nil)
+}
+
+func commandSaveDoors(n game.NetState, args CommandArgs, cl string) {
+	broadcast("Save Doors: getting doors")
+	doors := game.GetWorld().Map().ItemBaseQuery("BaseDoor", uo.BoundsZero)
+	broadcast("Save Doors: sorting doors")
+	// Correct door locations for doors that happen to be open
+	for _, d := range doors {
+		if d.Flipped() {
+			l := d.Location()
+			ofs := uo.DoorOffsets[d.Facing()]
+			l.X -= ofs.X
+			l.Y -= ofs.Y
+			game.GetWorld().Map().ForceRemoveObject(d)
+			d.SetLocation(l)
+			d.Flip()
+			d.SetDefForGraphic(d.Graphic())
+			game.GetWorld().Map().ForceAddObject(d)
+		}
+	}
+	// Sort based on corrected locations
+	sort.Slice(doors, func(i, j int) bool {
+		a := doors[i].Location()
+		b := doors[j].Location()
+		if a.Y < b.Y {
+			return true
+		} else if a.Y == b.Y {
+			if a.X < b.X {
+				return true
+			} else if a.X == b.X {
+				return a.Z < b.Z
+			}
+			return false
+		}
+		return false
+	})
+	broadcast("Save Doors: writing doors")
+	f, err := os.Create(path.Join("data", "misc", "doors.csv"))
+	if err != nil {
+		broadcast(fmt.Sprintf("Error generating doors.csv: %s", err.Error()))
+		return
+	}
+	defer f.Close()
+	f.WriteString(";X,Y,Z,TemplateName,Facing\n")
+	for _, d := range doors {
+		l := d.Location()
+		f.WriteString(fmt.Sprintf("%d,%d,%d,%s,%d\n",
+			l.X, l.Y, l.Z,
+			d.TemplateName(),
+			d.Facing(),
+		))
+	}
+	broadcast("Save Doors complete")
+}
+
+func commandLoadDoors(n game.NetState, args CommandArgs, cl string) {
+	var fn = func(s string) int {
+		v, err := strconv.ParseInt(s, 0, 32)
+		if err != nil {
+			panic(err)
+		}
+		return int(v)
+	}
+	broadcast("Load Doors: clearing all doors")
+	for _, s := range game.GetWorld().Map().ItemBaseQuery("BaseDoor", uo.BoundsZero) {
+		game.Remove(s)
+	}
+	broadcast("Load Doors: loading doors.csv")
+	f, err := data.FS.Open(path.Join("misc", "doors.csv"))
+	if err != nil {
+		broadcast("Load Doors: error loading doors.csv: %s", err.Error())
+		return
+	}
+	defer f.Close()
+	r := csv.NewReader(f)
+	r.Comment = ';'
+	r.FieldsPerRecord = 5
+	r.ReuseRecord = true
+	broadcast("Load Doors: generating new doors")
+	for {
+		fields, err := r.Read()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			broadcast("Load Doors: error reading doors.csv: %s", err.Error())
+			return
+		}
+		d := template.Create[game.Item](fields[3])
+		d.SetLocation(uo.Location{
+			X: int16(fn(fields[0])),
+			Y: int16(fn(fields[1])),
+			Z: int8(fn(fields[2])),
+		})
+		d.SetFacing(uo.Direction(fn(fields[4])))
+		d.SetBaseGraphic(d.BaseGraphic() + uo.Graphic(d.Facing()*2))
+		d.SetFlippedGraphic(d.FlippedGraphic() + uo.Graphic(d.Facing()*2))
+		game.GetWorld().Map().ForceAddObject(d)
+	}
+	broadcast("Load Doors: complete")
 }

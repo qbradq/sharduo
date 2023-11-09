@@ -46,9 +46,9 @@ type World struct {
 	// Save directory string
 	savePath string
 	// Collection of all objects that need to be updated
-	updateList map[uo.Serial]game.Object
+	updateList map[uo.Serial]struct{}
 	// Collection of all objects that need to have OPLInfo packets sent
-	oplUpdateList map[uo.Serial]game.Object
+	oplUpdateList map[uo.Serial]struct{}
 	// Current time in the Sossarian universe in seconds
 	time uo.Time
 	// Current time on the server
@@ -66,8 +66,8 @@ func NewWorld(savePath string, rng uo.RandomSource) *World {
 		rng:           rng,
 		requestQueue:  make(chan WorldRequest, 1024*16),
 		savePath:      savePath,
-		updateList:    make(map[uo.Serial]game.Object),
-		oplUpdateList: make(map[uo.Serial]game.Object),
+		updateList:    make(map[uo.Serial]struct{}),
+		oplUpdateList: make(map[uo.Serial]struct{}),
 		time:          uo.TimeEpoch,
 		wallClockTime: time.Now(),
 	}
@@ -160,7 +160,7 @@ func (w *World) Unmarshal() error {
 		w.m.UnmarshalObjects(s)
 	}
 	// Call the AfterUnmarshal hook on all objects on the map
-	w.m.AfterUnmarshal()
+	// w.m.AfterUnmarshal() // Moved out to startCommands()
 	// Call RecalculateStats on all objects in the map
 	for _, o := range w.ods.Data() {
 		o.RecalculateStats()
@@ -390,7 +390,11 @@ func (w *World) Main(wg *sync.WaitGroup) {
 			// Interleaved chunk updates, mobile think, etc
 			w.m.Update(w.time)
 			// OPLInfo updates
-			for _, o := range w.oplUpdateList {
+			for s := range w.oplUpdateList {
+				o := w.Find(s)
+				if o == nil || o.Removed() {
+					continue
+				}
 				if c, ok := o.Parent().(game.Container); ok {
 					oi := world.Find(o.Serial())
 					if i, ok := oi.(game.Item); ok {
@@ -409,9 +413,13 @@ func (w *World) Main(wg *sync.WaitGroup) {
 					}
 				}
 			}
-			w.oplUpdateList = make(map[uo.Serial]game.Object)
+			w.oplUpdateList = make(map[uo.Serial]struct{})
 			// Update objects
-			for _, o := range w.updateList {
+			for s := range w.updateList {
+				o := w.Find(s)
+				if o == nil || o.Removed() {
+					continue
+				}
 				if c, ok := o.Parent().(game.Container); ok {
 					if i, ok := o.(game.Item); ok {
 						c.UpdateItem(i)
@@ -425,7 +433,7 @@ func (w *World) Main(wg *sync.WaitGroup) {
 					}
 				}
 			}
-			w.updateList = make(map[uo.Serial]game.Object)
+			w.updateList = make(map[uo.Serial]struct{})
 		case r := <-w.requestQueue:
 			// Handle graceful shutdown
 			if r == nil {
@@ -457,7 +465,7 @@ func (w *World) GetItemDefinition(g uo.Graphic) *uo.StaticDefinition {
 
 // Update implements the game.World interface.
 func (w *World) Update(o game.Object) {
-	w.updateList[o.Serial()] = o
+	w.updateList[o.Serial()] = struct{}{}
 }
 
 // BroadcastPacket implements the game.World interface.
@@ -479,7 +487,7 @@ func (w *World) BroadcastMessage(speaker game.Object, fmtstr string, args ...int
 		stype = uo.SpeechTypeNormal
 		name = speaker.DisplayName()
 		if item, ok := speaker.(game.Item); ok {
-			body = uo.Body(item.BaseGraphic())
+			body = uo.Body(item.Graphic())
 		} else if mob, ok := speaker.(game.Mobile); ok {
 			body = mob.Body()
 		}
@@ -502,5 +510,5 @@ func (w *World) Insert(o game.Object) {
 }
 
 func (w *World) UpdateOPLInfo(o game.Object) {
-	w.oplUpdateList[o.Serial()] = o
+	w.oplUpdateList[o.Serial()] = struct{}{}
 }

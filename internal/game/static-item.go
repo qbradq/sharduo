@@ -70,6 +70,9 @@ func (i *StaticItem) SetBaseGraphic(g uo.Graphic) {
 	i.def = world.GetItemDefinition(g)
 }
 
+// Graphic implements the Item interface.
+func (i *StaticItem) Graphic() uo.Graphic { return i.graphic }
+
 // Highest returns the highest elevation of the object
 func (i *StaticItem) Highest() int8 {
 	return i.location.Z + i.def.Height
@@ -97,9 +100,18 @@ func (o *StaticItem) Update(t uo.Time) {}
 // RefreshDecayDeadline implements the Item interface
 func (i *StaticItem) RefreshDecayDeadline() {}
 
+func (i *StaticItem) SetDefForGraphic(g uo.Graphic) {
+	i.def = world.GetItemDefinition(g)
+	world.Update(i)
+}
+
 func (i *StaticItem) GraphicOffset() int                    { return 0 }
 func (i *StaticItem) Dyable() bool                          { return false }
 func (i *StaticItem) Flippable() bool                       { return false }
+func (i *StaticItem) Flipped() bool                         { return false }
+func (i *StaticItem) Flip()                                 {}
+func (i *StaticItem) FlippedGraphic() uo.Graphic            { return i.def.Graphic }
+func (i *StaticItem) SetFlippedGraphic(g uo.Graphic)        {}
 func (i *StaticItem) Stackable() bool                       { return false }
 func (i *StaticItem) Movable() bool                         { return false }
 func (i *StaticItem) Amount() int                           { return i.def.Count }
@@ -136,6 +148,7 @@ func (i *StaticItem) HasParent(o Object) bool                                   
 func (i *StaticItem) SetParent(o Object)                                        {}
 func (i *StaticItem) TemplateName() string                                      { return "StaticItem" }
 func (i *StaticItem) SetTemplateName(name string)                               {}
+func (i *StaticItem) BaseTemplate() string                                      { return "" }
 func (i *StaticItem) LinkEvent(event, handler string)                           {}
 func (i *StaticItem) GetEventHandler(s string) *EventHandler                    { return nil }
 func (i *StaticItem) RecalculateStats()                                         {}

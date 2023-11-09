@@ -51,6 +51,7 @@ vendors, mounts, pack animals, and banking.
 * Passive fauna
 * Wild flora
 * Agricultural crops
+* Region-based music
 * Complete decorating Britain
 
 ### Nerdy Things I Might Do for Fun ###

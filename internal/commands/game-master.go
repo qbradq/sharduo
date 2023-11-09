@@ -171,9 +171,13 @@ func commandRemove(n game.NetState, args CommandArgs, cl string) {
 	if n == nil {
 		return
 	}
+	multi := len(args) > 1 && args[1] == "multi"
 	n.TargetSendCursor(uo.TargetTypeObject, func(tr *clientpacket.TargetResponse) {
 		o := game.GetWorld().Find(tr.TargetObject)
 		game.Remove(o)
+		if multi {
+			commandRemove(n, args, cl)
+		}
 	})
 }
 

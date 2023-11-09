@@ -41,7 +41,7 @@ type Spawner struct {
 }
 
 // NoRent implements the Object interface.
-func (o *Spawner) NoRent() bool { return false }
+func (o *Spawner) NoRent() bool { return true }
 
 // ObjectType implements the Object interface.
 func (o *Spawner) ObjectType() marshal.ObjectType { return marshal.ObjectTypeSpawner }
@@ -99,73 +99,12 @@ func (o *Spawner) Read(lfs *util.ListFileSegment) {
 
 // Marshal implements the marshal.Marshaler interface.
 func (o *Spawner) Marshal(s *marshal.TagFileSegment) {
-	// Prepare for the marshal
-	o.deleteRemovedObjects(world.Time())
-	// Marshal chain
 	o.BaseItem.Marshal(s)
-	// Spawner-level data
-	s.PutInt(uint32(o.Radius))
-	// Entry-level data
-	s.PutByte(byte(len(o.Entries)))
-	for _, e := range o.Entries {
-		s.PutString(e.Template)
-		s.PutInt(uint32(e.Amount))
-		s.PutLong(uint64(e.Delay))
-		// Object-level data
-		s.PutInt(uint32(len(e.Objects)))
-		for _, so := range e.Objects {
-			if so.Object == nil {
-				// An object is scheduled to spawn in the future, just record
-				// the deadline.
-				s.PutLong(uint64(so.NextSpawnDeadline))
-			} else {
-				// An object already exists. We indicate this by writing the
-				// uo.TimeNever value. This flags to the unmarshaler that we
-				// also have a location following.
-				s.PutLong(uint64(uo.TimeNever))
-				s.PutLocation(so.Object.Location())
-			}
-		}
-	}
 }
 
 // Unmarshal implements the marshal.Unmarshaler interface.
 func (o *Spawner) Unmarshal(s *marshal.TagFileSegment) {
 	o.BaseItem.Unmarshal(s)
-	// Spawner-level values
-	o.Radius = int(s.Int())
-	// Entity-level values
-	count := int(s.Byte())
-	for i := 0; i < count; i++ {
-		e := &SpawnerEntry{
-			Template: s.String(),
-			Amount:   int(s.Int()),
-			Delay:    uo.Time(s.Long()),
-		}
-		// Object-level values
-		objCount := int(s.Int())
-		for iObj := 0; iObj < objCount; iObj++ {
-			so := &SpawnedObject{
-				NextSpawnDeadline: uo.Time(s.Long()),
-			}
-			if so.NextSpawnDeadline == uo.TimeNever {
-				// The object was spawned when we saved so create a replacement
-				// now.
-				l := s.Location()
-				obj := template.Create[Object](e.Template)
-				if obj == nil {
-					log.Printf("warning: failed to create object from template %s", e.Template)
-					continue
-				}
-				obj.SetLocation(l)
-				world.Map().ForceAddObject(obj)
-				obj.SetOwner(o)
-				so.Object = obj
-			} // Else deadline is in the future so we don't need an object
-			e.Objects = append(e.Objects, so)
-		}
-		o.Entries = append(o.Entries, e)
-	}
 }
 
 // Visibility implements the Object interface.

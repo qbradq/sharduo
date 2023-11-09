@@ -74,11 +74,13 @@ func init() {
 // decorate implements a server-side building and decor system.
 type decorate struct {
 	StandardGUMP
-	depth    int       // Depth into the GUMP, 0=Catagories, 1=Groups, 2=Tiles
-	category int       // Currently selected category index
-	group    int       // Currently selected group index
-	item     decorItem // Currently selected decor item
-	tool     int       // Currently selected tool
+	depth     int       // Depth into the GUMP, 0=Catagories, 1=Groups, 2=Tiles
+	category  int       // Currently selected category index
+	group     int       // Currently selected group index
+	item      decorItem // Currently selected decor item
+	tool      int       // Currently selected tool
+	useFixedZ bool      // If true use the absolute Z value in the entry field
+	fixedZ    int8      // The absolute Z value to use if useFixedZ == true
 }
 
 // Layout implements the game.GUMP interface.
@@ -107,6 +109,9 @@ func (g *decorate) Layout(target, param game.Object) {
 	g.ReplyButton(5, 2, 5, 1, 0, "Erase", 3)
 	g.ReplyButton(5, 3, 5, 1, 0, "Erase Area", 4)
 	g.ReplyButton(5, 4, 5, 1, 0, "Eyedropper", 5)
+	g.CheckSwitch(10, 1, 5, 1, uo.HueDefault, "Fixed-Z:", 6, g.useFixedZ)
+	g.TextEntry(15, 1, 3, uo.HueDefault, strconv.Itoa(int(g.fixedZ)), 4, 7)
+	g.ReplyButton(10, 2, 5, 1, uo.HueDefault, "Door GUMP", 8)
 	// Display grid
 	switch g.depth {
 	case 0:
@@ -122,13 +127,23 @@ func (g *decorate) Layout(target, param game.Object) {
 
 // HandleReply implements the GUMP interface.
 func (g *decorate) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
+	v, err := strconv.ParseInt(p.Text(7), 0, 32)
+	if err == nil {
+		g.fixedZ = int8(v)
+	}
+	g.useFixedZ = p.Switch(6)
 	if g.StandardReplyHandler(p) {
 		return
 	}
-	if p.Button == 101 {
+	// Misc reply buttons
+	switch p.Button {
+	case 8:
+		n.GUMP(New("doors"), nil, nil)
+	case 101:
 		g.depth--
 		return
 	}
+	// Tool buttons
 	if p.Button < 1001 {
 		// Handle tool buttons
 		g.tool = int(p.Button - 1)
@@ -238,16 +253,16 @@ func (g *decorate) eraseSingle(n game.NetState) {
 	})
 }
 
-func (g *decorate) placeSingle(n game.NetState) {
-	n.Speech(n.Mobile(), "Select destination")
-	n.TargetSendCursor(uo.TargetTypeLocation, func(tr *clientpacket.TargetResponse) {
-		item := template.Create[*game.StaticItem]("StaticItem")
-		if item == nil {
-			// Something very wrong
-			return
-		}
-		item.SetBaseGraphic(uo.Graphic(util.RangeExpression(g.item.expression, game.GetWorld().Random())))
-		l := tr.Location
+func (g *decorate) place(l uo.Location, exp string) bool {
+	item := template.Create[*game.StaticItem]("StaticItem")
+	if item == nil {
+		// Something very wrong
+		return false
+	}
+	item.SetBaseGraphic(uo.Graphic(util.RangeExpression(g.item.expression, game.GetWorld().Random())))
+	if g.useFixedZ {
+		l.Z = g.fixedZ
+	} else {
 		f, c := game.GetWorld().Map().GetFloorAndCeiling(l, true, false)
 		if f != nil {
 			l.Z = f.Highest()
@@ -256,11 +271,19 @@ func (g *decorate) placeSingle(n game.NetState) {
 			if int(c.Z())-int(f.Highest()) < int(item.Height()) {
 				// Not enough room to fit the static within the other statics in
 				// that location, refuse to place the object.
-				return
+				return false
 			}
 		}
-		item.SetLocation(l)
-		game.GetWorld().Map().ForceAddObject(item)
+	}
+	item.SetLocation(l)
+	game.GetWorld().Map().ForceAddObject(item)
+	return true
+}
+
+func (g *decorate) placeSingle(n game.NetState) {
+	n.Speech(n.Mobile(), "Select destination")
+	n.TargetSendCursor(uo.TargetTypeLocation, func(tr *clientpacket.TargetResponse) {
+		g.place(tr.Location, g.item.expression)
 		g.placeSingle(n)
 	})
 }
@@ -273,20 +296,10 @@ func (g *decorate) areaFill(n game.NetState) {
 		n.TargetSendCursor(uo.TargetTypeLocation, func(tr *clientpacket.TargetResponse) {
 			end := tr.Location
 			bounds := uo.BoundsOf(start, end)
-			for iy := bounds.Y; iy < bounds.Y+bounds.H; iy++ {
-				for ix := bounds.X; ix < bounds.X+bounds.W; ix++ {
-					item := template.Create[*game.StaticItem]("StaticItem")
-					if item == nil {
-						// Something very wrong
-						return
-					}
-					item.SetBaseGraphic(uo.Graphic(util.RangeExpression(g.item.expression, game.GetWorld().Random())))
-					item.SetLocation(uo.Location{
-						X: ix,
-						Y: iy,
-						Z: bounds.Z,
-					})
-					game.GetWorld().Map().ForceAddObject(item)
+			l := uo.Location{Z: bounds.Z}
+			for l.Y = bounds.Y; l.Y < bounds.Y+bounds.H; l.Y++ {
+				for l.X = bounds.X; l.X < bounds.X+bounds.W; l.X++ {
+					g.place(l, g.item.expression)
 				}
 			}
 			g.areaFill(n)

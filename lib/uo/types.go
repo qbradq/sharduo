@@ -430,9 +430,44 @@ const (
 type Visibility uint8
 
 const (
-	VisibilityVisible    Visibility = 0 // Normal visibility, everyone can see it
-	VisibilityInvisibile Visibility = 1 // Magical invisibility, the kind certain AI and spells can see through
-	VisibilityHidden     Visibility = 2 // Hidden as in the hidding skill, certain AI and spells can see through this
-	VisibilityStaff      Visibility = 3 // Only staff can see this object
-	VisibilityNone       Visibility = 4 // This object is never shown to the client
+	VisibilityVisible   Visibility = 0 // Normal visibility, everyone can see it
+	VisibilityInvisible Visibility = 1 // Magical invisibility, the kind certain AI and spells can see through
+	VisibilityHidden    Visibility = 2 // Hidden as in the hiding skill, certain AI and spells can see through this
+	VisibilityStaff     Visibility = 3 // Only staff can see this object
+	VisibilityNone      Visibility = 4 // This object is never shown to the client
+)
+
+// LootType is a code that indicates what happens to items when a player dies
+// with them in their inventory as well as how quickly the item decays.
+type LootType uint8
+
+const (
+	LootTypeNormal  LootType = 0 // Drops on death, decays in 1 hour
+	LootTypeBlessed LootType = 1 // Does not drop on death, decays in 1 hour
+	LootTypeNewbied LootType = 2 // Does not drop on death, decays in 15 seconds
+	LootTypeSystem  LootType = 3 // Does not drop on death, never decays
+)
+
+// Door location offsets
+var DoorOffsets = []Location{
+	{X: -1, Y: 1},
+	{X: 1, Y: 1},
+	{X: -1, Y: 0},
+	{X: 1, Y: -1},
+	{X: 1, Y: 1},
+	{X: 1, Y: -1},
+	{X: 0, Y: 0},
+	{X: 0, Y: -1},
+}
+
+// MacroType is a code indicating what type of macro is requested in a client
+// packet 0x12.
+type MacroType uint8
+
+const (
+	MacroTypeSkill    MacroType = 0 // Skill use request
+	MacroTypeSpell    MacroType = 1 // Spell cast request
+	MacroTypeOpenDoor MacroType = 2 // Open door request
+	MacroTypeAction   MacroType = 3 // 0 = bow, 1 = salute
+	MacroTypeInvalid  MacroType = 4 // Parsing error
 )

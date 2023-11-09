@@ -22,6 +22,7 @@ func init() {
 	packetHandlers.Add(0x07, handleLiftRequest)
 	packetHandlers.Add(0x08, handleDropRequest)
 	packetHandlers.Add(0x09, handleSingleClickRequest)
+	packetHandlers.Add(0x12, handleMacroRequest)
 	packetHandlers.Add(0x13, handleWearItemRequest)
 	packetHandlers.Add(0x34, handleStatusRequest)
 	packetHandlers.Add(0x3B, handleBuyRequest)
@@ -496,4 +497,33 @@ func handleRenameRequest(n *NetState, cp clientpacket.Packet) {
 	}
 	m.SetName(p.Name)
 	game.GetWorld().Update(m)
+}
+
+func handleMacroRequest(n *NetState, cp clientpacket.Packet) {
+	if n == nil || n.m == nil {
+		return
+	}
+	p := cp.(*clientpacket.MacroRequest)
+	switch p.MacroType {
+	case uo.MacroTypeOpenDoor:
+		l := n.m.Location().Forward(n.m.Facing())
+		b := uo.Bounds{
+			X: l.X,
+			Y: l.Y,
+			Z: l.Z,
+			W: 1,
+			H: 1,
+			D: int16(uo.PlayerHeight),
+		}
+		doors := world.Map().ItemBaseQuery("BaseDoor", b)
+		if len(doors) > 0 {
+			if !n.TakeAction() {
+				n.Cliloc(nil, 500119) // You must wait to perform another action.
+				return
+			}
+			game.DynamicDispatch("DoubleClick", doors[0], n.m, nil)
+		}
+	default:
+		log.Printf("warning: unsupported macro type %d", p.MacroType)
+	}
 }

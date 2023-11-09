@@ -312,7 +312,7 @@ func (n *NetState) Speech(speaker game.Object, fmtstr string, args ...interface{
 		stype = uo.SpeechTypeNormal
 		name = speaker.DisplayName()
 		if item, ok := speaker.(game.Item); ok {
-			body = uo.Body(item.BaseGraphic())
+			body = uo.Body(item.Graphic())
 		} else if mob, ok := speaker.(game.Mobile); ok {
 			body = mob.Body()
 		}
@@ -339,7 +339,7 @@ func (n *NetState) Cliloc(speaker game.Object, cliloc uo.Cliloc, args ...string)
 		sid = speaker.Serial()
 		name = speaker.DisplayName()
 		if item, ok := speaker.(game.Item); ok {
-			body = uo.Body(item.BaseGraphic())
+			body = uo.Body(item.Graphic())
 		} else if mob, ok := speaker.(game.Mobile); ok {
 			body = mob.Body()
 		}
@@ -365,7 +365,7 @@ func (n *NetState) itemInfo(item game.Item) {
 		// Item in container
 		n.Send(&serverpacket.AddItemToContainer{
 			Item:          item.Serial(),
-			Graphic:       item.BaseGraphic(),
+			Graphic:       item.Graphic(),
 			GraphicOffset: item.GraphicOffset(),
 			Amount:        item.Amount(),
 			Location:      item.Location(),
@@ -376,7 +376,7 @@ func (n *NetState) itemInfo(item game.Item) {
 		// Item on ground
 		n.Send(&serverpacket.ObjectInfo{
 			Serial:           item.Serial(),
-			Graphic:          item.BaseGraphic(),
+			Graphic:          item.Graphic(),
 			GraphicIncrement: item.GraphicOffset(),
 			Amount:           item.Amount(),
 			Location:         item.Location(),
@@ -585,7 +585,7 @@ func (n *NetState) DragItem(item game.Item, srcMob game.Mobile,
 		return
 	}
 	n.Send(&serverpacket.DragItem{
-		Graphic:             item.BaseGraphic(),
+		Graphic:             item.Graphic(),
 		GraphicOffset:       item.GraphicOffset(),
 		Amount:              item.Amount(),
 		Source:              srcSerial,
@@ -619,7 +619,7 @@ func (n *NetState) ContainerOpen(c game.Container) {
 		for _, item := range c.Contents() {
 			p.Items = append(p.Items, serverpacket.ContentsItem{
 				Serial:        item.Serial(),
-				Graphic:       item.BaseGraphic(),
+				Graphic:       item.Graphic(),
 				GraphicOffset: item.GraphicOffset(),
 				Amount:        item.Amount(),
 				Location:      item.Location(),
@@ -661,7 +661,7 @@ func (n *NetState) ContainerClose(c game.Container) {
 func (n *NetState) ContainerItemAdded(c game.Container, item game.Item) {
 	n.Send(&serverpacket.AddItemToContainer{
 		Item:          item.Serial(),
-		Graphic:       item.BaseGraphic(),
+		Graphic:       item.Graphic(),
 		GraphicOffset: item.GraphicOffset(),
 		Amount:        item.Amount(),
 		Location:      item.Location(),
