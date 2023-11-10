@@ -101,6 +101,9 @@ func Mount(receiver, source game.Object, v any) bool {
 	if !ok {
 		return false
 	}
+	if rm.ControlMaster() == nil || rm.ControlMaster().Serial() != sm.Serial() {
+		return false
+	}
 	// Range check
 	if game.RootParent(sm).Location().XYDistance(rm.Location()) > uo.MaxUseRange {
 		sm.NetState().Cliloc(nil, 502803) // It's too far away.

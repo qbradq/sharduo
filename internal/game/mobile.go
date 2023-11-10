@@ -1145,6 +1145,8 @@ func (m *BaseMobile) Mount(mount Mobile) {
 	}
 	// Remove the mount from the world and attach it to the receiver
 	world.Map().SetNewParent(mount, mi)
+	world.Update(m)
+	world.Update(mount)
 }
 
 // Dismount implements the Mobile interface.

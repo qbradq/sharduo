@@ -211,8 +211,11 @@ func commandDebug(n game.NetState, args CommandArgs, cl string) {
 		}
 		llama.SetLocation(n.Mobile().Location())
 		llama.SetHue(0x76) // Llama Energy Vortex hue
+		llama.SetControlMaster(n.Mobile())
+		llama.SetAI("Follow")
+		llama.SetAIGoal(n.Mobile())
 		game.GetWorld().Map().AddObject(llama)
-		n.Mobile().Mount(llama)
+		game.ExecuteEventHandler("Mount", llama, n.Mobile(), nil)
 	case "shirtbag":
 		backpack := template.Create[game.Container]("Backpack")
 		if backpack == nil {

@@ -32,12 +32,13 @@ basic supporting features are also slated before the first alpha including
 vendors, mounts, pack animals, and banking.
 
 ### Known Defects ###
+* Player mobile is not properly updated when mounting
+* Player is unable to "hop" up onto stairs that are suspended above the ground higher than uo.StepHeight. This is the expected behavior of the client and many stairs are suspended in this way.
 
 ### Required Features and Tasks ###
-* Doors and door placement tool
 * Signs and sign placement tool
+* Signs around Britain
 * Line of sight checks
-* Doors and signs around Britain
 * Start decorating Britain
 
 ### Nice to Haves ###
