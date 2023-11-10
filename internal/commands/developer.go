@@ -22,9 +22,11 @@ import (
 func init() {
 	regcmd(&cmdesc{"decorate", []string{"deco"}, commandDecorate, game.RoleDeveloper, "decorate", "Calls up the decoration GUMP"})
 	regcmd(&cmdesc{"loaddoors", nil, commandLoadDoors, game.RoleDeveloper, "loaddoors", "Clears all doors then loads data/misc/doors.csv"})
+	regcmd(&cmdesc{"loadsigns", nil, commandLoadSigns, game.RoleDeveloper, "loadsigns", "Clears all signs then loads data/misc/signs.csv"})
 	regcmd(&cmdesc{"loadspawners", nil, commandLoadSpawners, game.RoleDeveloper, "loadspawners", "Clears all spawners then loads data/misc/spawners.ini and fully respawns all spawners"})
 	regcmd(&cmdesc{"loadstatics", nil, commandLoadStatics, game.RoleDeveloper, "loadstatics", "Clears all statics then loads data/misc/statics.csv"})
 	regcmd(&cmdesc{"savedoors", nil, commandSaveDoors, game.RoleDeveloper, "savedoors", "Generates data/misc/doors.csv"})
+	regcmd(&cmdesc{"savesigns", nil, commandSaveSigns, game.RoleDeveloper, "savesigns", "Generates data/misc/signs.csv"})
 	regcmd(&cmdesc{"savespawners", nil, commandSaveSpawners, game.RoleDeveloper, "savespawners", "Generates data/misc/spawners.ini"})
 	regcmd(&cmdesc{"savestatics", nil, commandSaveStatics, game.RoleDeveloper, "savestatics", "Generates data/misc/statics.csv"})
 }
@@ -272,6 +274,91 @@ func commandLoadDoors(n game.NetState, args CommandArgs, cl string) {
 		d.SetBaseGraphic(d.BaseGraphic() + uo.Graphic(d.Facing()*2))
 		d.SetFlippedGraphic(d.FlippedGraphic() + uo.Graphic(d.Facing()*2))
 		game.GetWorld().Map().ForceAddObject(d)
+	}
+	broadcast("Load Doors: complete")
+}
+
+func commandSaveSigns(n game.NetState, args CommandArgs, cl string) {
+	broadcast("Save Signs: getting signs")
+	signs := game.GetWorld().Map().ItemQuery("BaseSign", uo.BoundsZero)
+	broadcast("Save Signs: sorting signs")
+	// Sort based on location
+	sort.Slice(signs, func(i, j int) bool {
+		a := signs[i].Location()
+		b := signs[j].Location()
+		if a.Y < b.Y {
+			return true
+		} else if a.Y == b.Y {
+			if a.X < b.X {
+				return true
+			} else if a.X == b.X {
+				return a.Z < b.Z
+			}
+			return false
+		}
+		return false
+	})
+	broadcast("Save Signs: writing signs")
+	f, err := os.Create(path.Join("data", "misc", "signs.csv"))
+	if err != nil {
+		broadcast(fmt.Sprintf("Error generating signs.csv: %s", err.Error()))
+		return
+	}
+	defer f.Close()
+	f.WriteString(";X,Y,Z,Graphic,\"Text\"\n")
+	for _, s := range signs {
+		l := s.Location()
+		f.WriteString(fmt.Sprintf("%d,%d,%d,%d,\"%s\"\n",
+			l.X, l.Y, l.Z,
+			s.BaseGraphic(),
+			s.Name(),
+		))
+	}
+	broadcast("Save Signs complete")
+}
+
+func commandLoadSigns(n game.NetState, args CommandArgs, cl string) {
+	var fn = func(s string) int {
+		v, err := strconv.ParseInt(s, 0, 32)
+		if err != nil {
+			panic(err)
+		}
+		return int(v)
+	}
+	broadcast("Load Signs: clearing all signs")
+	for _, s := range game.GetWorld().Map().ItemBaseQuery("BaseSign", uo.BoundsZero) {
+		game.Remove(s)
+	}
+	broadcast("Load Signs: loading signs.csv")
+	f, err := data.FS.Open(path.Join("misc", "signs.csv"))
+	if err != nil {
+		broadcast("Load Signs: error loading signs.csv: %s", err.Error())
+		return
+	}
+	defer f.Close()
+	r := csv.NewReader(f)
+	r.Comment = ';'
+	r.FieldsPerRecord = 5
+	r.ReuseRecord = true
+	broadcast("Load Signs: generating new signs")
+	for {
+		fields, err := r.Read()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			broadcast("Load Signs: error reading signs.csv: %s", err.Error())
+			return
+		}
+		s := template.Create[game.Item]("BaseSign")
+		s.SetLocation(uo.Location{
+			X: int16(fn(fields[0])),
+			Y: int16(fn(fields[1])),
+			Z: int8(fn(fields[2])),
+		})
+		s.SetBaseGraphic(uo.Graphic(fn(fields[3])))
+		s.SetName(fields[4])
+		game.GetWorld().Map().ForceAddObject(s)
 	}
 	broadcast("Load Doors: complete")
 }

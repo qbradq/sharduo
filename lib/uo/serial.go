@@ -23,6 +23,7 @@ const (
 	SerialFirstMobileSelf Serial = 0x80000001
 	SerialLastMobileSelf  Serial = 0xcfffffff
 	SerialTheVoid         Serial = 0xd0000000
+	SerialTextGUMP        Serial = 0xd0000001
 	SerialSystem          Serial = 0xffffffff
 )
 

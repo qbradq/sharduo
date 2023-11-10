@@ -59,6 +59,8 @@ type NetState struct {
 	gumps map[uo.Serial]*gumpDescription
 	// When the next action can be taken
 	nextActionTime uo.Time
+	// Function to trigger in response to a text GUMP reply (packet 0xAC)
+	textReplyFn func(string)
 }
 
 // NewNetState constructs a new NetState object.
@@ -923,4 +925,22 @@ func (n *NetState) GUMPReply(s uo.Serial, p *clientpacket.GUMPReply) {
 	d.g.InvalidateLayout()
 	d.g.Layout(tg, pm)
 	n.Send(d.g.Packet(0, 0, n.m.Serial(), s))
+}
+
+func (n *NetState) GetText(value, description string, max int, fn func(string)) {
+	n.textReplyFn = fn
+	n.Send(&serverpacket.TextEntryGUMP{
+		Serial:      uo.SerialTextGUMP,
+		Value:       value,
+		Description: description,
+		CanCancel:   false,
+		MaxLength:   max,
+	})
+}
+
+func (n *NetState) HandleGUMPTextReply(value string) {
+	if n.textReplyFn != nil {
+		n.textReplyFn(value)
+		n.textReplyFn = nil
+	}
 }

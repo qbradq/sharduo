@@ -31,6 +31,7 @@ func init() {
 	packetHandlers.Add(0x75, handleRenameRequest)
 	packetHandlers.Add(0x98, handleNameRequest)
 	packetHandlers.Add(0x9F, handleSellRequest)
+	packetHandlers.Add(0xAC, handleTextGUMPReply)
 	packetHandlers.Add(0xAD, handleSpeech)
 	packetHandlers.Add(0xB1, handleGUMPReply)
 	packetHandlers.Add(0xBD, handleVersion)
@@ -526,4 +527,15 @@ func handleMacroRequest(n *NetState, cp clientpacket.Packet) {
 	default:
 		log.Printf("warning: unsupported macro type %d", p.MacroType)
 	}
+}
+
+func handleTextGUMPReply(n *NetState, cp clientpacket.Packet) {
+	if n == nil || n.m == nil {
+		return
+	}
+	p := cp.(*clientpacket.TextGUMPReply)
+	if p.Serial != uo.SerialTextGUMP {
+		return
+	}
+	n.HandleGUMPTextReply(p.Text)
 }

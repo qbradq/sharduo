@@ -1402,3 +1402,34 @@ func (p *UpdateHealth) Write(w io.Writer) {
 	r := float64(p.Hits) / float64(p.MaxHits)
 	dc.PutUint16(w, uint16(r*25))
 }
+
+// TextEntryGUMP is sent to request a string of text from the client via a
+// client-side GUMP.
+type TextEntryGUMP struct {
+	Serial      uo.Serial // Serial of the GUMP
+	Value       string    // Current value of the text entry field
+	Description string    // Description of the text requested
+	CanCancel   bool      // If true allow the client to cancel the GUMP
+	MaxLength   int       // Maximum response length
+}
+
+// Write implements the Packet interface.
+func (p *TextEntryGUMP) Write(w io.Writer) {
+	// Calculate length
+	l := 19 + len(p.Value) + 1 + len(p.Description) + 1
+	dc.PutByte(w, 0xAB)                     // Packet ID
+	dc.PutUint16(w, uint16(l))              // Packet length
+	dc.PutUint32(w, uint32(p.Serial))       // GUMP serial
+	dc.Pad(w, 2)                            // Parent and button IDs?
+	dc.PutUint16(w, uint16(len(p.Value)+1)) // Value length
+	dc.PutString(w, p.Value)                // Value
+	if p.CanCancel {                        // Cancel flag
+		dc.PutByte(w, 1)
+	} else {
+		dc.PutByte(w, 0)
+	}
+	dc.PutByte(w, 1)                              // Style normal
+	dc.PutUint32(w, uint32(p.MaxLength))          // Maximum length
+	dc.PutUint16(w, uint16(len(p.Description)+1)) // Description text
+	dc.PutString(w, p.Description)
+}

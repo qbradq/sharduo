@@ -111,7 +111,8 @@ func (g *decorate) Layout(target, param game.Object) {
 	g.ReplyButton(5, 4, 5, 1, 0, "Eyedropper", 5)
 	g.CheckSwitch(10, 1, 5, 1, uo.HueDefault, "Fixed-Z:", 6, g.useFixedZ)
 	g.TextEntry(15, 1, 3, uo.HueDefault, strconv.Itoa(int(g.fixedZ)), 4, 7)
-	g.ReplyButton(10, 2, 5, 1, uo.HueDefault, "Door GUMP", 8)
+	g.ReplyButton(10, 2, 5, 1, uo.HueDefault, "Door Placement", 8)
+	g.ReplyButton(10, 3, 5, 1, uo.HueDefault, "Sign Placement", 9)
 	// Display grid
 	switch g.depth {
 	case 0:
@@ -139,6 +140,8 @@ func (g *decorate) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 	switch p.Button {
 	case 8:
 		n.GUMP(New("doors"), nil, nil)
+	case 9:
+		n.GUMP(New("signs"), nil, nil)
 	case 101:
 		g.depth--
 		return

@@ -49,8 +49,15 @@ type NetState interface {
 	Sound(uo.Sound, uo.Location)
 	// Music sends a song to the client
 	Music(uo.Song)
+
+	//
+	// Client requests
+	//
+
 	// TargetSendCursor sends a targeting request to the client
 	TargetSendCursor(uo.TargetType, func(*clientpacket.TargetResponse))
+	// GetText sends a client-side GUMP (packet 0xAB) to reply with a string
+	GetText(string, string, int, func(string))
 
 	//
 	// Item management and updates

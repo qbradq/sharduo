@@ -57,4 +57,11 @@ func Edit(m game.Mobile, o game.Object) {
 	if spawner, ok := o.(*game.Spawner); ok {
 		m.NetState().GUMP(New("spawner"), m, spawner)
 	}
+	if item, ok := o.(game.Item); ok {
+		if item.TemplateName() == "BaseSign" {
+			m.NetState().GetText(item.Name(), "Please enter the text of the sign.", 30, func(s string) {
+				item.SetName(s)
+			})
+		}
+	}
 }

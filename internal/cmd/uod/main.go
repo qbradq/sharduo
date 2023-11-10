@@ -215,6 +215,7 @@ func startCommands() {
 	n.account = world.superUser
 	commands.Execute(n, "loadstatics")
 	commands.Execute(n, "loaddoors")
+	commands.Execute(n, "loadsigns")
 	// This is really hacky, but the mobiles need to update what they are
 	// standing on in this step and what they are standing on won't be there if
 	// it's a dynamic static object created by [loadstatics and friends.

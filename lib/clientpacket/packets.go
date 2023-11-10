@@ -30,6 +30,7 @@ func init() {
 	pf.Add(0x98, newNameRequest)
 	pf.Add(0x9F, newSellResponse)
 	pf.Add(0xA0, newSelectServer)
+	pf.Add(0xAC, newTextGUMPReply)
 	pf.Add(0xAD, newSpeech)
 	pf.Add(0xB1, newGUMPReply)
 	pf.Ignore(0xB5) // Open chat window request
@@ -731,4 +732,19 @@ func newMacroRequest(in []byte) Packet {
 		}
 	}
 	return p
+}
+
+// TextGUMPReply is sent to respond to graphical text requests from 0xAB.
+type TextGUMPReply struct {
+	basePacket
+	Serial uo.Serial // Serial of the GUMP we are replying to
+	Text   string    // Reply text
+}
+
+func newTextGUMPReply(in []byte) Packet {
+	return &TextGUMPReply{
+		basePacket: basePacket{id: 0xAC},
+		Serial:     uo.Serial(dc.GetUint32(in[0:4])),
+		Text:       string(in[9 : len(in)-1]),
+	}
 }
