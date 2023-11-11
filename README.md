@@ -33,10 +33,8 @@ vendors, mounts, pack animals, and banking.
 
 ### Known Defects ###
 * Player mobile is not properly updated when mounting
-* Player is unable to "hop" up onto stairs that are suspended above the ground higher than uo.StepHeight. This is the expected behavior of the client and many stairs are suspended in this way.
 
 ### Required Features and Tasks ###
-* Signs around Britain
 * Line of sight checks
 * Start decorating Britain
 

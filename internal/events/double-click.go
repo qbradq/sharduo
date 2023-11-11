@@ -193,7 +193,7 @@ func TransferHue(receiver, source game.Object, v any) bool {
 
 func Edit(receiver, source game.Object, v any) bool {
 	sm, ok := source.(game.Mobile)
-	if !ok {
+	if !ok || sm.NetState() == nil || !sm.NetState().Account().HasRole(game.RoleGameMaster) {
 		return false
 	}
 	gumps.Edit(sm, receiver)

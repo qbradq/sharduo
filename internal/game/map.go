@@ -414,7 +414,7 @@ func (m *Map) canMoveTo(mob Mobile, d uo.Direction) (bool, uo.Location, uo.Commo
 		// Consider step height
 		oldFloor := mob.StandingOn()
 		oldTop := oldFloor.Highest()
-		if fz-oldTop > uo.StepHeight {
+		if !floor.Bridge() && fz-oldTop > uo.StepHeight {
 			// Can't go up that much in one step
 			return false, ol, floor
 		}
@@ -944,6 +944,16 @@ func (m *Map) GetFloorAndCeiling(l uo.Location, ignoreDynamicItems, considerStep
 			floorObject = static
 			continue
 		}
+		if considerStepHeight && static.Bridge() && sz > footHeight {
+			// Feet are between the floor and a section of stair that is
+			// floating more than uo.StepHeight units above the floor. This is a
+			// common case an the client expects to be able to "hop" up onto
+			// stairs like this. So we project upward.
+			floor = stz
+			footHeight = floor
+			floorObject = static
+			continue
+		}
 		// Underside of the static is above the foot position so that is the
 		// ceiling
 		ceiling = sz
@@ -993,6 +1003,16 @@ func (m *Map) GetFloorAndCeiling(l uo.Location, ignoreDynamicItems, considerStep
 		}
 		if iz <= footHeight {
 			// Feet are inside or resting on this item so project upward
+			floor = itz
+			footHeight = floor
+			floorObject = item
+			continue
+		}
+		if considerStepHeight && item.Bridge() && iz > footHeight {
+			// Feet are between the floor and a section of stair that is
+			// floating more than uo.StepHeight units above the floor. This is a
+			// common case an the client expects to be able to "hop" up onto
+			// stairs like this. So we project upward.
 			floor = itz
 			footHeight = floor
 			floorObject = item
