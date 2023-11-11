@@ -32,7 +32,6 @@ basic supporting features are also slated before the first alpha including
 vendors, mounts, pack animals, and banking.
 
 ### Known Defects ###
-* Player mobile is not properly updated when mounting
 
 ### Required Features and Tasks ###
 * Line of sight checks

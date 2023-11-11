@@ -99,6 +99,7 @@ func (n *NetState) Update() {
 // Send attempts to add a packet to the client's send queue and returns false if
 // the queue is full.
 func (n *NetState) Send(sp serverpacket.Packet) bool {
+	// log.Printf("Sending Packet to Client %s: %T", n.conn.RemoteAddr().String(), sp)
 	if sp == nil {
 		return true
 	}
@@ -359,9 +360,17 @@ func (n *NetState) Cliloc(speaker game.Object, cliloc uo.Cliloc, args ...string)
 
 // itemInfo sends ObjectInfo or AddItemToContainer packets for the item
 func (n *NetState) itemInfo(item game.Item) {
+	if item == nil || item.Removed() {
+		return
+	}
 	var layer uo.Layer
 	if layerer, ok := item.(game.Layerer); ok {
 		layer = layerer.Layer()
+		if layer > uo.LayerLastVisible {
+			// Dirty hack to prevent things like mount items from being sent
+			// like a normal item.
+			return
+		}
 	}
 	if container, ok := item.Parent().(game.Container); ok {
 		// Item in container
@@ -396,9 +405,11 @@ func (n *NetState) itemInfo(item game.Item) {
 
 // sendMobile sends packets to send a mobile to the client.
 func (n *NetState) sendMobile(mobile game.Mobile) {
-	notoriety := uo.NotorietyEnemy
-	if n.m != nil {
-		notoriety = n.m.GetNotorietyFor(mobile)
+	// Skip disconnected net states, mobiles that have been removed, and other
+	// non-removed mobiles that are no longer on the map, such as mounts within
+	// mount items.
+	if n.m == nil || mobile == nil || mobile.Removed() || mobile.Parent() != nil {
+		return
 	}
 	p := &serverpacket.EquippedMobile{
 		ID:        mobile.Serial(),
@@ -408,7 +419,7 @@ func (n *NetState) sendMobile(mobile game.Mobile) {
 		IsRunning: mobile.IsRunning(),
 		Hue:       mobile.Hue(),
 		Flags:     mobile.MobileFlags(),
-		Notoriety: notoriety,
+		Notoriety: n.m.GetNotorietyFor(mobile),
 	}
 	mobile.MapEquipment(func(w game.Wearable) error {
 		p.Equipment = append(p.Equipment, &serverpacket.EquippedMobileItem{
@@ -429,8 +440,10 @@ func (n *NetState) sendMobile(mobile game.Mobile) {
 
 // updateMobile sends a StatusBarInfo packet for the mobile.
 func (n *NetState) updateMobile(mobile game.Mobile) {
-	if n.m == nil {
-		// Skip disconnected net states
+	// Skip disconnected net states, mobiles that have been removed, and other
+	// non-removed mobiles that are no longer on the map, such as mounts within
+	// mount items.
+	if n.m == nil || mobile == nil || mobile.Removed() || mobile.Parent() != nil {
 		return
 	}
 	if n.m.Serial() == mobile.Serial() {
@@ -479,7 +492,7 @@ func (n *NetState) updateMobile(mobile game.Mobile) {
 
 // UpdateObject implements the game.NetState interface.
 func (n *NetState) UpdateObject(o game.Object) {
-	if n.m == nil || o == nil || !n.m.CanSee(o) {
+	if n.m == nil || o == nil || o.Removed() || !n.m.CanSee(o) {
 		return
 	}
 	if item, ok := o.(game.Item); ok {
@@ -493,7 +506,7 @@ func (n *NetState) UpdateObject(o game.Object) {
 
 // SendObject implements the game.NetState interface.
 func (n *NetState) SendObject(o game.Object) {
-	if n.m == nil || !n.m.CanSee(o) {
+	if n.m == nil || o == nil || o.Removed() || !n.m.CanSee(o) {
 		return
 	}
 	if item, ok := o.(game.Item); ok {

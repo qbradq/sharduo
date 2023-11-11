@@ -101,6 +101,7 @@ const (
 	LayerBankBox                  Layer = 29
 	LayerFirstValid               Layer = LayerWeapon
 	LayerLastValid                Layer = LayerBankBox
+	LayerLastVisible              Layer = LayerLegArmor
 )
 
 // A StatusFlag describes the status of a mobile

@@ -1140,13 +1140,12 @@ func (m *BaseMobile) Mount(mount Mobile) {
 	}
 	mi.SetBaseGraphicForBody(mount.Body())
 	mi.SetHue(mount.Hue())
-	if !m.Equip(mi) {
+	if !world.Map().SetNewParent(mount, mi) || !m.Equip(mi) {
+		if mount.Parent() != nil {
+			world.Map().SetNewParent(mount, nil)
+		}
 		return
 	}
-	// Remove the mount from the world and attach it to the receiver
-	world.Map().SetNewParent(mount, mi)
-	world.Update(m)
-	world.Update(mount)
 }
 
 // Dismount implements the Mobile interface.
