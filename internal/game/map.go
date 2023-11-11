@@ -1282,15 +1282,23 @@ func (m *Map) CanFit(o Object, l uo.Location) bool {
 	return true
 }
 
-// StaticsAt returns a slice of the statics at the given location.
-func (m *Map) StaticsAt(l uo.Location) []uo.Static {
-	var ret []uo.Static
+// StaticsAt returns a slice of the statics and static items at the given
+// location.
+func (m *Map) StaticsAt(l uo.Location) []uo.CommonObject {
+	var ret []uo.CommonObject
 	c := m.GetChunk(l)
 	for _, s := range c.statics {
 		if s.Location.X != l.X || s.Location.Y != l.Y {
 			continue
 		}
 		ret = append(ret, s)
+	}
+	for _, i := range c.items {
+		il := i.Location()
+		if il.X != l.X || il.Y != l.Y {
+			continue
+		}
+		ret = append(ret, i)
 	}
 	return ret
 }

@@ -21,6 +21,7 @@ func init() {
 	regcmd(&cmdesc{"remove", []string{"rem", "delete", "del"}, commandRemove, game.RoleGameMaster, "remove", "Removes the targeted object and all of its children from the game game.GetWorld()"})
 	regcmd(&cmdesc{"respawn", nil, commandRespawn, game.RoleGameMaster, "respawn", "Respawns the targeted spawner"})
 	regcmd(&cmdesc{"sethue", nil, commandSetHue, game.RoleGameMaster, "sethue", "Sets the hue of an object"})
+	regcmd(&cmdesc{"setz", nil, commandSetZ, game.RoleGameMaster, "setz", "Adjusts the Z location of the object"})
 	regcmd(&cmdesc{"static", nil, commandStatic, game.RoleGameMaster, "static graphic_number", "Creates a new static object with the given graphic number"})
 	regcmd(&cmdesc{"tame", nil, commandTame, game.RoleGameMaster, "tame", "makes you the control master of the targeted mobile"})
 	regcmd(&cmdesc{"teleport", []string{"tele"}, commandTeleport, game.RoleGameMaster, "teleport [x y|x y z|multi]", "Teleports you to the targeted location - optionally multiple times, or to the top Z of the given X/Y location, or to the absolute location"})
@@ -236,5 +237,24 @@ func commandTame(n game.NetState, args CommandArgs, cl string) {
 			return
 		}
 		m.SetControlMaster(n.Mobile())
+	})
+}
+
+func commandSetZ(n game.NetState, args CommandArgs, cl string) {
+	z := int8(args.Int(1))
+	n.TargetSendCursor(uo.TargetTypeObject, func(tr *clientpacket.TargetResponse) {
+		o := game.Find[game.Object](tr.TargetObject)
+		if o == nil {
+			return
+		}
+		l := o.Location()
+		l.Z = z
+		if o.Parent() == nil {
+			game.GetWorld().Map().ForceRemoveObject(o)
+			o.SetLocation(l)
+			game.GetWorld().Map().ForceAddObject(o)
+		} else {
+			o.SetLocation(l)
+		}
 	})
 }

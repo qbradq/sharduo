@@ -91,6 +91,20 @@ func (g *signs) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 	}
 }
 
+func (g *signs) place(l uo.Location, northSouth bool) {
+	sg := g.g
+	if northSouth {
+		sg++
+	}
+	sign := template.Create[game.Item]("BaseSign")
+	if sign == nil {
+		return
+	}
+	sign.SetBaseGraphic(sg)
+	sign.SetLocation(l)
+	game.GetWorld().Map().ForceAddObject(sign)
+}
+
 func (g *signs) placeSingle(n game.NetState) {
 	n.TargetSendCursor(uo.TargetTypeLocation, func(tr *clientpacket.TargetResponse) {
 		l := tr.Location
@@ -99,18 +113,9 @@ func (g *signs) placeSingle(n game.NetState) {
 				if s.BaseGraphic() != p {
 					continue
 				}
-				// We found a signpost, place the sign there
-				sg := g.g
-				if i%2 != 0 {
-					sg++
-				}
-				sign := template.Create[game.Item]("BaseSign")
-				if sign == nil {
-					return
-				}
-				sign.SetBaseGraphic(sg)
-				sign.SetLocation(s.Location)
-				game.GetWorld().Map().ForceAddObject(sign)
+				l.Z = s.Z()
+				g.place(l, i%2 != 0)
+				return
 			}
 		}
 	})
