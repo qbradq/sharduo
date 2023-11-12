@@ -16,7 +16,7 @@ A huge thank you goes out to the following groups, in no particular order.
 * Account creation and login
 * Global chat
 * Spatial chat
-* Walking, running, mounted movement
+* Walking, running and mounted movement
 * Items and containers
 * Equipment
 * Generic GUMPs
@@ -24,6 +24,7 @@ A huge thank you goes out to the following groups, in no particular order.
 * Vendors
 * Spawners
 * AI models
+* Doors, signs and decoration
 
 ## Next Milestone - Mining Vertical ##
 The next milestone set for ShardUO is to implement the Mining skill vertical

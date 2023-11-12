@@ -50,3 +50,12 @@ func BoundsOf(s, e Location) Bounds {
 func (b *Bounds) Contains(l Location) bool {
 	return l.X >= b.X && l.X < b.X+b.W && l.Y >= b.Y && l.Y < b.Y+b.H && l.Z >= b.Z && l.Z < int8(int16(b.Z)+b.D)
 }
+
+// East returns the east-most point within these bounds.
+func (b *Bounds) East() int16 { return b.X + b.W - 1 }
+
+// South returns the south-most point within these bounds.
+func (b *Bounds) South() int16 { return b.Y + b.H - 1 }
+
+// Top returns the top-most point within these bounds.
+func (b *Bounds) Top() int8 { return int8(int(b.Z) + int(b.D) - 1) }

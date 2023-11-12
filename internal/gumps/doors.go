@@ -22,6 +22,7 @@ func init() {
 	if err != nil {
 		panic("error: reading file misc/doors.ini")
 	}
+	defer r.Close()
 	segs := lfr.ReadSegments(r)
 	if len(segs) != 1 || segs[0].Name != "Doors" {
 		panic("error: malformed misc/doors.ini")

@@ -89,6 +89,9 @@ type Mobile interface {
 	ControlMaster() Mobile
 	// SetControlMaster sets the control master of this mobile which may be nil.
 	SetControlMaster(Mobile)
+	// RestoreControlMaster attempts to restore the control master pointer from the
+	// serial recorded from the save file. This should only be called internally.
+	RestoreControlMaster()
 	// CanBeCommandedBy returns true if this mobile can be commanded by the
 	// argument mobile.
 	CanBeCommandedBy(Mobile) bool
@@ -488,10 +491,20 @@ func (m *BaseMobile) AfterUnmarshalOntoMap() {
 		Remove(m)
 	}
 	m.floor = floor
-	// Find our control master if any
+	m.RestoreControlMaster()
+	// Make sure any mounted pet restores its control master
+	if w := m.EquipmentInSlot(uo.LayerMount); w != nil {
+		if mi, ok := w.(*MountItem); ok {
+			mi.m.RestoreControlMaster()
+		}
+	}
+}
+
+// RestoreControlMaster attempts to restore the control master pointer from the
+// serial recorded from the save file.
+func (m *BaseMobile) RestoreControlMaster() {
 	if m.aumcms != uo.SerialZero {
 		m.controlMaster = Find[Mobile](m.aumcms)
-		// Make sure any controlled creature is following its master
 		m.SetAI("Follow")
 		m.SetAIGoal(m.controlMaster)
 	}

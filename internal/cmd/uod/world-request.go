@@ -101,6 +101,7 @@ func (r *CharacterLoginRequest) Execute() error {
 		player.DropToBackpack(i, true)
 	}
 	world.Map().SetNewParent(player, nil)
+	world.Update(player)
 	r.NetState.m = player
 	r.NetState.account.SetPlayer(player.Serial())
 	r.NetState.m.SetNetState(r.NetState)

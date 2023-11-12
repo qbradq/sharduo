@@ -22,6 +22,7 @@ func init() {
 	if err != nil {
 		panic("error: reading file misc/signs.ini")
 	}
+	defer r.Close()
 	segs := lfr.ReadSegments(r)
 	if len(segs) != 2 || segs[0].Name != "Signs" || segs[1].Name != "Signposts" {
 		panic("error: malformed misc/signs.ini")

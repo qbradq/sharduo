@@ -111,8 +111,11 @@ func (g *decorate) Layout(target, param game.Object) {
 	g.ReplyButton(5, 4, 5, 1, 0, "Eyedropper", 5)
 	g.CheckSwitch(10, 1, 5, 1, uo.HueDefault, "Fixed-Z:", 6, g.useFixedZ)
 	g.TextEntry(15, 1, 3, uo.HueDefault, strconv.Itoa(int(g.fixedZ)), 4, 7)
-	g.ReplyButton(10, 2, 5, 1, uo.HueDefault, "Door Placement", 8)
-	g.ReplyButton(10, 3, 5, 1, uo.HueDefault, "Sign Placement", 9)
+	g.ReplyButton(10, 2, 4, 1, uo.HueDefault, "Doors", 8)
+	g.ReplyButton(14, 2, 4, 1, uo.HueDefault, "Signs", 9)
+	g.ReplyButton(10, 3, 4, 1, uo.HueDefault, "Floors", 10)
+	g.ReplyButton(14, 3, 4, 1, uo.HueDefault, "Walls", 11)
+	g.ReplyButton(10, 4, 4, 1, uo.HueDefault, "Objects", 12)
 	// Display grid
 	switch g.depth {
 	case 0:
@@ -142,6 +145,10 @@ func (g *decorate) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 		n.GUMP(New("doors"), nil, nil)
 	case 9:
 		n.GUMP(New("signs"), nil, nil)
+	case 10:
+		n.GUMP(New("floors"), nil, nil)
+	case 12:
+		n.GUMP(New("objects"), nil, nil)
 	case 101:
 		g.depth--
 		return
@@ -266,7 +273,7 @@ func (g *decorate) place(l uo.Location, exp string) bool {
 	if g.useFixedZ {
 		l.Z = g.fixedZ
 	} else {
-		f, c := game.GetWorld().Map().GetFloorAndCeiling(l, true, false)
+		f, c := game.GetWorld().Map().GetFloorAndCeiling(l, false, false)
 		if f != nil {
 			l.Z = f.Highest()
 		}
