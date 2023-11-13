@@ -36,7 +36,7 @@ vendors, mounts, pack animals, and banking.
 
 ### Required Features and Tasks ###
 * Line of sight checks
-* Start decorating Britain
+* Decorating Britain
 
 ### Nice to Haves ###
 * Feedback GUMP

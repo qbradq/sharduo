@@ -60,16 +60,15 @@ type signs struct {
 
 // Layout implements the game.GUMP interface.
 func (g *signs) Layout(target, param game.Object) {
-	g.Window(10, 30, "Sign Placement", 0)
-	g.Page(0)
-	page := uint32(0)
-	for i, s := range signNames {
-		if i%30 == 0 {
-			page++
-			g.Page(page)
-		}
-		ty := i % 30
+	pages := len(signGraphics) / 30
+	if len(signGraphics)%30 != 0 {
+		pages++
+	}
+	g.Window(10, 30, "Sign Placement", 0, uint32(pages))
+	for i := int(g.currentPage-1) * 30; i < len(signGraphics) && i < int(g.currentPage)*30; i++ {
+		s := signNames[i]
 		sg := signGraphics[s]
+		ty := i % 30
 		g.Item(0, ty, 0, 0, uo.HueDefault, sg)
 		g.ReplyButton(1, ty, 9, 1, uo.HueDefault, s, uint32(1001+i))
 	}

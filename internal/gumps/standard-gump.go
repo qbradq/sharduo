@@ -165,7 +165,8 @@ const (
 
 	sgReplyClose        uint32 = 0
 	sgReplyMinimize     uint32 = 1
-	sgReplyLastReserved uint32 = 1000 // User codes begin at 1001
+	sgReplyPageFirst    uint32 = 1001  // Page buttons begin at 1001
+	sgReplyLastReserved uint32 = 10001 // User codes begin at 10001
 )
 
 // StandardGUMP provides a set of layout methods built on top of BaseGUMP's
@@ -179,10 +180,8 @@ type StandardGUMP struct {
 	w int
 	// Height of the GUMP in cells
 	h int
-	// If true generate page buttons at the right
-	pageButtons bool
 	// Number of the last page that was created, 0 means none
-	lastPage uint32
+	currentPage uint32
 	// Number of the last radio group that was created, 0 means none
 	lastGroup uint32
 }
@@ -190,7 +189,6 @@ type StandardGUMP struct {
 // InvalidateLayout implements the GUMP interface.
 func (g *StandardGUMP) InvalidateLayout() {
 	g.g.InvalidateLayout()
-	g.lastPage = 0
 	g.lastGroup = 0
 }
 
@@ -220,8 +218,13 @@ func (g *StandardGUMP) StandardReplyHandler(p *clientpacket.GUMPReply) bool {
 		return true
 	}
 	if p.Button > sgReplyLastReserved {
+		// User button
 		p.Button -= sgReplyLastReserved
 		return false
+	} else if p.Button > sgReplyPageFirst {
+		// Page button
+		g.currentPage = p.Button - sgReplyPageFirst
+		return true
 	} else {
 		log.Printf("Unknown standard reply button ID %d", p.Button)
 		return true
@@ -234,14 +237,10 @@ func (g *StandardGUMP) StandardReplyHandler(p *clientpacket.GUMPReply) bool {
 // some situations - the escape key. If minimizeable is true a minimize button
 // is generated and the GUMP will have minimize behavior. If pageButtons is true
 // page buttons are generated for every page.
-func (g *StandardGUMP) Window(w, h int, title string, flags SGFlag) {
+func (g *StandardGUMP) Window(w, h int, title string, flags SGFlag, numPages uint32) {
 	g.w = w
 	g.h = h
 	// Flag handling
-	g.pageButtons = true
-	if flags&SGFlagNoPageButtons != 0 {
-		g.pageButtons = false
-	}
 	if flags&SGFlagNoClose != 0 {
 		g.g.NoClose()
 		g.g.NoDispose()
@@ -258,6 +257,10 @@ func (g *StandardGUMP) Window(w, h int, title string, flags SGFlag) {
 	h *= sgCellHeight
 	w += sgTotalHFill
 	h += sgTotalVFill
+	// Paging seting
+	if g.currentPage == 0 {
+		g.currentPage++
+	}
 	// Scroll background
 	g.g.Background(0, 0, w, h, sgBackground)
 	// Title area
@@ -269,6 +272,18 @@ func (g *StandardGUMP) Window(w, h int, title string, flags SGFlag) {
 	}
 	if flags&SGFlagNoMinimize == 0 {
 		g.g.ReplyButton(0, 0, sgMinimizeButton, sgMinimizeButton, sgReplyMinimize)
+	}
+	if flags&SGFlagNoPageButtons == 0 {
+		if g.currentPage > 1 {
+			g.g.ReplyButton(sgLeft+g.w*sgCellWidth, 0,
+				sgPageUpButton, sgPageUpButton,
+				uint32(sgReplyPageFirst+g.currentPage-1))
+		}
+		if g.currentPage < numPages {
+			g.g.ReplyButton(sgLeft+g.w*sgCellWidth, sgTop+g.h*sgCellHeight,
+				sgPageDownButton, sgPageDownButton,
+				uint32(sgReplyPageFirst+g.currentPage+1))
+		}
 	}
 }
 
@@ -363,26 +378,6 @@ func (g *StandardGUMP) PageButton(x, y, w, h int, hue uo.Hue, text string, page 
 	g.g.PageButton(x+sgButtonHOffset, y+sgButtonVOffset, sgButtonNormal, sgButtonPressed, page)
 	x += sgCellWidth
 	g.g.CroppedLabel(x+sgTextHOffset, y+sgTextVOffset, w, h, hue, text)
-}
-
-// Page begins the numbered page. If g.pageButtons is true then this page will
-// be linked to the current as the next.
-func (g *StandardGUMP) Page(page uint32) {
-	// PageDown button
-	if g.pageButtons && g.lastPage != 0 {
-		// Page 1 does not need any buttons to make it appear
-		g.g.PageButton(sgLeft+g.w*sgCellWidth, sgTop+g.h*sgCellHeight,
-			sgPageDownButton, sgPageDownButton, page)
-	}
-	// Page marker
-	g.g.Page(page)
-	// PageUp button
-	if g.pageButtons && g.lastPage != 0 {
-		// The first page does not need a page button back to 0
-		g.g.PageButton(sgLeft+g.w*sgCellWidth, 0, sgPageUpButton,
-			sgPageUpButton, g.lastPage)
-	}
-	g.lastPage = page
 }
 
 // HTML creates an HTML view without background.

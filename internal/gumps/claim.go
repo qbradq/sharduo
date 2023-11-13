@@ -26,8 +26,7 @@ func (g *claim) Layout(target, param game.Object) {
 	}
 	g.tm = tm
 	sp := tm.StabledPets()
-	g.Window(10, len(sp), "Claim Pets", 0)
-	g.Page(1)
+	g.Window(10, len(sp), "Claim Pets", 0, 1)
 	for i, pm := range sp {
 		g.ReplyButton(0, i, 10, 1, uo.HueDefault, pm.DisplayName(), uint32(1001+i))
 	}

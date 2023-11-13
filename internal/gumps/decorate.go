@@ -85,23 +85,50 @@ type decorate struct {
 
 // Layout implements the game.GUMP interface.
 func (g *decorate) Layout(target, param game.Object) {
-	var f = func(dg decorGroup) {
-		page := 0
-		for idx, item := range dg.items {
-			if idx%15 == 0 {
-				page++
-				g.Page(uint32(page))
-			}
-			x := idx % 3
-			y := idx / 3
-			y %= 5
-			g.ReplyButton(x*6+0, y*5+0+5, 6, 1, 0, item.name, uint32(1001+idx))
-			g.Item(x*6+2, y*5+1+5, 0, 0, 0, uo.Graphic(util.RangeExpression(item.expression, game.GetWorld().Random())))
+	fn := func(dg decorGroup) {
+		for i := int(g.currentPage-1) * 15; i < len(dg.items) && i < int(g.currentPage)*15; i++ {
+			item := dg.items[i]
+			tx := i % 3
+			ty := i / 3
+			ty %= 5
+			g.ReplyButton(tx*6+0, ty*5+0+5, 6, 1, 0, item.name, uint32(1001+i))
+			g.Item(tx*6+2, ty*5+1+5, 0, 0, 0, uo.Graphic(util.RangeExpression(item.expression, game.GetWorld().Random())))
 		}
 	}
-	g.Window(18, 30, "Decoration", 0)
-	g.Page(0)
-	// Controls and status stuff goes here
+	// Display grid
+	switch g.depth {
+	case 0:
+		pages := len(rootDecorGroup.items) / 15
+		if len(rootDecorGroup.items)%15 != 0 {
+			pages++
+		}
+		g.Window(18, 30, "Decoration", 0, uint32(pages))
+		g.layoutCommonControls()
+		fn(rootDecorGroup)
+	case 1:
+		c := decorCatagories[g.category]
+		pages := len(c.items) / 15
+		if len(c.items)%15 != 0 {
+			pages++
+		}
+		g.Window(18, 30, "Decoration", 0, uint32(pages))
+		g.layoutCommonControls()
+		g.ReplyButton(10, 0, 5, 1, 0, "Back", 101)
+		fn(c)
+	case 2:
+		c := decorGroups[g.group]
+		pages := len(c.items) / 15
+		if len(c.items)%15 != 0 {
+			pages++
+		}
+		g.Window(18, 30, "Decoration", 0, uint32(pages))
+		g.layoutCommonControls()
+		g.ReplyButton(10, 0, 5, 1, 0, "Back", 101)
+		fn(c)
+	}
+}
+
+func (g *decorate) layoutCommonControls() {
 	g.Text(0, 0, 4, 0, "Current")
 	g.Item(1, 1, 0, 0, 0, uo.Graphic(util.RangeExpression(g.item.expression, game.GetWorld().Random())))
 	g.ReplyButton(5, 0, 5, 1, 0, "Single Placement", 1)
@@ -116,17 +143,6 @@ func (g *decorate) Layout(target, param game.Object) {
 	g.ReplyButton(10, 3, 4, 1, uo.HueDefault, "Floors", 10)
 	g.ReplyButton(14, 3, 4, 1, uo.HueDefault, "Walls", 11)
 	g.ReplyButton(10, 4, 4, 1, uo.HueDefault, "Objects", 12)
-	// Display grid
-	switch g.depth {
-	case 0:
-		f(rootDecorGroup)
-	case 1:
-		g.ReplyButton(10, 0, 5, 1, 0, "Back", 101)
-		f(decorCatagories[g.category])
-	case 2:
-		g.ReplyButton(10, 0, 5, 1, 0, "Back", 101)
-		f(decorGroups[g.group])
-	}
 }
 
 // HandleReply implements the GUMP interface.
@@ -151,6 +167,7 @@ func (g *decorate) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 		n.GUMP(New("objects"), nil, nil)
 	case 101:
 		g.depth--
+		g.currentPage = 1
 		return
 	}
 	// Tool buttons
@@ -179,6 +196,7 @@ func (g *decorate) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 		}
 		g.category = selection
 		g.depth++
+		g.currentPage = 1
 	case 1:
 		c := decorCatagories[g.category]
 		if selection >= len(c.items) {
@@ -189,6 +207,7 @@ func (g *decorate) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 			if group.name == item.name {
 				g.group = i
 				g.depth++
+				g.currentPage = 1
 				return
 			}
 		}

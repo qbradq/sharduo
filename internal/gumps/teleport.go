@@ -44,33 +44,29 @@ func (g *teleport) Layout(target, param game.Object) {
 	}
 	// Group and destination buttons start at 2000
 	if g.currentGroup < 0 {
-		g.Window(11, 11, "Global Teleport Menu", 0)
-		page := uint32(0)
-		iy := 0
-		for i, grp := range teleportGroups {
-			if i%10 == 0 {
-				page++
-				iy = 0
-				g.Page(page)
-			}
-			g.ReplyButton(0, iy+1, 11, 1, uo.HueDefault, grp.Name, 2000+uint32(i))
-			iy++
+		pages := len(teleportGroups) / 10
+		if len(teleportGroups)%10 != 0 {
+			pages++
+		}
+		g.Window(11, 11, "Global Teleport Menu", 0, uint32(pages))
+		for i := (int(g.currentPage) - 1) * 10; i < len(teleportGroups) && i < int(g.currentPage)*10; i++ {
+			grp := teleportGroups[i]
+			ty := i % 10
+			g.ReplyButton(0, ty+1, 11, 1, uo.HueDefault, grp.Name, 2000+uint32(i))
 		}
 	} else if g.currentGroup < len(teleportGroups) {
 		grp := teleportGroups[g.currentGroup]
-		g.Window(11, 11, fmt.Sprintf("Global Teleport Menu - %s", grp.Name), 0)
+		pages := len(grp.Destinations) / 10
+		if len(grp.Destinations)%10 != 0 {
+			pages++
+		}
+		g.Window(11, 11, fmt.Sprintf("Global Teleport Menu - %s", grp.Name), 0, uint32(pages))
 		// Back to groups button is ID 1000
 		g.ReplyButton(0, 0, 11, 1, uo.HueDefault, "Back to Groups", 1000)
-		page := uint32(0)
-		iy := 0
-		for i, dest := range grp.Destinations {
-			if i%10 == 0 {
-				page++
-				iy = 0
-				g.Page(page)
-			}
-			g.ReplyButton(0, iy+1, 11, 1, uo.HueDefault, dest.Name, 2000+uint32(i))
-			iy++
+		for i := (int(g.currentPage) - 1) * 10; i < len(grp.Destinations) && i < int(g.currentPage)*10; i++ {
+			dest := grp.Destinations[i]
+			ty := i % 10
+			g.ReplyButton(0, ty+1, 11, 1, uo.HueDefault, dest.Name, 2000+uint32(i))
 		}
 	} else {
 		log.Printf("bad teleport group %d", g.currentGroup)
@@ -85,6 +81,7 @@ func (g *teleport) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 	}
 	if p.Button == 1000 {
 		g.currentGroup = -1
+		g.currentPage = 1
 	}
 	if p.Button >= 2000 {
 		didx := int(p.Button - 2000)

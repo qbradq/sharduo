@@ -24,8 +24,7 @@ type spawner struct {
 // Layout implements the GUMP interface.
 func (g *spawner) Layout(target, param game.Object) {
 	var ok bool
-	g.Window(23, 12, "Spawner Editor", SGFlagNoPageButtons)
-	g.Page(1)
+	g.Window(23, 12, "Spawner Editor", SGFlagNoPageButtons, 1)
 	g.Spawner, ok = param.(*game.Spawner)
 	if !ok {
 		return

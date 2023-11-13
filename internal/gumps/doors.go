@@ -80,21 +80,21 @@ type doors struct {
 
 // Layout implements the game.GUMP interface.
 func (g *doors) Layout(target, param game.Object) {
-	g.Window(10, 25, "Door Placement", 0)
-	g.Page(0)
 	if g.doorType == "" {
-		var page uint32
-		for i, s := range doorTypes {
-			if i%8 == 0 {
-				page++
-				g.Page(page)
-			}
+		pages := len(doorTypes) / 8
+		if len(doorTypes)%8 != 0 {
+			pages++
+		}
+		g.Window(10, 25, "Door Placement", 0, uint32(pages))
+		for i := int(g.currentPage-1) * 8; i < len(doorTypes) && i < int(g.currentPage)*8; i++ {
 			tx := i % 2
 			ty := (i / 2) % 4
+			s := doorTypes[i]
 			g.ReplyButton(tx*5, ty*6+1+0, 5, 1, uo.HueDefault, s, uint32(1001+i))
 			g.Item(tx*5+1, ty*6+1+1, 0, 0, uo.HueDefault, doorIcons[s])
 		}
 	} else {
+		g.Window(10, 25, "Door Placement", 0, 1)
 		g.ReplyButton(7, 0, 3, 1, uo.HueDefault, "Back", 1)
 		baseGraphic := doorIcons[g.doorType]
 		for i := 0; i < 8; i++ {

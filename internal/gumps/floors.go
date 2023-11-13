@@ -76,14 +76,13 @@ type floors struct {
 
 // Layout implements the game.GUMP interface.
 func (g *floors) Layout(target, param game.Object) {
-	g.Window(18, 24, "9-way Floor Generator", 0)
-	g.Page(0)
-	page := uint32(0)
-	for i, p := range floorPatches {
-		if i%12 == 0 {
-			page++
-			g.Page(page)
-		}
+	pages := len(floorPatches) / 12
+	if len(floorPatches)%12 != 0 {
+		pages++
+	}
+	g.Window(18, 24, "9-way Floor Generator", 0, uint32(pages))
+	for i := int(g.currentPage-1) * 12; i < len(floorPatches) && i < int(g.currentPage)*12; i++ {
+		p := floorPatches[i]
 		tx := i % 3
 		ty := (i / 3) % 4
 		g.ReplyButton(tx*6+0, ty*6+0, 6, 1, uo.HueDefault, p.Name, uint32(1001+i))
@@ -96,6 +95,7 @@ func (g *floors) Layout(target, param game.Object) {
 		g.Item(tx*6+0, ty*6+1, 44, 0, uo.HueDefault, uo.Graphic(util.RangeExpression(p.SW, game.GetWorld().Random())))
 		g.Item(tx*6+0, ty*6+1, 66, 22, uo.HueDefault, uo.Graphic(util.RangeExpression(p.S, game.GetWorld().Random())))
 		g.Item(tx*6+0, ty*6+1, 88, 44, uo.HueDefault, uo.Graphic(util.RangeExpression(p.SE, game.GetWorld().Random())))
+
 	}
 }
 

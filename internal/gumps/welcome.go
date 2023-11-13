@@ -38,8 +38,7 @@ func (g *welcome) Layout(target, param game.Object) {
 	if email == "" {
 		email = "example@email.com"
 	}
-	g.Window(12, 16, "Welcome to Trammel Time!", 0)
-	g.Page(1)
+	g.Window(12, 16, "Welcome to Trammel Time!", 0, 1)
 	g.HTML(0, 0, 12, 12, MungHTMLForGUMP(string(motd)), true)
 	g.Text(0, 12, 12, uo.HueDefault, "Please provide your email address below. It will only be")
 	g.Text(0, 13, 12, uo.HueDefault, "used for password recovery and account information.")

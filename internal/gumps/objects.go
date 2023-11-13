@@ -86,18 +86,17 @@ type objects struct {
 
 // Layout implements the game.GUMP interface.
 func (g *objects) Layout(target, param game.Object) {
-	g.Window(10, 22, "Multi-Tile Object Placement", 0)
-	g.Page(0)
+	pages := len(objectDefinitions) / 20
+	if len(objectDefinitions) != 0 {
+		pages++
+	}
+	g.Window(10, 22, "Multi-Tile Object Placement", 0, uint32(pages))
 	g.ReplyButton(0, 0, 3, 1, uo.HueDefault, "Undo", 1)
 	g.CheckSwitch(3, 0, 3, 1, uo.HueDefault, "Fixed Z", 2, false)
 	g.TextEntry(6, 0, 4, uo.HueDefault, strconv.FormatInt(int64(g.fixedZ), 10), 4, 3)
 	g.HorizontalBar(0, 1, 10)
-	page := uint32(0)
-	for i, d := range objectDefinitions {
-		if i%20 == 0 {
-			page++
-			g.Page(page)
-		}
+	for i := int(g.currentPage-1) * 20; i < len(objectDefinitions) && i < int(g.currentPage)*20; i++ {
+		d := objectDefinitions[i]
 		ty := i % 20
 		g.ReplyButton(0, ty+2, 10, 1, uo.HueDefault, d.Name, uint32(1001+i))
 	}
