@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	reg("test", func() GUMP {
+	reg("test", 0, func() GUMP {
 		g := &test{
 			switches: make([]bool, 6),
 			email:    "email@domain.com",

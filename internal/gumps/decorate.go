@@ -1,11 +1,8 @@
 package gumps
 
 import (
-	"fmt"
 	"strconv"
-	"strings"
 
-	"github.com/qbradq/sharduo/data"
 	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/lib/clientpacket"
 	"github.com/qbradq/sharduo/lib/template"
@@ -13,325 +10,159 @@ import (
 	"github.com/qbradq/sharduo/lib/util"
 )
 
-type decorItem struct {
-	name       string
-	expression string
-}
-
-type decorGroup struct {
-	name  string
-	items []decorItem
-}
-
-var rootDecorGroup decorGroup
-var decorCatagories []decorGroup
-var decorGroups []decorGroup
-
 func init() {
-	reg("decorate", func() GUMP {
-		return &decorate{}
-	})
-	var f = func(p string) []decorGroup {
-		var lfr util.ListFileReader
-		r, err := data.FS.Open(p)
-		if err != nil {
-			panic(fmt.Sprintf("error: reading file \"%s\"", p))
-		}
-		segs := lfr.ReadSegments(r)
-		var ret []decorGroup
-		for _, seg := range segs {
-			g := decorGroup{
-				name: seg.Name,
-			}
-			for _, s := range seg.Contents {
-				parts := strings.Split(s, "=")
-				if len(parts) != 2 {
-					panic(fmt.Sprintf("error: processing decor file at line \"%s\"", s))
-				}
-				g.items = append(g.items, decorItem{
-					name:       parts[0],
-					expression: parts[1],
-				})
-			}
-			ret = append(ret, g)
-		}
-		return ret
-	}
-	decorCatagories = f("misc/deco-catagories.ini")
-	decorGroups = f("misc/deco-groups.ini")
-	rootDecorGroup.name = "ROOT"
-	for _, c := range decorCatagories {
-		if len(c.items) < 1 {
-			continue
-		}
-		rootDecorGroup.items = append(rootDecorGroup.items, decorItem{
-			name:       c.name,
-			expression: c.items[0].expression,
-		})
-	}
+	reg("decorate", GUMPIDDecorate, func() GUMP { return &decorate{} })
 }
 
-// decorate implements a server-side building and decor system.
+type zMode uint8
+
+const (
+	zModeOnTop   zMode = 0
+	zModeOnLevel zMode = 1
+	zModeFixed   zMode = 2
+)
+
+// decorate implements a menu that allows the user to open the various other
+// decoration menus.
 type decorate struct {
 	StandardGUMP
-	depth     int       // Depth into the GUMP, 0=Catagories, 1=Groups, 2=Tiles
-	category  int       // Currently selected category index
-	group     int       // Currently selected group index
-	item      decorItem // Currently selected decor item
-	tool      int       // Currently selected tool
-	useFixedZ bool      // If true use the absolute Z value in the entry field
-	fixedZ    int8      // The absolute Z value to use if useFixedZ == true
+	fixedZ int8   // The absolute Z value to use if zMode == zModeFixed
+	zMode  zMode  // The Z fixing mode
+	hue    uo.Hue // The selected hue
 }
 
 // Layout implements the game.GUMP interface.
 func (g *decorate) Layout(target, param game.Object) {
-	fn := func(dg decorGroup) {
-		for i := int(g.currentPage-1) * 15; i < len(dg.items) && i < int(g.currentPage)*15; i++ {
-			item := dg.items[i]
-			tx := i % 3
-			ty := i / 3
-			ty %= 5
-			g.ReplyButton(tx*6+0, ty*5+0+5, 6, 1, 0, item.name, uint32(1001+i))
-			g.Item(tx*6+2, ty*5+1+5, 0, 0, 0, uo.Graphic(util.RangeExpression(item.expression, game.GetWorld().Random())))
-		}
-	}
-	// Display grid
-	switch g.depth {
-	case 0:
-		pages := len(rootDecorGroup.items) / 15
-		if len(rootDecorGroup.items)%15 != 0 {
-			pages++
-		}
-		g.Window(18, 30, "Decoration", 0, uint32(pages))
-		g.layoutCommonControls()
-		fn(rootDecorGroup)
-	case 1:
-		c := decorCatagories[g.category]
-		pages := len(c.items) / 15
-		if len(c.items)%15 != 0 {
-			pages++
-		}
-		g.Window(18, 30, "Decoration", 0, uint32(pages))
-		g.layoutCommonControls()
-		g.ReplyButton(10, 0, 5, 1, 0, "Back", 101)
-		fn(c)
-	case 2:
-		c := decorGroups[g.group]
-		pages := len(c.items) / 15
-		if len(c.items)%15 != 0 {
-			pages++
-		}
-		g.Window(18, 30, "Decoration", 0, uint32(pages))
-		g.layoutCommonControls()
-		g.ReplyButton(10, 0, 5, 1, 0, "Back", 101)
-		fn(c)
-	}
-}
-
-func (g *decorate) layoutCommonControls() {
-	g.Text(0, 0, 4, 0, "Current")
-	g.Item(1, 1, 0, 0, 0, uo.Graphic(util.RangeExpression(g.item.expression, game.GetWorld().Random())))
-	g.ReplyButton(5, 0, 5, 1, 0, "Single Placement", 1)
-	g.ReplyButton(5, 1, 5, 1, 0, "Fill Area", 2)
-	g.ReplyButton(5, 2, 5, 1, 0, "Erase", 3)
-	g.ReplyButton(5, 3, 5, 1, 0, "Erase Area", 4)
-	g.ReplyButton(5, 4, 5, 1, 0, "Eyedropper", 5)
-	g.CheckSwitch(10, 1, 5, 1, uo.HueDefault, "Fixed-Z:", 6, g.useFixedZ)
-	g.TextEntry(15, 1, 3, uo.HueDefault, strconv.Itoa(int(g.fixedZ)), 4, 7)
-	g.ReplyButton(10, 2, 4, 1, uo.HueDefault, "Doors", 8)
-	g.ReplyButton(14, 2, 4, 1, uo.HueDefault, "Signs", 9)
-	g.ReplyButton(10, 3, 4, 1, uo.HueDefault, "Floors", 10)
-	g.ReplyButton(14, 3, 4, 1, uo.HueDefault, "Walls", 11)
-	g.ReplyButton(10, 4, 4, 1, uo.HueDefault, "Objects", 12)
+	g.Window(5, 14, "Decoration Tools Menu", 0, 1)
+	g.ReplyButton(0, 0, 5, 1, uo.HueDefault, "Single-Tile Statics", 1)
+	g.ReplyButton(0, 1, 5, 1, uo.HueDefault, "Multi-Tile Statics", 2)
+	g.ReplyButton(0, 2, 5, 1, uo.HueDefault, "Floors", 3)
+	g.ReplyButton(0, 3, 5, 1, uo.HueDefault, "Doors", 4)
+	g.ReplyButton(0, 4, 5, 1, uo.HueDefault, "Signs", 5)
+	g.ReplyButton(0, 5, 5, 1, uo.HueDefault, "Walls", 6)
+	g.HorizontalBar(0, 6, 5)
+	g.Group()
+	g.RadioSwitch(0, 7, 3, 1, uo.HueDefault, "Fixed", 8, g.zMode == zModeFixed)
+	g.TextEntry(3, 7, 2, uo.HueDefault, strconv.FormatInt(int64(g.fixedZ), 10), 4, 9)
+	g.RadioSwitch(0, 8, 5, 1, uo.HueDefault, "Same Z", 10, g.zMode == zModeOnLevel)
+	g.RadioSwitch(0, 9, 5, 1, uo.HueDefault, "On Top", 11, g.zMode == zModeOnTop)
+	g.HorizontalBar(0, 10, 5)
+	g.ReplyButton(0, 11, 3, 1, g.hue, "Apply Hue", 12)
+	g.TextEntry(3, 11, 2, uo.HueDefault, strconv.FormatInt(int64(g.hue), 10), 4, 13)
+	g.HorizontalBar(0, 12, 5)
+	g.ReplyButton(0, 13, 5, 1, uo.HueDefault, "Save Everything", 7)
 }
 
 // HandleReply implements the GUMP interface.
 func (g *decorate) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
-	v, err := strconv.ParseInt(p.Text(7), 0, 32)
+	// Data
+	if p.Switch(8) {
+		g.zMode = zModeFixed
+	}
+	if p.Switch(10) {
+		g.zMode = zModeOnLevel
+	}
+	if p.Switch(11) {
+		g.zMode = zModeOnTop
+	}
+	v, err := strconv.ParseInt(p.Text(9), 0, 32)
 	if err == nil {
 		g.fixedZ = int8(v)
 	}
-	g.useFixedZ = p.Switch(6)
+	v, err = strconv.ParseInt(p.Text(13), 0, 32)
+	if err == nil {
+		g.hue = uo.Hue(v)
+	}
+	// Standard reply
 	if g.StandardReplyHandler(p) {
 		return
 	}
-	// Misc reply buttons
-	switch p.Button {
-	case 8:
-		n.GUMP(New("doors"), nil, nil)
-	case 9:
-		n.GUMP(New("signs"), nil, nil)
-	case 10:
-		n.GUMP(New("floors"), nil, nil)
-	case 12:
-		n.GUMP(New("objects"), nil, nil)
-	case 101:
-		g.depth--
-		g.currentPage = 1
-		return
-	}
 	// Tool buttons
-	if p.Button < 1001 {
-		// Handle tool buttons
-		g.tool = int(p.Button - 1)
-		switch g.tool {
-		case 0:
-			g.placeSingle(n)
-		case 1:
-			g.areaFill(n)
-		case 2:
-			g.eraseSingle(n)
-		case 3:
-			g.eraseArea(n)
-		case 4:
-			g.lift(n)
-		}
-		return
-	}
-	selection := int(p.Button - 1001)
-	switch g.depth {
-	case 0:
-		if selection >= len(decorCatagories) {
-			return
-		}
-		g.category = selection
-		g.depth++
-		g.currentPage = 1
+	switch p.Button {
 	case 1:
-		c := decorCatagories[g.category]
-		if selection >= len(c.items) {
-			return
-		}
-		item := c.items[selection]
-		for i, group := range decorGroups {
-			if group.name == item.name {
-				g.group = i
-				g.depth++
-				g.currentPage = 1
-				return
-			}
-		}
+		n.GUMP(New("statics"), nil, nil)
 	case 2:
-		group := decorGroups[g.group]
-		if selection >= len(group.items) {
-			return
-		}
-		g.item = group.items[selection]
-		switch g.tool {
-		case 0:
-			g.placeSingle(n)
-		case 1:
-			g.areaFill(n)
-		default:
-			g.tool = 0
-			g.placeSingle(n)
-		}
+		n.GUMP(New("objects"), nil, nil)
+	case 3:
+		n.GUMP(New("floors"), nil, nil)
+	case 4:
+		n.GUMP(New("doors"), nil, nil)
+	case 5:
+		n.GUMP(New("signs"), nil, nil)
+	case 7:
+		executeCommand(n, "savestatics")
+		executeCommand(n, "savedoors")
+		executeCommand(n, "savesigns")
 	}
 }
 
-func (g *decorate) lift(n game.NetState) {
-	n.Speech(n.Mobile(), "Select the static you wish to copy")
-	n.TargetSendCursor(uo.TargetTypeObject, func(tr *clientpacket.TargetResponse) {
-		if tr.TargetObject == uo.SerialZero {
-			if tr.Graphic != uo.GraphicNone {
-				g.item.expression = strconv.FormatInt(int64(tr.Graphic), 10)
-				g.item.name = "static #" + strconv.FormatInt(int64(tr.Graphic), 10)
-			}
-			return
-		}
-		s := game.Find[*game.StaticItem](tr.TargetObject)
-		if s == nil {
-			// Something wrong
-			return
-		}
-		g.item.name = s.DisplayName()
-		g.item.expression = strconv.FormatInt(int64(s.BaseGraphic()), 10)
-		g.lift(n)
-	})
-}
-
-func (g *decorate) eraseArea(n game.NetState) {
-	n.Speech(n.Mobile(), "Select the start of the area")
+// targetVolume executes a function with a bounding rect selected by the client.
+func (g *decorate) targetVolume(n game.NetState, fn func(uo.Bounds)) {
+	n.Speech(n.Mobile(), "Starting Point")
 	n.TargetSendCursor(uo.TargetTypeLocation, func(tr *clientpacket.TargetResponse) {
 		start := tr.Location
-		n.Speech(n.Mobile(), "Select the end of the area")
+		so := game.Find[game.Item](tr.TargetObject)
+		n.Speech(n.Mobile(), "Ending Point")
 		n.TargetSendCursor(uo.TargetTypeLocation, func(tr *clientpacket.TargetResponse) {
 			end := tr.Location
-			bounds := uo.BoundsOf(start, end)
-			items := game.GetWorld().Map().ItemQuery("StaticItem", bounds)
-			for _, item := range items {
-				game.Remove(item)
+			eo := game.Find[game.Item](tr.TargetObject)
+			lowest := start.Z
+			if end.Z < start.Z {
+				lowest = end.Z
 			}
-			g.eraseArea(n)
+			highest := start.Z
+			if so != nil && so.Highest() > highest {
+				highest = so.Highest()
+			}
+			if end.Z > highest {
+				highest = end.Z
+			}
+			if eo != nil && eo.Highest() > highest {
+				highest = eo.Highest()
+			}
+			b := uo.BoundsOf(start, end)
+			switch g.zMode {
+			case zModeFixed:
+				b.Z = g.fixedZ
+				b.D = 1
+			case zModeOnLevel:
+				b.Z = lowest
+				b.D = int16(highest) - int16(lowest)
+			case zModeOnTop:
+				b.Z = highest
+				b.D = 1
+			}
+			fn(b)
 		})
 	})
 }
 
-func (g *decorate) eraseSingle(n game.NetState) {
-	n.TargetSendCursor(uo.TargetTypeObject, func(tr *clientpacket.TargetResponse) {
-		if tr.TargetObject == uo.SerialZero {
-			return
-		}
-		s := game.Find[*game.StaticItem](tr.TargetObject)
-		if s == nil {
-			// Something wrong
-			return
-		}
-		game.Remove(s)
-		g.eraseSingle(n)
-	})
-}
-
-func (g *decorate) place(l uo.Location, exp string) bool {
+// place places a single static with regard to a reference item, if any.
+func (g *decorate) place(l uo.Location, exp string, ref game.Item) bool {
 	item := template.Create[*game.StaticItem]("StaticItem")
 	if item == nil {
 		// Something very wrong
 		return false
 	}
-	item.SetBaseGraphic(uo.Graphic(util.RangeExpression(g.item.expression, game.GetWorld().Random())))
-	if g.useFixedZ {
+	item.SetBaseGraphic(uo.Graphic(util.RangeExpression(exp, game.GetWorld().Random())))
+	if item.BaseGraphic() == uo.GraphicNone {
+		// Refuse to place bad objects
+		return false
+	}
+	item.SetHue(g.hue)
+	switch g.zMode {
+	case zModeFixed:
 		l.Z = g.fixedZ
-	} else {
-		f, c := game.GetWorld().Map().GetFloorAndCeiling(l, false, false)
-		if f != nil {
-			l.Z = f.Highest()
+	case zModeOnLevel:
+		if ref != nil {
+			l.Z = ref.Z()
 		}
-		if c != nil {
-			if int(c.Z())-int(f.Highest()) < int(item.Height()) {
-				// Not enough room to fit the static within the other statics in
-				// that location, refuse to place the object.
-				return false
-			}
+	case zModeOnTop:
+		if ref != nil {
+			l.Z = ref.Highest()
 		}
 	}
 	item.SetLocation(l)
 	game.GetWorld().Map().ForceAddObject(item)
 	return true
-}
-
-func (g *decorate) placeSingle(n game.NetState) {
-	n.Speech(n.Mobile(), "Select destination")
-	n.TargetSendCursor(uo.TargetTypeLocation, func(tr *clientpacket.TargetResponse) {
-		g.place(tr.Location, g.item.expression)
-		g.placeSingle(n)
-	})
-}
-
-func (g *decorate) areaFill(n game.NetState) {
-	n.Speech(n.Mobile(), "Select starting location")
-	n.TargetSendCursor(uo.TargetTypeLocation, func(tr *clientpacket.TargetResponse) {
-		start := tr.Location
-		n.Speech(n.Mobile(), "Select ending location")
-		n.TargetSendCursor(uo.TargetTypeLocation, func(tr *clientpacket.TargetResponse) {
-			end := tr.Location
-			bounds := uo.BoundsOf(start, end)
-			l := uo.Location{Z: bounds.Z}
-			for l.Y = bounds.Y; l.Y < bounds.Y+bounds.H; l.Y++ {
-				for l.X = bounds.X; l.X < bounds.X+bounds.W; l.X++ {
-					g.place(l, g.item.expression)
-				}
-			}
-			g.areaFill(n)
-		})
-	})
 }

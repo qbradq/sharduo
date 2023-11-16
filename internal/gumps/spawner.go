@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	reg("spawner", func() GUMP {
+	reg("spawner", 0, func() GUMP {
 		return &spawner{}
 	})
 }

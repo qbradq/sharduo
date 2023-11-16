@@ -162,6 +162,10 @@ func commandStatic(n game.NetState, args CommandArgs, cl string) {
 			n.Speech(n.Mobile(), "StaticItem template not found")
 			return
 		}
+		l := r.Location
+		if i := game.Find[game.Item](r.TargetObject); i != nil {
+			l.Z = i.Highest()
+		}
 		i.SetBaseGraphic(g)
 		i.SetLocation(r.Location)
 		game.GetWorld().Map().ForceAddObject(i)
@@ -207,13 +211,17 @@ func commandRespawn(n game.NetState, args CommandArgs, cl string) {
 }
 
 func commandSetHue(n game.NetState, args CommandArgs, cl string) {
+	var hue uo.Hue
 	if n == nil || n.Mobile() == nil {
 		return
 	}
-	if len(args) != 2 {
+	if len(args) == 2 {
+		hue = uo.Hue(args.Int(1))
+	} else if len(args) == 3 && args[1] == "partial" {
+		hue = uo.Hue(args.Int(1)).SetPartial()
+	} else {
 		return
 	}
-	hue := uo.Hue(args.Int(1))
 	n.TargetSendCursor(uo.TargetTypeObject, func(tr *clientpacket.TargetResponse) {
 		o := game.GetWorld().Find(tr.TargetObject)
 		if o == nil {

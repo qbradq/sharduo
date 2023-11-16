@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	reg("welcome", func() GUMP {
+	reg("welcome", 0, func() GUMP {
 		return &welcome{}
 	})
 }

@@ -16,6 +16,7 @@ import (
 	"github.com/qbradq/sharduo/internal/configuration"
 	"github.com/qbradq/sharduo/internal/events"
 	"github.com/qbradq/sharduo/internal/game"
+	"github.com/qbradq/sharduo/internal/gumps"
 	"github.com/qbradq/sharduo/lib/marshal"
 	"github.com/qbradq/sharduo/lib/template"
 	"github.com/qbradq/sharduo/lib/uo"
@@ -151,6 +152,11 @@ func initialize() {
 		Broadcast,
 		gracefulShutdown,
 		func() string { return world.LatestSavePath() })
+
+	// GUMP system initialization
+	gumps.InjectMethods(func(n game.NetState, s string) {
+		commands.Execute(n, s)
+	})
 
 	// Marshal system initialization
 	marshal.SetInsertFunction(func(i interface{}) {

@@ -874,7 +874,7 @@ func (n *NetState) Animate(mob game.Mobile, at uo.AnimationType, aa uo.Animation
 }
 
 // GUMP sends a generic GUMP to the client.
-func (n *NetState) GUMP(gi interface{}, target, param game.Object) {
+func (n *NetState) GUMP(gi any, target, param game.Object) {
 	g, ok := gi.(gumps.GUMP)
 	if !ok {
 		return
@@ -893,9 +893,7 @@ func (n *NetState) GUMP(gi interface{}, target, param game.Object) {
 		t: ts,
 		p: ps,
 	}
-	g.InvalidateLayout()
-	g.Layout(target, param)
-	n.Send(g.Packet(0, 0, n.m.Serial(), s))
+	n.RefreshGUMP(g)
 }
 
 // GUMPReply dispatches a GUMP reply
@@ -911,6 +909,24 @@ func (n *NetState) GUMPReply(s uo.Serial, p *clientpacket.GUMPReply) {
 	// Resolve the GUMP on our end
 	d := n.gumps[s]
 	if d == nil {
+		return
+	}
+	d.g.HandleReply(n, p)
+	n.RefreshGUMP(d.g)
+}
+
+// RefreshGUMP refreshes the passed GUMP on the client side.
+func (n *NetState) RefreshGUMP(gi any) {
+	if n.m == nil {
+		return
+	}
+	g, ok := gi.(gumps.GUMP)
+	if !ok {
+		return
+	}
+	s := g.TypeCode()
+	d, found := n.gumps[s]
+	if !found {
 		return
 	}
 	// Resolve objects
@@ -932,14 +948,14 @@ func (n *NetState) GUMPReply(s uo.Serial, p *clientpacket.GUMPReply) {
 			return
 		}
 	}
-	// Handle reply
-	d.g.HandleReply(n, p)
-	// Refresh the GUMP for the client
-	d.g.InvalidateLayout()
-	d.g.Layout(tg, pm)
-	n.Send(d.g.Packet(0, 0, n.m.Serial(), s))
+	// Re-lay the GUMP
+	g.InvalidateLayout()
+	g.Layout(tg, pm)
+	// Send the packet
+	n.Send(g.Packet(0, 0, n.m.Serial(), s))
 }
 
+// GetText sends a GUMP for text entry.
 func (n *NetState) GetText(value, description string, max int, fn func(string)) {
 	n.textReplyFn = fn
 	n.Send(&serverpacket.TextEntryGUMP{
@@ -951,9 +967,20 @@ func (n *NetState) GetText(value, description string, max int, fn func(string)) 
 	})
 }
 
+// HandleGUMPTextReply handles text GUMP reply packets.
 func (n *NetState) HandleGUMPTextReply(value string) {
 	if n.textReplyFn != nil {
 		n.textReplyFn(value)
 		n.textReplyFn = nil
 	}
+}
+
+// GetGUMPByID returns a pointer to the identified GUMP or nil if the state does
+// not currently have a GUMP of that type open.
+func (n *NetState) GetGUMPByID(s uo.Serial) any {
+	gd, found := n.gumps[s]
+	if !found {
+		return nil
+	}
+	return gd.g
 }

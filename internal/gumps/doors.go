@@ -14,7 +14,7 @@ import (
 )
 
 func init() {
-	reg("doors", func() GUMP {
+	reg("doors", 0, func() GUMP {
 		return &doors{}
 	})
 	var lfr util.ListFileReader

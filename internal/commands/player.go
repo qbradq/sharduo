@@ -72,6 +72,11 @@ func commandHue(n game.NetState, args CommandArgs, cl string) {
 		if o == nil {
 			return
 		}
-		n.Speech(n.Mobile(), "Hue %d", o.Hue())
+		h := o.Hue()
+		if h.IsPartial() {
+			n.Speech(n.Mobile(), "Partial Hue %d", h.ClearPartial())
+		} else {
+			n.Speech(n.Mobile(), "Hue %d", h)
+		}
 	})
 }

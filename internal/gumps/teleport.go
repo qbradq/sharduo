@@ -12,7 +12,7 @@ import (
 )
 
 func init() {
-	reg("teleport", func() GUMP {
+	reg("teleport", 0, func() GUMP {
 		return &teleport{
 			currentGroup: -1,
 		}

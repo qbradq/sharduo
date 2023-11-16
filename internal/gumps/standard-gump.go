@@ -496,11 +496,12 @@ func (g *StandardGUMP) HorizontalBar(x, y, w int) {
 }
 
 // TextEntry creates a text entry element. Text entries are always one line
-// tall and does not support newlines.
+// tall and does not support newlines. The width of the text entry must be at
+// least 2.
 func (g *StandardGUMP) TextEntry(x, y, w int, hue uo.Hue, text string, limit int, id uint32) {
 	bw := w - 2
 	// Convert dimensions from cells
-	if x < 0 || y < 0 || bw < 1 {
+	if x < 0 || y < 0 || bw < 0 {
 		return
 	}
 	x *= sgCellWidth
@@ -514,7 +515,9 @@ func (g *StandardGUMP) TextEntry(x, y, w int, hue uo.Hue, text string, limit int
 	bw *= sgCellWidth
 	g.g.Image(bx+sgTELeftEndCapHOffset, y+sgTEVOffset, sgTEBarLeft, uo.HueDefault)
 	bx += sgCellWidth
-	g.g.TiledImage(bx, y+sgTEVOffset, bw, sgTEBarMidHeight, sgTEBarMid)
+	if bw > 0 {
+		g.g.TiledImage(bx, y+sgTEVOffset, bw, sgTEBarMidHeight, sgTEBarMid)
+	}
 	bx += bw
 	g.g.Image(bx, y+sgTEVOffset, sgTEBarRight, uo.HueDefault)
 	// Create the text entry

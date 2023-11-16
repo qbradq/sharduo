@@ -7,7 +7,7 @@ import (
 )
 
 func init() {
-	reg("claim", func() GUMP {
+	reg("claim", 0, func() GUMP {
 		return &claim{}
 	})
 }

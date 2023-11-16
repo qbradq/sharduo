@@ -8,7 +8,6 @@ import (
 	"github.com/qbradq/sharduo/data"
 	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/lib/clientpacket"
-	"github.com/qbradq/sharduo/lib/template"
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
 )
@@ -20,7 +19,7 @@ type floorPatch struct {
 var floorPatches []*floorPatch
 
 func init() {
-	reg("floors", func() GUMP {
+	reg("floors", 0, func() GUMP {
 		return &floors{}
 	})
 	var lfr util.ListFileReader
@@ -115,63 +114,59 @@ func (g *floors) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 }
 
 func (g *floors) placeFloor(n game.NetState) {
-	n.Speech(n.Mobile(), "Target starting corner")
-	n.TargetSendCursor(uo.TargetTypeLocation, func(tr *clientpacket.TargetResponse) {
-		start := tr.Location
-		n.Speech(n.Mobile(), "Target ending corner")
-		n.TargetSendCursor(uo.TargetTypeLocation, func(tr *clientpacket.TargetResponse) {
-			p := floorPatches[g.f]
-			end := tr.Location
-			b := uo.BoundsOf(start, end)
-			l := uo.Location{
-				Z: b.Top(),
-			}
-			for l.Y = b.Y; l.Y <= b.South(); l.Y++ {
-				for l.X = b.X; l.X <= b.East(); l.X++ {
-					// Tile selection
-					var exp string
-					if l.Y == b.Y {
-						if l.X == b.X {
-							exp = p.NW
-						} else if l.X == b.East() {
-							exp = p.NE
-						} else {
-							exp = p.N
-						}
-					} else if l.Y == b.South() {
-						if l.X == b.X {
-							exp = p.SW
-						} else if l.X == b.East() {
-							exp = p.SE
-						} else {
-							exp = p.S
-						}
+	a := n.GetGUMPByID(GUMPIDDecorate)
+	if a == nil {
+		return
+	}
+	d, ok := a.(*decorate)
+	if !ok {
+		return
+	}
+	d.targetVolume(n, func(b uo.Bounds) {
+		p := floorPatches[g.f]
+		l := uo.Location{
+			Z: b.Top(),
+		}
+		for l.Y = b.Y; l.Y <= b.South(); l.Y++ {
+			for l.X = b.X; l.X <= b.East(); l.X++ {
+				// Tile selection
+				var exp string
+				if l.Y == b.Y {
+					if l.X == b.X {
+						exp = p.NW
+					} else if l.X == b.East() {
+						exp = p.NE
 					} else {
-						if l.X == b.X {
-							exp = p.W
-						} else if l.X == b.East() {
-							exp = p.E
-						} else {
-							if p.F != "" {
-								if l.X == b.X+1 || l.X == b.East()-1 ||
-									l.Y == b.Y+1 || l.Y == b.South()-1 {
-									exp = p.C
-								} else {
-									exp = p.F
-								}
-							} else {
+						exp = p.N
+					}
+				} else if l.Y == b.South() {
+					if l.X == b.X {
+						exp = p.SW
+					} else if l.X == b.East() {
+						exp = p.SE
+					} else {
+						exp = p.S
+					}
+				} else {
+					if l.X == b.X {
+						exp = p.W
+					} else if l.X == b.East() {
+						exp = p.E
+					} else {
+						if p.F != "" {
+							if l.X == b.X+1 || l.X == b.East()-1 ||
+								l.Y == b.Y+1 || l.Y == b.South()-1 {
 								exp = p.C
+							} else {
+								exp = p.F
 							}
+						} else {
+							exp = p.C
 						}
 					}
-					// Object creation
-					s := template.Create[*game.StaticItem]("StaticItem")
-					s.SetBaseGraphic(uo.Graphic(util.RangeExpression(exp, game.GetWorld().Random())))
-					s.SetLocation(l)
-					// Cram the object into the map
-					game.GetWorld().Map().ForceAddObject(s)
 				}
+				d.place(l, exp, nil)
 			}
-		})
+		}
 	})
 }

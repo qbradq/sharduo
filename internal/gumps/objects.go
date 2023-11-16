@@ -22,7 +22,7 @@ func init() {
 		}
 		return int(v)
 	}
-	reg("objects", func() GUMP {
+	reg("objects", 0, func() GUMP {
 		return &objects{}
 	})
 	var lfr util.ListFileReader

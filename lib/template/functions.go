@@ -54,7 +54,7 @@ func partialHue(hue string) string {
 	if err != nil {
 		return hue
 	}
-	h := uo.Hue(v).SetPartialHue()
+	h := uo.Hue(v).SetPartial()
 	return fmt.Sprintf("%d", h)
 }
 

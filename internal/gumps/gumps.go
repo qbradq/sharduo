@@ -9,6 +9,16 @@ import (
 	"github.com/qbradq/sharduo/lib/uo"
 )
 
+// Static GUMP IDs, these shouldn't be needed often.
+const (
+	GUMPIDDecorate uo.Serial = 1
+)
+
+// TypeCodeByName returns the type code for the given name.
+func TypeCodeByName(name string) uo.Serial {
+	return uo.Serial(crc32.ChecksumIEEE([]byte(name)))
+}
+
 // gumpDefinition ties together a GUMP's type code and constructor
 type gumpDefinition struct {
 	typeCode uo.Serial
@@ -18,14 +28,20 @@ type gumpDefinition struct {
 // Registry of all GUMPs
 var gumpDefs = map[string]gumpDefinition{}
 
+// Command execution function
+var executeCommand func(game.NetState, string)
+
 // reg registers a GUMP constructor and generates its type code
-func reg(name string, fn func() GUMP) {
+func reg(name string, tc uo.Serial, fn func() GUMP) {
 	if _, duplicate := gumpDefs[name]; duplicate {
 		panic(fmt.Sprintf("duplicate GUMP definition %s", name))
 	}
 	d := gumpDefinition{
-		typeCode: uo.Serial(crc32.ChecksumIEEE([]byte(name))),
+		typeCode: TypeCodeByName(name),
 		ctor:     fn,
+	}
+	if tc != uo.SerialZero {
+		d.typeCode = tc
 	}
 	for k, v := range gumpDefs {
 		if v.typeCode == d.typeCode {
@@ -64,4 +80,10 @@ func Edit(m game.Mobile, o game.Object) {
 			})
 		}
 	}
+}
+
+// InjectMethods is responsible for injecting methods for cross-package
+// communication.
+func InjectMethods(fn func(game.NetState, string)) {
+	executeCommand = fn
 }
