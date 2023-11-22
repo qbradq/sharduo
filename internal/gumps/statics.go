@@ -211,6 +211,14 @@ func (g *statics) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 func (g *statics) lift(n game.NetState) {
 	n.Speech(n.Mobile(), "Select the static you wish to copy")
 	n.TargetSendCursor(uo.TargetTypeObject, func(tr *clientpacket.TargetResponse) {
+		a := n.GetGUMPByID(GUMPIDDecorate)
+		if a == nil {
+			return
+		}
+		d := a.(*decorate)
+		if d == nil {
+			return
+		}
 		if tr.TargetObject == uo.SerialZero {
 			if tr.Graphic != uo.GraphicNone {
 				g.item.expression = strconv.FormatInt(int64(tr.Graphic), 10)
@@ -227,8 +235,9 @@ func (g *statics) lift(n game.NetState) {
 		}
 		g.item.name = s.DisplayName()
 		g.item.expression = strconv.FormatInt(int64(s.BaseGraphic()), 10)
-		g.item.hue = s.Hue()
+		d.hue = s.Hue()
 		n.RefreshGUMP(g)
+		n.RefreshGUMP(d)
 		g.lift(n)
 	})
 }
@@ -238,7 +247,7 @@ func (g *statics) eraseArea(n game.NetState) {
 	if a == nil {
 		return
 	}
-	d, ok := a.(decorate)
+	d, ok := a.(*decorate)
 	if !ok {
 		return
 	}
@@ -252,6 +261,7 @@ func (g *statics) eraseArea(n game.NetState) {
 }
 
 func (g *statics) eraseSingle(n game.NetState) {
+	n.Speech(n.Mobile(), "Select object to erase")
 	n.TargetSendCursor(uo.TargetTypeObject, func(tr *clientpacket.TargetResponse) {
 		if tr.TargetObject == uo.SerialZero {
 			return
@@ -293,8 +303,8 @@ func (g *statics) areaFill(n game.NetState) {
 	}
 	d.targetVolume(n, func(b uo.Bounds) {
 		l := uo.Location{Z: b.Z}
-		for l.Y = b.Y; l.Y < b.South(); l.Y++ {
-			for l.X = b.X; l.X < b.East(); l.X++ {
+		for l.Y = b.Y; l.Y <= b.South(); l.Y++ {
+			for l.X = b.X; l.X <= b.East(); l.X++ {
 				d.place(l, g.item.expression, nil)
 			}
 		}

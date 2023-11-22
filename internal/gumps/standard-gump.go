@@ -330,6 +330,19 @@ func (g *StandardGUMP) Text(x, y, w int, hue uo.Hue, text string) {
 // that the text is cropped to an area w-1xh. This button will generate a GUMP
 // reply packet and close the GUMP.
 func (g *StandardGUMP) ReplyButton(x, y, w, h int, hue uo.Hue, text string, id uint32) {
+	g.replyButton(x, y, w, h, hue, text, id, sgButtonNormal, sgButtonPressed)
+}
+
+// CheckedReplyButton creates a small gem button with the text to the right. The
+// dimensions given are for the total width including the button. This means
+// that the text is cropped to an area w-1xh. This button will generate a GUMP
+// reply packet and close the GUMP. This differs from ReplyButton in that the
+// gem button will contain a check mark.
+func (g *StandardGUMP) CheckedReplyButton(x, y, w, h int, hue uo.Hue, text string, id uint32) {
+	g.replyButton(x, y, w, h, hue, text, id, sgSwitchOn, sgSwitchOff)
+}
+
+func (g *StandardGUMP) replyButton(x, y, w, h int, hue uo.Hue, text string, id uint32, on, off uo.GUMP) {
 	// Convert dimensions from cells
 	if x < 0 || y < 0 || w < 2 || h < 1 {
 		return
@@ -347,7 +360,7 @@ func (g *StandardGUMP) ReplyButton(x, y, w, h int, hue uo.Hue, text string, id u
 	if id != 0 {
 		id += sgReplyLastReserved
 	}
-	g.g.ReplyButton(x+sgButtonHOffset, y+sgButtonVOffset, sgButtonNormal, sgButtonPressed, id)
+	g.g.ReplyButton(x+sgButtonHOffset, y+sgButtonVOffset, on, off, id)
 	x += sgCellWidth
 	g.g.CroppedLabel(x+sgTextHOffset, y+sgTextVOffset, w, h, hue, text)
 }

@@ -41,11 +41,22 @@ func (g *decorate) Layout(target, param game.Object) {
 	g.ReplyButton(0, 4, 5, 1, uo.HueDefault, "Signs", 5)
 	g.ReplyButton(0, 5, 5, 1, uo.HueDefault, "Walls", 6)
 	g.HorizontalBar(0, 6, 5)
-	g.Group()
-	g.RadioSwitch(0, 7, 3, 1, uo.HueDefault, "Fixed", 8, g.zMode == zModeFixed)
+	if g.zMode == zModeFixed {
+		g.CheckedReplyButton(0, 7, 3, 1, uo.HueDefault, "Fixed", 8)
+	} else {
+		g.ReplyButton(0, 7, 3, 1, uo.HueDefault, "Fixed", 8)
+	}
 	g.TextEntry(3, 7, 2, uo.HueDefault, strconv.FormatInt(int64(g.fixedZ), 10), 4, 9)
-	g.RadioSwitch(0, 8, 5, 1, uo.HueDefault, "Same Z", 10, g.zMode == zModeOnLevel)
-	g.RadioSwitch(0, 9, 5, 1, uo.HueDefault, "On Top", 11, g.zMode == zModeOnTop)
+	if g.zMode == zModeOnLevel {
+		g.CheckedReplyButton(0, 8, 5, 1, uo.HueDefault, "Same Z", 10)
+	} else {
+		g.ReplyButton(0, 8, 5, 1, uo.HueDefault, "Same Z", 10)
+	}
+	if g.zMode == zModeOnTop {
+		g.CheckedReplyButton(0, 9, 5, 1, uo.HueDefault, "On Top", 11)
+	} else {
+		g.ReplyButton(0, 9, 5, 1, uo.HueDefault, "On Top", 11)
+	}
 	g.HorizontalBar(0, 10, 5)
 	g.ReplyButton(0, 11, 3, 1, g.hue, "Apply Hue", 12)
 	g.TextEntry(3, 11, 2, uo.HueDefault, strconv.FormatInt(int64(g.hue), 10), 4, 13)
@@ -56,15 +67,6 @@ func (g *decorate) Layout(target, param game.Object) {
 // HandleReply implements the GUMP interface.
 func (g *decorate) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 	// Data
-	if p.Switch(8) {
-		g.zMode = zModeFixed
-	}
-	if p.Switch(10) {
-		g.zMode = zModeOnLevel
-	}
-	if p.Switch(11) {
-		g.zMode = zModeOnTop
-	}
 	v, err := strconv.ParseInt(p.Text(9), 0, 32)
 	if err == nil {
 		g.fixedZ = int8(v)
@@ -93,6 +95,12 @@ func (g *decorate) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 		executeCommand(n, "savestatics")
 		executeCommand(n, "savedoors")
 		executeCommand(n, "savesigns")
+	case 8:
+		g.zMode = zModeFixed
+	case 10:
+		g.zMode = zModeOnLevel
+	case 11:
+		g.zMode = zModeOnTop
 	}
 }
 

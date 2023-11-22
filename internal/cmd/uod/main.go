@@ -219,6 +219,7 @@ func firstStart() {
 func startCommands() {
 	n := NewNetState(nil)
 	n.account = world.superUser
+	commands.Execute(n, "loadregions")
 	commands.Execute(n, "loadstatics")
 	commands.Execute(n, "loaddoors")
 	commands.Execute(n, "loadsigns")

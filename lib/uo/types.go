@@ -11,7 +11,7 @@ const (
 	ChunkHeight               int    = 8
 	MapWidth                  int    = 7168
 	MapHeight                 int    = 4096
-	MapOverworldWidth         int    = MapHeight
+	MapOverworldWidth         int    = 5120
 	MapChunksWidth            int    = MapWidth / ChunkWidth
 	MapChunksHeight           int    = MapHeight / ChunkHeight
 	MapMinZ                   int8   = -128
@@ -350,9 +350,6 @@ const (
 	SoundBagDrop     Sound = 0x48
 )
 
-// Song is a code referencing a song on the client side
-type Song uint16
-
 // AnimationType indicates which animation type to play on the client side
 type AnimationType uint16
 
@@ -471,4 +468,60 @@ const (
 	MacroTypeOpenDoor MacroType = 2 // Open door request
 	MacroTypeAction   MacroType = 3 // 0 = bow, 1 = salute
 	MacroTypeInvalid  MacroType = 4 // Parsing error
+)
+
+// Music is a code that describes which music track to play on the client side.
+type Music uint16
+
+const (
+	MusicApproach  Music = 0  // approach
+	MusicBritain1  Music = 1  // britain1
+	MusicBritain2  Music = 2  // britain2
+	MusicBtcastle  Music = 3  // btcastle
+	MusicBucsden   Music = 4  // bucsden
+	MusicCave01    Music = 5  // cave01
+	MusicCombat1   Music = 6  // combat1
+	MusicCombat2   Music = 7  // combat2
+	MusicCombat3   Music = 8  // combat3
+	MusicCove      Music = 9  // cove
+	MusicCreate1   Music = 10 // create1
+	MusicDeath     Music = 11 // death
+	MusicDragflit  Music = 12 // dragflit
+	MusicDungeon2  Music = 13 // dungeon2
+	MusicDungeon9  Music = 14 // dungeon9
+	MusicForest_a  Music = 15 // forest_a
+	MusicIntown01  Music = 16 // intown01
+	MusicJhelom    Music = 17 // jhelom
+	MusicJungle_a  Music = 18 // jungle_a
+	MusicLBCastle  Music = 19 // lbcastle
+	MusicLinelle   Music = 20 // linelle
+	MusicMagincia  Music = 21 // magincia
+	MusicMinoc     Music = 22 // minoc
+	MusicMoonglow  Music = 23 // moonglow
+	MusicMountn_a  Music = 24 // mountn_a
+	MusicNujelm    Music = 25 // nujelm
+	MusicOcllo     Music = 26 // ocllo
+	MusicOldult01  Music = 27 // oldult01
+	MusicOldult02  Music = 28 // oldult02
+	MusicOldult03  Music = 29 // oldult03
+	MusicOldult04  Music = 30 // oldult04
+	MusicOldult05  Music = 31 // oldult05
+	MusicOldult06  Music = 32 // oldult06
+	MusicPlains_a  Music = 33 // plains_a
+	MusicSailing   Music = 34 // sailing
+	MusicSamlethe  Music = 35 // samlethe
+	MusicSerpents  Music = 36 // serpents
+	MusicSkarabra  Music = 37 // skarabra
+	MusicStones2   Music = 38 // stones2
+	MusicSwamp_a   Music = 39 // swamp_a
+	MusicTavern01  Music = 40 // tavern01
+	MusicTavern02  Music = 41 // tavern02
+	MusicTavern03  Music = 42 // tavern03
+	MusicTavern04  Music = 43 // tavern04
+	MusicTrinsic   Music = 44 // trinsic
+	MusicVesper    Music = 45 // vesper
+	MusicVictory   Music = 46 // victory
+	MusicWind      Music = 47 // wind
+	MusicYew       Music = 48 // yew
+	MusicLastValid Music = MusicYew
 )

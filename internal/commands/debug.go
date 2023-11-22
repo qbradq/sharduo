@@ -147,7 +147,7 @@ func commandDebug(n game.NetState, args CommandArgs, cl string) {
 		aa := uo.AnimationAction(args.Int(2))
 		n.Animate(n.Mobile(), at, aa)
 	case "music":
-		which := uo.Song(args.Int(2))
+		which := uo.Music(args.Int(2))
 		n.Music(which)
 	case "sound":
 		which := uo.Sound(args.Int(2))

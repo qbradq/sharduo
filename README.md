@@ -36,7 +36,7 @@ vendors, mounts, pack animals, and banking.
 
 ### Required Features and Tasks ###
 * Line of sight checks
-* Decorating Britain
+* Complete decorating Britain
 
 ### Nice to Haves ###
 * Feedback GUMP
@@ -45,12 +45,12 @@ vendors, mounts, pack animals, and banking.
 * Miner Guildmaster NPC
 * Miner's Guild
 * Regions
+* Safe Logout Regions
 * Region spawning
 * Passive fauna
 * Wild flora
 * Agricultural crops
 * Region-based music
-* Complete decorating Britain
 
 ### Nerdy Things I Might Do for Fun ###
 * Player movement packet throttling

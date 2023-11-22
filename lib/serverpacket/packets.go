@@ -931,8 +931,7 @@ func (p *Sound) Write(w io.Writer) {
 
 // Music tells the client to start playing the given song.
 type Music struct {
-	// Which song to play
-	Song uo.Song
+	Song uo.Music // Which song to play
 }
 
 // Write implements the Packet interface.

@@ -78,8 +78,8 @@ func (g *spawner) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 	if p.Button == 9998 {
 		l := g.Spawner.Location()
 		b := l.BoundsByRadius(g.Spawner.Radius)
-		for l.Y = b.Y; l.Y < b.Y+b.H; l.Y++ {
-			for l.X = b.X; l.X < b.X+b.W; l.X++ {
+		for l.Y = b.Y; l.Y <= b.South(); l.Y++ {
+			for l.X = b.X; l.X <= b.East(); l.X++ {
 				l.Z = g.Spawner.Location().Z
 				f := game.GetWorld().Map().GetSpawnableSurface(l, nil)
 				if f == nil {

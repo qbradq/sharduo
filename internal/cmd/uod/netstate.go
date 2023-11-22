@@ -855,7 +855,10 @@ func (n *NetState) Sound(which uo.Sound, from uo.Location) {
 }
 
 // Music makes the client play a song.
-func (n *NetState) Music(song uo.Song) {
+func (n *NetState) Music(song uo.Music) {
+	n.Send(&serverpacket.Music{
+		Song: uo.MusicApproach,
+	})
 	n.Send(&serverpacket.Music{
 		Song: song,
 	})
@@ -917,7 +920,7 @@ func (n *NetState) GUMPReply(s uo.Serial, p *clientpacket.GUMPReply) {
 
 // RefreshGUMP refreshes the passed GUMP on the client side.
 func (n *NetState) RefreshGUMP(gi any) {
-	if n.m == nil {
+	if n.m == nil || gi == nil {
 		return
 	}
 	g, ok := gi.(gumps.GUMP)

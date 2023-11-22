@@ -2,6 +2,7 @@ package game
 
 import (
 	"fmt"
+	"math"
 	"sort"
 	"strings"
 	"sync"
@@ -881,19 +882,27 @@ func (m *Map) plopItems(l uo.Location, drop int8) {
 func (m *Map) GetFloorAndCeiling(l uo.Location, ignoreDynamicItems, considerStepHeight bool) (uo.CommonObject, uo.CommonObject) {
 	var floorObject uo.CommonObject
 	var ceilingObject uo.CommonObject
-	floor := uo.MapMinZ
-	ceiling := uo.MapMaxZ
-	footHeight := l.Z
+	floor := int(uo.MapMinZ)
+	ceiling := int(uo.MapMaxZ)
+	footHeight := int(l.Z)
 	// Consider tile matrix
 	c := m.GetChunk(l)
 	t := c.GetTile(l.X, l.Y)
 	if !t.Ignore() {
-		bottom := t.Z()
-		avg := t.StandingHeight()
-		if footHeight < bottom {
-			// Mobile is below ground
+		bottom := int(t.Z())
+		avg := int(t.StandingHeight())
+		if footHeight+int(uo.PlayerHeight) < bottom {
+			// Mobile is completely below ground
 			ceiling = avg
 			ceilingObject = t
+		} else if footHeight < bottom {
+			// Mobile's feet are below the tile matrix but the head is above,
+			// project upward
+			floor = avg
+			floorObject = t
+			if floor > footHeight {
+				footHeight = floor
+			}
 		} else if footHeight >= avg {
 			// Mobile is above or on the ground
 			floor = avg
@@ -917,8 +926,8 @@ func (m *Map) GetFloorAndCeiling(l uo.Location, ignoreDynamicItems, considerStep
 		if !static.Surface() && !static.Impassable() {
 			continue
 		}
-		sz := static.Z()
-		stz := static.Highest()
+		sz := int(static.Z())
+		stz := int(static.Highest())
 		if stz < floor {
 			// Static is below our current floor position, ignore
 			continue
@@ -931,7 +940,7 @@ func (m *Map) GetFloorAndCeiling(l uo.Location, ignoreDynamicItems, considerStep
 			}
 			continue
 		}
-		if (considerStepHeight && stz <= footHeight+uo.StepHeight) || stz <= footHeight {
+		if (considerStepHeight && stz <= footHeight+int(uo.StepHeight)) || stz <= footHeight {
 			// Static is underfoot, consider it a possible floor
 			floor = stz
 			floorObject = static
@@ -977,8 +986,8 @@ func (m *Map) GetFloorAndCeiling(l uo.Location, ignoreDynamicItems, considerStep
 		if !item.Surface() && !item.Impassable() {
 			continue
 		}
-		iz := item.Z()
-		itz := item.Highest()
+		iz := int(item.Z())
+		itz := int(item.Highest())
 		if itz < floor {
 			// Item is below the current floor, ignore it
 			continue
@@ -991,7 +1000,7 @@ func (m *Map) GetFloorAndCeiling(l uo.Location, ignoreDynamicItems, considerStep
 			}
 			continue
 		}
-		if (considerStepHeight && itz <= footHeight+uo.StepHeight) || itz <= footHeight {
+		if (considerStepHeight && itz <= footHeight+int(uo.StepHeight)) || itz <= footHeight {
 			// Item is underfoot, consider it a possible floor
 			if itz >= floor {
 				// Surface of item is between the static floor and the foot
@@ -1255,7 +1264,14 @@ func (m *Map) GetSpawnableSurface(l uo.Location, o Object) uo.CommonObject {
 		return nil
 	}
 	// Flag checks
-	if f.Wet() || !f.Surface() || f.Impassable() {
+	if !f.Surface() || f.Impassable() {
+		return nil
+	}
+	// Z check
+	dz := int8(math.Abs(float64(f.StandingHeight()) - float64(l.Z)))
+	if dz >= uo.PlayerHeight {
+		// Difference in Z height is at least as tall as a mobile so consider
+		// this outside the spawnable area.
 		return nil
 	}
 	// Height check
@@ -1319,6 +1335,54 @@ func (m *Map) StaticsAt(l uo.Location) []uo.CommonObject {
 			continue
 		}
 		ret = append(ret, i)
+	}
+	return ret
+}
+
+// AddRegion adds the given region to the map.
+func (m *Map) AddRegion(r *Region) {
+	for _, c := range m.getChunksInBounds(r.Bounds) {
+		c.AddRegion(r)
+	}
+}
+
+// RemoveRegion removes the given region from the map.
+func (m *Map) RemoveRegion(r *Region) {
+	for _, c := range m.getChunksInBounds(r.Bounds) {
+		c.RemoveRegion(r)
+	}
+}
+
+// RegionsAt returns a slice of all of the regions that overlap the given
+// location.
+func (m *Map) RegionsAt(l uo.Location) []*Region {
+	var ret []*Region
+	c := m.GetChunk(l)
+	for _, r := range c.regions {
+		if r.Contains(l) {
+			ret = append(ret, r)
+		}
+	}
+	return ret
+}
+
+// RegionsWithin returns a slice of all of the regions that overlap the given
+// bounds.
+func (m *Map) RegionsWithin(b uo.Bounds) []*Region {
+	rset := make(map[*Region]struct{})
+	for _, c := range m.getChunksInBounds(b) {
+		for _, r := range c.regions {
+			if !r.Overlaps(b) {
+				continue
+			}
+			rset[r] = struct{}{}
+		}
+	}
+	ret := make([]*Region, len(rset))
+	i := 0
+	for r := range rset {
+		ret[i] = r
+		i++
 	}
 	return ret
 }

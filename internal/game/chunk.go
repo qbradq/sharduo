@@ -17,6 +17,8 @@ type Chunk struct {
 	items util.Slice[Item]
 	// Collection of all mobiles in the chunk
 	mobiles util.Slice[Mobile]
+	// Collection of all regions that overlap this chunk
+	regions []*Region
 	// Amount of ore left in this chunk
 	ore uint8
 	// oreDeadline is the time when this chunk should regenerate its ore
@@ -97,5 +99,35 @@ func (c *Chunk) Update(t uo.Time) {
 	copy(items, c.items)
 	for _, i := range items {
 		i.Update(t)
+	}
+}
+
+// AddRegion adds the region to this chunk if it overlaps.
+func (c *Chunk) AddRegion(r *Region) bool {
+	if !c.bounds.Overlaps(r.Bounds) {
+		return false
+	}
+	for _, region := range c.regions {
+		if region == r {
+			return false
+		}
+	}
+	c.regions = append(c.regions, r)
+	return true
+}
+
+// RemoveRegion removes the region pointed to.
+func (c *Chunk) RemoveRegion(r *Region) {
+	idx := -1
+	for i, region := range c.regions {
+		if region == r {
+			idx = i
+			break
+		}
+	}
+	if idx >= 0 {
+		copy(c.regions[idx:], c.regions[idx+1:])
+		c.regions[len(c.regions)-1] = nil
+		c.regions = c.regions[:len(c.regions)-1]
 	}
 }
