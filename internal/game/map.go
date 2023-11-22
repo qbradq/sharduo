@@ -483,8 +483,21 @@ func (m *Map) MoveMobile(mob Mobile, dir uo.Direction) bool {
 	mob.SetLocation(newLocation)
 	// Now we need to check for attached net states that we might need to push
 	// the movement to
-	for _, othermob := range m.GetNetStatesInRange(mob.Location(), uo.MaxViewRange+1) {
-		othermob.NetState().MoveMobile(mob)
+	otherMobs := m.GetNetStatesInRange(mob.Location(), uo.MaxViewRange+1)
+	for _, otherMob := range otherMobs {
+		if oldLocation.XYDistance(otherMob.Location()) <= otherMob.ViewRange() &&
+			newLocation.XYDistance(otherMob.Location()) > otherMob.ViewRange() {
+			// We used to be in visible range of the other mobile but are
+			// moving out of that range, delete us
+			otherMob.NetState().RemoveObject(mob)
+		} else if oldLocation.XYDistance(otherMob.Location()) > otherMob.ViewRange() &&
+			newLocation.XYDistance(otherMob.Location()) <= otherMob.ViewRange() {
+			// We used to be outside the visible range of the other mobile but
+			// are moving into that range, send us
+			otherMob.NetState().SendObject(mob)
+		} else {
+			otherMob.NetState().MoveMobile(mob)
+		}
 	}
 	// Update mobile standing
 	mob.StandOn(floor)
@@ -1383,6 +1396,19 @@ func (m *Map) RegionsWithin(b uo.Bounds) []*Region {
 	for r := range rset {
 		ret[i] = r
 		i++
+	}
+	return ret
+}
+
+// RegionFeaturesAt returns the accumulated region features from all regions at
+// the given location.
+func (m *Map) RegionFeaturesAt(l uo.Location) RegionFeature {
+	var ret RegionFeature
+	c := m.GetChunk(l)
+	for _, r := range c.regions {
+		if r.Contains(l) {
+			ret |= r.Features
+		}
 	}
 	return ret
 }

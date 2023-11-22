@@ -78,7 +78,7 @@ func (r *CharacterLoginRequest) Execute() error {
 			tn = "DeveloperMobile"
 		} else if r.NetState.account.HasRole(game.RoleGameMaster) {
 			tn = "GameMasterMobile"
-		} else {
+		} else if r.NetState.account.HasRole(game.RoleStaff) {
 			tn = "AdministratorMobile"
 		}
 		player = template.Create[game.Mobile](tn)
@@ -143,6 +143,11 @@ type CharacterLogoutRequest struct {
 
 // Execute implements the WorldRequest interface
 func (r *CharacterLogoutRequest) Execute() error {
-	game.NewTimer(uo.DurationSecond*10, "PlayerLogout", r.Mobile, nil, false, nil)
+	f := game.GetWorld().Map().RegionFeaturesAt(r.Mobile.Location())
+	if f&game.RegionFeatureSafeLogout != 0 {
+		game.ExecuteEventHandler("PlayerLogout", r.Mobile, nil, nil)
+	} else {
+		game.NewTimer(uo.DurationMinute*10, "PlayerLogout", r.Mobile, nil, false, nil)
+	}
 	return nil
 }

@@ -44,8 +44,6 @@ vendors, mounts, pack animals, and banking.
 * Miner NPC
 * Miner Guildmaster NPC
 * Miner's Guild
-* Regions
-* Safe Logout Regions
 * Region spawning
 * Passive fauna
 * Wild flora
