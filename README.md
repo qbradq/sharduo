@@ -33,6 +33,7 @@ basic supporting features are also slated before the first alpha including
 vendors, mounts, pack animals, and banking.
 
 ### Known Defects ###
+* The west-most doors of The Salty Dog tavern in east Britain won't open
 
 ### Required Features and Tasks ###
 * Line of sight checks
@@ -44,9 +45,7 @@ vendors, mounts, pack animals, and banking.
 * Miner NPC
 * Miner Guildmaster NPC
 * Miner's Guild
-* Passive fauna
 * Wild flora
-* Town spawn (Birds, Dogs, Cats, Rats)
 
 ### Nerdy Things I Might Do for Fun ###
 * Player movement packet throttling
