@@ -19,7 +19,6 @@ func init() {
 	regcmd(&cmdesc{"edit", nil, commandEdit, game.RoleGameMaster, "edit", "Opens the targeted object's edit GUMP if any"})
 	regcmd(&cmdesc{"new", []string{"add"}, commandNew, game.RoleGameMaster, "new template_name [stack_amount]", "Creates a new item with an optional stack amount"})
 	regcmd(&cmdesc{"remove", []string{"rem", "delete", "del"}, commandRemove, game.RoleGameMaster, "remove", "Removes the targeted object and all of its children from the game game.GetWorld()"})
-	regcmd(&cmdesc{"respawn", nil, commandRespawn, game.RoleGameMaster, "respawn", "Respawns the targeted spawner"})
 	regcmd(&cmdesc{"sethue", nil, commandSetHue, game.RoleGameMaster, "sethue", "Sets the hue of an object"})
 	regcmd(&cmdesc{"setz", nil, commandSetZ, game.RoleGameMaster, "setz", "Adjusts the Z location of the object"})
 	regcmd(&cmdesc{"static", nil, commandStatic, game.RoleGameMaster, "static graphic_number", "Creates a new static object with the given graphic number"})
@@ -193,20 +192,6 @@ func commandEdit(n game.NetState, args CommandArgs, cl string) {
 	n.TargetSendCursor(uo.TargetTypeObject, func(tr *clientpacket.TargetResponse) {
 		o := game.GetWorld().Find(tr.TargetObject)
 		gumps.Edit(n.Mobile(), o)
-	})
-}
-
-func commandRespawn(n game.NetState, args CommandArgs, cl string) {
-	if n == nil || n.Mobile() == nil {
-		return
-	}
-	n.TargetSendCursor(uo.TargetTypeObject, func(tr *clientpacket.TargetResponse) {
-		s, ok := game.GetWorld().Find(tr.TargetObject).(*game.Spawner)
-		if !ok {
-			n.Speech(n.Mobile(), "Must target a spawner")
-			return
-		}
-		s.FullRespawn()
 	})
 }
 

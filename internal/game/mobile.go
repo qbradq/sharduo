@@ -765,7 +765,6 @@ func (m *BaseMobile) doAddObject(obj Object, force bool) bool {
 	if obj == nil {
 		return force
 	}
-	obj.SetOwner(m)
 	// Handle items coming in from other sources
 	if m.cursor.item == nil || m.cursor.item.Serial() != obj.Serial() {
 		// Try to equip the item
@@ -1352,8 +1351,10 @@ func (m *BaseMobile) Update(t uo.Time) {
 	}
 	// AI handling
 	if m.ai != nil {
-		// Target selection every 15 seconds
-		if t%(uo.DurationSecond%15) == 0 {
+		// Interleaved target selection every 15 seconds
+		step := uint64(uo.DurationSecond * 15)
+		base := uint64(m.serial) % step
+		if (base+uint64(t))%step == 0 {
 			m.ai.Target(m, t)
 		}
 		m.ai.Act(m, t)

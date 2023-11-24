@@ -48,6 +48,12 @@ func (o *StaticItem) Remove() { o.removed = true }
 // NoRent implements the Object interface.
 func (o *StaticItem) NoRent() bool { return true }
 
+// SpawnerRegion implements the Object interface.
+func (o *StaticItem) SpawnerRegion() *Region { return nil }
+
+// SetSpawnerRegion implements the Object interface.
+func (o *StaticItem) SetSpawnerRegion(r *Region) {}
+
 // Serial implements the Object interface.
 func (o *StaticItem) Serial() uo.Serial { return o.serial }
 

@@ -42,10 +42,11 @@ type Object interface {
 	// NoRent returns true if this object should not persist through server
 	// restart.
 	NoRent() bool
-	// Owner returns a pointer to the object that owns this one if any.
-	Owner() Object
-	// SetOwner sets the owner object.
-	SetOwner(Object)
+	// SpawnerRegion returns a pointer to the region that spawned this object
+	// if any.
+	SpawnerRegion() *Region
+	// SetSpawnerRegion sets the spawner region.
+	SetSpawnerRegion(*Region)
 
 	//
 	// Parent / child relationships
@@ -228,6 +229,8 @@ type BaseObject struct {
 	opl *serverpacket.OPLPacket
 	// OPLInfo cache
 	oplinfo *serverpacket.OPLInfo
+	// Spawner region pointer
+	spawnerRegion *Region
 }
 
 // ObjectType implements the Object interface.
@@ -570,3 +573,9 @@ func (o *BaseObject) Name() string { return o.name }
 
 // BaseTemplate implements the Object interface.
 func (o *BaseObject) BaseTemplate() string { return o.baseTemplate }
+
+// SpawnerRegion implements the Object interface.
+func (o *BaseObject) SpawnerRegion() *Region { return o.spawnerRegion }
+
+// SetSpawnerRegion implements the Object interface.
+func (o *BaseObject) SetSpawnerRegion(r *Region) { o.spawnerRegion = r }

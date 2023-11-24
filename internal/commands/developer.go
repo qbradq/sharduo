@@ -25,73 +25,13 @@ func init() {
 	regcmd(&cmdesc{"loaddoors", nil, commandLoadDoors, game.RoleDeveloper, "loaddoors", "Clears all doors then loads data/misc/doors.csv"})
 	regcmd(&cmdesc{"loadregions", nil, commandLoadRegions, game.RoleDeveloper, "loadregions", "Clears all regions then loads data/misc/regions.csv"})
 	regcmd(&cmdesc{"loadsigns", nil, commandLoadSigns, game.RoleDeveloper, "loadsigns", "Clears all signs then loads data/misc/signs.csv"})
-	regcmd(&cmdesc{"loadspawners", nil, commandLoadSpawners, game.RoleDeveloper, "loadspawners", "Clears all spawners then loads data/misc/spawners.ini and fully respawns all spawners"})
 	regcmd(&cmdesc{"loadstatics", nil, commandLoadStatics, game.RoleDeveloper, "loadstatics", "Clears all statics then loads data/misc/statics.csv"})
 	regcmd(&cmdesc{"regions", nil, commandRegions, game.RoleDeveloper, "regions", "Calls up the regions GUMP"})
+	regcmd(&cmdesc{"respawn", nil, commandRespawn, game.RoleDeveloper, "respawn", "Executes a full respawn on all spawning regions"})
 	regcmd(&cmdesc{"savedoors", nil, commandSaveDoors, game.RoleDeveloper, "savedoors", "Generates data/misc/doors.csv"})
 	regcmd(&cmdesc{"saveregions", nil, commandSaveRegions, game.RoleDeveloper, "saveregions", "Generates data/misc/regions.csv"})
 	regcmd(&cmdesc{"savesigns", nil, commandSaveSigns, game.RoleDeveloper, "savesigns", "Generates data/misc/signs.csv"})
-	regcmd(&cmdesc{"savespawners", nil, commandSaveSpawners, game.RoleDeveloper, "savespawners", "Generates data/misc/spawners.ini"})
 	regcmd(&cmdesc{"savestatics", nil, commandSaveStatics, game.RoleDeveloper, "savestatics", "Generates data/misc/statics.csv"})
-}
-
-func commandLoadSpawners(n game.NetState, args CommandArgs, cl string) {
-	broadcast("Load Spawners: clearing all spawners")
-	for _, s := range game.GetWorld().Map().ItemQuery("Spawner", uo.BoundsZero) {
-		game.Remove(s)
-	}
-	broadcast("Load Spawners: loading spawners.ini")
-	f, err := data.FS.Open(path.Join("misc", "spawners.ini"))
-	if err != nil {
-		broadcast("Load Spawners: error loading spawners.ini: %s", err.Error())
-		return
-	}
-	defer f.Close()
-	lfr := util.ListFileReader{}
-	for _, lfs := range lfr.ReadSegments(f) {
-		s := template.Create[*game.Spawner]("Spawner")
-		if s == nil {
-			// Something very wrong
-			return
-		}
-		s.Read(lfs)
-		game.GetWorld().Map().ForceAddObject(s)
-		s.FullRespawn()
-	}
-}
-
-func commandSaveSpawners(n game.NetState, args CommandArgs, cl string) {
-	f, err := os.Create(path.Join("data", "misc", "spawners.ini"))
-	if err != nil {
-		broadcast("Save Spawners: error opening spawners.ini: %s", err.Error())
-		return
-	}
-	defer f.Close()
-	broadcast("Save Spawners: getting spawners")
-	spawners := game.GetWorld().Map().ItemQuery("Spawner", uo.BoundsZero)
-	broadcast("Save Spawners: sorting spawners")
-	sort.Slice(spawners, func(i, j int) bool {
-		a := spawners[i].Location()
-		b := spawners[j].Location()
-		if a.Y < b.Y {
-			return true
-		} else if a.Y == b.Y {
-			if a.X < b.X {
-				return true
-			} else if a.X == b.X {
-				return a.Z < b.Z
-			}
-			return false
-		}
-		return false
-	})
-	broadcast("Save Spawners: writing spawners")
-	for _, item := range spawners {
-		if s, ok := item.(*game.Spawner); ok {
-			s.Write(f)
-		}
-	}
-	broadcast("Save Spawners: complete")
 }
 
 func commandLoadStatics(n game.NetState, args CommandArgs, cl string) {
@@ -414,8 +354,13 @@ func commandSaveRegions(n game.NetState, args CommandArgs, cl string) {
 		f.WriteString(fmt.Sprintf("Name=%s\n", r.Name))
 		f.WriteString(fmt.Sprintf("Music=%s\n", r.Music))
 		f.WriteString(fmt.Sprintf("Features=0x%04X\n", r.Features))
+		f.WriteString(fmt.Sprintf("SpawnMinZ=%d\n", r.SpawnMinZ))
+		f.WriteString(fmt.Sprintf("SpawnMaxZ=%d\n", r.SpawnMaxZ))
 		for _, rect := range r.Rects {
 			f.WriteString(fmt.Sprintf("Rect=%d,%d,%d,%d\n", rect.X, rect.Y, rect.W, rect.H))
+		}
+		for _, e := range r.Entries {
+			f.WriteString(fmt.Sprintf("Spawn=%d,%d,%s\n", e.Amount, e.Delay, e.Template))
 		}
 	}
 	broadcast("Save Regions: complete")
@@ -460,6 +405,10 @@ func commandLoadRegions(n game.NetState, args CommandArgs, cl string) {
 				region.Music = value
 			case "Features":
 				region.Features = game.RegionFeature(fn(value))
+			case "SpawnMinZ":
+				region.SpawnMinZ = int8(fn(value))
+			case "SpawnMaxZ":
+				region.SpawnMaxZ = int8(fn(value))
 			case "Rect":
 				parts = strings.Split(value, ",")
 				if len(parts) != 4 {
@@ -474,10 +423,27 @@ func commandLoadRegions(n game.NetState, args CommandArgs, cl string) {
 					H: int16(fn(parts[3])),
 					D: int16(uo.MapMaxZ) - int16(uo.MapMinZ),
 				})
+			case "Spawn":
+				parts = strings.SplitN(value, ",", 3)
+				if len(parts) != 3 {
+					broadcast("Load Regions: malformed spawn definition in regions.ini")
+					return
+				}
+				region.Entries = append(region.Entries, &game.SpawnerEntry{
+					Amount:   fn(parts[0]),
+					Delay:    uo.Time(fn(parts[1])),
+					Template: parts[2],
+				})
 			}
 		}
 		region.ForceRecalculateBounds()
 		game.GetWorld().Map().AddRegion(region)
 	}
 	broadcast("Load Regions: complete")
+}
+
+func commandRespawn(n game.NetState, args CommandArgs, cl string) {
+	for _, r := range game.GetWorld().Map().RegionsWithin(uo.BoundsFullMap) {
+		r.FullRespawn()
+	}
 }

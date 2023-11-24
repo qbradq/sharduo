@@ -12,6 +12,7 @@ import (
 // Static GUMP IDs, these shouldn't be needed often.
 const (
 	GUMPIDDecorate uo.Serial = 1
+	GUMPIDRegions  uo.Serial = 2
 )
 
 // TypeCodeByName returns the type code for the given name.
@@ -69,9 +70,6 @@ func New(name string) GUMP {
 func Edit(m game.Mobile, o game.Object) {
 	if m == nil || o == nil || m.NetState() == nil {
 		return
-	}
-	if spawner, ok := o.(*game.Spawner); ok {
-		m.NetState().GUMP(New("spawner"), m, spawner)
 	}
 	if item, ok := o.(game.Item); ok {
 		if item.TemplateName() == "BaseSign" {

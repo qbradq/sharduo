@@ -223,12 +223,11 @@ func startCommands() {
 	commands.Execute(n, "loadstatics")
 	commands.Execute(n, "loaddoors")
 	commands.Execute(n, "loadsigns")
+	commands.Execute(n, "respawn")
 	// This is really hacky, but the mobiles need to update what they are
 	// standing on in this step and what they are standing on won't be there if
 	// it's a dynamic static object created by [loadstatics and friends.
 	world.m.AfterUnmarshal()
-	// Create the spawners last as that forces a full respawn.
-	commands.Execute(n, "loadspawners")
 }
 
 // Main is the entry point for uod.

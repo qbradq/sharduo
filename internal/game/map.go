@@ -2,7 +2,6 @@ package game
 
 import (
 	"fmt"
-	"math"
 	"sort"
 	"strings"
 	"sync"
@@ -15,10 +14,9 @@ import (
 
 // Map contains the tile matrix, static items, and all dynamic objects of a map.
 type Map struct {
-	// The chunks of the map
-	chunks []*Chunk
-	// Deep storage for objects like stabled pets and logged out characters
-	deepStorage map[uo.Serial]Object
+	chunks      []*Chunk             // The chunks of the map
+	regions     []*Region            // A list of all of the regions of the map
+	deepStorage map[uo.Serial]Object // Deep storage for objects like stabled pets and logged out characters
 }
 
 // NewMap creates and returns a new Map
@@ -85,14 +83,14 @@ func (m *Map) MarshalObjects(wg *sync.WaitGroup, s *marshal.TagFileSegment, pool
 	for i := pool; i < l; i += pools {
 		c := m.chunks[i]
 		for _, o := range c.items {
-			if o.Removed() || o.NoRent() {
+			if o.Removed() || o.NoRent() || o.SpawnerRegion() != nil {
 				continue
 			}
 			s.PutObject(o)
 			s.IncrementRecordCount()
 		}
 		for _, o := range c.mobiles {
-			if o.Removed() || o.NoRent() {
+			if o.Removed() || o.NoRent() || o.SpawnerRegion() != nil {
 				continue
 			}
 			s.PutObject(o)
@@ -221,6 +219,10 @@ func (m *Map) SetNewParent(o, p Object) bool {
 		}
 		return false
 	}
+	if o.SpawnerRegion() != nil {
+		o.SpawnerRegion().ReleaseObject(o)
+		o.SetSpawnerRegion(nil)
+	}
 	// Figure out if we need to send drag packets
 	if _, ok := oldParent.(*VoidObject); ok {
 		// If the item was coming to the Void it doesn't need a drag packet
@@ -328,7 +330,6 @@ func (m *Map) ForceAddObject(o Object) {
 	if o == nil {
 		return
 	}
-	o.SetOwner(nil)
 	o.SetParent(nil)
 	c := m.GetChunk(o.Location())
 	c.Add(o)
@@ -1148,16 +1149,24 @@ func (m *Map) SendCliloc(from Object, r int16, c uo.Cliloc, args ...string) {
 	}
 }
 
-// Update calls Update on a few chunks every frame such that every chunk gets an
-// Update call once every 30 real-world minutes or 6 in-game hours.
+// Update calls Update on a few chunks every tick such that every chunk gets an
+// Update call once every real-world minute or twelve in-game minutes. It also
+// calls Update on a few regions every tick such that every region is updated
+// over fifteen real-world seconds or three in-game minutes.
 func (m *Map) Update(t uo.Time) {
 	// Interleaved chunk updates, updates every chunk over a minute
 	nChunks := uint64(uo.MapChunksWidth * uo.MapChunksHeight)
 	step := uint64(uo.DurationMinute)
-	start := uint64(world.Time() % uo.Time(step))
+	start := uint64(t % uo.Time(step))
 	for idx := start; idx < nChunks; idx += step {
-		c := m.chunks[idx]
-		c.Update(t)
+		m.chunks[idx].Update(t)
+	}
+	// Interleaved region updates, updates every region over fifteen seconds
+	nRegions := uint64(len(m.regions))
+	step = uint64(uo.DurationSecond * 15)
+	start = uint64(t % uo.Time(step))
+	for idx := start; idx < nRegions; idx += step {
+		m.regions[idx].Update(t)
 	}
 	// Update all mobiles
 	var mobs []Mobile
@@ -1271,9 +1280,17 @@ func (m *Map) RetrieveObject(s uo.Serial) Object {
 // in the given location, or nil if no suitable surface for the object was
 // found. If the parameter object is nil, the height of the object is assumed
 // to be 0.
-func (m *Map) GetSpawnableSurface(l uo.Location, o Object) uo.CommonObject {
+func (m *Map) GetSpawnableSurface(l uo.Location, maxZ int8, o Object) uo.CommonObject {
 	f, c := m.GetFloorAndCeiling(l, false, true)
 	if f == nil {
+		// If we are below the ground project upward to the next surface and try
+		// again
+		nl := l
+		nl.Z = c.Highest()
+		f, c = m.GetFloorAndCeiling(nl, false, true)
+	}
+	if f == nil {
+		// Failed to find a valid floor
 		return nil
 	}
 	// Flag checks
@@ -1281,10 +1298,7 @@ func (m *Map) GetSpawnableSurface(l uo.Location, o Object) uo.CommonObject {
 		return nil
 	}
 	// Z check
-	dz := int8(math.Abs(float64(f.StandingHeight()) - float64(l.Z)))
-	if dz >= uo.PlayerHeight {
-		// Difference in Z height is at least as tall as a mobile so consider
-		// this outside the spawnable area.
+	if f.StandingHeight() < l.Z || f.StandingHeight() > maxZ {
 		return nil
 	}
 	// Height check
@@ -1354,6 +1368,7 @@ func (m *Map) StaticsAt(l uo.Location) []uo.CommonObject {
 
 // AddRegion adds the given region to the map.
 func (m *Map) AddRegion(r *Region) {
+	m.regions = append(m.regions, r)
 	for _, c := range m.getChunksInBounds(r.Bounds) {
 		c.AddRegion(r)
 	}
@@ -1361,6 +1376,16 @@ func (m *Map) AddRegion(r *Region) {
 
 // RemoveRegion removes the given region from the map.
 func (m *Map) RemoveRegion(r *Region) {
+	idx := -1
+	for i, region := range m.regions {
+		if r == region {
+			idx = i
+			break
+		}
+	}
+	if idx >= 0 {
+		m.regions = append(m.regions[:idx], m.regions[idx+1:]...)
+	}
 	for _, c := range m.getChunksInBounds(r.Bounds) {
 		c.RemoveRegion(r)
 	}

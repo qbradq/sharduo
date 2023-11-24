@@ -4,15 +4,18 @@ package events
 
 import (
 	"strconv"
+	"strings"
 
 	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/internal/gumps"
 	"github.com/qbradq/sharduo/lib/clientpacket"
+	"github.com/qbradq/sharduo/lib/template"
 	"github.com/qbradq/sharduo/lib/uo"
 )
 
 func init() {
 	reg("Edit", Edit)
+	reg("HarvestCrop", HarvestCrop)
 	reg("Mount", Mount)
 	reg("OpenBackpack", OpenBackpack)
 	reg("OpenBankBox", OpenBankBox)
@@ -212,5 +215,28 @@ func OpenTeleportGUMP(receiver, source game.Object, v any) bool {
 		return false
 	}
 	sm.NetState().GUMP(gumps.New("teleport"), source, nil)
+	return true
+}
+
+func HarvestCrop(receiver, source game.Object, v any) bool {
+	sm, ok := source.(game.Mobile)
+	if !ok || sm.NetState() == nil {
+		return false
+	}
+	// Range check
+	if game.RootParent(sm).Location().XYDistance(receiver.Location()) > uo.MaxUseRange {
+		sm.NetState().Cliloc(nil, 502803) // It's too far away.
+		return false
+	}
+	// TODO Line of sight check
+	tn := strings.TrimSuffix(receiver.TemplateName(), "Crop")
+	i := template.Create[game.Item](tn)
+	if i == nil {
+		return false
+	}
+	if !sm.DropToBackpack(i, false) {
+		sm.DropToFeet(i)
+	}
+	game.Remove(receiver)
 	return true
 }

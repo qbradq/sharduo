@@ -44,11 +44,9 @@ vendors, mounts, pack animals, and banking.
 * Miner NPC
 * Miner Guildmaster NPC
 * Miner's Guild
-* Region spawning
 * Passive fauna
 * Wild flora
-* Agricultural crops
-* Region-based music
+* Town spawn (Birds, Dogs, Cats, Rats)
 
 ### Nerdy Things I Might Do for Fun ###
 * Player movement packet throttling
@@ -63,6 +61,7 @@ opened to outside connections.
 
 * Create homepage site and service
 * Make client available for download somehow
+* Make the GitHub project public in compliance with AGPLv3
 
 ### Miscellaneous Issues ###
 This is a list of known issues that do not need to be resolved before the next

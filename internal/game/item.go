@@ -195,6 +195,8 @@ type BaseItem struct {
 	dropSoundOverride uo.Sound
 	// No-rent flag
 	noRent bool
+	// Non-movable flag
+	fixed bool
 }
 
 // ObjectType implements the Object interface.
@@ -226,6 +228,7 @@ func (i *BaseItem) Deserialize(t *template.Template, create bool) {
 	i.uses = t.GetNumber("Uses", 0)
 	i.lootType = uo.LootType(t.GetNumber("LootType", int(uo.LootTypeNormal)))
 	i.noRent = t.GetBool("NoRent", false)
+	i.fixed = t.GetBool("Fixed", false)
 }
 
 // Unmarshal implements the marshal.Unmarshaler interface.
@@ -287,7 +290,7 @@ func (i *BaseItem) Flip() {
 func (i *BaseItem) Stackable() bool { return i.stackable }
 
 // Movable implements the Item interface
-func (i *BaseItem) Movable() bool { return true }
+func (i *BaseItem) Movable() bool { return !i.fixed }
 
 // Amount implements the Item interface.
 func (i *BaseItem) Amount() int { return i.amount }
@@ -456,12 +459,10 @@ func (i *BaseItem) SetDropLocation(l uo.Location) { i.dropLocation = l }
 
 // RefreshDecayDeadline implements the Item interface
 func (i *BaseItem) RefreshDecayDeadline() {
-	if i.owner != nil {
+	if i.BaseObject.spawnerRegion != nil {
 		// If we are being managed by a spawner we don't decay
-		if _, ok := i.owner.(*Spawner); ok {
-			i.decayDeadline = uo.TimeNever
-			return
-		}
+		i.decayDeadline = uo.TimeNever
+		return
 	}
 	switch i.lootType {
 	case uo.LootTypeNormal:
@@ -478,11 +479,9 @@ func (i *BaseItem) RefreshDecayDeadline() {
 // Update implements the Object interface.
 func (i *BaseItem) Update(t uo.Time) {
 	if t >= i.decayDeadline {
-		if i.owner != nil {
+		if i.BaseObject.spawnerRegion != nil {
 			// If we are being managed by a spawner we don't decay
-			if _, ok := i.owner.(*Spawner); ok {
-				return
-			}
+			return
 		}
 		Remove(i)
 	}

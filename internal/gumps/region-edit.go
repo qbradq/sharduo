@@ -51,9 +51,10 @@ func (g *regionEdit) Layout(target, param game.Object) {
 	g.Text(0, 0, 1, uo.HueDefault, "Name")
 	g.TextEntry(1, 0, 5, uo.HueDefault, g.Region.Name, 64, 1)
 	g.Text(6, 0, 1, uo.HueDefault, "Song")
-	g.TextEntry(7, 0, 5, uo.HueDefault, g.Region.Music, 64, 2)
-	g.ReplyButton(12, 0, 2, 1, uo.HueDefault, "Test", 3)
-	g.ReplyButton(14, 0, 2, 1, uo.HueDefault, "Show", 4)
+	g.TextEntry(7, 0, 4, uo.HueDefault, g.Region.Music, 64, 2)
+	g.ReplyButton(11, 0, 2, 1, uo.HueDefault, "Test", 3)
+	g.ReplyButton(13, 0, 2, 1, uo.HueDefault, "Show", 4)
+	g.ReplyButton(15, 0, 3, 1, uo.HueDefault, "Spawn", 6)
 	g.HorizontalBar(0, 1, 18)
 	var i int
 	for i = int(g.currentPage-1) * 4; i < len(g.Region.Rects) && i < int(g.currentPage)*4; i++ {
@@ -68,6 +69,7 @@ func (g *regionEdit) Layout(target, param game.Object) {
 	fn(0, 0, game.RegionFeatureSafeLogout, "Safe Logout", 9001+0)
 	fn(1, 0, game.RegionFeatureGuarded, "Guard Zone", 9001+1)
 	fn(2, 0, game.RegionFeatureNoTeleport, "No Recall", 9001+2)
+	fn(3, 0, game.RegionFeatureSpawnOnGround, "Ground Spawn", 9001+3)
 }
 
 // HandleReply implements the GUMP interface.
@@ -112,17 +114,17 @@ func (g *regionEdit) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 		})
 	}
 	game.GetWorld().Map().AddRegion(g.Region)
-	defer n.RefreshGUMP(n.GetGUMPByID(GUMPIDDecorate))
+	defer n.RefreshGUMP(n.GetGUMPByID(GUMPIDRegions))
 	// Standard reply
 	if g.StandardReplyHandler(p) {
 		return
 	}
 	// Handle replies
 	switch p.Button {
-	case 3:
+	case 3: // Test music
 		n.Music(uo.Music(util.RangeExpression(g.Region.Music, game.GetWorld().Random())))
 		return
-	case 4:
+	case 4: // Show regions
 		m := n.Mobile()
 		if m == nil {
 			break
@@ -156,7 +158,7 @@ func (g *regionEdit) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 			}
 		}
 		return
-	case 5:
+	case 5: // Add rect
 		m := n.Mobile()
 		if m == nil {
 			break
@@ -164,6 +166,12 @@ func (g *regionEdit) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 		game.GetWorld().Map().RemoveRegion(g.Region)
 		g.Region.AddRect(m.Location().BoundsByRadius(0))
 		game.GetWorld().Map().AddRegion(g.Region)
+		return
+	case 6: // Spawn button
+		a := New("spawn")
+		sg := a.(*spawn)
+		sg.Region = g.Region
+		n.GUMP(a, nil, nil)
 		return
 	}
 	// Delete buttons
@@ -188,6 +196,9 @@ func (g *regionEdit) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 		}
 		if p.Button == 9003 {
 			g.Region.Features ^= game.RegionFeatureNoTeleport
+		}
+		if p.Button == 9004 {
+			g.Region.Features ^= game.RegionFeatureSpawnOnGround
 		}
 		return
 	}

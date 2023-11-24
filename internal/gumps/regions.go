@@ -8,7 +8,7 @@ import (
 )
 
 func init() {
-	reg("regions", 0, func() GUMP {
+	reg("regions", GUMPIDRegions, func() GUMP {
 		return &regions{}
 	})
 }
@@ -53,21 +53,23 @@ func (g *regions) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 		return
 	}
 	switch p.Button {
-	case 1:
+	case 1: // New region button
 		a := New("region-edit")
 		re := a.(*regionEdit)
 		re.Region = &game.Region{
-			Name: "New Region",
+			Name:      "New Region",
+			SpawnMinZ: uo.MapMinZ,
+			SpawnMaxZ: uo.MapMaxZ,
 		}
 		re.Region.AddRect(n.Mobile().Location().BoundsByRadius(0))
 		game.GetWorld().Map().AddRegion(re.Region)
 		n.GUMP(a, nil, nil)
 		n.RefreshGUMP(g)
 		return
-	case 2:
+	case 2: // Refresh view button
 		// Do nothing and let the GUMP refresh
 		return
-	case 3:
+	case 3: // Show all regions button
 		b := g.tr.Location().BoundsByRadius(int(g.tr.ViewRange()))
 		for _, r := range game.GetWorld().Map().RegionsWithin(b) {
 			hue := uo.Hue(game.GetWorld().Random().Random(0, 199)*5 + 1)
