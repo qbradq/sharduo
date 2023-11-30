@@ -38,6 +38,17 @@ var doorCloseSounds = map[string]uo.Sound{
 var doorCloseTimers = map[uo.Serial]uo.Serial{}
 
 func doUseDoor(receiver, source game.Object, force bool) bool {
+	sm, ok := source.(game.Mobile)
+	if !ok || sm.NetState() == nil {
+		return false
+	}
+	// Range check
+	if !force && receiver.Location().XYDistance(source.Location()) > uo.MaxUseRange {
+		sm.NetState().Cliloc(nil, 502803) // It's too far away.
+		return false
+	}
+	// TODO Line of sight check
+	// Select door offsets, sounds, ect
 	ri, ok := receiver.(game.Item)
 	if !ok {
 		return false
@@ -54,9 +65,8 @@ func doUseDoor(receiver, source game.Object, force bool) bool {
 		l.Y += ofs.Y
 		s = doorOpenSounds[ri.TemplateName()]
 	}
-	if !force && ofs.X != 0 && ofs.Y != 0 && !game.GetWorld().Map().CanFit(ri, l) {
-		return false
-	}
+	// Skip map fit check, not all doors on the retail map have clearance with
+	// the terrain to properly open
 	game.GetWorld().Map().ForceRemoveObject(ri)
 	ri.Flip()
 	ri.SetLocation(l)
