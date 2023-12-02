@@ -35,7 +35,6 @@ vendors, mounts, pack animals, and banking.
 ### Known Defects ###
 
 ### Required Features and Tasks ###
-* Control master checks
 * Complete decorating Britain
 
 ### Nice to Haves ###
@@ -45,6 +44,7 @@ vendors, mounts, pack animals, and banking.
 * Miner Guildmaster NPC
 * Miner's Guild
 * Wild flora
+* Apple, pear, and peach trees
 
 ### Nerdy Things I Might Do for Fun ###
 * Player movement packet throttling
