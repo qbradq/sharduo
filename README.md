@@ -33,10 +33,9 @@ basic supporting features are also slated before the first alpha including
 vendors, mounts, pack animals, and banking.
 
 ### Known Defects ###
-* The west-most doors of The Salty Dog tavern in east Britain won't open
 
 ### Required Features and Tasks ###
-* Line of sight checks
+* Control master checks
 * Complete decorating Britain
 
 ### Nice to Haves ###
@@ -81,6 +80,8 @@ things work with ShardUO.
   * always stock 999 of every item every time you buy from them
   * have unlimited inventory
   * will buy anything
+* Mining
+  * automatically keeps mining until the vein is empty
 
 ## Feature Packages ##
 Below are feature verticals that I want to implement next in priority order.
@@ -89,20 +90,38 @@ Below are feature verticals that I want to implement next in priority order.
   * Checks
   * Pay vendors from gold in bank
   * Secure trade
-* Blacksmithing
+* Tailoring
+  * Sheep pen in W brit
+  * Functional spinning wheels supporting
+    * Flax to thread
+    * Cotton to thread
+    * Wool to yarn
+  * Functional looms
+  * Shop NPCs
+    * Weaver
+    * Tailor
   * Crafting GUMP
   * Crafting system
     * Resource consumption function
     * Item creation
     * Normal, exceptional, and inferior quality
+  * Cloth item crafting
+  * Leather item crafting
+* Blacksmithing
   * Blacksmithing item crafting
+  * Shop NPCs
+    * Blacksmith
+    * Armorer
+    * Weaponsmith
 * Tinkering
   * Tinkered item crafting
+  * Tinkerer NPC
 * Lumberjacking
   * Wood resources
   * Lumberjacking skill
 * Carpentry
   * Carpentry item crafting
+  * Carpenter NPC
 
 # Shard Administration Advice #
 The ShardUO software and the creative content within were developed to host a

@@ -47,7 +47,11 @@ func doUseDoor(receiver, source game.Object, force bool) bool {
 		sm.NetState().Cliloc(nil, 502803) // It's too far away.
 		return false
 	}
-	// TODO Line of sight check
+	// Line of sight check
+	if !force && !sm.HasLineOfSight(receiver) {
+		sm.NetState().Cliloc(nil, 500950) // You cannot see that.
+		return false
+	}
 	// Select door offsets, sounds, ect
 	ri, ok := receiver.(game.Item)
 	if !ok {

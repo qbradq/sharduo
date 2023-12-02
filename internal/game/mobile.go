@@ -121,6 +121,9 @@ type Mobile interface {
 	// CanSee returns true if the mobile can see the object without regard to
 	// line of sight.
 	CanSee(Object) bool
+	// HasLineOfSight returns true if the mobile has line of sight to the
+	// object.
+	HasLineOfSight(Object) bool
 
 	//
 	// Graphics and display
@@ -1497,4 +1500,19 @@ func (m *BaseMobile) StabledPets() []Mobile {
 func (m *BaseMobile) SetBody(b uo.Body) {
 	m.body = b
 	world.Update(m)
+}
+
+// HasLineOfSight implements the Mobile interface.
+func (m *BaseMobile) HasLineOfSight(o Object) bool {
+	a := uo.Location{
+		X: m.location.X,
+		Y: m.location.Y,
+		Z: m.location.Z + uo.PlayerHeight, // Use our eye position, not the foot position
+	}
+	b := o.Location()
+	if _, ok := o.(Mobile); ok {
+		// Look other mobiles in the eye
+		b.Z += uo.PlayerHeight
+	}
+	return world.Map().LineOfSight(a, b)
 }

@@ -218,7 +218,11 @@ func handleLiftRequest(n *NetState, cp clientpacket.Packet) {
 		n.DropReject(uo.MoveItemRejectReasonBelongsToAnother)
 		return
 	}
-	// TODO Line of sight check
+	// Line of sight check
+	if !n.m.HasLineOfSight(item) {
+		n.DropReject(uo.MoveItemRejectReasonOutOfSight)
+		return
+	}
 	item.Split(p.Amount)
 	if !n.m.PickUp(item) {
 		n.DropReject(uo.MoveItemRejectReasonUnspecified)
@@ -249,8 +253,15 @@ func handleDropRequest(n *NetState, cp clientpacket.Packet) {
 			n.DropReject(uo.MoveItemRejectReasonOutOfRange)
 			return
 		}
-		// TODO Line of sight check
+		// Line of sight check
+		oldLocation := item.Location()
 		item.SetLocation(newLocation)
+		if !n.m.HasLineOfSight(item) {
+			item.SetLocation(oldLocation)
+			n.m.DropItemInCursor()
+			n.DropReject(uo.MoveItemRejectReasonOutOfSight)
+			return
+		}
 		if !world.Map().SetNewParent(item, nil) {
 			n.m.DropItemInCursor()
 			n.DropReject(uo.MoveItemRejectReasonUnspecified)
@@ -275,7 +286,7 @@ func handleDropRequest(n *NetState, cp clientpacket.Packet) {
 		item.SetDropLocation(p.Location)
 		item.SetLocation(newLocation)
 		if !game.DynamicDispatch("Drop", target, n.m, item) {
-			n.m.PickUp(nil)
+			n.m.DropItemInCursor()
 			n.DropReject(uo.MoveItemRejectReasonUnspecified)
 			return
 		}

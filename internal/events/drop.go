@@ -32,7 +32,11 @@ func DropToContainer(receiver, source game.Object, v any) bool {
 	if !sm.CanAccess(rc) {
 		return false
 	}
-	// TODO Line of sight check
+	// Line of sight check
+	if !sm.HasLineOfSight(rc) {
+		sm.NetState().Cliloc(nil, 500950) // You cannot see that.
+		return false
+	}
 	return rc.AddObject(item)
 }
 

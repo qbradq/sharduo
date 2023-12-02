@@ -722,7 +722,6 @@ func (n *NetState) ContainerRangeCheck() {
 		root := game.RootParent(c)
 		if _, ok := root.(game.Container); ok {
 			// Container is somewhere on the map
-			// TODO Line of sight check, this one might be costly and unnecessary
 			// Range check
 			if n.m.Location().XYDistance(root.Location()) > uo.MaxContainerViewRange {
 				n.ContainerClose(c)

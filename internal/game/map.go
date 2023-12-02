@@ -2,6 +2,7 @@ package game
 
 import (
 	"fmt"
+	"math"
 	"sort"
 	"strings"
 	"sync"
@@ -1436,4 +1437,117 @@ func (m *Map) RegionFeaturesAt(l uo.Location) RegionFeature {
 		}
 	}
 	return ret
+}
+
+// LineOfSight returns true if there is line of site between the two locations.
+// The reference used for the Bresenham Line Algorithm was
+// https://www.baeldung.com/cs/bresenhams-line-algorithm#:~:text=3.-,Description,words%2C%20only%20very%20cheap%20operations.
+func (m *Map) LineOfSight(a, b uo.Location) bool {
+	// Control variables for the line algorithm
+	dx := b.X - a.X
+	if dx < 0 {
+		dx *= -1
+	}
+	sx := int16(1)
+	if a.X >= b.X {
+		sx = -1
+	}
+	dy := b.Y - a.Y
+	if dy < 0 {
+		dy *= -1
+	}
+	dy *= -1
+	sy := int16(1)
+	if a.Y >= b.Y {
+		sy = -1
+	}
+	e := dx + dy
+	// Z stepping control
+	dtx := float64(b.X - a.X)
+	dty := float64(b.Y - a.Y)
+	dl := math.Sqrt(dtx*dtx + dty*dty)
+	sz := float64(b.Z-a.Z) / dl
+	az := float64(a.Z)
+	// Process positions
+	for {
+		// Check point for sight blocking
+		bottom := a.Z
+		top := int8(float64(a.Z) + sz)
+		c := m.GetChunk(a)
+		t := c.GetTile(a.X, a.Y)
+		if !t.Ignore() && t.Z() <= top && t.Highest() >= bottom {
+			// The tile matrix blocks line of site at this point
+			return false
+		}
+		// Consider statics
+		for _, static := range c.statics {
+			// Ignore statics that are not at the location
+			if static.Location.X != a.X || static.Location.Y != a.Y {
+				continue
+			}
+			// Only care about vis-blocking statics
+			if !static.Surface() && !static.Impassable() && !static.Wall() && !static.NoShoot() {
+				continue
+			}
+			z := int(static.Z())
+			tz := int(static.Highest())
+			if tz < int(bottom) {
+				// Still haven't made it to the required range
+				continue
+			}
+			if z <= int(top) {
+				// This static blocks line of site
+				return false
+			}
+			// If we get there there are not any statics blocking line of site
+			break
+		}
+		for _, item := range c.items {
+			// Ignore items that are not at the location
+			l := item.Location()
+			if l.X != a.X || l.Y != a.Y {
+				continue
+			}
+			// Only care about vis-blocking items
+			if !item.Surface() && !item.Impassable() && !item.Wall() && !item.NoShoot() {
+				continue
+			}
+			z := int(item.Z())
+			tz := int(item.Highest())
+			if tz < int(bottom) {
+				// Still haven't made it to the required range
+				continue
+			}
+			if z <= int(top) {
+				// This item blocks line of site
+				return false
+			}
+			// If we get there there are not any items blocking line of site
+			break
+		}
+		// Nothing blocking line of site at this location, continue line
+		if a.X == b.X && a.Y == b.Y {
+			// If we get here then we have clear LOS
+			return true
+		}
+		// Line algorithm
+		e2 := e * 2
+		if e2 >= dy {
+			if a.X == b.X {
+				break
+			}
+			e += dy
+			a.X += sx
+		}
+		if e2 <= dx {
+			if a.Y == b.Y {
+				break
+			}
+			e += dx
+			a.Y += sy
+		}
+		az += sz
+		a.Z = int8(az)
+	}
+	return false
 }

@@ -90,6 +90,11 @@ func OpenContainer(receiver, source game.Object, v any) bool {
 		sm.NetState().Cliloc(nil, 500312) // You cannot reach that.
 		return false
 	}
+	// Line of sight check
+	if !sm.HasLineOfSight(rc) {
+		sm.NetState().Cliloc(nil, 500950) // You cannot see that.
+		return false
+	}
 	rc.Open(sm)
 	return true
 }
@@ -112,7 +117,11 @@ func Mount(receiver, source game.Object, v any) bool {
 		sm.NetState().Cliloc(nil, 502803) // It's too far away.
 		return false
 	}
-	// TODO Line of sight check
+	// Line of sight check
+	if !sm.HasLineOfSight(rm) {
+		sm.NetState().Cliloc(nil, 500950) // You cannot see that.
+		return false
+	}
 	sm.Mount(rm)
 	return true
 }
@@ -136,7 +145,11 @@ func OpenBackpack(receiver, source game.Object, v any) bool {
 		sm.NetState().Cliloc(nil, 502803) // It's too far away.
 		return false
 	}
-	// TODO Line of sight check
+	// Line of sight check
+	if !sm.HasLineOfSight(rm) {
+		sm.NetState().Cliloc(nil, 500950) // You cannot see that.
+		return false
+	}
 	bpo := rm.EquipmentInSlot(uo.LayerBackpack)
 	if bpo == nil {
 		// Something very wrong
@@ -228,7 +241,11 @@ func HarvestCrop(receiver, source game.Object, v any) bool {
 		sm.NetState().Cliloc(nil, 502803) // It's too far away.
 		return false
 	}
-	// TODO Line of sight check
+	// Line of sight check
+	if !sm.HasLineOfSight(receiver) {
+		sm.NetState().Cliloc(nil, 500950) // You cannot see that.
+		return false
+	}
 	tn := strings.TrimSuffix(receiver.TemplateName(), "Crop")
 	i := template.Create[game.Item](tn)
 	if i == nil {
