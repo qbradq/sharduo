@@ -45,7 +45,7 @@ func NoCache(h http.Handler) http.Handler {
 }
 
 func main() {
-	fs := NoCache(http.FileServer(http.Dir("./www")))
+	fs := NoCache(http.FileServer(http.Dir("./docs")))
 	http.Handle("/", fs)
 
 	log.Println("Listening on :8080")
