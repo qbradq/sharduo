@@ -36,8 +36,6 @@ vendors, mounts, pack animals, and banking.
 https://www.mediafire.com/file/i3elgf9eu48mil0/ShardUOClient.zip/file
 
 ### Required Features and Tasks ###
-* Panic handling at the request level
-* Complete decorating Britain
 
 ### Nice to Haves ###
 * Feedback GUMP
@@ -47,6 +45,7 @@ https://www.mediafire.com/file/i3elgf9eu48mil0/ShardUOClient.zip/file
 * Miner's Guild
 * Wild flora
 * Apple, pear, and peach trees
+* Complete decorating Britain
 
 ### Nerdy Things I Might Do for Fun ###
 * Player movement packet throttling
