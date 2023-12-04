@@ -4,6 +4,7 @@ import (
 	"errors"
 	"image"
 	"image/png"
+	"io"
 	"log"
 	"os"
 	"os/signal"
@@ -22,6 +23,7 @@ import (
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/uo/file"
 	"github.com/qbradq/sharduo/lib/util"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 // Tile data
@@ -66,6 +68,12 @@ func trap() {
 func initialize() {
 	// Configure logging
 	log.SetFlags(log.LstdFlags | log.Llongfile)
+	log.SetOutput(io.MultiWriter(os.Stdout, &lumberjack.Logger{
+		Filename:   "./logs/sharduo.log",
+		MaxSize:    128,
+		MaxAge:     28,
+		MaxBackups: 3,
+	}))
 	log.Println("ShardUO initializing...")
 
 	// Load configuration

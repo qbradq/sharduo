@@ -55,15 +55,6 @@ https://www.mediafire.com/file/i3elgf9eu48mil0/ShardUOClient.zip/file
 * Weather patterns
 * Fall damage
 
-### Go-Live Tasks ###
-This is a list of known tasks that must be completed before the server may be
-opened to outside connections.
-
-* Create homepage site and service
-* Make client available for download somehow
-* Make the GitHub project public in compliance with AGPLv3
-* Update welcome with Discord invite
-
 ### Miscellaneous Issues ###
 This is a list of known issues that do not need to be resolved before the next
 milestone but do need to be resolved sometime.
@@ -82,7 +73,7 @@ things work with ShardUO.
   * do not use vendor economy / supply and demand mechanics
   * always stock 999 of every item every time you buy from them
   * have unlimited inventory
-  * will buy anything
+  * will buy anything - this may change in the future
 * Mining
   * automatically keeps mining until the vein is empty
 
@@ -147,4 +138,5 @@ this repository or its associated services who share that appreciation.
 
 That said below are some things I have learned about administrating this shard.
 
+* On first run the server creates default configuration files. Edit them.
 * It takes about a minute after first shard start for all of the ore to spawn.

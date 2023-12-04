@@ -18,6 +18,7 @@ debug
 
 # Log files
 *.log
+logs/
 
 # Debug files
 /debug-map.png
