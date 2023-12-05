@@ -239,9 +239,11 @@ func (n *NetState) Service() {
 func (n *NetState) SendService() {
 	w := serverpacket.NewCompressedWriter()
 	pw := bufio.NewWriterSize(n.conn, 128*1024)
+	ticker := time.NewTicker(time.Millisecond * 50)
 	for {
 		select {
 		case p := <-n.sendQueue:
+			// Prioritize writing outbound packets
 			if p == nil {
 				return
 			}
@@ -249,7 +251,8 @@ func (n *NetState) SendService() {
 				log.Printf("error: %s", err.Error())
 				return
 			}
-		default:
+		case <-ticker.C:
+			// Flush the buffer every 50ms
 			if pw.Buffered() > 0 {
 				if err := pw.Flush(); err != nil {
 					log.Printf("error: %s", err.Error())
