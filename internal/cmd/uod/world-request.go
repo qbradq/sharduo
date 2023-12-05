@@ -65,6 +65,13 @@ func (r *CharacterLoginRequest) Execute() error {
 	if r.NetState.account.Player() != uo.SerialMobileNil {
 		o := world.Find(r.NetState.account.Player())
 		if p, ok := o.(game.Mobile); ok {
+			if p.NetState() != nil {
+				// Connecting to an already connected player, disconnect the
+				// existing connection.
+				p.NetState().Disconnect()
+				p.SetNetState(nil)
+				return nil
+			}
 			player = p
 		}
 		// In case the player mobile was in deep storage we try to remove it
