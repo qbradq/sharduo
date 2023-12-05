@@ -86,7 +86,7 @@ func (r *CharacterLoginRequest) Execute() error {
 		player.SetFacing(configuration.StartingFacing)
 		// TODO Generic player starting equipment - gold, book, candle, dagger
 		i := template.Create[game.Item]("GoldCoin")
-		i.SetAmount(100)
+		i.SetAmount(1000)
 		player.DropToBackpack(i, true)
 		// TODO DEBUG REMOVE Mining alpha test equipment
 		w := template.Create[game.Wearable]("Pickaxe")

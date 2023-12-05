@@ -1509,7 +1509,7 @@ func (m *BaseMobile) HasLineOfSight(o Object) bool {
 		Y: m.location.Y,
 		Z: m.location.Z + uo.PlayerHeight, // Use our eye position, not the foot position
 	}
-	b := o.Location()
+	b := RootParent(o).Location()
 	if _, ok := o.(Mobile); ok {
 		// Look other mobiles in the eye
 		b.Z += uo.PlayerHeight
