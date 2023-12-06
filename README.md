@@ -33,9 +33,10 @@ basic supporting features are also slated before the first alpha including
 vendors, mounts, pack animals, and banking.
 
 ### Known Defects ###
-https://www.mediafire.com/file/i3elgf9eu48mil0/ShardUOClient.zip/file
+* Server panics when trying to delete a character, it should just refuse
 
 ### Required Features and Tasks ###
+* Panics are not being logged
 
 ### Nice to Haves ###
 * Feedback GUMP

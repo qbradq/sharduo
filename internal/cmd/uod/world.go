@@ -509,6 +509,18 @@ func (w *World) Insert(o game.Object) {
 	w.ods.Insert(o)
 }
 
+// UpdateOPLInfo adds the object to the list of objects that must have their OPL
+// data updated client-side.
 func (w *World) UpdateOPLInfo(o game.Object) {
 	w.oplUpdateList[o.Serial()] = struct{}{}
+}
+
+// Accounts returns a slice of pointers to all accounts on the server for admin
+// purposes.
+func (w *World) Accounts() []*game.Account {
+	ret := make([]*game.Account, 0, len(w.accounts))
+	for _, a := range w.accounts {
+		ret = append(ret, a)
+	}
+	return ret
 }

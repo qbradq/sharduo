@@ -3,6 +3,7 @@ package game
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"time"
 
 	"github.com/qbradq/sharduo/lib/marshal"
 	"github.com/qbradq/sharduo/lib/template"
@@ -39,17 +40,15 @@ func HashPassword(password string) string {
 
 // Account holds all of the account information for one user
 type Account struct {
-	// Username
-	username string
-	// Password hash
-	passwordHash string
-	// Email address
-	emailAddress string
-	// Serial of the player's permanent mobile (not the currently controlled
-	// mobile)
-	player uo.Serial
-	// The roles this account has been assigned
-	roles Role
+	username            string    // Username
+	passwordHash        string    // Password hash
+	passwordSetAt       time.Time // The last time this account's password was changed
+	failedLoginAttempts int       // The number of times someone has tried to login to this account and failed consecutively
+	locked              bool      // If true this account is locked for interactive login, probably due to too many consecutive failed login attempts
+	suspendedUntil      time.Time // End of the most recent account suspension
+	emailAddress        string    // Email address
+	player              uo.Serial // Serial of the player's permanent mobile (not the currently controlled mobile)
+	roles               Role      // The roles this account has been assigned
 }
 
 // NewAccount creates a new account object
@@ -69,9 +68,14 @@ func (a *Account) SetTemplateName(name string) {}
 
 // Marshal writes the account data to a segment
 func (a *Account) Marshal(s *marshal.TagFileSegment) {
+	s.PutInt(0) // Version
 	s.PutInt(uint32(a.player))
 	s.PutString(a.username)
 	s.PutString(a.passwordHash)
+	s.PutLong(uint64(a.passwordSetAt.Unix()))
+	s.PutInt(uint32(a.failedLoginAttempts))
+	s.PutBool(a.locked)
+	s.PutLong(uint64(a.suspendedUntil.Unix()))
 	s.PutString(a.emailAddress)
 	s.PutByte(byte(a.roles))
 }
@@ -81,9 +85,14 @@ func (a *Account) Deserialize(t *template.Template, create bool) {}
 
 // Unmarshal reads the account data from a segment
 func (a *Account) Unmarshal(s *marshal.TagFileSegment) {
+	_ = s.Int() // Version
 	a.player = uo.Serial(s.Int())
 	a.username = s.String()
 	a.passwordHash = s.String()
+	a.passwordSetAt = time.Unix(int64(s.Long()), 0)
+	a.failedLoginAttempts = int(s.Int())
+	a.locked = s.Bool()
+	a.suspendedUntil = time.Unix(int64(s.Long()), 0)
 	a.emailAddress = s.String()
 	a.roles = Role(s.Byte())
 }
@@ -107,6 +116,9 @@ func (a *Account) SetPlayer(s uo.Serial) { a.player = s }
 // HasRole returns true if the account has the given role
 func (a *Account) HasRole(r Role) bool { return a.roles&r != 0 }
 
+// ToggleRole toggles the given role.
+func (a *Account) ToggleRole(r Role) { a.roles ^= r }
+
 // EmailAddress returns the email address for the account
 func (a *Account) EmailAddress() string { return a.emailAddress }
 
@@ -116,4 +128,29 @@ func (a *Account) SetEmailAddress(e string) { a.emailAddress = e }
 // UpdatePasswordByHash updates the account's password by hash value.
 func (a *Account) UpdatePasswordByHash(hash string) {
 	a.passwordHash = hash
+	a.passwordSetAt = time.Now()
+	a.failedLoginAttempts = 0
+}
+
+// IncrementFailedLoginCount increments the failed login count and returns it.
+func (a *Account) IncrementFailedLoginCount() int {
+	a.failedLoginAttempts++
+	return a.failedLoginAttempts
+}
+
+// Locked returns true if the account is locked.
+func (a *Account) Locked() bool { return a.locked }
+
+// Lock locks the account.
+func (a *Account) Lock() { a.locked = true }
+
+// Unlock unlocks the account.
+func (a *Account) Unlock() { a.locked = false }
+
+// SuspendedUntil returns the time the latest suspension ends.
+func (a *Account) SuspendedUntil() time.Time { return a.suspendedUntil }
+
+// Suspend suspends the account for the given amount of time.
+func (a *Account) Suspend(d time.Duration) {
+	a.suspendedUntil = time.Now().Add(d)
 }

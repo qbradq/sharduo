@@ -152,10 +152,19 @@ func handleLoginConnection(conn *net.TCPConn) {
 		return
 	}
 	account := world.AuthenticateAccount(alp.Username, game.HashPassword(alp.Password))
+	rejectReason := uo.LoginDeniedReasonBadPass
+	reject := false
 	if account == nil {
+		reject = true
+		rejectReason = uo.LoginDeniedReasonBadPass
+	} else if account.Locked() || account.SuspendedUntil().After(time.Now()) {
+		reject = true
+		rejectReason = uo.LoginDeniedReasonAccountBlocked
+	}
+	if reject {
 		log.Println("user login failed for", alp.Username)
 		ldp := &serverpacket.LoginDenied{
-			Reason: uo.LoginDeniedReasonBadPass,
+			Reason: rejectReason,
 		}
 		ldp.Write(pw)
 		if err := pw.Flush(); err != nil {

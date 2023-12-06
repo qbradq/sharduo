@@ -1,6 +1,8 @@
 package commands
 
 import (
+	"strings"
+
 	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/lib/clientpacket"
 	"github.com/qbradq/sharduo/lib/uo"
@@ -9,6 +11,7 @@ import (
 // Holds administrator-level commands
 
 func init() {
+	regcmd(&cmdesc{"broadcast", nil, commandBroadcast, game.RoleAdministrator, "broadcast text", "Broadcasts the given text to all connected players"})
 	regcmd(&cmdesc{"location", []string{"loc"}, commandLocation, game.RoleAdministrator, "location", "Tells the absolute location of the targeted location or object"})
 	regcmd(&cmdesc{"save", nil, commandSave, game.RoleAdministrator, "save", "Executes a game.GetWorld() save immediately"})
 	regcmd(&cmdesc{"shutdown", nil, commandShutdown, game.RoleAdministrator, "shutdown", "Shuts down the server immediately"})
@@ -29,4 +32,12 @@ func commandSave(n game.NetState, args CommandArgs, cl string) {
 
 func commandShutdown(n game.NetState, args CommandArgs, cl string) {
 	shutdown()
+}
+
+func commandBroadcast(n game.NetState, args CommandArgs, cl string) {
+	parts := strings.SplitN(cl, " ", 2)
+	if len(parts) != 2 {
+		return
+	}
+	broadcast(parts[1])
 }

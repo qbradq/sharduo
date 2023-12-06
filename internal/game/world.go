@@ -42,6 +42,9 @@ type World interface {
 	BroadcastPacket(serverpacket.Packet)
 	// BroadcastMessage sends a system message to every net state with a mobile
 	BroadcastMessage(Object, string, ...interface{})
+	// Accounts returns a slice of pointers to the accounts on the server. This
+	// should only be used for admin GUMPs and commands.
+	Accounts() []*Account
 }
 
 var world World

@@ -1,8 +1,6 @@
 package commands
 
 import (
-	"strings"
-
 	"github.com/qbradq/sharduo/internal/events"
 	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/internal/gumps"
@@ -14,8 +12,9 @@ import (
 // Most GM-level commands live here
 
 func init() {
+	regcmd(&cmdesc{"account", nil, commandAccount, game.RoleGameMaster, "account", "Opens the account management GUMP for the targeted player"})
+	regcmd(&cmdesc{"admin", nil, commandAdmin, game.RoleGameMaster, "admin", "Opens the admin GUMP"})
 	regcmd(&cmdesc{"bank", nil, commandBank, game.RoleGameMaster, "bank", "Opens the bank box of the targeted mobile, if any"})
-	regcmd(&cmdesc{"broadcast", nil, commandBroadcast, game.RoleAdministrator, "broadcast text", "Broadcasts the given text to all connected players"})
 	regcmd(&cmdesc{"edit", nil, commandEdit, game.RoleGameMaster, "edit", "Opens the targeted object's edit GUMP if any"})
 	regcmd(&cmdesc{"new", []string{"add"}, commandNew, game.RoleGameMaster, "new template_name [stack_amount]", "Creates a new item with an optional stack amount"})
 	regcmd(&cmdesc{"remove", []string{"rem", "delete", "del"}, commandRemove, game.RoleGameMaster, "remove", "Removes the targeted object and all of its children from the game game.GetWorld()"})
@@ -33,14 +32,6 @@ func commandBank(n game.NetState, args CommandArgs, cl string) {
 	n.TargetSendCursor(uo.TargetTypeObject, func(r *clientpacket.TargetResponse) {
 		events.OpenBankBox(nil, n.Mobile(), nil)
 	})
-}
-
-func commandBroadcast(n game.NetState, args CommandArgs, cl string) {
-	parts := strings.SplitN(cl, " ", 2)
-	if len(parts) != 2 {
-		return
-	}
-	broadcast(parts[1])
 }
 
 func commandNew(n game.NetState, args CommandArgs, cl string) {
@@ -249,5 +240,21 @@ func commandSetZ(n game.NetState, args CommandArgs, cl string) {
 		} else {
 			o.SetLocation(l)
 		}
+	})
+}
+
+func commandAdmin(n game.NetState, args CommandArgs, cl string) {
+	n.GUMP(gumps.New("admin"), nil, nil)
+}
+
+func commandAccount(n game.NetState, args CommandArgs, cl string) {
+	n.Speech(n.Mobile(), "Select player")
+	n.TargetSendCursor(uo.TargetTypeObject, func(tr *clientpacket.TargetResponse) {
+		m := game.Find[game.Mobile](tr.TargetObject)
+		if m == nil || m.NetState() == nil || m.NetState().Account() == nil {
+			n.Speech(n.Mobile(), "Not a player")
+			return
+		}
+		n.GUMP(gumps.New("account"), m, nil)
 	})
 }
