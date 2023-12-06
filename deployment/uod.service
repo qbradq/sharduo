@@ -1,0 +1,17 @@
+# Service file for systemd on Debian-based systems
+# Copy to /etc/systemd/system
+
+[Unit]
+Description=ShardUO Daemon
+After=network.target
+
+[Service]
+Type=simple
+Restart=always
+User=sharduo
+Group=sharduo
+WorkingDirectory=/home/sharduo/TrammelTime
+ExecStart=/home/sharduo/TrammelTime/uod 2>>/home/sharduo/TrammelTime/logs/panics.log
+
+[Install]
+WantedBy=multi-user.target

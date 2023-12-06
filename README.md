@@ -137,5 +137,19 @@ this repository or its associated services who share that appreciation.
 
 That said below are some things I have learned about administrating this shard.
 
-* On first run the server creates default configuration files. Edit them.
+## Deployment ##
+* Deploy onto a Debian-based system using systemd.
+  * Create a user sharduo and do the rest of these sub-steps as that user.
+  * Copy the directory TrammelTime from the client deployment archive and unzip.
+  * Clone the git repo somewhere else in your home directory and go build
+    ./cmd/uod .
+  * Copy ./uod to ~/TrammelTime/
+* Copy the file ./deployment/uod.service to /etc/systemd/system .
+* Reload the services or restart the server, the service will now start on boot.
+* On first run the service creates default configuration files that need to be
+  edited and will then panic.
+* Now lock down your firewalls and routing rules. The only ports you need open
+  are 7775 and 7777 (don't forget your ssh port :D ).
+
+## Gameplay Behavior ##
 * It takes about a minute after first shard start for all of the ore to spawn.
