@@ -803,7 +803,7 @@ func (m *BaseMobile) doAddObject(obj Object, force bool) bool {
 		return true
 	}
 	// Should never get here
-	log.Println("SHOULD NOT GET HERE")
+	log.Println("error: should not get here")
 	return false
 }
 

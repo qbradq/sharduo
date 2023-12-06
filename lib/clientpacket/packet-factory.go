@@ -34,7 +34,7 @@ func (f *packetFactory) Ignore(id byte) {
 // New creates a new client packet.
 func (f *packetFactory) New(id byte, in []byte) Packet {
 	if id > 0xFF {
-		log.Printf("error: packet id %08X out of range", id)
+		log.Printf("error: packet id 0x%08X out of range", id)
 		return nil
 	}
 	ctor := f.ctors[id]

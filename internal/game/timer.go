@@ -146,11 +146,11 @@ func UnmarshalTimers(s *marshal.TagFileSegment) {
 		event := s.String()
 		s := uo.Serial(serial)
 		if pool < 0 || pool >= len(timerPools) {
-			log.Printf("timer %s pool %d out of range", s.String(), pool)
+			log.Printf("error: timer %s pool %d out of range", s.String(), pool)
 			continue
 		}
 		if _, duplicate := timerSerials[s]; duplicate {
-			log.Printf("timer %s is a duplicate in pool %d", s.String(), pool)
+			log.Printf("error: timer %s is a duplicate in pool %d", s.String(), pool)
 			continue
 		}
 		t := &Timer{

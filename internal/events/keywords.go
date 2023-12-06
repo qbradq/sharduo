@@ -51,7 +51,7 @@ func doKeywords(hotWords []string, receiver, source game.Object, words []string)
 						return fn(receiver, source, words[i+1])
 					}
 				} else {
-					log.Printf("hot keyword given without handler \"%s\"", w)
+					log.Printf("error: hot keyword given without handler \"%s\"", w)
 					return false
 				}
 			}

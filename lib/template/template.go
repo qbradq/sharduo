@@ -213,7 +213,7 @@ func (t *Template) GetLocation(name string, def uo.Location) uo.Location {
 	}
 	parts := strings.Split(str, ",")
 	if len(parts) != 3 {
-		log.Printf("GetLocation(%s) did not find three values", name)
+		log.Printf("error: GetLocation(%s) did not find three values", name)
 		return def
 	}
 	hasErrors := false
@@ -251,7 +251,7 @@ func (t *Template) GetBounds(name string, def uo.Bounds) uo.Bounds {
 	}
 	parts := strings.Split(str, ",")
 	if len(parts) != 4 {
-		log.Printf("GetLocation(%s) did not find four values", name)
+		log.Printf("error: GetBounds(%s) did not find four values", name)
 		return def
 	}
 	hasErrors := false

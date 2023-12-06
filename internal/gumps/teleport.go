@@ -69,7 +69,7 @@ func (g *teleport) Layout(target, param game.Object) {
 			g.ReplyButton(0, ty+1, 11, 1, uo.HueDefault, dest.Name, 2000+uint32(i))
 		}
 	} else {
-		log.Printf("bad teleport group %d", g.currentGroup)
+		log.Printf("error: bad teleport group %d", g.currentGroup)
 	}
 }
 
@@ -90,7 +90,7 @@ func (g *teleport) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 		} else if g.currentGroup < len(teleportGroups) {
 			grp := teleportGroups[g.currentGroup]
 			if didx < 0 || didx >= len(grp.Destinations) {
-				log.Printf("bad teleport destination %d in group %d", didx, g.currentGroup)
+				log.Printf("error: bad teleport destination %d in group %d", didx, g.currentGroup)
 				return
 			}
 			dest := grp.Destinations[didx]
@@ -99,7 +99,7 @@ func (g *teleport) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 			}
 			game.GetWorld().Map().TeleportMobile(n.Mobile(), dest.Destination)
 		} else {
-			log.Printf("bad teleport group %d", g.currentGroup)
+			log.Printf("error: bad teleport group %d", g.currentGroup)
 		}
 	}
 }

@@ -72,7 +72,7 @@ func LoginServerMain(wg *sync.WaitGroup) {
 		return
 	}
 	defer loginServerListener.Close()
-	log.Printf("login server listening at %s:%d\n", configuration.LoginServerAddress, configuration.LoginServerPort)
+	log.Printf("info: login server listening at %s:%d\n", configuration.LoginServerAddress, configuration.LoginServerPort)
 
 	done := make(chan bool)
 	go cleanStaleLoginConnections(done)
@@ -125,16 +125,16 @@ func handleLoginConnection(conn *net.TCPConn) {
 	var vMajor, vMinor, vPatch, vExtra int = 7, 0, 15, 1
 	cp, err := r.ReadPacket()
 	if err != nil {
-		log.Println("client disconnected waiting for login seed", err)
+		log.Println("warning: client disconnected waiting for login seed", err)
 		return
 	}
 	lsp, ok := cp.(*clientpacket.LoginSeed)
 	if !ok {
-		log.Println("client sent wrong packet waiting for login seed", cp)
+		log.Println("warning: client sent wrong packet waiting for login seed", cp)
 		return
 	}
 	if lsp.VersionMajor != vMajor || lsp.VersionMinor != vMinor || lsp.VersionPatch != vPatch || lsp.VersionExtra != vExtra {
-		log.Printf("bad client version %d.%d.%d.%d wanted %d.%d.%d.%d\n",
+		log.Printf("warning: bad client version %d.%d.%d.%d wanted %d.%d.%d.%d\n",
 			lsp.VersionMajor, lsp.VersionMinor, lsp.VersionPatch, lsp.VersionExtra,
 			vMajor, vMinor, vPatch, vExtra)
 		return
@@ -143,12 +143,12 @@ func handleLoginConnection(conn *net.TCPConn) {
 	// Account login
 	cp, err = r.ReadPacket()
 	if err != nil {
-		log.Println("client disconnected waiting for account login", err)
+		log.Println("warning: client disconnected waiting for account login", err)
 		return
 	}
 	alp, ok := cp.(*clientpacket.AccountLogin)
 	if !ok {
-		log.Println("client sent wrong packet waiting for account login", cp)
+		log.Println("warning: client sent wrong packet waiting for account login", cp)
 		return
 	}
 	account := world.AuthenticateAccount(alp.Username, game.HashPassword(alp.Password))
@@ -162,20 +162,20 @@ func handleLoginConnection(conn *net.TCPConn) {
 		rejectReason = uo.LoginDeniedReasonAccountBlocked
 	}
 	if reject {
-		log.Println("user login failed for", alp.Username)
+		log.Println("info: user login failed for", alp.Username)
 		ldp := &serverpacket.LoginDenied{
 			Reason: rejectReason,
 		}
 		ldp.Write(pw)
 		if err := pw.Flush(); err != nil {
-			log.Println("error flushing login denied packet", err)
+			log.Println("error: flushing login denied packet", err)
 		}
 		// Giving the client a moment to process all the network traffic. This
 		// is required for ClassicUO compatibility.
 		time.Sleep(time.Second * 5)
 		return
 	}
-	log.Printf("user login successful for %s", account.Username())
+	log.Printf("info: user login successful for %s", account.Username())
 
 	// Server list packet
 	var sp serverpacket.Packet
@@ -189,19 +189,19 @@ func handleLoginConnection(conn *net.TCPConn) {
 	}
 	sp.Write(pw)
 	if err := pw.Flush(); err != nil {
-		log.Println("error flushing server list packet", err)
+		log.Println("error: flushing server list packet", err)
 		return
 	}
 
 	// Select server packet
 	cp, err = r.ReadPacket()
 	if err != nil {
-		log.Println("client disconnected waiting for select server", err)
+		log.Println("warning: client disconnected waiting for select server", err)
 		return
 	}
 	_, ok = cp.(*clientpacket.SelectServer)
 	if !ok {
-		log.Println("client sent wrong packet waiting for select server", cp)
+		log.Println("warning: client sent wrong packet waiting for select server", cp)
 		return
 	}
 
@@ -213,7 +213,7 @@ func handleLoginConnection(conn *net.TCPConn) {
 	}
 	sp.Write(pw)
 	if err := pw.Flush(); err != nil {
-		log.Println("error flushing game server redirect", err)
+		log.Println("error: flushing game server redirect", err)
 		return
 	}
 

@@ -35,7 +35,7 @@ func templateNew(name string) string {
 func RandomListMember(list string) string {
 	l, ok := tm.lists.Get(list)
 	if !ok || len(l) == 0 {
-		log.Printf("list %s not found\n", list)
+		log.Printf("warning: list %s not found\n", list)
 		return ""
 	}
 	return l[tm.rng.Random(0, len(l)-1)]

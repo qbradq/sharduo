@@ -48,7 +48,7 @@ func main() {
 	fs := NoCache(http.FileServer(http.Dir("./docs")))
 	http.Handle("/", fs)
 
-	log.Println("Listening on :8080")
+	log.Println("info: listening on :8080")
 	if err := http.ListenAndServe(":8080", nil); err != nil {
 		log.Fatal(err)
 	}

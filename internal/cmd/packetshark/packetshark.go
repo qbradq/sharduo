@@ -16,11 +16,11 @@ func Main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Println("Packet shark listening at 127.0.0.0:7774")
+	log.Println("info: packet shark listening at 127.0.0.0:7774")
 	for {
 		c, err := ln.AcceptTCP()
 		if err != nil {
-			log.Println("Stopping local packet hook because", err)
+			log.Println("info: stopping local packet hook because", err)
 			break
 		}
 		ip, err := net.LookupIP("127.0.0.1")

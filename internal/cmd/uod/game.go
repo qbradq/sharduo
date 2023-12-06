@@ -38,7 +38,7 @@ func GameServerMain(wg *sync.WaitGroup) {
 		log.Fatal(err)
 		return
 	}
-	log.Printf("game server listening at %s:%d\n", configuration.GameServerAddress, configuration.GameServerPort)
+	log.Printf("info: game server listening at %s:%d\n", configuration.GameServerAddress, configuration.GameServerPort)
 
 	for {
 		c, err := gameServerListener.AcceptTCP()

@@ -226,7 +226,7 @@ func (g *StandardGUMP) StandardReplyHandler(p *clientpacket.GUMPReply) bool {
 		g.currentPage = p.Button - sgReplyPageFirst
 		return true
 	} else {
-		log.Printf("Unknown standard reply button ID %d", p.Button)
+		log.Printf("error: unknown standard reply button ID %d", p.Button)
 		return true
 	}
 }

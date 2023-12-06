@@ -35,7 +35,6 @@ vendors, mounts, pack animals, and banking.
 ### Known Defects ###
 
 ### Required Features and Tasks ###
-* Panics are not being logged
 
 ### Nice to Haves ###
 * Feedback GUMP

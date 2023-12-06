@@ -32,16 +32,16 @@ func NewEquipmentCollectionWith(ids []uo.Serial, parent Object) *EquipmentCollec
 	for _, id := range ids {
 		o := world.Find(id)
 		if o == nil {
-			log.Printf("object %s does not exist", id.String())
+			log.Printf("error: object %s does not exist", id.String())
 			continue
 		}
 		w, ok := o.(Wearable)
 		if !ok {
-			log.Printf("object %s does not implement the wearable interface", id.String())
+			log.Printf("error: object %s does not implement the wearable interface", id.String())
 			continue
 		}
 		if _, duplicate := c.equipment[w.Layer()]; duplicate {
-			log.Printf("object %s duplicate layer %d", id.String(), w.Layer())
+			log.Printf("error: object %s duplicate layer %d", id.String(), w.Layer())
 			continue
 		}
 		c.equipment[w.Layer()] = w

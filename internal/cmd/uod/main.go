@@ -50,12 +50,12 @@ func trap() {
 			gracefulShutdown()
 		} else {
 			// Last-ditch save attempt
-			log.Println("attempting last-ditch save from signal handler")
+			log.Println("warning: attempting last-ditch save from signal handler")
 			wg, err := world.Marshal()
 			if err != nil {
-				log.Printf("last-ditch save from signal handler failed: %s", err.Error())
+				log.Printf("error: last-ditch save from signal handler failed: %s", err.Error())
 			} else {
-				log.Printf("writing last-ditch save to disk")
+				log.Printf("info: writing last-ditch save to disk")
 				wg.Wait()
 			}
 			os.Exit(0)
@@ -74,7 +74,7 @@ func initialize() {
 		MaxAge:     28,
 		MaxBackups: 3,
 	}))
-	log.Println("ShardUO initializing...")
+	log.Println("info: ShardUO initializing...")
 
 	// Load configuration
 	if err := configuration.Load(); err != nil {
@@ -87,7 +87,7 @@ func initialize() {
 	}
 
 	// Load client data files
-	log.Println("loading client files...")
+	log.Println("info: loading client files")
 	tiledatamul = file.NewTileDataMul(path.Join(configuration.ClientFilesDirectory, "tiledata.mul"))
 	mapmul := file.NewMapMulFromFile(path.Join(configuration.ClientFilesDirectory, "map0.mul"), tiledatamul)
 	staticsmul := file.NewStaticsMulFromFile(
@@ -106,9 +106,9 @@ func initialize() {
 		}
 	}
 
-	log.Println("Misc operations...")
+	log.Println("info: misc startup operations")
 	if configuration.GenerateDebugMaps {
-		log.Println("generating debug map...")
+		log.Println("debug: generating debug map...")
 		rcolmul := file.NewRadarColMulFromFile(path.Join(configuration.ClientFilesDirectory, "radarcol.mul"))
 		if rcolmul == nil {
 			log.Fatal("failed to load radarcol.mul")
@@ -176,7 +176,7 @@ func initialize() {
 	})
 
 	// Load object templates
-	log.Println("Loading templates...")
+	log.Println("info: loading templates")
 	errs := template.Initialize(configuration.TemplatesDirectory,
 		configuration.ListsDirectory, configuration.TemplateVariablesFile,
 		rng, func(o template.Object) {
@@ -194,18 +194,18 @@ func initialize() {
 		log.Println(err)
 	}
 	if len(errs) > 0 {
-		log.Fatalf("%d errors while loading object templates", len(errs))
+		log.Fatalf("error: %d errors while loading object templates", len(errs))
 	}
 
 	// Initialize our data structures
-	log.Println("Allocating world data structures...")
+	log.Println("info: allocating world data structures")
 	world = NewWorld(configuration.SaveDirectory, rng)
-	log.Println("Populating map data structures...")
+	log.Println("info: populating map data structures")
 	world.Map().LoadFromMuls(mapmul, staticsmul)
 	game.RegisterWorld(world)
 
 	// Inject server-side dynamic objects
-	log.Println("Creating dynamic map objects...")
+	log.Println("info: creating dynamic map objects")
 
 	// Try to load the most recent save
 	if err := world.Unmarshal(); err != nil {
@@ -213,7 +213,7 @@ func initialize() {
 			log.Println("warning: no save files found, executing first-start routine")
 			firstStart()
 		} else {
-			log.Fatal("error while trying to load data stores from main goroutine", err)
+			log.Fatal("error: while trying to load data stores from main goroutine", err)
 		}
 	}
 }
@@ -257,7 +257,7 @@ func Main() {
 	// Always save right before we go down
 	wg, err := world.Marshal()
 	if err != nil {
-		log.Printf("ERROR SAVING WORLD AT END OF MAIN: %s", err.Error())
+		log.Printf("error: saving world at end of main: %s", err.Error())
 	} else {
 		wg.Wait()
 	}

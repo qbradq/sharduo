@@ -119,7 +119,7 @@ func Load() error {
 		for _, err := range tfr.Errors() {
 			log.Println(err)
 		}
-		return fmt.Errorf("%d errors while loading configuration", len(tfr.Errors()))
+		return fmt.Errorf("error: %d errors while loading configuration", len(tfr.Errors()))
 	}
 	//
 	// Read configuration values

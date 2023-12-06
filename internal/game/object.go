@@ -540,7 +540,7 @@ func (o *BaseObject) GetEventHandler(which string) *EventHandler {
 	}
 	h := eventHandlerGetter(eventHandler)
 	if h == nil {
-		log.Printf("reference to unregistered event handler \"%s\"", eventHandler)
+		log.Printf("error: reference to unregistered event handler \"%s\"", eventHandler)
 	}
 	return h
 }

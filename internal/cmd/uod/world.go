@@ -126,7 +126,7 @@ func (w *World) Unmarshal() error {
 	}
 	end := time.Now()
 	elapsed := end.Sub(start)
-	log.Printf("read save file into memory in %ds%03dms", elapsed.Milliseconds()/1000, elapsed.Milliseconds()%1000)
+	log.Printf("info: read save file into memory in %ds%03dms", elapsed.Milliseconds()/1000, elapsed.Milliseconds()%1000)
 
 	// Global data
 	start = time.Now()
@@ -170,7 +170,7 @@ func (w *World) Unmarshal() error {
 	// Done
 	end = time.Now()
 	elapsed = end.Sub(start)
-	log.Printf("save unmarshaled in %ds%03dms", elapsed.Milliseconds()/1000, elapsed.Milliseconds()%1000)
+	log.Printf("info: save unmarshaled in %ds%03dms", elapsed.Milliseconds()/1000, elapsed.Milliseconds()%1000)
 
 	return nil
 }
@@ -195,7 +195,7 @@ func (w *World) Marshal() (*sync.WaitGroup, error) {
 	filePath := path.Join(w.savePath, w.getFileName()+".sav.gz")
 	filePath = path.Clean(filePath)
 	os.MkdirAll(path.Dir(filePath), 0777)
-	log.Printf("saving data stores to %s", filePath)
+	log.Printf("info: saving data stores to %s", filePath)
 
 	start := time.Now()
 	wg := &sync.WaitGroup{}
@@ -243,7 +243,7 @@ func (w *World) Marshal() (*sync.WaitGroup, error) {
 	wg.Wait()
 	end := time.Now()
 	elapsed := end.Sub(start)
-	log.Printf("generated save data in %ds%03dms", elapsed.Milliseconds()/1000, elapsed.Milliseconds()%1000)
+	log.Printf("info: generated save data in %ds%03dms", elapsed.Milliseconds()/1000, elapsed.Milliseconds()%1000)
 
 	w.BroadcastMessage(nil, "World save completed in %ds%03dms", elapsed.Milliseconds()/1000, elapsed.Milliseconds()%1000)
 
@@ -268,7 +268,7 @@ func (w *World) Marshal() (*sync.WaitGroup, error) {
 		f.Close()
 		end := time.Now()
 		elapsed := end.Sub(start)
-		log.Printf("saved file to disk in %ds%03dms", elapsed.Milliseconds()/1000, elapsed.Milliseconds()%1000)
+		log.Printf("info: saved file to disk in %ds%03dms", elapsed.Milliseconds()/1000, elapsed.Milliseconds()%1000)
 	}()
 
 	return wg, nil

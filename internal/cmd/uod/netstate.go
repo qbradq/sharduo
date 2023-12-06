@@ -99,7 +99,6 @@ func (n *NetState) Update() {
 // Send attempts to add a packet to the client's send queue and returns false if
 // the queue is full.
 func (n *NetState) Send(sp serverpacket.Packet) bool {
-	// log.Printf("Sending Packet to Client %s: %T", n.conn.RemoteAddr().String(), sp)
 	if sp == nil {
 		return true
 	}
@@ -289,7 +288,7 @@ func (n *NetState) readLoop(r *clientpacket.Reader) {
 			log.Printf("error: unknown %s packet 0x%02X", p.PType, cp.ID())
 			return
 		case *clientpacket.UnsupportedPacket:
-			log.Printf("unsupported %s packet 0x%02X:\n%s", p.PType, cp.ID(), hex.Dump(data))
+			log.Printf("trace: unsupported %s packet 0x%02X:\n%s", p.PType, cp.ID(), hex.Dump(data))
 		case *clientpacket.IgnoredPacket:
 			// Do nothing
 		default:
