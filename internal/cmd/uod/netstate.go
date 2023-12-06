@@ -221,7 +221,7 @@ func (n *NetState) Service() {
 	}
 	_, ok = cp.(*clientpacket.CharacterLogin)
 	if !ok {
-		log.Printf("error: %s", err.Error())
+		log.Println("error: unexpected packet during character login")
 		return
 	}
 

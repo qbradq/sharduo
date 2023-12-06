@@ -33,7 +33,6 @@ basic supporting features are also slated before the first alpha including
 vendors, mounts, pack animals, and banking.
 
 ### Known Defects ###
-* Server panics when trying to delete a character, it should just refuse
 
 ### Required Features and Tasks ###
 * Panics are not being logged
