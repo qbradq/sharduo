@@ -86,6 +86,9 @@ var GameServerName string
 // If true we should generate all of the debug maps at server start
 var GenerateDebugMaps bool
 
+// If true we should enter CPU profiling mode for the main server loop
+var CPUProfile bool
+
 //
 // Game configuration
 //
@@ -144,6 +147,7 @@ func Load() error {
 	GameServerName = tfo.GetString("GameServerName", "ShardUO TC")
 	// Debug flags
 	GenerateDebugMaps = tfo.GetBool("GenerateDebugMaps", false)
+	CPUProfile = tfo.GetBool("CPUProfile", false)
 	// Game configuration
 	StartingLocation = tfo.GetLocation("StartingLocation", uo.Location{
 		X: 0,

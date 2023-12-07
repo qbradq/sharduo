@@ -249,7 +249,7 @@ func Main() {
 
 	// Start the goroutines
 	var ps interface{ Stop() }
-	if len(os.Getenv("UOD_PROFILE")) != 0 {
+	if configuration.CPUProfile {
 		ps = profile.Start(profile.ProfilePath("."))
 	}
 	wg.Add(4)
@@ -258,7 +258,7 @@ func Main() {
 	go LoginServerMain(wg)
 	go GameServerMain(wg)
 	wg.Wait()
-	if len(os.Getenv("UOD_PROFILE")) != 0 {
+	if configuration.CPUProfile {
 		ps.Stop()
 	}
 
