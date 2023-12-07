@@ -12,6 +12,7 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/pkg/profile"
 	"github.com/qbradq/sharduo/internal/ai"
 	"github.com/qbradq/sharduo/internal/commands"
 	"github.com/qbradq/sharduo/internal/configuration"
@@ -247,12 +248,19 @@ func Main() {
 	wg := &sync.WaitGroup{}
 
 	// Start the goroutines
+	var ps interface{ Stop() }
+	if len(os.Getenv("UOD_PROFILE")) != 0 {
+		ps = profile.Start(profile.ProfilePath("."))
+	}
 	wg.Add(4)
 	go world.Main(wg)
 	go cron.Main(wg)
 	go LoginServerMain(wg)
 	go GameServerMain(wg)
 	wg.Wait()
+	if len(os.Getenv("UOD_PROFILE")) != 0 {
+		ps.Stop()
+	}
 
 	// Always save right before we go down
 	wg, err := world.Marshal()

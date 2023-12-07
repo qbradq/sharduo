@@ -1150,10 +1150,13 @@ func (m *Map) SendCliloc(from Object, r int16, c uo.Cliloc, args ...string) {
 	}
 }
 
+var _mobBuffer = make([]Mobile, 1024*1024)
+
 // Update calls Update on a few chunks every tick such that every chunk gets an
 // Update call once every real-world minute or twelve in-game minutes. It also
 // calls Update on a few regions every tick such that every region is updated
-// over fifteen real-world seconds or three in-game minutes.
+// over fifteen real-world seconds or three in-game minutes. Finally Update
+// calls Update for every mobile on the map.
 func (m *Map) Update(t uo.Time) {
 	// Interleaved chunk updates, updates every chunk over a minute
 	nChunks := uint64(uo.MapChunksWidth * uo.MapChunksHeight)
@@ -1170,12 +1173,15 @@ func (m *Map) Update(t uo.Time) {
 		m.regions[idx].Update(t)
 	}
 	// Update all mobiles
-	var mobs []Mobile
+	idx := 0
 	for _, c := range m.chunks {
-		mobs = append(mobs, c.mobiles...)
+		for _, mob := range c.mobiles {
+			_mobBuffer[idx] = mob
+			idx++
+		}
 	}
-	for _, mob := range mobs {
-		mob.Update(t)
+	for i := 0; i < idx; i++ {
+		_mobBuffer[i].Update(t)
 	}
 }
 
