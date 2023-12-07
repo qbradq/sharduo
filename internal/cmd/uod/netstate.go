@@ -195,7 +195,7 @@ func (n *NetState) Service() {
 	}
 	gslp, ok := cp.(*clientpacket.GameServerLogin)
 	if !ok {
-		log.Printf("error: %s", err.Error())
+		log.Printf("error: expected GameServerLogin packet")
 		return
 	}
 	account := world.AuthenticateAccount(gslp.Username, game.HashPassword(gslp.Password))
