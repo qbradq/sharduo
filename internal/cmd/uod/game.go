@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"runtime/debug"
 	"strings"
 	"sync"
 
@@ -28,6 +29,12 @@ func StopGameService() {
 func GameServerMain(wg *sync.WaitGroup) {
 	var err error
 
+	defer func() {
+		if p := recover(); p != nil {
+			log.Printf("panic: %v\n%s\n", p, debug.Stack())
+			panic(p)
+		}
+	}()
 	defer wg.Done()
 
 	gameServerListener, err = net.ListenTCP("tcp", &net.TCPAddr{
@@ -73,10 +80,18 @@ func GameServerMain(wg *sync.WaitGroup) {
 
 // Goroutine for handling inbound connections.
 func handleGameConnection(c *net.TCPConn) {
-	ns := NewNetState(c)
+	var ns *NetState
+
+	defer func() {
+		if p := recover(); p != nil {
+			log.Printf("panic: %v\n%s\n", p, debug.Stack())
+		}
+	}()
+	defer ns.Disconnect()
+
+	ns = NewNetState(c)
 	gameNetStates.Store(ns, true)
 	ns.Service()
-	ns.Disconnect()
 	m := ns.m
 	ns.m = nil
 	if m != nil {

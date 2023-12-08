@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"path"
+	"runtime/debug"
 	"sync"
 	"syscall"
 
@@ -241,6 +242,12 @@ func startCommands() {
 
 // Main is the entry point for uod.
 func Main() {
+	defer func() {
+		if p := recover(); p != nil {
+			log.Printf("panic: %v\n%s\n", p, debug.Stack())
+			panic(p)
+		}
+	}()
 	trap()
 	initialize()
 	startCommands()

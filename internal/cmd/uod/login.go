@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"log"
 	"net"
+	"runtime/debug"
 	"strings"
 	"sync"
 	"time"
@@ -61,6 +62,12 @@ func cleanStaleLoginConnections(done chan bool) {
 func LoginServerMain(wg *sync.WaitGroup) {
 	var err error
 
+	defer func() {
+		if p := recover(); p != nil {
+			log.Printf("panic: %v\n%s\n", p, debug.Stack())
+			panic(p)
+		}
+	}()
 	defer wg.Done()
 
 	loginServerListener, err = net.ListenTCP("tcp", &net.TCPAddr{
@@ -112,8 +119,14 @@ func LoginServerMain(wg *sync.WaitGroup) {
 func handleLoginConnection(conn *net.TCPConn) {
 	var err error
 
-	// Setup QoS options
+	defer func() {
+		if p := recover(); p != nil {
+			log.Printf("panic: %v\n%s\n", p, debug.Stack())
+		}
+	}()
 	defer conn.Close()
+
+	// Setup QoS options
 	conn.SetKeepAlive(false)
 	conn.SetLinger(0)
 	conn.SetNoDelay(true)

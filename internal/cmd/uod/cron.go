@@ -5,7 +5,9 @@ import (
 	"encoding/csv"
 	"errors"
 	"io"
+	"log"
 	"os"
+	"runtime/debug"
 	"strconv"
 	"sync"
 	"time"
@@ -122,6 +124,12 @@ func writeDefaultCrontab() ([]byte, error) {
 
 // Main is the main loop for the Cron daemon.
 func (c *Cron) Main(wg *sync.WaitGroup) {
+	defer func() {
+		if p := recover(); p != nil {
+			log.Printf("panic: %v\n%s\n", p, debug.Stack())
+			panic(p)
+		}
+	}()
 	defer wg.Done()
 
 	// Create the nil net state we use for the commands

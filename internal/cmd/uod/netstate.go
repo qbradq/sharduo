@@ -126,6 +126,9 @@ func (n *NetState) Send(sp serverpacket.Packet) bool {
 
 // Disconnect disconnects the NetState.
 func (n *NetState) Disconnect() {
+	if n == nil {
+		return
+	}
 	n.disconnectLock.Do(func() {
 		if n == nil {
 			return

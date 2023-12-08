@@ -9,6 +9,7 @@ import (
 	"os"
 	"path"
 	"runtime"
+	"runtime/debug"
 	"strings"
 	"sync"
 	"time"
@@ -370,6 +371,12 @@ func (w *World) Stop() {
 // Main is the goroutine that services the command queue and is the only
 // goroutine allowed to interact with the contents of the world.
 func (w *World) Main(wg *sync.WaitGroup) {
+	defer func() {
+		if p := recover(); p != nil {
+			log.Printf("panic: %v\n%s\n", p, debug.Stack())
+			panic(p)
+		}
+	}()
 	defer wg.Done()
 	var done bool
 	ticker := time.NewTicker(time.Second / time.Duration(uo.DurationSecond))
