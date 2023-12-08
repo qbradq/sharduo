@@ -33,6 +33,7 @@ client/
 # Machine-specific configuration files
 /configuration.ini
 /crontab
+/blacklist.ini
 
 # Profiling files
 *.pprof

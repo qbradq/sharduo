@@ -44,6 +44,8 @@ func commandDebug(n game.NetState, args CommandArgs, cl string) {
 		fallthrough
 	case "mount":
 		fallthrough
+	case "panic":
+		fallthrough
 	case "shirtbag":
 		if len(args) != 2 {
 			n.Speech(nil, "debug %s command requires 0 arguments", args[1])
@@ -254,5 +256,9 @@ func commandDebug(n game.NetState, args CommandArgs, cl string) {
 		}
 		end := time.Now()
 		n.Speech(n.Mobile(), "generated %d items in %d milliseconds\n", count, end.Sub(start).Milliseconds())
+	case "panic":
+		// Force a nil reference panic
+		var m game.Mobile
+		m.AdjustGold(1)
 	}
 }

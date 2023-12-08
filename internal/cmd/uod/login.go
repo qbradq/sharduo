@@ -85,6 +85,18 @@ func LoginServerMain(wg *sync.WaitGroup) {
 			}
 			break
 		}
+		// IP blacklist
+		s := strings.Split(c.RemoteAddr().String(), ":")[0]
+		a := net.ParseIP(s)
+		if a == nil {
+			c.Close()
+			continue
+		}
+		if blacklist.Match(a) {
+			c.Close()
+			log.Printf("info: blacklisted connection to login server from %s", s)
+			continue
+		}
 		go handleLoginConnection(c)
 	}
 
