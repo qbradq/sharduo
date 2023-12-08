@@ -94,7 +94,7 @@ func loadBlacklist() {
 		if err != nil {
 			panic(err)
 		}
-		if err := os.WriteFile("blacklist.ini", b, os.ModeAppend); err != nil {
+		if err := os.WriteFile("blacklist.ini", b, 0660); err != nil {
 			panic(err)
 		}
 	}
