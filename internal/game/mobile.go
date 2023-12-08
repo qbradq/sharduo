@@ -340,6 +340,7 @@ func (o *BaseMobile) SerialType() uo.SerialType {
 // Marshal implements the marshal.Marshaler interface.
 func (m *BaseMobile) Marshal(s *marshal.TagFileSegment) {
 	m.BaseObject.Marshal(s)
+	s.PutInt(0) // version
 	// Base stats
 	s.PutByte(byte(m.viewRange))
 	s.PutBool(m.isPlayerCharacter)
@@ -429,6 +430,7 @@ func (m *BaseMobile) Deserialize(t *template.Template, create bool) {
 // Unmarshal implements the marshal.Unmarshaler interface.
 func (m *BaseMobile) Unmarshal(s *marshal.TagFileSegment) {
 	m.BaseObject.Unmarshal(s)
+	_ = s.Int() // version
 	m.cursor = &Cursor{
 		m: m,
 	}

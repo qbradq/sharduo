@@ -25,12 +25,14 @@ func (i *MountItem) ObjectType() marshal.ObjectType {
 // Marshal implements the marshal.Marshaler interface.
 func (i *MountItem) Marshal(s *marshal.TagFileSegment) {
 	i.BaseWearable.Marshal(s)
+	s.PutInt(0) // version
 	s.PutObject(i.m)
 }
 
 // Unmarshal implements the marshal.Unmarshaler interface.
 func (i *MountItem) Unmarshal(s *marshal.TagFileSegment) {
 	i.BaseWearable.Unmarshal(s)
+	_ = s.Int() // version
 	mum := s.Object()
 	m, ok := mum.(Mobile)
 	if !ok {

@@ -266,6 +266,7 @@ func (o *BaseObject) Marshal(s *marshal.TagFileSegment) {
 	if o.owner != nil {
 		os = o.owner.Serial()
 	}
+	s.PutInt(0) // version
 	s.PutInt(uint32(ps))
 	s.PutInt(uint32(os))
 	s.PutString(o.name)
@@ -322,6 +323,7 @@ func (o *BaseObject) Deserialize(t *template.Template, create bool) {
 
 // Unmarshal implements the marshal.Unmarshaler interface.
 func (o *BaseObject) Unmarshal(s *marshal.TagFileSegment) {
+	_ = s.Int() // version
 	// Parent object resolution
 	ps := uo.Serial(s.Int())
 	if ps == uo.SerialSystem {

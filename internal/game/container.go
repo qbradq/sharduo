@@ -117,6 +117,7 @@ func (i *BaseContainer) RemoveChildren() {
 // Marshal implements the marshal.Marshaler interface.
 func (i *BaseContainer) Marshal(s *marshal.TagFileSegment) {
 	i.BaseItem.Marshal(s)
+	s.PutInt(0) // version
 	l := len(i.contents)
 	if l > 255 {
 		log.Printf("warning: container %s has way too many items", i.serial.String())
@@ -154,6 +155,7 @@ func (c *BaseContainer) Deserialize(t *template.Template, create bool) {
 // Unmarshal implements the marshal.Unmarshaler interface.
 func (i *BaseContainer) Unmarshal(s *marshal.TagFileSegment) {
 	i.BaseItem.Unmarshal(s)
+	_ = s.Int() // version
 	l := int(s.Byte())
 	for idx := 0; idx < l; idx++ {
 		ium := s.Object()

@@ -47,9 +47,10 @@ func NewTagFile(d []byte) *TagFile {
 	if magic != 0x6BB50D00B87E33A4 {
 		panic("tag file does not have correct magic number")
 	}
-	nSegments := int(d[8])
+	_ = int(binary.LittleEndian.Uint32(d[8:12]))
+	nSegments := int(d[12])
 	// Load segments
-	ofs := 9
+	ofs := 13
 	t.segs = make([]*TagFileSegment, nSegments)
 	for i := range t.segs {
 		s := NewTagFileSegment(0, t)
@@ -78,10 +79,14 @@ func (f *TagFile) Output(w io.Writer) {
 	// Write file header
 	binary.LittleEndian.PutUint64(buf[0:8], 0x6BB50D00B87E33A4) // Magic string
 	w.Write(buf[0:8])
+	// Write file version
+	binary.LittleEndian.PutUint32(buf[0:4], 0) // Version
+	w.Write(buf[0:4])
+	// Number of segments
 	buf[0] = byte(len(f.segs))
 	w.Write(buf[0:1])
 	// Write segment headers
-	var ofs uint64 = 9 + 21*(uint64(len(f.segs)))
+	var ofs uint64 = 13 + 21*(uint64(len(f.segs)))
 	// Output segments
 	for _, seg := range f.segs {
 		buf[0] = byte(seg.id)                                           // Segment ID

@@ -31,10 +31,12 @@ func (i *WearableContainer) Deserialize(t *template.Template, create bool) {
 func (i *WearableContainer) Marshal(s *marshal.TagFileSegment) {
 	i.BaseContainer.Marshal(s)
 	i.BaseWearableImplementation.Marshal(s)
+	s.PutInt(0) // version
 }
 
 // Unmarshal implements the marshal.Unmarshaler interface.
 func (i *WearableContainer) Unmarshal(s *marshal.TagFileSegment) {
 	i.BaseContainer.Unmarshal(s)
 	i.BaseWearableImplementation.Unmarshal(s)
+	_ = s.Int() // version
 }

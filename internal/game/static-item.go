@@ -180,9 +180,6 @@ func (i *StaticItem) Weight() float32          { return 255.0 }
 
 // Marshal implements the marshal.Marshaler interface.
 func (i *StaticItem) Marshal(s *marshal.TagFileSegment) {
-	s.PutShort(uint16(i.graphic))
-	s.PutLocation(i.location)
-	s.PutShort(uint16(i.hue))
 }
 
 // Deserialize implements the util.Serializeable interface.
@@ -194,10 +191,6 @@ func (i *StaticItem) Deserialize(t *template.Template, create bool) {
 
 // Unmarshal implements the marshal.Unmarshaler interface.
 func (i *StaticItem) Unmarshal(s *marshal.TagFileSegment) {
-	i.graphic = uo.Graphic(s.Short())
-	i.location = s.Location()
-	i.hue = uo.Hue(s.Short())
-	i.def = world.GetItemDefinition(i.graphic)
 }
 
 // AfterUnmarshalOntoMap implements the Object interface.

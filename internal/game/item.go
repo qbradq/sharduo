@@ -205,6 +205,7 @@ func (i *BaseItem) ObjectType() marshal.ObjectType { return marshal.ObjectTypeIt
 // Marshal implements the marshal.Marshaler interface.
 func (i *BaseItem) Marshal(s *marshal.TagFileSegment) {
 	i.BaseObject.Marshal(s)
+	s.PutInt(0) // version
 	s.PutBool(i.flipped)
 	s.PutShort(uint16(i.amount))
 	s.PutShort(uint16(i.uses))
@@ -234,6 +235,7 @@ func (i *BaseItem) Deserialize(t *template.Template, create bool) {
 // Unmarshal implements the marshal.Unmarshaler interface.
 func (i *BaseItem) Unmarshal(s *marshal.TagFileSegment) {
 	i.BaseObject.Unmarshal(s)
+	_ = s.Int() // version
 	i.flipped = s.Bool()
 	i.amount = int(s.Short())
 	if i.amount < 1 {

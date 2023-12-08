@@ -57,12 +57,14 @@ func (i *BaseWearableImplementation) Layer() uo.Layer { return i.layer }
 
 // Marshal implements the marshal.Marshaler interface.
 func (i *BaseWearableImplementation) Marshal(s *marshal.TagFileSegment) {
+	s.PutInt(0) // version
 	s.PutFloat(i.durability)
 	s.PutFloat(i.maxDurability)
 }
 
 // Unmarshal implements the marshal.Unmarshaler interface.
 func (i *BaseWearableImplementation) Unmarshal(s *marshal.TagFileSegment) {
+	_ = s.Int() // version
 	i.durability = s.Float()
 	i.maxDurability = s.Float()
 }
@@ -100,12 +102,14 @@ func (i *BaseWearable) Deserialize(t *template.Template, create bool) {
 func (i *BaseWearable) Marshal(s *marshal.TagFileSegment) {
 	i.BaseItem.Marshal(s)
 	i.BaseWearableImplementation.Marshal(s)
+	s.PutInt(0) // version
 }
 
 // Unmarshal implements the marshal.Unmarshaler interface.
 func (i *BaseWearable) Unmarshal(s *marshal.TagFileSegment) {
 	i.BaseItem.Unmarshal(s)
 	i.BaseWearableImplementation.Unmarshal(s)
+	_ = s.Int() // version
 }
 
 // AppendOPLEntries implements the Object interface.
