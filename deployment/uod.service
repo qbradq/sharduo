@@ -12,7 +12,6 @@ User=sharduo
 Group=sharduo
 WorkingDirectory=/home/sharduo/TrammelTime
 ExecStart=/home/sharduo/TrammelTime/uod
-StandardError=append:/home/sharduo/TrammelTime/logs/stderr.log
 
 [Install]
 WantedBy=multi-user.target
