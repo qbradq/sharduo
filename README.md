@@ -31,7 +31,6 @@ The next milestone set for ShardUO is to banking and trade including check and
 pay-from-bank support.
 
 ### Known Defects ###
-* No coin sound at end of successful NPC vendor transaction
 
 ### Required Features and Tasks ###
 * Pay vendors from gold in bank

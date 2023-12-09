@@ -417,6 +417,7 @@ func handleBuyRequest(n *NetState, cp clientpacket.Packet) {
 		}
 	}
 	world.Map().SendCliloc(vendor, uo.SpeechNormalRange, 1080013, strconv.Itoa(total)) // The total of thy purchase is ~1_VAL~ gold,
+	n.Sound(0x02E6, n.m.Location())
 }
 
 func handleSellRequest(n *NetState, cp clientpacket.Packet) {
@@ -468,6 +469,7 @@ func handleSellRequest(n *NetState, cp clientpacket.Packet) {
 			n.m.DropToFeet(check)
 		}
 	}
+	n.Sound(0x02E6, n.m.Location())
 }
 
 func handleNameRequest(n *NetState, cp clientpacket.Packet) {
