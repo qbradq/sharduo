@@ -379,11 +379,10 @@ func handleBuyRequest(n *NetState, cp clientpacket.Packet) {
 	}
 	// Charge gold
 	// TODO support bank gold, change cliloc to 1042556
-	if total > n.m.Gold() {
+	if !n.m.ChargeGold(total) {
 		n.Cliloc(vendor, 1019022) // You do not have enough gold.
 		return
 	}
-	n.m.RemoveGold(total)
 	// Give items
 	for _, bi := range p.BoughtItems {
 		i := game.Find[game.Item](bi.Item)
@@ -456,11 +455,18 @@ func handleSellRequest(n *NetState, cp clientpacket.Packet) {
 		}
 	}
 	// Payment
-	// TODO check support
 	gc := template.Create[game.Item]("GoldCoin")
 	gc.SetAmount(total)
 	if !n.m.DropToBackpack(gc, false) {
-		n.m.DropToFeet(gc)
+		// Try a check instead
+		game.Remove(gc)
+		check := template.Create[*game.Check]("Check")
+		check.SetCheckAmount(total)
+		if !n.m.DropToBackpack(check, false) {
+			// Don't over-stuff the backpack, just let the check fall to their
+			// feet.
+			n.m.DropToFeet(check)
+		}
 	}
 }
 

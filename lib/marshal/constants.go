@@ -30,4 +30,5 @@ const (
 	ObjectTypeAccount           ObjectType = 9  // Account
 	ObjectTypeSpawner           ObjectType = 10 // Spawner
 	ObjectTypeDoor              ObjectType = 11 // Door
+	ObjectTypeCheck             ObjectType = 12 // Check
 )

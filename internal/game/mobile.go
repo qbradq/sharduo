@@ -63,10 +63,9 @@ type Mobile interface {
 	Gold() int
 	// AdjustGold adds n to the total amount of gold on the mobile
 	AdjustGold(int)
-	// RemoveGold removes the given amount of gold from the mobile's inventory
-	// and bank. This function returns the amount of gold actually removed which
-	// can be less than the requested amount.
-	RemoveGold(int) int
+	// ChargeGold removes the given amount of gold from the mobile's inventory
+	// and bank and returns true only if successful.
+	ChargeGold(int) bool
 	// Skill returns the raw skill value (range 0-1000) of the named skill
 	Skill(uo.Skill) int16
 	// Skills returns a slice of all raw skill values (range 0-1000)
@@ -616,65 +615,24 @@ func (m *BaseMobile) Gold() int { return m.gold }
 // AdjustGold implements the Mobile interface.
 func (m *BaseMobile) AdjustGold(n int) { m.gold += n }
 
-// RemoveGold implements the Mobile interface.
-func (m *BaseMobile) RemoveGold(n int) int {
+// ChargeGold implements the Mobile interface.
+func (m *BaseMobile) ChargeGold(n int) bool {
 	defer func() {
 		world.Update(m)
 	}()
-	total := 0
-	var fn func(Container)
-	fn = func(c Container) {
-		if total >= n {
-			return
-		}
-		items := make([]Item, len(c.Contents()))
-		copy(items, c.Contents())
-		for _, i := range items {
-			if total >= n {
-				return
-			}
-			if oc, ok := i.(Container); ok {
-				fn(oc)
-				continue
-			}
-			// TODO check support
-			if i.TemplateName() != "GoldCoin" {
-				continue
-			}
-			toConsume := n - total
-			if toConsume >= i.Amount() {
-				total += i.Amount()
-				m.AdjustGold(-i.Amount())
-				Remove(i)
-				continue
-			}
-			i.SetAmount(i.Amount() - toConsume)
-			total += toConsume
-			m.AdjustGold(-toConsume)
-			world.Update(i)
-		}
+	// TODO Bank gold support
+	if m.Gold() < n {
+		return false
 	}
-	// Backpack gold
-	w := m.EquipmentInSlot(uo.LayerBackpack)
-	if w == nil {
-		return total
+	bpo := m.EquipmentInSlot(uo.LayerBackpack)
+	if bpo == nil {
+		return false
 	}
-	c, ok := w.(Container)
+	bp, ok := bpo.(Container)
 	if !ok {
-		return total
+		return false
 	}
-	fn(c)
-	// Bank gold
-	w = m.EquipmentInSlot(uo.LayerBackpack)
-	if w == nil {
-		return total
-	}
-	c, ok = w.(Container)
-	if !ok {
-		return total
-	}
-	fn(c)
-	return total
+	return bp.ConsumeGold(n)
 }
 
 // ItemInCursor implements the Mobile interface.
@@ -721,6 +679,8 @@ func (m *BaseMobile) recalculateGold() {
 				fn(container)
 			} else if item.TemplateName() == "GoldCoin" {
 				m.gold += item.Amount()
+			} else if check, ok := item.(*Check); ok {
+				m.gold += check.CheckAmount()
 			}
 		}
 	}
@@ -860,6 +820,10 @@ func (m *BaseMobile) ForceRemoveObject(o Object) {
 
 // DropToBackpack implements the Mobile interface.
 func (m *BaseMobile) DropToBackpack(o Object, force bool) bool {
+	if !force && m.Weight()+o.Weight() > float32(m.MaxWeight()) {
+		// Weight restriction
+		return false
+	}
 	item, ok := o.(Item)
 	if !ok {
 		// Something is very wrong
@@ -1527,3 +1491,6 @@ func (m *BaseMobile) HasLineOfSight(o Object) bool {
 	}
 	return world.Map().LineOfSight(a, b)
 }
+
+// SetAmount implements the Object interface.
+func (m *BaseMobile) SetAmount(n int) {}

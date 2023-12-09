@@ -45,9 +45,6 @@ type Item interface {
 	Movable() bool
 	// Amount of the stack
 	Amount() int
-	// SetAmount sets the amount of the stack. If this is out of range it will
-	// be bounded to a sane value
-	SetAmount(int)
 	// Value returns the base sale price of the item at a vendor
 	Value() int
 	// Consume attempts to remove n from the number of items in this stack and

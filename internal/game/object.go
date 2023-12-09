@@ -164,6 +164,9 @@ type Object interface {
 	SetFacing(uo.Direction)
 	// Visibility returns the current visibility level of the object.
 	Visibility() uo.Visibility
+	// SetAmount sets the amount of the stack, if any. If this is out of range
+	// it will be bounded to a sane value. Generally this only applies to items.
+	SetAmount(int)
 
 	//
 	// Complex accessors
@@ -581,3 +584,6 @@ func (o *BaseObject) SpawnerRegion() *Region { return o.spawnerRegion }
 
 // SetSpawnerRegion implements the Object interface.
 func (o *BaseObject) SetSpawnerRegion(r *Region) { o.spawnerRegion = r }
+
+// SetAmount implements the Object interface.
+func (o *BaseObject) SetAmount(n int) {}

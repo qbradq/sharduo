@@ -14,6 +14,7 @@ var templateFuncMap = txtmp.FuncMap{
 	"DressHuman":  dressHuman,       // Creates clothing and hair for a human
 	"EquipVendor": equipVendor,      // Creates the buy and sell bags for a vendor
 	"New":         templateNew,      // New creates a new object from the named template, adds it to the world datastores, then returns the string representation of the object's serial
+	"NewStack":    templateNewStack, // Creates a new item as in New with the given stack size
 	"PartialHue":  partialHue,       // Sets the partial hue flag
 	"RandomNew":   randomNew,        // RandomNew creates a new object of a template randomly selected from the named list
 	"RandomBool":  randomBool,       // RandomBool returns a random boolean value
@@ -22,6 +23,19 @@ var templateFuncMap = txtmp.FuncMap{
 
 func randomBool() bool {
 	return tm.rng.RandomBool()
+}
+
+func templateNewStack(name, amount string) string {
+	o := Create[Object](name)
+	if o == nil {
+		return "0"
+	}
+	v, err := strconv.ParseInt(amount, 0, 32)
+	if err != nil {
+		return "0"
+	}
+	o.SetAmount(int(v))
+	return o.Serial().String()
 }
 
 func templateNew(name string) string {

@@ -79,6 +79,14 @@ type Container interface {
 	UpdateItemOPL(Item)
 	// DropSound returns the default drop sound for the container.
 	DropSound() uo.Sound
+	// CountGold returns the amount of gold contained within this container and
+	// all sub-containers.
+	CountGold() int
+	// ConsumeGold attempts to consume the given amount of gold from the
+	// container and all sub-containers and will consume gold coins before
+	// checks. It returns true if this was successful. ConsumeGold only modifies
+	// items if it returns true.
+	ConsumeGold(int) bool
 }
 
 // BaseContainer implements the base implementation of the Container interface.
@@ -244,13 +252,19 @@ func (c *BaseContainer) doRemove(o Object, force bool) bool {
 		observer.ContainerItemRemoved(c, item)
 	}
 	// Gold calculations
-	// TODO Check support
-	// TODO Bank gold support
-	if c.TemplateName() != "PlayerBankBox" && item.TemplateName() == "GoldCoin" {
-		if mobile, ok := RootParent(c).(Mobile); ok {
-			mobile.AdjustGold(-item.Amount())
+	if c.TemplateName() != "PlayerBankBox" {
+		if item.TemplateName() == "GoldCoin" {
+			if mobile, ok := RootParent(c).(Mobile); ok {
+				mobile.AdjustGold(-item.Amount())
+			}
+		} else if check, ok := item.(*Check); ok {
+			// Check support
+			if mobile, ok := RootParent(c).(Mobile); ok {
+				mobile.AdjustGold(-check.CheckAmount())
+			}
 		}
 	}
+	// TODO Bank gold support
 	return true
 }
 
@@ -362,13 +376,19 @@ func (c *BaseContainer) ForceAddObject(o Object) {
 		observer.ContainerItemAdded(c, item)
 	}
 	// Gold calculations
-	// TODO check support
-	// TODO bank gold support
-	if c.TemplateName() != "PlayerBankBox" && item.TemplateName() == "GoldCoin" {
-		if mobile, ok := RootParent(c).(Mobile); ok {
-			mobile.AdjustGold(item.Amount())
+	if c.TemplateName() != "PlayerBankBox" {
+		if item.TemplateName() == "GoldCoin" {
+			if mobile, ok := RootParent(c).(Mobile); ok {
+				mobile.AdjustGold(item.Amount())
+			}
+		} else if check, ok := item.(*Check); ok {
+			// Check support
+			if mobile, ok := RootParent(c).(Mobile); ok {
+				mobile.AdjustGold(check.CheckAmount())
+			}
 		}
 	}
+	// TODO Bank gold support
 }
 
 // InsertObject implements the Object interface.
@@ -513,3 +533,80 @@ func (c *BaseContainer) AppendOPLEntires(r Object, p *serverpacket.OPLPacket) {
 
 // DropSound implements the Container interface.
 func (c *BaseContainer) DropSound() uo.Sound { return c.dropSound }
+
+// CountGold implements the Container interface.
+func (c *BaseContainer) CountGold() int {
+	count := 0
+	for _, i := range c.contents {
+		if i.TemplateName() == "GoldCoin" {
+			count += i.Amount()
+		} else if check, ok := i.(*Check); ok {
+			count += check.CheckAmount()
+		} else if sub, ok := i.(Container); ok {
+			count += sub.CountGold()
+		}
+	}
+	return count
+}
+
+// ConsumeGold implements the Container interface.
+func (c *BaseContainer) ConsumeGold(amount int) bool {
+	var total int
+	var toRemove []Item
+	var collectGold func(Container) bool
+	collectGold = func(cont Container) bool {
+		for _, i := range cont.Contents() {
+			if sub, ok := i.(Container); ok {
+				if collectGold(sub) {
+					return true
+				}
+				continue
+			}
+			if i.TemplateName() != "GoldCoin" {
+				continue
+			}
+			if total+i.Amount() > amount {
+				i.Consume(amount - total)
+				if m, ok := RootParent(c).(Mobile); ok {
+					m.AdjustGold(-(amount - total))
+				}
+				for _, i := range toRemove {
+					Remove(i)
+				}
+				return true
+			}
+			total += i.Amount()
+			toRemove = append(toRemove, i)
+		}
+		return false
+	}
+	var collectCheck func(Container) bool
+	collectCheck = func(cont Container) bool {
+		for _, i := range cont.Contents() {
+			if sub, ok := i.(Container); ok {
+				if collectCheck(sub) {
+					return true
+				}
+				continue
+			}
+			check, ok := i.(*Check)
+			if !ok {
+				continue
+			}
+			if total+check.CheckAmount() > amount {
+				check.ConsumeGold(amount - total)
+				if m, ok := RootParent(c).(Mobile); ok {
+					m.AdjustGold(-(amount - total))
+				}
+				for _, i := range toRemove {
+					Remove(i)
+				}
+				return true
+			}
+			total += check.CheckAmount()
+			toRemove = append(toRemove, i)
+		}
+		return false
+	}
+	return collectGold(c) || collectCheck(c)
+}

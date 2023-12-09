@@ -47,28 +47,42 @@ func commandNew(n game.NetState, args CommandArgs, cl string) {
 			n.Speech(n.Mobile(), "failed to create object with template %s", args[1])
 			return
 		}
-		o.SetLocation(r.Location)
 		if len(args) == 3 {
-			item, ok := o.(game.Item)
-			if !ok {
-				n.Speech(n.Mobile(), "amount specified for non-item %s", args[1])
-				return
-			}
-			if !item.Stackable() {
-				n.Speech(n.Mobile(), "amount specified for non-stackable item %s", args[1])
-				return
-			}
 			v := args.Int(2)
 			if v < 1 {
 				v = 1
 			}
-			item.SetAmount(v)
+			if check, ok := o.(*game.Check); ok {
+				check.SetCheckAmount(v)
+			} else {
+				item, ok := o.(game.Item)
+				if !ok {
+					n.Speech(n.Mobile(), "amount specified for non-item %s", args[1])
+					return
+				}
+				if !item.Stackable() {
+					n.Speech(n.Mobile(), "amount specified for non-stackable item %s", args[1])
+					return
+				}
+				item.SetAmount(v)
+			}
 		}
-		// Try to add the object to the map legit, but if that fails just force
-		// it so we don't leak it.
-		if !game.GetWorld().Map().AddObject(o) {
-			game.GetWorld().Map().ForceAddObject(o)
+		m := game.Find[game.Mobile](r.TargetObject)
+		if m != nil {
+			// If we targeted a mobile force the item into the backpack
+			if item, ok := o.(game.Item); ok {
+				item.SetDropLocation(uo.RandomContainerLocation)
+				m.DropToBackpack(o, true)
+			}
+		} else {
+			o.SetLocation(r.Location)
+			// Try to add the object to the map legit, but if that fails just
+			// force it so we don't leak it.
+			if !game.GetWorld().Map().AddObject(o) {
+				game.GetWorld().Map().ForceAddObject(o)
+			}
 		}
+
 	})
 }
 

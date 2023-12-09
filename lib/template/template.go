@@ -39,6 +39,8 @@ type Object interface {
 	// InsertObject adds an object as a child of this object through an empty
 	// interface.
 	InsertObject(any)
+	// SetAmount sets the stack amount for the object, if any.
+	SetAmount(int)
 }
 
 // Template contains all of the property lines of the template.
