@@ -27,14 +27,15 @@ A huge thank you goes out to the following groups, in no particular order.
 * Doors, signs and decoration
 
 ## Next Milestone - Mining Vertical ##
-The next milestone set for ShardUO is to implement the Mining skill vertical
-including all features required to mine ore and smelt it into ingots. Many other
-basic supporting features are also slated before the first alpha including
-vendors, mounts, pack animals, and banking.
+The next milestone set for ShardUO is to banking and trade including check and
+pay-from-bank support.
 
 ### Known Defects ###
 
 ### Required Features and Tasks ###
+* Checks
+* Pay vendors from gold in bank
+* Secure trade
 
 ### Nice to Haves ###
 * Feedback GUMP
@@ -78,10 +79,6 @@ things work with ShardUO.
 ## Feature Packages ##
 Below are feature verticals that I want to implement next in priority order.
 
-* Banking and Trade
-  * Checks
-  * Pay vendors from gold in bank
-  * Secure trade
 * Tailoring
   * Sheep pen in W brit
   * Functional spinning wheels supporting

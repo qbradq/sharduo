@@ -503,6 +503,12 @@ func (m *BaseMobile) AfterUnmarshalOntoMap() {
 			mi.m.RestoreControlMaster()
 		}
 	}
+	// Edge case: when the save is taken while players are still logged in and
+	// we reload the save monsters may attack players. We also have no mechanism
+	// for logging out these players. So we force it here if needed.
+	if m.isPlayerCharacter {
+		world.Map().StoreObject(m)
+	}
 }
 
 // RestoreControlMaster attempts to restore the control master pointer from the
