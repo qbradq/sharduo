@@ -1408,7 +1408,10 @@ func (m *BaseMobile) AppendOPLEntires(r Object, p *serverpacket.OPLPacket) {
 func (m *BaseMobile) ControlMaster() Mobile { return m.controlMaster }
 
 // SetControlMaster implements the Mobile interface.
-func (m *BaseMobile) SetControlMaster(cm Mobile) { m.controlMaster = cm }
+func (m *BaseMobile) SetControlMaster(cm Mobile) {
+	m.controlMaster = cm
+	m.SetRunning(cm != nil)
+}
 
 // SetAI implements the Mobile interface.
 func (m *BaseMobile) SetAI(which string) {
