@@ -186,6 +186,10 @@ type Mobile interface {
 	// backpack. If the second argument is true, the item will be placed without
 	// regard to weight and item caps. Returns true if successful.
 	DropToBackpack(Object, bool) bool
+	// DropToBankBox is a helper function that places items within a mobile's
+	// bank box. If the second argument is true, the item will be placed without
+	// regard to the item cap. Returns true if successful.
+	DropToBankBox(Object, bool) bool
 	// DropToFeet is a helper function that places items at the mobile's feet.
 	// The item is forced to the location of the mobile's feet without regard to
 	// having enough space. Use this function as a last-ditch method to get an
@@ -825,10 +829,6 @@ func (m *BaseMobile) ForceRemoveObject(o Object) {
 
 // DropToBackpack implements the Mobile interface.
 func (m *BaseMobile) DropToBackpack(o Object, force bool) bool {
-	if !force && m.Weight()+o.Weight() > float32(m.MaxWeight()) {
-		// Weight restriction
-		return false
-	}
 	item, ok := o.(Item)
 	if !ok {
 		// Something is very wrong
@@ -856,6 +856,7 @@ func (m *BaseMobile) DropToBackpack(o Object, force bool) bool {
 		}
 		return force
 	}
+	oldParent := item.Parent()
 	if item.Parent() == nil {
 		if force {
 			world.Map().ForceRemoveObject(item)
@@ -866,6 +867,7 @@ func (m *BaseMobile) DropToBackpack(o Object, force bool) bool {
 		if force {
 			item.Parent().ForceRemoveObject(item)
 		} else if !item.Parent().RemoveObject(item) {
+			oldParent.ForceAddObject(item)
 			return false
 		}
 	}
@@ -875,6 +877,60 @@ func (m *BaseMobile) DropToBackpack(o Object, force bool) bool {
 	}
 	if !backpack.DropInto(item) {
 		backpack.ForceAddObject(o)
+	}
+	return true
+}
+
+// DropToBankBox implements the Mobile interface.
+func (m *BaseMobile) DropToBankBox(o Object, force bool) bool {
+	item, ok := o.(Item)
+	if !ok {
+		// Something is very wrong
+		if force {
+			log.Printf("error: Mobile.DropToBankBox(force) leaked object %s because it was not an item", o.Serial().String())
+			Remove(o)
+		}
+		return force
+	}
+	bbo := m.equipment.GetItemInLayer(uo.LayerBankBox)
+	if bbo == nil {
+		// Something is very wrong
+		if force {
+			log.Printf("error: Mobile.DropToBankBox(force) leaked object %s because the bank box was not found", o.Serial().String())
+			Remove(o)
+		}
+		return force
+	}
+	bb, ok := bbo.(Container)
+	if !ok {
+		// Something is very wrong
+		if force {
+			log.Printf("error: Mobile.DropToBankBox(force) leaked object %s because the bank box was not a container", o.Serial().String())
+			Remove(o)
+		}
+		return force
+	}
+	oldParent := item.Parent()
+	if item.Parent() == nil {
+		if force {
+			world.Map().ForceRemoveObject(item)
+		} else if !world.Map().RemoveObject(item) {
+			return false
+		}
+	} else {
+		if force {
+			item.Parent().ForceRemoveObject(item)
+		} else if !item.Parent().RemoveObject(item) {
+			oldParent.ForceAddObject(item)
+			return false
+		}
+	}
+	item.SetDropLocation(uo.RandomContainerLocation)
+	if !force {
+		return bb.DropInto(item)
+	}
+	if !bb.DropInto(item) {
+		bb.ForceAddObject(o)
 	}
 	return true
 }

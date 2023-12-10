@@ -64,7 +64,11 @@ func doKeywords(hotWords []string, receiver, source game.Object, words []string)
 func KeywordsBanker(receiver, source game.Object, v any) bool {
 	words := strings.Split(v.(string), " ")
 	return doKeywords([]string{
+		"balance",
 		"bank",
+		"check",
+		"deposit",
+		"withdraw",
 	}, receiver, source, words)
 }
 
@@ -114,15 +118,19 @@ func KeywordsCommand(receiver, source game.Object, v any) bool {
 
 // keywordEvents maps keywords to the event handlers they belong to
 var keywordEvents = map[string]EventHandler{
-	"bank":    OpenBankBox,
-	"buy":     VendorBuy,
-	"claim":   ClaimAllPets,
-	"come":    CommandFollowMe,
-	"drop":    CommandDrop,
-	"follow":  CommandFollow,
-	"release": CommandRelease,
-	"sell":    VendorSell,
-	"stable":  StablePet,
-	"stay":    CommandStay,
-	"stop":    CommandStay,
+	"balance":  BankBalance,
+	"bank":     OpenBankBox,
+	"buy":      VendorBuy,
+	"check":    BankCheck,
+	"claim":    ClaimAllPets,
+	"come":     CommandFollowMe,
+	"deposit":  BankDeposit,
+	"drop":     CommandDrop,
+	"follow":   CommandFollow,
+	"release":  CommandRelease,
+	"sell":     VendorSell,
+	"stable":   StablePet,
+	"stay":     CommandStay,
+	"stop":     CommandStay,
+	"withdraw": BankWithdraw,
 }
