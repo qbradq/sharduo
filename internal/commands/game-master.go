@@ -30,7 +30,11 @@ func commandBank(n game.NetState, args CommandArgs, cl string) {
 		return
 	}
 	n.TargetSendCursor(uo.TargetTypeObject, func(r *clientpacket.TargetResponse) {
-		events.OpenBankBox(nil, n.Mobile(), nil)
+		m := game.Find[game.Mobile](r.TargetObject)
+		if m == nil {
+			return
+		}
+		events.OpenBankBox(m, n.Mobile(), nil)
 	})
 }
 

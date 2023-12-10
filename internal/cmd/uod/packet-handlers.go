@@ -378,9 +378,8 @@ func handleBuyRequest(n *NetState, cp clientpacket.Packet) {
 		total += bi.Amount * i.Value()
 	}
 	// Charge gold
-	// TODO support bank gold, change cliloc to 1042556
 	if !n.m.ChargeGold(total) {
-		n.Cliloc(vendor, 1019022) // You do not have enough gold.
+		n.Cliloc(vendor, 1042556) // Thou dost not have enough gold, not even in thy bank account.
 		return
 	}
 	// Give items

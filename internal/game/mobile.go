@@ -63,6 +63,10 @@ type Mobile interface {
 	Gold() int
 	// AdjustGold adds n to the total amount of gold on the mobile
 	AdjustGold(int)
+	// BankGold returns the amount of gold within the mobile's bank box
+	BankGold() int
+	// AdjustBankGold adds n to the total amount of gold in the bank
+	AdjustBankGold(int)
 	// ChargeGold removes the given amount of gold from the mobile's inventory
 	// and bank and returns true only if successful.
 	ChargeGold(int) bool
@@ -249,81 +253,57 @@ type BaseMobile struct {
 	// Network
 	//
 
-	// Attached NetState implementation
-	n NetState
+	n NetState // Attached NetState implementation
 
 	//
 	// AI values and such
 	//
 
-	// Current view range of the mobile. Please note that the zero value IS NOT
-	// SANE for this variable!
-	viewRange int16
-	// Name of the AI model currently in use
-	aiName string
-	// Thinker for the AI model in use
-	ai AIModel
-	// Goal of the AI routine
-	aiGoal Object
-	// Current control master if any
-	controlMaster Mobile
-	// aumcms is a temporary value used for restoring control masters
-	aumcms uo.Serial
-	// isPlayerCharacter is true if the mobile is attached to a player's account
-	isPlayerCharacter bool
-	// isFemale is true if the mobile is female
-	isFemale bool
-	// Animation body of the object
-	body uo.Body
-	// Running flag
-	isRunning bool
-	// Surface we are standing on
-	floor uo.CommonObject
-	// Notoriety of the mobile
-	notoriety uo.Notoriety
-	// Last time this mobile took a step
-	lastStepTime uo.Time
+	viewRange         int16           // Current view range of the mobile. Please note that the zero value IS NOT SANE for this variable!
+	aiName            string          // Name of the AI model currently in use
+	ai                AIModel         // Thinker for the AI model in use
+	aiGoal            Object          // Goal of the AI routine
+	controlMaster     Mobile          // Current control master if any
+	aumcms            uo.Serial       // Temporary value used for restoring control masters
+	isPlayerCharacter bool            // isPlayerCharacter is true if the mobile is attached to a player's account
+	isFemale          bool            // isFemale is true if the mobile is female
+	body              uo.Body         // Animation body of the object
+	isRunning         bool            // Running flag
+	floor             uo.CommonObject // Surface we are standing on
+	notoriety         uo.Notoriety    // Notoriety of the mobile
+	lastStepTime      uo.Time         // Last time this mobile took a step
 
 	//
 	// User interface stuff
 	//
 
-	cursor *Cursor
+	cursor *Cursor // Model cursor
 
 	//
 	// Equipment and inventory
 	//
 
-	// The collection of equipment this mobile is wearing, if any
-	equipment *EquipmentCollection
-	// All of the pets in the mobile's stable
-	stabledPets util.Slice[Mobile]
+	equipment   *EquipmentCollection // The collection of equipment this mobile is wearing, if any
+	stabledPets util.Slice[Mobile]   // All of the pets in the mobile's stable
 
 	//
 	// Stats and attributes
 	//
 
-	// Base strength
-	baseStrength int
-	// Base dexterity
-	baseDexterity int
-	// Base intelligence
-	baseIntelligence int
-	// Current HP
-	hitPoints int
-	// Current mana
-	mana int
-	// Current stamina
-	stamina int
-	// Raw skill values
-	skills []int16
+	baseStrength     int     // Base strength
+	baseDexterity    int     // Base dexterity
+	baseIntelligence int     // Base intelligence
+	hitPoints        int     // Current HP
+	mana             int     // Current mana
+	stamina          int     // Current stamina
+	skills           []int16 // Raw skill values
 
 	//
 	// Cache values
 	//
 
-	// Total amount of gold in backpack, excludes bank box and cursor
-	gold int
+	gold     int // Total amount of gold in backpack, excludes bank box and cursor
+	bankGold int // Total amount of gold in the bank box, excludes backpack and cursor
 }
 
 // ObjectType implements the Object interface.
@@ -620,8 +600,8 @@ func (m *BaseMobile) ChargeGold(n int) bool {
 	defer func() {
 		world.Update(m)
 	}()
-	// TODO Bank gold support
-	if m.Gold() < n {
+	if m.Gold()+m.BankGold() < n {
+		// Can't afford that
 		return false
 	}
 	bpo := m.EquipmentInSlot(uo.LayerBackpack)
@@ -632,7 +612,22 @@ func (m *BaseMobile) ChargeGold(n int) bool {
 	if !ok {
 		return false
 	}
-	return bp.ConsumeGold(n)
+	bbo := m.EquipmentInSlot(uo.LayerBankBox)
+	if bbo == nil {
+		return false
+	}
+	bb := bbo.(Container)
+	if bb == nil {
+		return false
+	}
+	bw := n - m.Gold()
+	if bw < 1 {
+		bp.ConsumeGold(n)
+	} else {
+		bp.ConsumeGold(n - bw)
+		bb.ConsumeGold(bw)
+	}
+	return true
 }
 
 // ItemInCursor implements the Mobile interface.
@@ -671,20 +666,30 @@ func (m *BaseMobile) recalculateGold() {
 		log.Printf("error: mobile %s backpack was not a container", m.Serial().String())
 		return
 	}
-	m.gold = 0
-	var fn func(Container)
-	fn = func(c Container) {
+	bbo := m.equipment.GetItemInLayer(uo.LayerBankBox)
+	if bbo == nil {
+		return
+	}
+	bb, ok := bbo.(Container)
+	if !ok {
+		return
+	}
+	var fn func(Container) int
+	fn = func(c Container) int {
+		ret := 0
 		for _, item := range c.Contents() {
 			if container, ok := item.(Container); ok {
-				fn(container)
+				ret += fn(container)
 			} else if item.TemplateName() == "GoldCoin" {
-				m.gold += item.Amount()
+				ret += item.Amount()
 			} else if check, ok := item.(*Check); ok {
-				m.gold += check.CheckAmount()
+				ret += check.CheckAmount()
 			}
 		}
+		return ret
 	}
-	fn(backpack)
+	m.gold = fn(backpack)
+	m.bankGold = fn(bb)
 }
 
 func (m *BaseMobile) recalculateWeight() {}
@@ -1494,3 +1499,9 @@ func (m *BaseMobile) HasLineOfSight(o Object) bool {
 
 // SetAmount implements the Object interface.
 func (m *BaseMobile) SetAmount(n int) {}
+
+// BankGold implements the Object interface.
+func (m *BaseMobile) BankGold() int { return m.bankGold }
+
+// AdjustBankGold implements the Object interface.
+func (m *BaseMobile) AdjustBankGold(n int) { m.bankGold += n }

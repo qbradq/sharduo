@@ -263,8 +263,18 @@ func (c *BaseContainer) doRemove(o Object, force bool) bool {
 				mobile.AdjustGold(-check.CheckAmount())
 			}
 		}
+	} else {
+		if item.TemplateName() == "GoldCoin" {
+			if mobile, ok := RootParent(c).(Mobile); ok {
+				mobile.AdjustBankGold(-item.Amount())
+			}
+		} else if check, ok := item.(*Check); ok {
+			// Check support
+			if mobile, ok := RootParent(c).(Mobile); ok {
+				mobile.AdjustBankGold(-check.CheckAmount())
+			}
+		}
 	}
-	// TODO Bank gold support
 	return true
 }
 
@@ -387,8 +397,18 @@ func (c *BaseContainer) ForceAddObject(o Object) {
 				mobile.AdjustGold(check.CheckAmount())
 			}
 		}
+	} else {
+		if item.TemplateName() == "GoldCoin" {
+			if mobile, ok := RootParent(c).(Mobile); ok {
+				mobile.AdjustBankGold(item.Amount())
+			}
+		} else if check, ok := item.(*Check); ok {
+			// Check support
+			if mobile, ok := RootParent(c).(Mobile); ok {
+				mobile.AdjustBankGold(check.CheckAmount())
+			}
+		}
 	}
-	// TODO Bank gold support
 }
 
 // InsertObject implements the Object interface.
@@ -565,10 +585,14 @@ func (c *BaseContainer) ConsumeGold(amount int) bool {
 			if i.TemplateName() != "GoldCoin" {
 				continue
 			}
-			if total+i.Amount() > amount {
+			if total+i.Amount() >= amount {
 				i.Consume(amount - total)
 				if m, ok := RootParent(c).(Mobile); ok {
-					m.AdjustGold(-(amount - total))
+					if c.TemplateName() != "PlayerBankBox" {
+						m.AdjustGold(-(amount - total))
+					} else {
+						m.AdjustBankGold(-(amount - total))
+					}
 				}
 				for _, i := range toRemove {
 					Remove(i)
@@ -593,10 +617,14 @@ func (c *BaseContainer) ConsumeGold(amount int) bool {
 			if !ok {
 				continue
 			}
-			if total+check.CheckAmount() > amount {
+			if total+check.CheckAmount() >= amount {
 				check.ConsumeGold(amount - total)
 				if m, ok := RootParent(c).(Mobile); ok {
-					m.AdjustGold(-(amount - total))
+					if c.TemplateName() != "PlayerBankBox" {
+						m.AdjustGold(-(amount - total))
+					} else {
+						m.AdjustBankGold(-(amount - total))
+					}
 				}
 				for _, i := range toRemove {
 					Remove(i)

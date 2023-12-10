@@ -31,9 +31,11 @@ The next milestone set for ShardUO is to banking and trade including check and
 pay-from-bank support.
 
 ### Known Defects ###
+* Bank box item count not properly cached when removing things via NPC vendor
+  transaction.
 
 ### Required Features and Tasks ###
-* Pay vendors from gold in bank
+* Create checks with a banker
 * Secure trade
 
 ### Nice to Haves ###
