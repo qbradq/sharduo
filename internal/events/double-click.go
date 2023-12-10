@@ -14,6 +14,7 @@ import (
 )
 
 func init() {
+	reg("CashCheck", CashCheck)
 	reg("Edit", Edit)
 	reg("HarvestCrop", HarvestCrop)
 	reg("Mount", Mount)
@@ -260,5 +261,33 @@ func HarvestCrop(receiver, source game.Object, v any) bool {
 		sm.DropToFeet(i)
 	}
 	game.Remove(receiver)
+	return true
+}
+
+func CashCheck(receiver, source game.Object, v any) bool {
+	check := receiver.(*game.Check)
+	sm, ok := source.(game.Mobile)
+	if !ok || sm.NetState() == nil {
+		return false
+	}
+	if !sm.InBank(check) {
+		sm.NetState().Speech(sm, "That must be in your bank box to use.")
+		return false
+	}
+	game.Remove(check)
+	for {
+		n := check.CheckAmount()
+		if n < 1 {
+			break
+		}
+		if n > uo.MaxStackAmount {
+			n = uo.MaxStackAmount
+		} else {
+			check.SetCheckAmount(check.CheckAmount() - n)
+		}
+		gc := template.Create[game.Item]("GoldCoin")
+		gc.SetAmount(n)
+		sm.DropToBankBox(gc, true)
+	}
 	return true
 }
