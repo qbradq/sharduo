@@ -19,7 +19,7 @@ type StaticDefinition struct {
 	// Light index
 	Light Light
 	// Height
-	Height int8
+	Height int
 	// Name of the static, truncated to 20 characters
 	Name string
 }
@@ -29,11 +29,11 @@ type Static struct {
 	// Static definition
 	def *StaticDefinition
 	// Absolute location
-	Location Location
+	Location Point
 }
 
 // NewStatic returns a new Static object with the given definition and location
-func NewStatic(l Location, def *StaticDefinition) Static {
+func NewStatic(l Point, def *StaticDefinition) Static {
 	return Static{
 		def:      def,
 		Location: l,
@@ -46,17 +46,17 @@ func (s Static) BaseGraphic() Graphic {
 }
 
 // Height returns the height of the static with regards to internal flags
-func (s Static) Height() int8 {
+func (s Static) Height() int {
 	return s.def.Height
 }
 
 // Highest returns the highest elevation of the object
-func (s Static) Highest() int8 {
+func (s Static) Highest() int {
 	return s.Location.Z + s.def.Height
 }
 
 // StandingHeight returns the standing height based on the object's flags.
-func (s Static) StandingHeight() int8 {
+func (s Static) StandingHeight() int {
 	if !s.Surface() && !s.Wet() && !s.Impassable() {
 		return s.Location.Z
 	}
@@ -67,7 +67,7 @@ func (s Static) StandingHeight() int8 {
 }
 
 // Z returns the permanent Z location of the tile
-func (s Static) Z() int8 { return s.Location.Z }
+func (s Static) Z() int { return s.Location.Z }
 
 func (s Static) Background() bool   { return s.def.TileFlags&TileFlagsBackground != 0 }
 func (s Static) Weapon() bool       { return s.def.TileFlags&TileFlagsWeapon != 0 }

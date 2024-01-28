@@ -68,7 +68,7 @@ func commandLoadStatics(n game.NetState, args CommandArgs, cl string) {
 			return
 		}
 		s := template.Create[*game.StaticItem]("StaticItem")
-		s.SetLocation(uo.Location{
+		s.SetLocation(uo.Point{
 			X: int16(fn(fields[0])),
 			Y: int16(fn(fields[1])),
 			Z: int8(fn(fields[2])),
@@ -209,7 +209,7 @@ func commandLoadDoors(n game.NetState, args CommandArgs, cl string) {
 			return
 		}
 		d := template.Create[game.Item](fields[3])
-		d.SetLocation(uo.Location{
+		d.SetLocation(uo.Point{
 			X: int16(fn(fields[0])),
 			Y: int16(fn(fields[1])),
 			Z: int8(fn(fields[2])),
@@ -295,7 +295,7 @@ func commandLoadSigns(n game.NetState, args CommandArgs, cl string) {
 			return
 		}
 		s := template.Create[game.Item]("BaseSign")
-		s.SetLocation(uo.Location{
+		s.SetLocation(uo.Point{
 			X: int16(fn(fields[0])),
 			Y: int16(fn(fields[1])),
 			Z: int8(fn(fields[2])),

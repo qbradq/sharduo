@@ -82,7 +82,7 @@ func (g *regionEdit) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 		return int(v)
 	}
 	fn2 := func(x, y int16) {
-		l := uo.Location{
+		l := uo.Point{
 			X: x,
 			Y: y,
 			Z: uo.MapMaxZ,
@@ -103,11 +103,11 @@ func (g *regionEdit) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 		if s == "" {
 			continue
 		}
-		g.Region.Rects[i] = uo.BoundsOf(uo.Location{
+		g.Region.Rects[i] = uo.BoundsOf(uo.Point{
 			X: int16(fn(s)),
 			Y: int16(fn(p.Text(uint16(3001 + i)))),
 			Z: uo.MapMinZ,
-		}, uo.Location{
+		}, uo.Point{
 			X: int16(fn(p.Text(uint16(6001 + i)))),
 			Y: int16(fn(p.Text(uint16(7001 + i)))),
 			Z: uo.MapMaxZ,
@@ -223,7 +223,7 @@ func (g *regionEdit) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 			l := tr.Location
 			l.Z = uo.MapMaxZ
 			game.GetWorld().Map().RemoveRegion(g.Region)
-			g.Region.Rects[i] = uo.BoundsOf(uo.Location{
+			g.Region.Rects[i] = uo.BoundsOf(uo.Point{
 				X: r.X,
 				Y: r.Y,
 				Z: uo.MapMinZ,
@@ -255,7 +255,7 @@ func (g *regionEdit) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 			l := tr.Location
 			l.Z = uo.MapMinZ
 			game.GetWorld().Map().RemoveRegion(g.Region)
-			g.Region.Rects[i] = uo.BoundsOf(l, uo.Location{
+			g.Region.Rects[i] = uo.BoundsOf(l, uo.Point{
 				X: r.East(),
 				Y: r.South(),
 				Z: uo.MapMaxZ,

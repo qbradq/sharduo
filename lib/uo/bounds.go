@@ -4,25 +4,25 @@ var BoundsZero = Bounds{} // Bounds zero value
 
 var BoundsFullMap = Bounds{
 	Z: MapMinZ,
-	W: int16(MapWidth),
-	H: int16(MapHeight),
-	D: int16(MapMaxZ) - int16(MapMinZ),
+	W: MapWidth,
+	H: MapHeight,
+	D: MapMaxZ - MapMinZ,
 }
 
 // Bounds represents a 3D bounding box in the world.
 type Bounds struct {
 	// X location of the top-left corner
-	X int16
+	X int
 	// Y location of the top-left corner
-	Y int16
+	Y int
 	// Z location of the floor
-	Z int8
+	Z int
 	// Width of the bounds (X-axis)
-	W int16
+	W int
 	// Height of the bounds (Y-axis)
-	H int16
+	H int
 	// Depth of the bounds (Z-axis)
-	D int16
+	D int
 }
 
 // BoundsFit returns a bounds value that fits both bounds tightly.
@@ -54,16 +54,16 @@ func BoundsFit(a, b Bounds) Bounds {
 		ret.H = b.South() - ret.Y + 1
 	}
 	if a.Top() > b.Top() {
-		ret.D = int16(a.Top()) - int16(ret.Z) + 1
+		ret.D = a.Top() - ret.Z + 1
 	} else {
-		ret.D = int16(b.Top()) - int16(ret.Z) + 1
+		ret.D = b.Top() - ret.Z + 1
 	}
 	return ret
 }
 
 // BoundsOf returns a bounds value that fits both locations tightly. This can
 // be used to create a bounds value from a start and end position.
-func BoundsOf(s, e Location) Bounds {
+func BoundsOf(s, e Point) Bounds {
 	var ret Bounds
 	if s.X < e.X {
 		ret.X = s.X
@@ -81,25 +81,25 @@ func BoundsOf(s, e Location) Bounds {
 	}
 	if s.Z < e.Z {
 		ret.Z = s.Z
-		ret.D = int16(e.Z) - int16(s.Z)
+		ret.D = e.Z - s.Z
 	} else {
 		ret.Z = e.Z
-		ret.D = int16(s.Z) - int16(e.Z) + 1
+		ret.D = s.Z - e.Z + 1
 	}
 	return ret
 }
 
 // RandomLocation returns a random location within these bounds.
-func (b Bounds) RandomLocation(rng RandomSource) Location {
-	return Location{
-		X: int16(rng.Random(int(b.X), int(b.East()))),
-		Y: int16(rng.Random(int(b.Y), int(b.South()))),
-		Z: int8(rng.Random(int(b.Z), int(b.Top()))),
+func (b Bounds) RandomLocation(rng RandomSource) Point {
+	return Point{
+		X: rng.Random(b.X, b.East()),
+		Y: rng.Random(b.Y, b.South()),
+		Z: rng.Random(b.Z, b.Top()),
 	}
 }
 
 // Contains returns true if the location is contained within these bounds.
-func (b Bounds) Contains(l Location) bool {
+func (b Bounds) Contains(l Point) bool {
 	return l.X >= b.X && l.X <= b.East() && l.Y >= b.Y && l.Y <= b.South() && l.Z >= b.Z && l.Z <= b.Top()
 }
 
@@ -109,10 +109,10 @@ func (b Bounds) Overlaps(a Bounds) bool {
 }
 
 // East returns the east-most point within these bounds.
-func (b Bounds) East() int16 { return b.X + b.W - 1 }
+func (b Bounds) East() int { return b.X + b.W - 1 }
 
 // South returns the south-most point within these bounds.
-func (b Bounds) South() int16 { return b.Y + b.H - 1 }
+func (b Bounds) South() int { return b.Y + b.H - 1 }
 
 // Top returns the top-most point within these bounds.
-func (b Bounds) Top() int8 { return int8(int(b.Z) + int(b.D) - 1) }
+func (b Bounds) Top() int { return b.Z + b.D - 1 }

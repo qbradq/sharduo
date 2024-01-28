@@ -10,10 +10,10 @@ import (
 	"time"
 
 	"github.com/qbradq/sharduo/internal/configuration"
-	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/lib/clientpacket"
 	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/uo"
+	"github.com/qbradq/sharduo/lib/util"
 )
 
 // Login server listener
@@ -176,7 +176,7 @@ func handleLoginConnection(conn *net.TCPConn) {
 		log.Println("warning: client sent wrong packet waiting for account login", cp)
 		return
 	}
-	account := world.AuthenticateAccount(alp.Username, game.HashPassword(alp.Password))
+	account := world.AuthenticateAccount(alp.Username, util.HashPassword(alp.Password))
 	rejectReason := uo.LoginDeniedReasonBadPass
 	reject := false
 	if account == nil {

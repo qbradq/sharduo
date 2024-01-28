@@ -243,7 +243,7 @@ func HarvestCrop(receiver, source game.Object, v any) bool {
 		return false
 	}
 	// Range check
-	if game.RootParent(sm).Location().XYDistance(receiver.Location()) > uo.MaxUseRange {
+	if game.RootParent(sm).Location().XYDistance(receiver.Point()) > uo.MaxUseRange {
 		sm.NetState().Cliloc(nil, 502803) // It's too far away.
 		return false
 	}

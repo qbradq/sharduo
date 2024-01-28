@@ -2,49 +2,49 @@ package uo
 
 // Random constants
 const (
-	MinStackAmount            int   = 1
-	MaxStackAmount            int   = 60000
-	MinViewRange              int16 = 5
-	MaxViewRange              int16 = 18
-	MaxUpdateRange            int16 = 24
-	ChunkWidth                int   = 8
-	ChunkHeight               int   = 8
-	MapWidth                  int   = 7168
-	MapHeight                 int   = 4096
-	MapOverworldWidth         int   = 5120
-	MapChunksWidth            int   = MapWidth / ChunkWidth
-	MapChunksHeight           int   = MapHeight / ChunkHeight
-	MapMinZ                   int8  = -128
-	MapMaxZ                   int8  = 127
-	StatsCapDefault           int   = 225
-	MaxFollowers              int   = 5
-	MaxUseRange               int16 = 3
-	MaxLiftRange              int16 = 3
-	MaxDropRange              int16 = 3
-	MaxContainerViewRange     int16 = 3
-	MaxItemStackHeight        int8  = 18
-	DefaultMaxContainerWeight int   = 400
-	DefaultMaxContainerItems  int   = 125
-	RandomDropX               int16 = -1
-	RandomDropY               int16 = -1
-	TargetCanceledX           int16 = -1
-	TargetCanceledY           int16 = -1
-	ContainerOpenLowerLimit   int8  = -8
-	ContainerOpenUpperLimit   int8  = 16
-	PlayerHeight              int8  = 16
-	StepHeight                int8  = 2
-	SpeechWhisperRange        int16 = 1
-	SpeechNormalRange         int16 = 12
-	SpeechEmoteRange          int16 = SpeechNormalRange
-	SpeechYellRange           int16 = MaxViewRange
-	WalkDelay                 Time  = 6
-	RunDelay                  Time  = 3
-	MountedWalkDelay          Time  = 4
-	MountedRunDelay           Time  = 2
+	MinStackAmount            int  = 1
+	MaxStackAmount            int  = 60000
+	MinViewRange              int  = 5
+	MaxViewRange              int  = 18
+	MaxUpdateRange            int  = 24
+	ChunkWidth                int  = 8
+	ChunkHeight               int  = 8
+	MapWidth                  int  = 7168
+	MapHeight                 int  = 4096
+	MapOverworldWidth         int  = 5120
+	MapChunksWidth            int  = MapWidth / ChunkWidth
+	MapChunksHeight           int  = MapHeight / ChunkHeight
+	MapMinZ                   int  = -128
+	MapMaxZ                   int  = 127
+	StatsCapDefault           int  = 225
+	MaxFollowers              int  = 5
+	MaxUseRange               int  = 3
+	MaxLiftRange              int  = 3
+	MaxDropRange              int  = 3
+	MaxContainerViewRange     int  = 3
+	MaxItemStackHeight        int  = 18
+	DefaultMaxContainerWeight int  = 400
+	DefaultMaxContainerItems  int  = 125
+	RandomDropX               int  = -1
+	RandomDropY               int  = -1
+	TargetCanceledX           int  = -1
+	TargetCanceledY           int  = -1
+	ContainerOpenLowerLimit   int  = -8
+	ContainerOpenUpperLimit   int  = 16
+	PlayerHeight              int  = 16
+	StepHeight                int  = 2
+	SpeechWhisperRange        int  = 1
+	SpeechNormalRange         int  = 12
+	SpeechEmoteRange          int  = SpeechNormalRange
+	SpeechYellRange           int  = MaxViewRange
+	WalkDelay                 Time = 6
+	RunDelay                  Time = 3
+	MountedWalkDelay          Time = 4
+	MountedRunDelay           Time = 2
 )
 
 // BoundViewRange bounds a view range value
-func BoundViewRange(r int16) int16 {
+func BoundViewRange(r int) int {
 	if r < MinViewRange {
 		return MinViewRange
 	} else if r > MaxViewRange {
@@ -55,7 +55,7 @@ func BoundViewRange(r int16) int16 {
 
 // BoundUpdateRange bounds an update range between MinViewRange and
 // MaxUpdateRange
-func BoundUpdateRange(r int16) int16 {
+func BoundUpdateRange(r int) int {
 	if r < MinViewRange {
 		return MinViewRange
 	} else if r > MaxUpdateRange {
@@ -102,6 +102,7 @@ const (
 	LayerFirstValid               Layer = LayerWeapon
 	LayerLastValid                Layer = LayerBankBox
 	LayerLastVisible              Layer = LayerLegArmor
+	LayerCount                    Layer = LayerLastValid + 1
 )
 
 // A StatusFlag describes the status of a mobile
@@ -447,7 +448,7 @@ const (
 )
 
 // Door location offsets
-var DoorOffsets = []Location{
+var DoorOffsets = []Point{
 	{X: -1, Y: 1},
 	{X: 1, Y: 1},
 	{X: -1, Y: 0},

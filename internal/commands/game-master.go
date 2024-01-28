@@ -96,7 +96,7 @@ func commandTeleport(n game.NetState, args CommandArgs, cl string) {
 	}
 	targeted := false
 	multi := false
-	l := uo.Location{}
+	l := uo.Point{}
 	l.Z = uo.MapMaxZ
 	if len(args) > 4 {
 		n.Speech(n.Mobile(), "teleport command expects a maximum of 3 arguments")

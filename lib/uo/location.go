@@ -4,52 +4,52 @@ import (
 	"math"
 )
 
-// Location identifies an absolute location in the universe.
-type Location struct {
+// Point identifies an absolute location in the universe.
+type Point struct {
 	// Absolute X position on the map [0-)
-	X int16
+	X int
 	// Absolute Y position on the map
-	Y int16
+	Y int
 	// Absolute Z position on the map
-	Z int8
+	Z int
 }
 
 // This Location value indicates to a container that the item should be placed
 // at a random location.
-var RandomContainerLocation Location = Location{X: RandomDropX, Y: RandomDropY}
+var RandomContainerLocation Point = Point{X: RandomDropX, Y: RandomDropY}
 
 // WrapToOverworld returns the location wrapped to the overworld portion of the
 // map.
-func (l Location) WrapToOverworld() Location {
+func (l Point) WrapToOverworld() Point {
 	for l.X < 0 {
-		l.X += int16(MapOverworldWidth)
+		l.X += MapOverworldWidth
 	}
-	for l.X >= int16(MapOverworldWidth) {
-		l.X -= int16(MapOverworldWidth)
+	for l.X >= MapOverworldWidth {
+		l.X -= MapOverworldWidth
 	}
 	for l.Y < 0 {
-		l.Y += int16(MapHeight)
+		l.Y += MapHeight
 	}
-	for l.Y >= int16(MapHeight) {
-		l.Y -= int16(MapHeight)
+	for l.Y >= MapHeight {
+		l.Y -= MapHeight
 	}
 	return l
 }
 
 // WrapToDungeonServer returns the location wrapped to the dungeon server
 // section of the map.
-func (l Location) WrapToDungeonServer() Location {
-	for l.X < int16(MapOverworldWidth) {
-		l.X += int16(MapWidth) - int16(MapOverworldWidth)
+func (l Point) WrapToDungeonServer() Point {
+	for l.X < MapOverworldWidth {
+		l.X += MapWidth - MapOverworldWidth
 	}
-	for l.X > int16(MapWidth) {
-		l.X -= int16(MapWidth) - int16(MapOverworldWidth)
+	for l.X > MapWidth {
+		l.X -= MapWidth - MapOverworldWidth
 	}
 	for l.Y < 0 {
-		l.Y += int16(MapHeight)
+		l.Y += MapHeight
 	}
-	for l.Y >= int16(MapHeight) {
-		l.Y -= int16(MapHeight)
+	for l.Y >= MapHeight {
+		l.Y -= MapHeight
 	}
 	return l
 }
@@ -57,9 +57,9 @@ func (l Location) WrapToDungeonServer() Location {
 // WrapAndBound wraps and bounds the spacial portion of the location to the
 // map dimensions relative to a reference point. UpdateAndBound will handle map
 // wrapping as appropriate based on the reference location.
-func (l Location) WrapAndBound(ref Location) Location {
+func (l Point) WrapAndBound(ref Point) Point {
 	ref = ref.Bound()
-	if ref.X < int16(MapOverworldWidth) {
+	if ref.X < MapOverworldWidth {
 		return l.WrapToOverworld()
 	} else {
 		return l.WrapToDungeonServer()
@@ -68,18 +68,18 @@ func (l Location) WrapAndBound(ref Location) Location {
 
 // Bound bounds the spacial portion of the location to the absolute dimensions
 // of the map.
-func (l Location) Bound() Location {
+func (l Point) Bound() Point {
 	for l.X < 0 {
-		l.X += int16(MapWidth)
+		l.X += MapWidth
 	}
-	for l.X >= int16(MapWidth) {
-		l.X -= int16(MapWidth)
+	for l.X >= MapWidth {
+		l.X -= MapWidth
 	}
 	for l.Y < 0 {
-		l.Y += int16(MapHeight)
+		l.Y += MapHeight
 	}
-	for l.Y >= int16(MapHeight) {
-		l.Y -= int16(MapHeight)
+	for l.Y >= MapHeight {
+		l.Y -= MapHeight
 	}
 	if l.Z < MapMinZ {
 		l.Z = MapMinZ
@@ -92,7 +92,7 @@ func (l Location) Bound() Location {
 
 // XYDistance returns the maximum distance from l to d along either the X or Y
 // axis.
-func (l Location) XYDistance(d Location) int16 {
+func (l Point) XYDistance(d Point) int {
 	dx := l.X - d.X
 	dy := l.Y - d.Y
 	if dx < 0 {
@@ -109,9 +109,9 @@ func (l Location) XYDistance(d Location) int16 {
 
 // Forward moves the location in the given direction, affecting only the X and
 // Y coordinates.
-func (l Location) Forward(d Direction) Location {
+func (l Point) Forward(d Direction) Point {
 	d = d & 0x07
-	return Location{
+	return Point{
 		X: l.X + dirOfs[d][0],
 		Y: l.Y + dirOfs[d][1],
 		Z: l.Z,
@@ -120,7 +120,7 @@ func (l Location) Forward(d Direction) Location {
 
 // DirectionTo returns the direction code that most closely matches the
 // direction of the argument location.
-func (l Location) DirectionTo(a Location) Direction {
+func (l Point) DirectionTo(a Point) Direction {
 	r := math.Atan2(float64(a.X-l.X), float64(a.Y-l.Y)) * 180 / math.Pi
 	b := -157.5
 	if r < b+45*0 {
@@ -152,13 +152,13 @@ func (l Location) DirectionTo(a Location) Direction {
 
 // BoundsByRadius returns a Bounds value that contains this location and the
 // locations within the radius r. The Z portion of the bounds will be maximized.
-func (l Location) BoundsByRadius(r int) Bounds {
+func (l Point) BoundsByRadius(r int) Bounds {
 	return Bounds{
-		X: l.X - int16(r),
-		Y: l.Y - int16(r),
+		X: l.X - r,
+		Y: l.Y - r,
 		Z: MapMinZ,
-		W: int16(r*2 + 1),
-		H: int16(r*2 + 1),
-		D: int16(MapMaxZ) - int16(MapMinZ),
+		W: r*2 + 1,
+		H: r*2 + 1,
+		D: MapMaxZ - MapMinZ,
 	}
 }

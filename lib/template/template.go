@@ -208,7 +208,7 @@ func (t *Template) GetObjectReferences(name string) []uo.Serial {
 
 // GetLocation returns a uo.Location value. The default value is returned if the
 // named tag is not found.
-func (t *Template) GetLocation(name string, def uo.Location) uo.Location {
+func (t *Template) GetLocation(name string, def uo.Point) uo.Point {
 	str := t.GetString(name, "")
 	if str == "" {
 		return def
@@ -219,7 +219,7 @@ func (t *Template) GetLocation(name string, def uo.Location) uo.Location {
 		return def
 	}
 	hasErrors := false
-	var l uo.Location
+	var l uo.Point
 	v, err := strconv.ParseInt(parts[0], 0, 16)
 	if err != nil {
 		log.Println(err)

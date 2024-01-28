@@ -400,7 +400,7 @@ type TargetResponse struct {
 	// no object was targeted.
 	TargetObject uo.Serial
 	// Location of the target.
-	Location uo.Location
+	Location uo.Point
 	// Graphic of the object clicked, if any
 	Graphic uo.Graphic
 }
@@ -412,7 +412,7 @@ func newTargetResponse(in []byte) Packet {
 		TargetSerial: uo.Serial(dc.GetUint32(in[1:5])),
 		CursorType:   uo.CursorType(in[5]),
 		TargetObject: uo.Serial(dc.GetUint32(in[6:10])),
-		Location: uo.Location{
+		Location: uo.Point{
 			X: int16(dc.GetUint16(in[10:12])),
 			Y: int16(dc.GetUint16(in[12:14])),
 			Z: int8(in[15]),
@@ -446,7 +446,7 @@ type DropRequest struct {
 	// Serial of the object to drop
 	Item uo.Serial
 	// Location to drop the item
-	Location uo.Location
+	Location uo.Point
 	// Serial of the container to drop the item into. uo.SerialSystem means to
 	// drop to the world.
 	Container uo.Serial
@@ -456,7 +456,7 @@ func newDropRequest(in []byte) Packet {
 	p := &DropRequest{
 		basePacket: basePacket{id: 0x08},
 		Item:       uo.Serial(dc.GetUint32(in[0:4])),
-		Location: uo.Location{
+		Location: uo.Point{
 			X: int16(dc.GetUint16(in[4:6])),
 			Y: int16(dc.GetUint16(in[6:8])),
 			Z: int8(in[8]),

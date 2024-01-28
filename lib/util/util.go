@@ -1,6 +1,8 @@
 package util
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"strconv"
@@ -24,26 +26,32 @@ func ParseTagLine(line string) (string, string, error) {
 	return key, value, nil
 }
 
-func ParseLocation(strval string) (uo.Location, error) {
+func ParseLocation(strval string) (uo.Point, error) {
 	parts := strings.Split(strval, ",")
 	if len(parts) != 3 {
-		return uo.Location{}, fmt.Errorf("GetLocation(%s) did not find three values", strval)
+		return uo.Point{}, fmt.Errorf("GetLocation(%s) did not find three values", strval)
 	}
-	var l uo.Location
+	var l uo.Point
 	v, err := strconv.ParseInt(parts[0], 0, 16)
 	if err != nil {
-		return uo.Location{}, err
+		return uo.Point{}, err
 	}
-	l.X = int16(v)
+	l.X = int(v)
 	v, err = strconv.ParseInt(parts[1], 0, 16)
 	if err != nil {
-		return uo.Location{}, err
+		return uo.Point{}, err
 	}
-	l.Y = int16(v)
+	l.Y = int(v)
 	v, err = strconv.ParseInt(parts[2], 0, 8)
 	if err != nil {
-		return uo.Location{}, err
+		return uo.Point{}, err
 	}
-	l.Z = int8(v)
+	l.Z = int(v)
 	return l, nil
+}
+
+// Hashes a password suitable for the accounts database.
+func HashPassword(password string) string {
+	hd := sha256.Sum256([]byte(password))
+	return hex.EncodeToString(hd[:])
 }

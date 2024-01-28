@@ -43,7 +43,7 @@ func doUseDoor(receiver, source game.Object, force bool) bool {
 		return false
 	}
 	// Range check
-	if !force && receiver.Location().XYDistance(source.Location()) > uo.MaxUseRange {
+	if !force && receiver.Point().XYDistance(source.Point()) > uo.MaxUseRange {
 		sm.NetState().Cliloc(nil, 502803) // It's too far away.
 		return false
 	}
@@ -97,7 +97,7 @@ func UseDoor(receiver, source game.Object, v any) bool {
 	if !ok {
 		force = false
 	}
-	doors := game.GetWorld().Map().ItemBaseQuery("BaseDoor", receiver.Location().BoundsByRadius(1))
+	doors := game.GetWorld().Map().ItemBaseQuery("BaseDoor", receiver.Point().BoundsByRadius(1))
 	for _, d := range doors {
 		if !doUseDoor(d, source, force) {
 			return false

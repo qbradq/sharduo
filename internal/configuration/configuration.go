@@ -94,7 +94,7 @@ var CPUProfile bool
 //
 
 // Starting location
-var StartingLocation uo.Location
+var StartingLocation uo.Point
 
 // Starting facing
 var StartingFacing uo.Direction
@@ -149,7 +149,7 @@ func Load() error {
 	GenerateDebugMaps = tfo.GetBool("GenerateDebugMaps", false)
 	CPUProfile = tfo.GetBool("CPUProfile", false)
 	// Game configuration
-	StartingLocation = tfo.GetLocation("StartingLocation", uo.Location{
+	StartingLocation = tfo.GetLocation("StartingLocation", uo.Point{
 		X: 0,
 		Y: 0,
 		Z: 0,

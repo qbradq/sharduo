@@ -67,7 +67,7 @@ func NewTileDataMul(fname string) *TileDataMul {
 				Animation: uo.AnimationType(binary.LittleEndian.Uint16(d[dofs+14 : dofs+16])),
 				Hue:       uo.Hue(binary.LittleEndian.Uint16(d[dofs+16 : dofs+18])),
 				Light:     uo.Light(binary.LittleEndian.Uint16(d[dofs+18 : dofs+20])),
-				Height:    int8(d[dofs+20]),
+				Height:    int(d[dofs+20]),
 				Name:      name,
 			}
 			statici++

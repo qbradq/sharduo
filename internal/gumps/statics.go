@@ -302,7 +302,7 @@ func (g *statics) areaFill(n game.NetState) {
 		return
 	}
 	d.targetVolume(n, func(b uo.Bounds) {
-		l := uo.Location{Z: b.Z}
+		l := uo.Point{Z: b.Z}
 		for l.Y = b.Y; l.Y <= b.South(); l.Y++ {
 			for l.X = b.X; l.X <= b.East(); l.X++ {
 				d.place(l, g.item.expression, nil)

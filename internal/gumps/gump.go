@@ -26,7 +26,7 @@ func MungHTMLForGUMP(in string) string {
 type GUMP interface {
 	// Layout executes all of the layout functions that comprise this GUMP.
 	// Must be called before Packet().
-	Layout(target, param game.Object)
+	Layout(target, param any)
 	// InvalidateLayout resets the internal state so that Layout() may be called
 	// again.
 	InvalidateLayout()
@@ -74,7 +74,7 @@ func (g *BaseGUMP) Packet(x, y int, sender, typeCode uo.Serial) serverpacket.Pac
 		Sender:   sender,
 		TypeCode: typeCode,
 		Layout:   g.l.String(),
-		Location: uo.Location{
+		Location: uo.Point{
 			X: int16(x),
 			Y: int16(y),
 		},

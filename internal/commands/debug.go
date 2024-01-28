@@ -161,7 +161,7 @@ func commandDebug(n game.NetState, args CommandArgs, cl string) {
 			if o == nil {
 				continue
 			}
-			nl := uo.Location{
+			nl := uo.Point{
 				X: int16(game.GetWorld().Random().Random(100, uo.MapWidth-101)),
 				Y: int16(game.GetWorld().Random().Random(100, uo.MapHeight-101)),
 				Z: uo.MapMaxZ,
@@ -178,7 +178,7 @@ func commandDebug(n game.NetState, args CommandArgs, cl string) {
 			if o == nil {
 				continue
 			}
-			nl := uo.Location{
+			nl := uo.Point{
 				X: int16(game.GetWorld().Random().Random(100, uo.MapWidth-101)),
 				Y: int16(game.GetWorld().Random().Random(100, uo.MapHeight-101)),
 				Z: uo.MapMaxZ,
@@ -245,7 +245,7 @@ func commandDebug(n game.NetState, args CommandArgs, cl string) {
 				if o == nil {
 					n.Speech(n.Mobile(), "debug splat failed to create object with template %s", args[2])
 				}
-				o.SetLocation(uo.Location{
+				o.SetLocation(uo.Point{
 					X: ix,
 					Y: iy,
 					Z: n.Mobile().Location().Z,

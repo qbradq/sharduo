@@ -124,7 +124,7 @@ func (g *floors) placeFloor(n game.NetState) {
 	}
 	d.targetVolume(n, func(b uo.Bounds) {
 		p := floorPatches[g.f]
-		l := uo.Location{
+		l := uo.Point{
 			Z: b.Top(),
 		}
 		for l.Y = b.Y; l.Y <= b.South(); l.Y++ {

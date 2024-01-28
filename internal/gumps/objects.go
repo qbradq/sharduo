@@ -41,7 +41,7 @@ func init() {
 				panic("error: malformed misc/objects.ini")
 			}
 			d.Tiles = append(d.Tiles, objectTile{
-				Offset: uo.Location{
+				Offset: uo.Point{
 					X: int16(fn(parts[0])),
 					Y: int16(fn(parts[1])),
 					Z: int8(fn(parts[2])),
@@ -61,9 +61,9 @@ func init() {
 
 // objectTile defines a single tile of a multi-tile object.
 type objectTile struct {
-	Offset  uo.Location // Offset of the tile from the object origin
-	Graphic uo.Graphic  // Tile graphic to use
-	Hue     uo.Hue      // Tile hue
+	Offset  uo.Point   // Offset of the tile from the object origin
+	Graphic uo.Graphic // Tile graphic to use
+	Hue     uo.Hue     // Tile hue
 }
 
 // objectDefinition defines a multi-tile object.
@@ -140,7 +140,7 @@ func (g *objects) placementTarget(n game.NetState) {
 	})
 }
 
-func (g *objects) place(l uo.Location) {
+func (g *objects) place(l uo.Point) {
 	if g.useFixedZ {
 		l.Z = g.fixedZ
 	} else {

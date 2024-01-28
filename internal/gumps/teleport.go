@@ -21,7 +21,7 @@ func init() {
 
 type teleportDestination struct {
 	Name        string
-	Destination uo.Location
+	Destination uo.Point
 }
 
 type teleportGroup struct {

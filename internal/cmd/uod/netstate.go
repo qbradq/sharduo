@@ -17,6 +17,7 @@ import (
 	"github.com/qbradq/sharduo/lib/clientpacket"
 	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/uo"
+	"github.com/qbradq/sharduo/lib/util"
 )
 
 // ErrWrongPacket is the error logged when the client sends an unexpected
@@ -40,11 +41,11 @@ type NetState struct {
 	// Queue of packets to send on conn
 	sendQueue chan serverpacket.Packet
 	// Mobile being controlled by this client, if any
-	m game.Mobile
+	m *game.Mobile
 	// Account of the player or a mock account, never nil
 	account *game.Account
 	// All containers being observed by the player
-	observedContainers map[uo.Serial]game.Container
+	observedContainers map[uo.Serial]*game.Item
 	// Function to execute when the next targeting request comes in
 	targetCallback func(*clientpacket.TargetResponse)
 	// When the outstanding targeting request will expire
@@ -68,7 +69,7 @@ func NewNetState(conn *net.TCPConn) *NetState {
 	return &NetState{
 		conn:               conn,
 		sendQueue:          make(chan serverpacket.Packet, 1024*16),
-		observedContainers: make(map[uo.Serial]game.Container),
+		observedContainers: make(map[uo.Serial]*game.Item),
 		updateGroup:        world.Random().Random(0, int(uo.DurationSecond)-1),
 		deadline:           world.Time() + uo.DurationMinute*5,
 		gumps:              make(map[uo.Serial]*gumpDescription),
@@ -76,7 +77,7 @@ func NewNetState(conn *net.TCPConn) *NetState {
 }
 
 // Mobile returns the mobile associated with the state if any.
-func (n *NetState) Mobile() game.Mobile { return n.m }
+func (n *NetState) Mobile() *game.Mobile { return n.m }
 
 // Update should be called once per real-world second to search for stale net
 // states, expired targeting cursors, etc.
@@ -201,7 +202,7 @@ func (n *NetState) Service() {
 		log.Printf("error: expected GameServerLogin packet")
 		return
 	}
-	account := world.AuthenticateAccount(gslp.Username, game.HashPassword(gslp.Password))
+	account := world.AuthenticateAccount(gslp.Username, util.HashPassword(gslp.Password))
 	if account == nil {
 		log.Println("error: failed to create new account, reason unknown")
 		return
@@ -211,7 +212,7 @@ func (n *NetState) Service() {
 	// Character list
 	n.Send(&serverpacket.CharacterList{
 		Names: []string{
-			account.Username(), "", "", "", "", "",
+			account.Username, "", "", "", "", "",
 		},
 	})
 
@@ -307,7 +308,7 @@ func (n *NetState) readLoop(r *clientpacket.Reader) {
 }
 
 // Speech sends a speech packet to the attached client.
-func (n *NetState) Speech(speaker game.Object, fmtstr string, args ...interface{}) {
+func (n *NetState) Speech(speaker any, fmtstr string, args ...interface{}) {
 	sid := uo.SerialSystem
 	body := uo.BodySystem
 	font := uo.FontNormal
@@ -316,13 +317,19 @@ func (n *NetState) Speech(speaker game.Object, fmtstr string, args ...interface{
 	text := fmt.Sprintf(fmtstr, args...)
 	stype := uo.SpeechTypeSystem
 	if speaker != nil {
-		sid = speaker.Serial()
-		stype = uo.SpeechTypeNormal
-		name = speaker.DisplayName()
-		if item, ok := speaker.(game.Item); ok {
-			body = uo.Body(item.Graphic())
-		} else if mob, ok := speaker.(game.Mobile); ok {
-			body = mob.Body()
+		switch s := speaker.(type) {
+		case *game.Item:
+			sid = s.Serial
+			stype = uo.SpeechTypeNormal
+			name = s.DisplayName()
+			body = uo.Body(s.Graphic)
+		case *game.Mobile:
+			sid = s.Serial
+			stype = uo.SpeechTypeNormal
+			name = s.DisplayName()
+			body = s.Body
+		default:
+			panic("unknown object type")
 		}
 	}
 	n.Send(&serverpacket.Speech{
@@ -337,19 +344,24 @@ func (n *NetState) Speech(speaker game.Object, fmtstr string, args ...interface{
 }
 
 // Cliloc sends a localized client message packet to the attached client.
-func (n *NetState) Cliloc(speaker game.Object, cliloc uo.Cliloc, args ...string) {
+func (n *NetState) Cliloc(speaker any, cliloc uo.Cliloc, args ...string) {
 	sid := uo.SerialSystem
 	body := uo.BodySystem
 	font := uo.FontNormal
 	hue := uo.Hue(1153)
 	name := ""
 	if speaker != nil {
-		sid = speaker.Serial()
-		name = speaker.DisplayName()
-		if item, ok := speaker.(game.Item); ok {
-			body = uo.Body(item.Graphic())
-		} else if mob, ok := speaker.(game.Mobile); ok {
-			body = mob.Body()
+		switch s := speaker.(type) {
+		case *game.Item:
+			sid = s.Serial
+			name = s.DisplayName()
+			body = uo.Body(s.Graphic)
+		case *game.Mobile:
+			sid = s.Serial
+			name = s.DisplayName()
+			body = s.Body
+		default:
+			panic("unknown object type")
 		}
 	}
 	n.Send(&serverpacket.ClilocMessage{
@@ -364,216 +376,231 @@ func (n *NetState) Cliloc(speaker game.Object, cliloc uo.Cliloc, args ...string)
 }
 
 // itemInfo sends ObjectInfo or AddItemToContainer packets for the item
-func (n *NetState) itemInfo(item game.Item) {
-	if item == nil || item.Removed() {
+func (n *NetState) itemInfo(item *game.Item) {
+	if item == nil || item.Removed {
 		return
 	}
 	var layer uo.Layer
-	if layerer, ok := item.(game.Layerer); ok {
-		layer = layerer.Layer()
-		if layer > uo.LayerLastVisible {
-			// Dirty hack to prevent things like mount items from being sent
-			// like a normal item.
-			return
-		}
+	if item.Layer == uo.LayerInvalid || item.Layer > uo.LayerLastVisible {
+		// Dirty hack to prevent things like mount items from being sent
+		// like a normal item.
+		return
 	}
-	if container, ok := item.Parent().(game.Container); ok {
+	if item.Container != nil {
 		// Item in container
 		n.Send(&serverpacket.AddItemToContainer{
-			Item:          item.Serial(),
-			Graphic:       item.Graphic(),
-			GraphicOffset: item.GraphicOffset(),
-			Amount:        item.Amount(),
-			Location:      item.Location(),
-			Container:     container.Serial(),
-			Hue:           item.Hue(),
+			Item:      item.Serial,
+			Graphic:   item.Graphic,
+			Amount:    item.Amount,
+			Location:  item.Location,
+			Container: item.Container.Serial,
+			Hue:       item.Hue,
 		})
 	} else {
 		// Item on ground
 		n.Send(&serverpacket.ObjectInfo{
-			Serial:           item.Serial(),
-			Graphic:          item.Graphic(),
-			GraphicIncrement: item.GraphicOffset(),
-			Amount:           item.Amount(),
-			Location:         item.Location(),
-			Layer:            layer,
-			Hue:              item.Hue(),
-			Movable:          item.Movable(),
+			Serial:   item.Serial,
+			Graphic:  item.Graphic,
+			Amount:   item.Amount,
+			Location: item.Location,
+			Layer:    layer,
+			Hue:      item.Hue,
+			Movable:  !item.HasFlags(game.ItemFlagsFixed),
 		})
 	}
 	// OPL support
-	_, oi := item.OPLPackets(item)
+	_, oi := item.OPLPackets()
 	if oi != nil {
 		n.Send(oi)
 	}
 }
 
 // sendMobile sends packets to send a mobile to the client.
-func (n *NetState) sendMobile(mobile game.Mobile) {
+func (n *NetState) sendMobile(mobile *game.Mobile) {
 	// Skip disconnected net states, mobiles that have been removed, and other
 	// non-removed mobiles that are no longer on the map, such as mounts within
 	// mount items.
-	if n.m == nil || mobile == nil || mobile.Removed() || mobile.Parent() != nil {
+	if n.m == nil || mobile == nil || mobile.Removed {
 		return
 	}
 	p := &serverpacket.EquippedMobile{
-		ID:        mobile.Serial(),
-		Body:      mobile.Body(),
-		Location:  mobile.Location(),
-		Facing:    mobile.Facing(),
-		IsRunning: mobile.IsRunning(),
-		Hue:       mobile.Hue(),
-		Flags:     mobile.MobileFlags(),
-		Notoriety: n.m.GetNotorietyFor(mobile),
+		ID:        mobile.Serial,
+		Body:      mobile.Body,
+		Location:  mobile.Location,
+		Facing:    mobile.Facing,
+		IsRunning: mobile.Running,
+		Hue:       mobile.Hue,
+		Flags:     mobile.Flags(),
+		Notoriety: n.m.NotorietyFor(mobile),
 	}
-	mobile.MapEquipment(func(w game.Wearable) error {
+	for i, e := range mobile.Equipment {
+		if i < int(uo.LayerFirstValid) {
+			continue
+		}
+		if i > int(uo.LayerLastValid) {
+			break
+		}
 		p.Equipment = append(p.Equipment, &serverpacket.EquippedMobileItem{
-			ID:      w.Serial(),
-			Graphic: w.BaseGraphic(),
-			Layer:   w.Layer(),
-			Hue:     w.Hue(),
+			ID:      e.Serial,
+			Graphic: e.Graphic,
+			Layer:   e.Layer,
+			Hue:     e.Hue,
 		})
-		return nil
-	})
+	}
 	n.Send(p)
 	// OPL support
-	_, oi := mobile.OPLPackets(mobile)
+	_, oi := mobile.OPLPackets()
 	if oi != nil {
 		n.Send(oi)
 	}
 }
 
 // updateMobile sends a StatusBarInfo packet for the mobile.
-func (n *NetState) updateMobile(mobile game.Mobile) {
+func (n *NetState) updateMobile(mobile *game.Mobile) {
 	// Skip disconnected net states, mobiles that have been removed, and other
 	// non-removed mobiles that are no longer on the map, such as mounts within
 	// mount items.
-	if n.m == nil || mobile == nil || mobile.Removed() || mobile.Parent() != nil {
+	if n.m == nil || mobile == nil || mobile.Removed {
 		return
 	}
-	if n.m.Serial() == mobile.Serial() {
+	if n.m == mobile {
 		// Full status update for the player
 		n.Send(&serverpacket.StatusBarInfo{
-			Mobile:         mobile.Serial(),
+			Mobile:         mobile.Serial,
 			Name:           mobile.DisplayName(),
-			Female:         mobile.IsFemale(),
-			HP:             mobile.HitPoints(),
-			MaxHP:          mobile.MaxHitPoints(),
+			Female:         mobile.Female,
+			HP:             mobile.Hits,
+			MaxHP:          mobile.MaxHits,
 			NameChangeFlag: false,
-			Strength:       mobile.Strength(),
-			Dexterity:      mobile.Dexterity(),
-			Intelligence:   mobile.Intelligence(),
-			Stamina:        mobile.Stamina(),
-			MaxStamina:     mobile.MaxStamina(),
-			Mana:           mobile.Mana(),
-			MaxMana:        mobile.MaxMana(),
-			Gold:           mobile.Gold(),
+			Strength:       mobile.Strength,
+			Dexterity:      mobile.Dexterity,
+			Intelligence:   mobile.Intelligence,
+			Stamina:        mobile.Stamina,
+			MaxStamina:     mobile.MaxStamina,
+			Mana:           mobile.Mana,
+			MaxMana:        mobile.MaxMana,
+			Gold:           mobile.Equipment[uo.LayerBackpack].Gold,
 			ArmorRating:    0,
-			Weight:         int(mobile.Weight()),
+			Weight:         int(mobile.Weight),
 			StatsCap:       uo.StatsCapDefault,
 			Followers:      0,
 			MaxFollowers:   uo.MaxFollowers,
 		})
 		return
-	} else if mobile.ControlMaster() != nil && mobile.ControlMaster().Serial() == n.m.Serial() {
+	} else if mobile.ControlMaster == n.m {
 		// Send rename-able status bar
 		n.Send(&serverpacket.StatusBarInfo{
-			Mobile:         mobile.Serial(),
+			Mobile:         mobile.Serial,
 			Name:           mobile.DisplayName(),
-			Female:         mobile.IsFemale(),
-			HP:             mobile.HitPoints(),
-			MaxHP:          mobile.MaxHitPoints(),
+			Female:         mobile.Female,
+			HP:             mobile.Hits,
+			MaxHP:          mobile.MaxHits,
 			NameChangeFlag: true,
 		})
 	} else {
 		// Send hp delta for other mobiles
 		n.Send(&serverpacket.UpdateHealth{
-			Serial:  mobile.Serial(),
-			Hits:    mobile.HitPoints(),
-			MaxHits: mobile.MaxHitPoints(),
+			Serial:  mobile.Serial,
+			Hits:    mobile.Hits,
+			MaxHits: mobile.MaxHits,
 		})
 	}
 }
 
-// UpdateObject implements the game.NetState interface.
-func (n *NetState) UpdateObject(o game.Object) {
-	if n.m == nil || o == nil || o.Removed() || !n.m.CanSee(o) {
+// UpdateObject sends an update packet for the object.
+func (n *NetState) UpdateObject(obj any) {
+	if n.m == nil || obj == nil {
 		return
 	}
-	if item, ok := o.(game.Item); ok {
-		n.itemInfo(item)
-	} else if mobile, ok := o.(game.Mobile); ok {
-		n.updateMobile(mobile)
-	} else {
-		log.Printf("error: NetState.SendObject(%s) unknown object interface", o.Serial())
+	switch o := obj.(type) {
+	case *game.Item:
+		if o.Removed || !n.m.CanSee(&o.Object) {
+			return
+		}
+		n.itemInfo(o)
+	case *game.Mobile:
+		if o.Removed || !n.m.CanSee(&o.Object) {
+			return
+		}
+		n.updateMobile(o)
+	default:
+		log.Println("error: NetState.SendObject() unknown object interface")
 	}
 }
 
-// SendObject implements the game.NetState interface.
-func (n *NetState) SendObject(o game.Object) {
-	if n.m == nil || o == nil || o.Removed() || !n.m.CanSee(o) {
+// SendObject sends an initial information packet for the object.
+func (n *NetState) SendObject(obj any) {
+	if n.m == nil || obj == nil {
 		return
 	}
-	if item, ok := o.(game.Item); ok {
-		n.itemInfo(item)
-	} else if mobile, ok := o.(game.Mobile); ok {
-		n.sendMobile(mobile)
-	} else {
-		log.Printf("error: NetState.SendObject(%s) unknown object interface", o.Serial())
+	switch o := obj.(type) {
+	case *game.Item:
+		if o.Removed || !n.m.CanSee(&o.Object) {
+			return
+		}
+		n.itemInfo(o)
+	case *game.Mobile:
+		if o.Removed || !n.m.CanSee(&o.Object) {
+			return
+		}
+		n.sendMobile(o)
+	default:
+		log.Println("error: NetState.SendObject() unknown object interface")
 	}
 }
 
-// MoveMobile implements the game.NetState interface.
-func (n *NetState) MoveMobile(mob game.Mobile) {
+// MoveMobile sends a packet to inform the client that the mobile moved.
+func (n *NetState) MoveMobile(mob *game.Mobile) {
 	noto := uo.NotorietyAttackable
 	if n.m != nil {
-		noto = mob.GetNotorietyFor(n.m)
-		if !mob.CanSee(n.m) {
+		noto = mob.NotorietyFor(n.m)
+		if !mob.CanSee(&n.m.Object) {
 			return
 		}
 	}
 	n.Send(&serverpacket.MoveMobile{
-		ID:        mob.Serial(),
-		Body:      mob.Body(),
-		Location:  mob.Location(),
-		Facing:    mob.Facing(),
-		Running:   mob.IsRunning(),
-		Hue:       mob.Hue(),
-		Flags:     mob.MobileFlags(),
+		ID:        mob.Serial,
+		Body:      mob.Body,
+		Location:  mob.Location,
+		Facing:    mob.Facing,
+		Running:   mob.Running,
+		Hue:       mob.Hue,
+		Flags:     mob.Flags(),
 		Notoriety: noto,
 	})
 }
 
-// RemoveObject implements the game.NetState interface.
-func (n *NetState) RemoveObject(o game.Object) {
+// RemoveObject sends a packet to the client that removes the object from the
+// client's view of the game.
+func (n *NetState) RemoveObject(o *game.Object) {
 	n.Send(&serverpacket.DeleteObject{
-		Serial: o.Serial(),
+		Serial: o.Serial,
 	})
 }
 
-// DrawPlayer implements the game.NetState interface.
+// DrawPlayer sends the draw player packet to the client.
 func (n *NetState) DrawPlayer() {
 	if n.m == nil {
 		return
 	}
 	n.Send(&serverpacket.DrawPlayer{
-		ID:       n.m.Serial(),
-		Body:     n.m.Body(),
-		Hue:      n.m.Hue(),
-		Flags:    n.m.MobileFlags(),
-		Location: n.m.Location(),
-		Facing:   n.m.Facing(),
+		ID:       n.m.Serial,
+		Body:     n.m.Body,
+		Hue:      n.m.Hue,
+		Flags:    n.m.Flags(),
+		Location: n.m.Location,
+		Facing:   n.m.Facing,
 	})
 }
 
 // WornItem sends the WornItem packet to the given mobile
-func (n *NetState) WornItem(wearable game.Wearable, wearer game.Mobile) {
+func (n *NetState) WornItem(i *game.Item, wearer *game.Mobile) {
 	n.Send(&serverpacket.WornItem{
-		Item:    wearable.Serial(),
-		Graphic: wearable.BaseGraphic(),
-		Layer:   wearable.Layer(),
-		Wearer:  wearer.Serial(),
-		Hue:     wearable.Hue(),
+		Item:    i.Serial,
+		Graphic: i.Graphic,
+		Layer:   i.Layer,
+		Wearer:  wearer.Serial,
+		Hue:     i.Hue,
 	})
 }
 
@@ -585,8 +612,7 @@ func (n *NetState) DropReject(reason uo.MoveItemRejectReason) {
 }
 
 // DragItem sends the DragItem packet to the given mobile
-func (n *NetState) DragItem(item game.Item, srcMob game.Mobile,
-	srcLoc uo.Location, destMob game.Mobile, destLoc uo.Location) {
+func (n *NetState) DragItem(item *game.Item, srcMob *game.Mobile, srcLoc uo.Point, destMob *game.Mobile, destLoc uo.Point) {
 	if item == nil {
 		return
 	}
@@ -596,18 +622,17 @@ func (n *NetState) DragItem(item game.Item, srcMob game.Mobile,
 	srcSerial := uo.SerialSystem
 	destSerial := uo.SerialSystem
 	if srcMob != nil {
-		srcSerial = srcMob.Serial()
+		srcSerial = srcMob.Serial
 	}
 	if destMob != nil {
-		destSerial = destMob.Serial()
+		destSerial = destMob.Serial
 	}
 	if srcSerial != uo.SerialSystem && srcSerial == destSerial {
 		return
 	}
 	n.Send(&serverpacket.DragItem{
-		Graphic:             item.Graphic(),
-		GraphicOffset:       item.GraphicOffset(),
-		Amount:              item.Amount(),
+		Graphic:             item.Graphic,
+		Amount:              item.Amount,
 		Source:              srcSerial,
 		SourceLocation:      srcLoc,
 		Destination:         destSerial,
@@ -624,33 +649,32 @@ func (n *NetState) CloseGump(gump uo.Serial) {
 }
 
 // ContainerOpen implements the game.ContainerObserver interface
-func (n *NetState) ContainerOpen(c game.Container) {
-	if c == nil {
+func (n *NetState) ContainerOpen(c *game.Item) {
+	if c == nil || !c.HasFlags(game.ItemFlagsContainer) {
 		return
 	}
-	n.observedContainers[c.Serial()] = c
+	n.observedContainers[c.Serial] = c
 	n.Send(&serverpacket.OpenContainerGump{
-		GumpSerial: c.Serial(),
-		Gump:       uo.GUMP(c.GumpGraphic()),
+		GumpSerial: c.Serial,
+		Gump:       uo.GUMP(c.GUMPGraphic),
 	})
-	if c.ItemCount() > 0 {
+	if c.ItemCount > 0 {
 		p := &serverpacket.Contents{}
-		p.Items = make([]serverpacket.ContentsItem, 0, c.ItemCount())
-		for _, item := range c.Contents() {
+		p.Items = make([]serverpacket.ContentsItem, 0, c.ItemCount)
+		for _, item := range c.Contents {
 			p.Items = append(p.Items, serverpacket.ContentsItem{
-				Serial:        item.Serial(),
-				Graphic:       item.Graphic(),
-				GraphicOffset: item.GraphicOffset(),
-				Amount:        item.Amount(),
-				Location:      item.Location(),
-				Container:     c.Serial(),
-				Hue:           item.Hue(),
+				Serial:    item.Serial,
+				Graphic:   item.Graphic,
+				Amount:    item.Amount,
+				Location:  item.Location,
+				Container: c.Serial,
+				Hue:       item.Hue,
 			})
 		}
 		n.Send(p)
 		// OPL support
-		for _, item := range c.Contents() {
-			_, oi := item.OPLPackets(item)
+		for _, item := range c.Contents {
+			_, oi := item.OPLPackets()
 			if oi == nil {
 				continue
 			}
@@ -660,50 +684,49 @@ func (n *NetState) ContainerOpen(c game.Container) {
 }
 
 // ContainerClose implements the game.ContainerObserver interface
-func (n *NetState) ContainerClose(c game.Container) {
+func (n *NetState) ContainerClose(c *game.Item) {
 	// Ignore containers that aren't being observed
 	if !n.ContainerIsObserving(c) {
 		return
 	}
 	// Close this container
-	delete(n.observedContainers, c.Serial())
-	n.CloseGump(c.Serial())
+	delete(n.observedContainers, c.Serial)
+	n.CloseGump(c.Serial)
 	c.RemoveObserver(n)
 	// Close all child containers
-	for _, item := range c.Contents() {
-		if c, ok := item.(game.Container); ok {
-			n.ContainerClose(c)
+	for _, item := range c.Contents {
+		if item.HasFlags(game.ItemFlagsContainer) {
+			n.ContainerClose(item)
 		}
 	}
 }
 
 // ContainerItemAdded implements the game.ContainerObserver interface
-func (n *NetState) ContainerItemAdded(c game.Container, item game.Item) {
+func (n *NetState) ContainerItemAdded(c *game.Item, item *game.Item) {
 	n.Send(&serverpacket.AddItemToContainer{
-		Item:          item.Serial(),
-		Graphic:       item.Graphic(),
-		GraphicOffset: item.GraphicOffset(),
-		Amount:        item.Amount(),
-		Location:      item.Location(),
-		Container:     c.Serial(),
-		Hue:           item.Hue(),
+		Item:      item.Serial,
+		Graphic:   item.Graphic,
+		Amount:    item.Amount,
+		Location:  item.Location,
+		Container: c.Serial,
+		Hue:       item.Hue,
 	})
-	_, oi := item.OPLPackets(item)
+	_, oi := item.OPLPackets()
 	if oi != nil {
 		n.Send(oi)
 	}
 }
 
 // ContainerItemRemoved implements the game.ContainerObserver interface
-func (n *NetState) ContainerItemRemoved(c game.Container, item game.Item) {
+func (n *NetState) ContainerItemRemoved(c *game.Item, item *game.Item) {
 	n.Send(&serverpacket.DeleteObject{
-		Serial: item.Serial(),
+		Serial: item.Serial,
 	})
 }
 
 // ContainerItemOPLChanged implements the game.ContainerObserver interface.
-func (n *NetState) ContainerItemOPLChanged(c game.Container, item game.Item) {
-	_, info := item.OPLPackets(item)
+func (n *NetState) ContainerItemOPLChanged(c *game.Item, item *game.Item) {
+	_, info := item.OPLPackets()
 	if info != nil {
 		n.Send(info)
 	}
@@ -716,7 +739,7 @@ func (n *NetState) ContainerRangeCheck() {
 	}
 	// Make a copy of the map contents so NetState.ContainerClose can modify
 	// NetState.observedContainers
-	var toObserve = make([]game.Container, len(n.observedContainers))
+	var toObserve = make([]*game.Item, len(n.observedContainers))
 	idx := 0
 	for _, c := range n.observedContainers {
 		toObserve[idx] = c
@@ -724,62 +747,60 @@ func (n *NetState) ContainerRangeCheck() {
 	}
 	// Observe all containers
 	for _, c := range toObserve {
-		root := game.RootParent(c)
-		if _, ok := root.(game.Container); ok {
-			// Container is somewhere on the map
-			// Range check
-			if n.m.Location().XYDistance(root.Location()) > uo.MaxContainerViewRange {
-				n.ContainerClose(c)
-			}
-		} else if m, ok := root.(game.Mobile); ok {
-			// This is part of the mobile's inventory, so either inside the bank
-			// box or the backpack. We always close the bank box and it's every time we
-			// move and we never close the backpack.
-			bbobj := m.EquipmentInSlot(uo.LayerBankBox)
-			if bbobj == nil {
-				continue
-			}
-			thisc := c
-			thisp := c.Parent()
-			for {
-				if _, ok := thisp.(game.Mobile); ok {
-					// This is the top-level container
-					if thisc.Serial() == bbobj.Serial() {
-						// The bank box or a child of it, close instantly
-						n.ContainerClose(c)
-					}
-					// Otherwise this is the backpack or a child of it, leave
-					// open.
-					break
-				} else if container, ok := thisp.(game.Container); ok {
-					// This is a sub-container, inspect the parent.
-					thisc = container
-					thisp = thisc.Parent()
-				} else {
-					// Something is very wrong.
-					log.Printf("error: object %s has a non-container in it's parent chain", c.Serial().String())
-					break
+		rc := c.RootContainer()
+		if rc == nil {
+			if c.Wearer == nil {
+				// Container is somewhere on the map
+				if n.m.Location.XYDistance(c.Location) > uo.MaxContainerViewRange {
+					n.ContainerClose(c)
+				}
+			} else if rc.Wearer == n.m {
+				// Container is being worn by our player, so either the bank box
+				// or backpack. We always close the bank box on every step and
+				// we never close our own backpack.
+				if rc.Layer == uo.LayerBankBox {
+					n.ContainerClose(c)
+				}
+			} else {
+				// Container is being worn by another mobile so we are either
+				// snooping or accessing a controlled mobile's pack. Enforce
+				// normal view range restrictions.
+				if n.m.Location.XYDistance(c.Wearer.Location) > uo.MaxContainerViewRange {
+					n.ContainerClose(c)
 				}
 			}
+		} else {
+			if rc.Layer == uo.LayerBankBox {
+				// The container is within someone's bank box, close with every
+				// step.
+				n.ContainerClose(c)
+			} else if rc.Wearer != n.m {
+				// Container is either being snooped or is within a controlled
+				// mobile's backpack, enforce normal view range restrictions.
+				if n.m.Location.XYDistance(rc.Wearer.Location) > uo.MaxContainerViewRange {
+					n.ContainerClose(c)
+				}
+			} // Else the container is within our backpack, never close it.
 		}
 	}
 }
 
 // ContainerIsObserving implements the game.ContainerObserver interface
-func (n *NetState) ContainerIsObserving(o game.Object) bool {
-	_, found := n.observedContainers[o.Serial()]
+func (n *NetState) ContainerIsObserving(i *game.Item) bool {
+	_, found := n.observedContainers[i.Serial]
 	return found
 }
 
-// OpenPaperDoll implements the game.NetState interface
-func (n *NetState) OpenPaperDoll(m game.Mobile) {
+// OpenPaperDoll opens a paper doll GUMP for mobile m on the client attached to
+// n.
+func (n *NetState) OpenPaperDoll(m *game.Mobile) {
 	if m == nil {
 		return
 	}
-	if n.m != nil && n.m.Serial() == m.Serial() {
-		// Player is opening thier own paper doll
+	if n.m == m {
+		// Player is opening their own paper doll
 		n.Send(&serverpacket.OpenPaperDoll{
-			Serial:    m.Serial(),
+			Serial:    m.Serial,
 			Text:      m.DisplayName(),
 			WarMode:   false,
 			Alterable: true,
@@ -787,7 +808,7 @@ func (n *NetState) OpenPaperDoll(m game.Mobile) {
 	} else {
 		// Player is opening someone else's paper doll
 		n.Send(&serverpacket.OpenPaperDoll{
-			Serial:    m.Serial(),
+			Serial:    m.Serial,
 			Text:      m.DisplayName(),
 			WarMode:   false,
 			Alterable: false,
@@ -796,15 +817,15 @@ func (n *NetState) OpenPaperDoll(m game.Mobile) {
 }
 
 // TargetSendCursor implements the game.NetState interface
-func (n *NetState) TargetSendCursor(ttype uo.TargetType, fn func(*clientpacket.TargetResponse)) {
+func (n *NetState) TargetSendCursor(tType uo.TargetType, fn func(*clientpacket.TargetResponse)) {
 	if n.m == nil {
 		return
 	}
 	n.targetCallback = fn
 	n.targetDeadline = world.Time() + uo.DurationSecond*30
 	n.Send(&serverpacket.Target{
-		Serial:     n.m.Serial(),
-		TargetType: ttype,
+		Serial:     n.m.Serial,
+		TargetType: tType,
 		CursorType: uo.CursorTypeNeutral,
 	})
 }
@@ -846,12 +867,12 @@ func (n *NetState) SendAllSkills() {
 		return
 	}
 	n.Send(&serverpacket.FullSkillUpdate{
-		SkillValues: n.m.Skills(),
+		SkillValues: n.m.Skills,
 	})
 }
 
 // Sound makes the client play a sound.
-func (n *NetState) Sound(which uo.Sound, from uo.Location) {
+func (n *NetState) Sound(which uo.Sound, from uo.Point) {
 	n.Send(&serverpacket.Sound{
 		Sound:    which,
 		Location: from,
@@ -869,36 +890,28 @@ func (n *NetState) Music(song uo.Music) {
 }
 
 // Animate animates a mobile on the client side
-func (n *NetState) Animate(mob game.Mobile, at uo.AnimationType, aa uo.AnimationAction) {
+func (n *NetState) Animate(mob *game.Mobile, at uo.AnimationType, aa uo.AnimationAction) {
 	if mob == nil {
 		return
 	}
 	n.Send(&serverpacket.Animation{
-		Serial:          mob.Serial(),
+		Serial:          mob.Serial,
 		AnimationType:   at,
 		AnimationAction: aa,
 	})
 }
 
 // GUMP sends a generic GUMP to the client.
-func (n *NetState) GUMP(gi any, target, param game.Object) {
+func (n *NetState) GUMP(gi any, target, param uo.Serial) {
 	g, ok := gi.(gumps.GUMP)
 	if !ok {
 		return
 	}
 	s := g.TypeCode()
-	ts := uo.SerialSystem
-	if target != nil {
-		ts = target.Serial()
-	}
-	ps := uo.SerialSystem
-	if param != nil {
-		ps = param.Serial()
-	}
 	n.gumps[s] = &gumpDescription{
 		g: g,
-		t: ts,
-		p: ps,
+		t: target,
+		p: param,
 	}
 	n.RefreshGUMP(g)
 }
@@ -937,7 +950,7 @@ func (n *NetState) RefreshGUMP(gi any) {
 		return
 	}
 	// Resolve objects
-	var tg game.Object
+	var tg any
 	if d.t != uo.SerialSystem {
 		tg = world.Find(d.t)
 		if tg == nil {
@@ -946,7 +959,7 @@ func (n *NetState) RefreshGUMP(gi any) {
 			return
 		}
 	}
-	var pm game.Object
+	var pm any
 	if d.p != uo.SerialSystem {
 		pm = world.Find(d.p)
 		if pm == nil {
@@ -959,7 +972,7 @@ func (n *NetState) RefreshGUMP(gi any) {
 	g.InvalidateLayout()
 	g.Layout(tg, pm)
 	// Send the packet
-	n.Send(g.Packet(0, 0, n.m.Serial(), s))
+	n.Send(g.Packet(0, 0, n.m.Serial, s))
 }
 
 // GetText sends a GUMP for text entry.

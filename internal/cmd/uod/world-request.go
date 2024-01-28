@@ -116,7 +116,7 @@ func (r *CharacterLoginRequest) Execute() error {
 		configuration.GameServerName)
 	// Send the EnterWorld packet
 	facing := r.NetState.m.Facing()
-	if r.NetState.m.IsRunning() {
+	if r.NetState.m.Running() {
 		facing = facing.SetRunningFlag()
 	} else {
 		facing = facing.StripRunningFlag()
@@ -145,7 +145,7 @@ type CharacterLogoutRequest struct {
 	BaseWorldRequest
 
 	// Mobile is the mobile of the player logging out
-	Mobile game.Mobile
+	Mobile *game.Mobile
 }
 
 // Execute implements the WorldRequest interface

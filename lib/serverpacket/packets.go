@@ -139,7 +139,7 @@ type EnterWorld struct {
 	// Body graphic
 	Body uo.Body
 	// Position
-	Location uo.Location
+	Location uo.Point
 	// Direction the player is facing and if running.
 	Facing uo.Direction
 	// Server dimensions
@@ -252,7 +252,7 @@ type EquippedMobile struct {
 	// Body of the mobile
 	Body uo.Body
 	// Position of the mobile
-	Location uo.Location
+	Location uo.Point
 	// Direction the mobile is facing
 	Facing uo.Direction
 	// Running flag
@@ -407,7 +407,7 @@ type ObjectInfo struct {
 	// Amount, must be at least 1, no greater than 60000 - always 1 for multi
 	Amount int
 	// Location of the item or multi
-	Location uo.Location
+	Location uo.Point
 	// Facing of the item - always 0 for multi
 	Facing uo.Direction
 	// Layer of the item or 0 if not equipable or multi
@@ -534,7 +534,7 @@ type DrawPlayer struct {
 	// Flags field
 	Flags uo.MobileFlags
 	// Location of the mobile
-	Location uo.Location
+	Location uo.Point
 	// Direction the mobile is facing
 	Facing uo.Direction
 }
@@ -606,7 +606,7 @@ type MoveMobile struct {
 	// Body of the mobile
 	Body uo.Body
 	// Location of the mobile
-	Location uo.Location
+	Location uo.Point
 	// Facing
 	Facing uo.Direction
 	// Running flag
@@ -653,11 +653,11 @@ type DragItem struct {
 	// Source mobile serial, uo.SerialSystem for the map
 	Source uo.Serial
 	// Source position
-	SourceLocation uo.Location
+	SourceLocation uo.Point
 	// Destination mobile serial, uo.SerialSystem for the map
 	Destination uo.Serial
 	// Destination position
-	DestinationLocation uo.Location
+	DestinationLocation uo.Point
 }
 
 // Write implements the Packet interface.
@@ -704,7 +704,7 @@ type AddItemToContainer struct {
 	// Stack amount, truncated to 0-0xFFFF inclusive
 	Amount int
 	// Location of the item in the container. X=Y=0xFFFF means random location.
-	Location uo.Location
+	Location uo.Point
 	// The ID of the container and container gump to add this item to
 	Container uo.Serial
 	// Hue of the item
@@ -736,7 +736,7 @@ type ContentsItem struct {
 	// Stack amount
 	Amount int
 	// Location of the item in the container
-	Location uo.Location
+	Location uo.Point
 	// Serial of the container to add the item to
 	Container uo.Serial
 	// Hue of the item
@@ -811,7 +811,7 @@ type MoveReject struct {
 	// Sequence number of the movement request rejected
 	Sequence byte
 	// Location of the mobile after the rejection
-	Location uo.Location
+	Location uo.Point
 	// Facing of the mobile
 	Facing uo.Direction
 }
@@ -851,7 +851,7 @@ func (p *SingleSkillUpdate) Write(w io.Writer) {
 // FullSkillUpdate sends an update for all skills.
 type FullSkillUpdate struct {
 	// Slice of all skill values
-	SkillValues []int16
+	SkillValues [uo.SkillCount]int
 }
 
 // Write implements the Packet interface.
@@ -914,7 +914,7 @@ type Sound struct {
 	// Which sound to play
 	Sound uo.Sound
 	// Where the sound is coming from
-	Location uo.Location
+	Location uo.Point
 }
 
 // Write implements the Packet interface.
@@ -1048,7 +1048,7 @@ type GUMP struct {
 	// Layout string for the GUMP
 	Layout string
 	// Location of the GUMP on screen
-	Location uo.Location
+	Location uo.Point
 	// Text lines
 	Lines []string
 	// If true the GUMP data will be sent uncompressed
@@ -1130,9 +1130,9 @@ type GraphicalEffect struct {
 	// First frame of the effect
 	Graphic uo.Graphic
 	// Source location
-	SourceLocation uo.Location
+	SourceLocation uo.Point
 	// Target location
-	TargetLocation uo.Location
+	TargetLocation uo.Point
 	// Speed of the animation in FPS?
 	Speed uint8
 	// Duration of the animation 1=Slowest, 0=Even slower for some reason

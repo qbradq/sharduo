@@ -14,14 +14,10 @@ import (
 	"syscall"
 
 	"github.com/pkg/profile"
-	"github.com/qbradq/sharduo/internal/ai"
 	"github.com/qbradq/sharduo/internal/commands"
 	"github.com/qbradq/sharduo/internal/configuration"
-	"github.com/qbradq/sharduo/internal/events"
 	"github.com/qbradq/sharduo/internal/game"
-	"github.com/qbradq/sharduo/internal/gumps"
 	"github.com/qbradq/sharduo/lib/marshal"
-	"github.com/qbradq/sharduo/lib/template"
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/uo/file"
 	"github.com/qbradq/sharduo/lib/util"
@@ -142,19 +138,6 @@ func initialize() {
 	// RNG initialization
 	rng := util.NewRNG()
 
-	// AI system initialization
-	game.SetAIGetter(func(s string) game.AIModel {
-		return ai.GetModel(s)
-	})
-
-	// Event system initialization
-	game.SetEventHandlerGetter(func(which string) *game.EventHandler {
-		return (*game.EventHandler)(events.GetEventHandler(which))
-	})
-	game.SetEventIndexGetter(func(which string) uint16 {
-		return events.GetEventHandlerIndex(which)
-	})
-
 	// Command system initialization
 	commands.RegisterCallbacks(
 		GlobalChat,
@@ -162,11 +145,6 @@ func initialize() {
 		Broadcast,
 		gracefulShutdown,
 		func() string { return world.LatestSavePath() })
-
-	// GUMP system initialization
-	gumps.InjectMethods(func(n game.NetState, s string) {
-		commands.Execute(n, s)
-	})
 
 	// Marshal system initialization
 	marshal.SetInsertFunction(func(i interface{}) {
@@ -177,34 +155,11 @@ func initialize() {
 		world.Insert(o)
 	})
 
-	// Load object templates
-	log.Println("info: loading templates")
-	errs := template.Initialize(configuration.TemplatesDirectory,
-		configuration.ListsDirectory, configuration.TemplateVariablesFile,
-		rng, func(o template.Object) {
-			if o == nil {
-				return
-			}
-			obj, ok := o.(game.Object)
-			if !ok {
-				return
-			}
-			world.addNewObjectToDataStores(obj)
-			obj.SetParent(game.TheVoid)
-		})
-	for _, err := range errs {
-		log.Println(err)
-	}
-	if len(errs) > 0 {
-		log.Fatalf("error: %d errors while loading object templates", len(errs))
-	}
-
 	// Initialize our data structures
 	log.Println("info: allocating world data structures")
 	world = NewWorld(configuration.SaveDirectory, rng)
 	log.Println("info: populating map data structures")
 	world.Map().LoadFromMuls(mapmul, staticsmul)
-	game.RegisterWorld(world)
 
 	// Inject server-side dynamic objects
 	log.Println("info: creating dynamic map objects")
@@ -222,7 +177,7 @@ func initialize() {
 
 // Executed on the first start of a new server.
 func firstStart() {
-	world.AuthenticateAccount("root", game.HashPassword("password"))
+	world.AuthenticateAccount("root", util.HashPassword("password"))
 }
 
 // Commands executed at every start.

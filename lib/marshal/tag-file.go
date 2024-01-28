@@ -254,7 +254,7 @@ func (s *TagFileSegment) PutSerialSlice(v []uo.Serial) {
 
 // PutLocation writes a location value to the segment as a tuple of
 // int16,int16,int8.
-func (s *TagFileSegment) PutLocation(l uo.Location) {
+func (s *TagFileSegment) PutLocation(l uo.Point) {
 	binary.LittleEndian.PutUint16(s.tbuf[0:2], uint16(l.X))
 	binary.LittleEndian.PutUint16(s.tbuf[2:4], uint16(l.Y))
 	s.tbuf[4] = byte(int8(l.Z))
@@ -392,12 +392,12 @@ func (s *TagFileSegment) SerialSlice() []uo.Serial {
 }
 
 // Location returns the next uo.Location value encoded into the segment.
-func (s *TagFileSegment) Location() uo.Location {
+func (s *TagFileSegment) Location() uo.Point {
 	s.buf.Read(s.tbuf[0:5])
-	return uo.Location{
-		X: int16(binary.LittleEndian.Uint16(s.tbuf[0:2])),
-		Y: int16(binary.LittleEndian.Uint16(s.tbuf[2:4])),
-		Z: int8(s.tbuf[4]),
+	return uo.Point{
+		X: int(binary.LittleEndian.Uint16(s.tbuf[0:2])),
+		Y: int(binary.LittleEndian.Uint16(s.tbuf[2:4])),
+		Z: int(s.tbuf[4]),
 	}
 }
 
@@ -405,12 +405,12 @@ func (s *TagFileSegment) Location() uo.Location {
 func (s *TagFileSegment) Bounds() uo.Bounds {
 	s.buf.Read(s.tbuf[0:11])
 	return uo.Bounds{
-		X: int16(binary.LittleEndian.Uint16(s.tbuf[0:2])),
-		Y: int16(binary.LittleEndian.Uint16(s.tbuf[2:4])),
-		Z: int8(s.tbuf[4]),
-		W: int16(binary.LittleEndian.Uint16(s.tbuf[5:7])),
-		H: int16(binary.LittleEndian.Uint16(s.tbuf[7:9])),
-		D: int16(binary.LittleEndian.Uint16(s.tbuf[9:11])),
+		X: int(binary.LittleEndian.Uint16(s.tbuf[0:2])),
+		Y: int(binary.LittleEndian.Uint16(s.tbuf[2:4])),
+		Z: int(s.tbuf[4]),
+		W: int(binary.LittleEndian.Uint16(s.tbuf[5:7])),
+		H: int(binary.LittleEndian.Uint16(s.tbuf[7:9])),
+		D: int(binary.LittleEndian.Uint16(s.tbuf[9:11])),
 	}
 }
 

@@ -234,7 +234,7 @@ func SmeltOre(receiver, source game.Object, v any) bool {
 		smelter.NetState().Cliloc(nil, 500685) // You can't use that, it belongs to someone else.
 		return false
 	}
-	if !game.GetWorld().Map().Query(source.Location(), 3, forgeItemSet) {
+	if !game.GetWorld().Map().Query(source.Point(), 3, forgeItemSet) {
 		smelter.NetState().Cliloc(nil, 500420) // You are not near a forge.
 		return false
 	}

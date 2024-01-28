@@ -146,7 +146,7 @@ func (g *decorate) targetVolume(n game.NetState, fn func(uo.Bounds)) {
 }
 
 // place places a single static with regard to a reference item, if any.
-func (g *decorate) place(l uo.Location, exp string, ref game.Item) bool {
+func (g *decorate) place(l uo.Point, exp string, ref game.Item) bool {
 	item := template.Create[*game.StaticItem]("StaticItem")
 	if item == nil {
 		// Something very wrong
