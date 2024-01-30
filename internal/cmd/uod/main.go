@@ -17,7 +17,6 @@ import (
 	"github.com/qbradq/sharduo/internal/commands"
 	"github.com/qbradq/sharduo/internal/configuration"
 	"github.com/qbradq/sharduo/internal/game"
-	"github.com/qbradq/sharduo/lib/marshal"
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/uo/file"
 	"github.com/qbradq/sharduo/lib/util"
@@ -135,8 +134,10 @@ func initialize() {
 		mapimgf.Close()
 	}
 
-	// RNG initialization
-	rng := util.NewRNG()
+	// Game system initialization
+	game.Time = func() uo.Time {
+		return world.time
+	}
 
 	// Command system initialization
 	commands.RegisterCallbacks(
@@ -157,7 +158,7 @@ func initialize() {
 
 	// Initialize our data structures
 	log.Println("info: allocating world data structures")
-	world = NewWorld(configuration.SaveDirectory, rng)
+	world = NewWorld(configuration.SaveDirectory)
 	log.Println("info: populating map data structures")
 	world.Map().LoadFromMuls(mapmul, staticsmul)
 

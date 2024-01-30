@@ -37,8 +37,6 @@ type World struct {
 	accounts map[string]*game.Account
 	// Account access mutex
 	alock sync.Mutex
-	// The random number generator for the world
-	rng uo.RandomSource
 	// Inbound requests
 	requestQueue chan WorldRequest
 	// Save/Load Mutex
@@ -58,12 +56,11 @@ type World struct {
 }
 
 // NewWorld creates a new, empty world
-func NewWorld(savePath string, rng uo.RandomSource) *World {
+func NewWorld(savePath string) *World {
 	return &World{
 		m:             game.NewMap(),
 		ods:           game.NewDatastore(),
 		accounts:      make(map[string]*game.Account),
-		rng:           rng,
 		requestQueue:  make(chan WorldRequest, 1024*16),
 		savePath:      savePath,
 		updateList:    make(map[uo.Serial]struct{}),

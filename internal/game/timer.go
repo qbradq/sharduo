@@ -53,25 +53,31 @@ type Timer struct {
 // NewTimer creates a new timer with the given options, then adds the timer to
 // the update pool most suitable for it. A serial number uniquely identifying
 // the timer is returned. See CancelTimer().
-func NewTimer(delay uo.Time, event string, receiver, source Object, noRent bool, parameter any) uo.Serial {
-	receiverSerial := uo.SerialZero
-	sourceSerial := uo.SerialZero
-	if receiver != nil {
-		receiverSerial = receiver.Serial()
+func NewTimer(delay uo.Time, event string, receiver, source any, noRent bool, parameter any) uo.Serial {
+	rs := uo.SerialZero
+	ss := uo.SerialZero
+	switch o := receiver.(type) {
+	case *Item:
+		rs = o.Serial
+	case *Mobile:
+		rs = o.Serial
 	}
-	if source != nil {
-		sourceSerial = source.Serial()
+	switch o := source.(type) {
+	case *Item:
+		ss = o.Serial
+	case *Mobile:
+		ss = o.Serial
 	}
 	t := &Timer{
-		deadline:  world.Time() + delay,
+		deadline:  Time() + delay,
 		event:     event,
-		receiver:  receiverSerial,
-		source:    sourceSerial,
+		receiver:  rs,
+		source:    ss,
 		noRent:    noRent,
 		parameter: parameter,
 	}
 	for {
-		serial := uo.RandomMobileSerial(world.Random())
+		serial := uo.Serial(util.Random(int(uo.SerialFirstMobile), int(uo.SerialLastMobile)))
 		if timerSerials[serial] != nil {
 			// Duplicate serial
 			continue
@@ -167,18 +173,38 @@ func ReadTimers(r io.Reader) {
 
 // Execute executes the event on the timer
 func (t *Timer) Execute() {
-	var receiver Object
-	var source Object
+	var receiver any
+	var source any
 	if t.receiver != uo.SerialZero {
-		receiver = world.Find(t.receiver)
-		if receiver == nil || receiver.Removed() {
+		receiver = Find(t.receiver)
+		if receiver == nil {
 			return
+		}
+		switch o := receiver.(type) {
+		case *Item:
+			if o.Removed {
+				return
+			}
+		case *Mobile:
+			if o.Removed {
+				return
+			}
 		}
 	}
 	if t.source != uo.SerialZero {
-		source = world.Find(t.source)
-		if source == nil || source.Removed() {
+		source = Find(t.source)
+		if source == nil {
 			return
+		}
+		switch o := source.(type) {
+		case *Item:
+			if o.Removed {
+				return
+			}
+		case *Mobile:
+			if o.Removed {
+				return
+			}
 		}
 	}
 	ExecuteEventHandler(t.event, receiver, source, t.parameter)

@@ -89,15 +89,6 @@ func BoundsOf(s, e Point) Bounds {
 	return ret
 }
 
-// RandomLocation returns a random location within these bounds.
-func (b Bounds) RandomLocation(rng RandomSource) Point {
-	return Point{
-		X: rng.Random(b.X, b.East()),
-		Y: rng.Random(b.Y, b.South()),
-		Z: rng.Random(b.Z, b.Top()),
-	}
-}
-
 // Contains returns true if the location is contained within these bounds.
 func (b Bounds) Contains(l Point) bool {
 	return l.X >= b.X && l.X <= b.East() && l.Y >= b.Y && l.Y <= b.South() && l.Z >= b.Z && l.Z <= b.Top()

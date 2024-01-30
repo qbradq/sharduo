@@ -31,16 +31,6 @@ const (
 	HuePartialMask Hue = 0x7fff
 )
 
-// RandomSkinHue returns a random skin hue
-func RandomSkinHue(r RandomSource) Hue {
-	return Hue(r.Random(int(HueSkinMin), int(HueSkinMax)))
-}
-
-// RandomDyeHue returns a random normal dye hue
-func RandomDyeHue(r RandomSource) Hue {
-	return Hue(r.Random(int(HueDyeMin), int(HueDyeMax)))
-}
-
 // IsPartial returns true if the hue value has the partial hue flag set
 func (h Hue) IsPartial() bool { return h&HuePartialFlag != 0 }
 

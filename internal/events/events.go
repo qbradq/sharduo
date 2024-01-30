@@ -5,8 +5,18 @@ import (
 	"github.com/qbradq/sharduo/lib/util"
 )
 
+func init() {
+	game.ExecuteEventHandler = func(e string, r, s, p any) bool {
+		fn := GetEventHandler(e)
+		if fn == nil {
+			return true
+		}
+		return (*fn)(r, s, p)
+	}
+}
+
 // EventHandler is the function signature of event handlers
-type EventHandler func(game.Object, game.Object, any) bool
+type EventHandler func(any, any, any) bool
 
 // Event handler registrar
 var evreg *util.Registry[string, *EventHandler] = util.NewRegistry[string, *EventHandler]("events")

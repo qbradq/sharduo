@@ -8,7 +8,7 @@ import (
 
 // RangeExpression parses a string expression and returns a number, possibly
 // randomly selected from a set or range.
-func RangeExpression(e string, rng RandomSource) int {
+func RangeExpression(e string) int {
 	f := func(s string) int {
 		if len(s) < 1 {
 			return 0
@@ -37,7 +37,7 @@ func RangeExpression(e string, rng RandomSource) int {
 		}
 	}
 	if len(set) > 0 {
-		ret = set[rng.Random(0, len(set)-1)]
+		ret = set[Random(0, len(set)-1)]
 	}
 	return ret
 }
