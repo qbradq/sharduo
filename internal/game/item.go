@@ -2,9 +2,11 @@ package game
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/uo"
+	"github.com/qbradq/sharduo/lib/util"
 	"golang.org/x/image/colornames"
 )
 
@@ -38,6 +40,31 @@ type Item struct {
 	ContainedWeight float64                 // Cache of the total weight held in this and all sub containers
 	opl             *serverpacket.OPLPacket // Cached OPLPacket
 	oplInfo         *serverpacket.OPLInfo   // Cached OPLInfo
+}
+
+// Write writes the persistent data of the item to w.
+func (i *Item) Write(w io.Writer) {
+	i.Object.Write(w)
+	util.PutUInt32(w, 0)                       // Version
+	util.PutUInt16(w, uint16(i.Amount))        // Stack amount
+	util.PutUInt32(w, uint32(len(i.Contents))) // Contents
+	for _, item := range i.Contents {
+		item.Write(w)
+	}
+}
+
+// Read reads the persistent data of the item from r.
+func (i *Item) Read(r io.Reader) {
+	i.Object.Read(r)
+	_ = util.GetUInt32(r)             // Version
+	i.Amount = int(util.GetUInt16(r)) // Stack amount
+	n := int(util.GetUInt32(r))       // Contents item count
+	i.Contents = make([]*Item, n)     // Contents
+	for idx := 0; idx < n; idx++ {
+		item := &Item{}
+		item.Read(r)
+		i.Contents[idx] = item
+	}
 }
 
 // AddObserver adds a ContainerObserver to the list of current observers.
@@ -108,4 +135,23 @@ func (i *Item) RootContainer() *Item {
 		}
 		p = p.Container
 	}
+}
+
+// UpdateItem updates the item for all observers.
+func (i *Item) UpdateItem(item *Item) {
+	for _, o := range i.Observers {
+		o.ContainerItemAdded(i, item)
+	}
+}
+
+// UpdateItemOPL updates the OPL information for the given item for every
+// observer currently observing this container.
+func (i *Item) UpdateItemOPL(item *Item) {
+	for _, o := range i.Observers {
+		o.ContainerItemOPLChanged(i, item)
+	}
+}
+
+// RecalculateStats recalculates all internal cache states.
+func (i *Item) RecalculateStats() {
 }

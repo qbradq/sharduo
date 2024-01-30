@@ -1,8 +1,16 @@
 package game
 
+import "github.com/qbradq/sharduo/lib/serverpacket"
+
 // NetState is implemented by the game server and is responsible for
 // communicating with the client.
 type NetState interface {
+	// Send sends an arbitrary server packet to the connected client. Returns
+	// true on success. This function will fail if the connection's send packet
+	// channel is full but will not block.
+	Send(serverpacket.Packet) bool
+	// UpdateObject sends an update packet for the object.
+	UpdateObject(any)
 }
 
 // ContainerObserver is implemented by anything that can be notified of changes
@@ -28,4 +36,8 @@ type ContainerObserver interface {
 	// ContainerIsObserving returns true if the given container is being
 	// observed by the observer.
 	ContainerIsObserving(*Item) bool
+}
+
+// Spawner implements an interface allowing for the control of object spawning.
+type Spawner interface {
 }

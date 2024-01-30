@@ -1,24 +1,23 @@
 package uod
 
 import (
-	"compress/gzip"
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
 	"log"
 	"os"
 	"path"
+	"path/filepath"
 	"runtime"
 	"runtime/debug"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/qbradq/sharduo/internal/game"
-	"github.com/qbradq/sharduo/lib/datastore"
-	"github.com/qbradq/sharduo/lib/marshal"
 	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/uo"
+	"github.com/qbradq/sharduo/lib/util"
 )
 
 // File lock error
@@ -33,7 +32,7 @@ type World struct {
 	// The world map
 	m *game.Map
 	// The object data store for the entire world
-	ods *datastore.T[game.Object]
+	ods *game.Datastore
 	// Collection of all accounts
 	accounts map[string]*game.Account
 	// Account access mutex
@@ -62,7 +61,7 @@ type World struct {
 func NewWorld(savePath string, rng uo.RandomSource) *World {
 	return &World{
 		m:             game.NewMap(),
-		ods:           datastore.NewDataStore[game.Object](rng),
+		ods:           game.NewDatastore(),
 		accounts:      make(map[string]*game.Account),
 		rng:           rng,
 		requestQueue:  make(chan WorldRequest, 1024*16),
@@ -105,69 +104,45 @@ func (w *World) Unmarshal() error {
 		return ErrSaveFileLocked
 	}
 	defer w.lock.Unlock()
-
 	start := time.Now()
-	filePath := w.LatestSavePath()
-	gzf, err := os.Open(filePath)
+	fp := w.LatestSavePath()
+	tf, err := util.ZipRead(fp)
 	if err != nil {
-		if strings.Contains(err.Error(), "handle is invalid") {
-			return os.ErrNotExist
-		}
-		return err
-	}
-	gz, err := gzip.NewReader(gzf)
-	if err != nil {
-		return err
-	}
-	d, err := io.ReadAll(gz)
-	if d == nil {
-		return os.ErrNotExist
-	} else if err != nil {
-		return err
+		log.Fatalf("fatal: failed reading save file %s", fp)
 	}
 	end := time.Now()
 	elapsed := end.Sub(start)
 	log.Printf("info: read save file into memory in %ds%03dms", elapsed.Milliseconds()/1000, elapsed.Milliseconds()%1000)
-
 	// Global data
 	start = time.Now()
-	tf := marshal.NewTagFile(d)
-	s := tf.Segment(marshal.SegmentWorld)
-	nThreads := int(s.Int())
-	w.time = uo.Time(s.Long())
+	s := tf["global"]
+	nThreads := int(util.GetUInt32(s))
+	w.time = uo.Time(util.GetUInt64(s))
 	// Timers
-	game.UnmarshalTimers(tf.Segment(marshal.SegmentTimers))
+	game.ReadTimers(tf["timers"])
 	// Accounts
-	s = tf.Segment(marshal.SegmentAccounts)
-	for idx := 0; idx < int(s.RecordCount()); idx++ {
+	s = tf["accounts"]
+	n := int(util.GetUInt32(s))
+	for idx := 0; idx < n; idx++ {
 		a := &game.Account{}
-		a.Unmarshal(s)
-		w.accounts[a.Username()] = a
+		a.Read(s)
+		w.accounts[a.Username] = a
 		if a.HasRole(game.RoleSuperUser) {
 			w.superUser = a
 		}
 	}
 	// Unmarshal map deep storage
-	s = tf.Segment(marshal.SegmentDeepStorage)
-	w.m.UnmarshalDeepStorage(s)
+	s = tf["deep-storage"]
+	w.m.ReadDeepStorage(s, w.ods)
 	// Unmarshal objects on the map
-	segStart := marshal.SegmentObjectsStart
-	segEnd := marshal.SegmentObjectsStart + marshal.Segment(nThreads)
-	for seg := segStart; seg < segEnd; seg++ {
-		s := tf.Segment(seg)
-		if s.IsEmpty() {
-			continue
-		}
-		w.m.UnmarshalObjects(s)
+	for i := 0; i < nThreads; i++ {
+		s := tf[fmt.Sprintf("objects-%03d", i)]
+		w.m.ReadObjects(s, w.ods)
 	}
-	// Call the AfterUnmarshal hook on all objects on the map
-	// w.m.AfterUnmarshal() // Moved out to startCommands()
 	// Call RecalculateStats on all objects in the map
-	for _, o := range w.ods.Data() {
-		o.RecalculateStats()
-	}
+	w.ods.RecalculateStats()
 	// Map data
-	w.m.Unmarshal(tf.Segment(marshal.SegmentMap))
+	w.m.Read(tf["map"])
 	// Done
 	end = time.Now()
 	elapsed = end.Sub(start)
@@ -185,93 +160,84 @@ func (w *World) getFileName() string {
 // WaitGroup is returned to wait for the file to be written to disk.
 func (w *World) Marshal() (*sync.WaitGroup, error) {
 	nThreads := runtime.NumCPU()
-
 	if !w.lock.TryLock() {
 		return nil, ErrSaveFileLocked
 	}
 	defer w.lock.Unlock()
-
 	w.BroadcastMessage(nil, "The world is saving, please wait...")
-
-	filePath := path.Join(w.savePath, w.getFileName()+".sav.gz")
-	filePath = path.Clean(filePath)
-	os.MkdirAll(path.Dir(filePath), 0777)
-	log.Printf("info: saving data stores to %s", filePath)
-
+	fp := filepath.Join(w.savePath, w.getFileName()+".zip")
+	fp = filepath.Clean(fp)
+	os.MkdirAll(filepath.Dir(fp), 0777)
+	log.Printf("info: saving data stores to %s", fp)
 	start := time.Now()
 	wg := &sync.WaitGroup{}
-	tf := marshal.NewTagFile(nil)
+	tf := map[string]io.Reader{}
 	// Global data
-	s := tf.Segment(marshal.SegmentWorld)
+	s := bytes.NewBuffer(nil)
+	tf["global"] = s
 	wg.Add(1)
-	go func(s *marshal.TagFileSegment) {
+	go func(s io.Writer) {
 		defer wg.Done()
-		s.PutInt(uint32(nThreads))
-		s.PutLong(uint64(w.time))
+		util.PutUInt32(s, uint32(nThreads))
+		util.PutUInt64(s, uint64(w.time))
 	}(s)
 	// Timers
-	s = tf.Segment(marshal.SegmentTimers)
+	s = bytes.NewBuffer(nil)
+	tf["timers"] = s
 	wg.Add(1)
-	go func(s *marshal.TagFileSegment) {
+	go func(s io.Writer) {
 		// Raw data for timers, this shouldn't change anymore
 		defer wg.Done()
-		game.MarshalTimers(s)
+		game.WriteTimers(s)
 	}(s)
 	// Accounting data
-	s = tf.Segment(marshal.SegmentAccounts)
+	s = bytes.NewBuffer(nil)
+	tf["accounts"] = s
 	wg.Add(1)
-	go func(s *marshal.TagFileSegment) {
+	go func(s io.Writer) {
 		defer wg.Done()
+		util.PutUInt32(s, uint32(len(w.accounts)))
 		for _, a := range w.accounts {
-			a.Marshal(s)
-			s.IncrementRecordCount()
+			a.Write(s)
 		}
 	}(s)
 	// Kick off the object persistance goroutines
 	wg.Add(nThreads)
 	for i := 0; i < nThreads; i++ {
-		s := tf.Segment(marshal.SegmentObjectsStart + marshal.Segment(i))
-		go w.m.MarshalObjects(wg, s, i, nThreads)
+		s = bytes.NewBuffer(nil)
+		tf[fmt.Sprintf("objects-%03d", i)] = s
+		go w.m.WriteObjects(wg, s, i, nThreads)
 	}
 	// Map data
-	s = tf.Segment(marshal.SegmentMap)
+	s = bytes.NewBuffer(nil)
+	tf["map"] = s
 	wg.Add(1)
-	go w.m.Marshal(wg, s)
-	s = tf.Segment(marshal.SegmentDeepStorage)
+	go w.m.Write(wg, s)
+	s = bytes.NewBuffer(nil)
+	tf["deep-storage"] = s
 	wg.Add(1)
-	go w.m.MarshalDeepStorage(wg, s)
+	go w.m.WriteDeepStorage(wg, s)
 	// The main goroutine is blocked at this point
 	wg.Wait()
+	// Calculate and report elapsed time
 	end := time.Now()
 	elapsed := end.Sub(start)
 	log.Printf("info: generated save data in %ds%03dms", elapsed.Milliseconds()/1000, elapsed.Milliseconds()%1000)
-
 	w.BroadcastMessage(nil, "World save completed in %ds%03dms", elapsed.Milliseconds()/1000, elapsed.Milliseconds()%1000)
-
 	// Kick off another goroutine to persist the save to disk and let the main
 	// goroutine continue.
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		start := time.Now()
-		f, err := os.Create(filePath)
+		err := util.ZipWrite(fp, tf)
 		if err != nil {
-			log.Printf("error: unable to create save file %s", filePath)
-			return
+			log.Printf("error: unable to write save file %s", fp)
 		}
-		zw := gzip.NewWriter(f)
-		zw.Name = filePath
-		zw.ModTime = start
-		zw.Comment = "ShardUO save file"
-		tf.Output(zw)
-		zw.Close()
-		tf.Close()
-		f.Close()
 		end := time.Now()
 		elapsed := end.Sub(start)
 		log.Printf("info: saved file to disk in %ds%03dms", elapsed.Milliseconds()/1000, elapsed.Milliseconds()%1000)
 	}()
-
 	return wg, nil
 }
 
@@ -295,36 +261,52 @@ func (w *World) Random() uo.RandomSource {
 // addNewObjectToDataStores adds a new object to the world data stores. It is
 // assigned a unique serial. The object is returned. As a special case this
 // function refuses to add a nil value to the game data store.
-func (w *World) addNewObjectToDataStores(o game.Object) game.Object {
-	if o != nil {
-		w.ods.Add(o, o.SerialType())
+func (w *World) addNewObjectToDataStores(obj any) any {
+	if obj == nil {
+		return nil
 	}
-	return o
+	switch o := obj.(type) {
+	case *game.Mobile:
+		w.ods.StoreMobile(o)
+	case *game.Item:
+		w.ods.StoreItem(o)
+	default:
+		panic("invalid type sent to World.addNewObjectToDataStores()")
+	}
+	return obj
 }
 
-// Find returns the object with the given serial, or nil if it is not found in
-// the game data store.
-func Find[T game.Object](id uo.Serial) T {
-	var zero T
-	o := world.ods.Get(id)
-	if o == nil {
-		return zero
+// Find returns the mobile or item with the given serial or nil.
+func (w *World) Find(id uo.Serial) any {
+	if id.IsMobile() {
+		return w.ods.Mobile(id)
 	}
-	if r, ok := o.(T); ok {
-		return r
-	}
-	return zero
+	return w.ods.Item(id)
 }
 
-// Find returns the object with the given serial, or nil if it is not found in
-// the game data store.
-func (w *World) Find(id uo.Serial) game.Object {
-	return w.ods.Get(id)
+// Mobile returns the mobile with the given serial or nil.
+func (w *World) Mobile(id uo.Serial) *game.Mobile {
+	return w.ods.Mobile(id)
 }
 
-// Delete implements the game.World interface.
-func (w *World) Delete(o game.Object) {
-	w.ods.Remove(o)
+// Item returns the item with the given serial or nil.
+func (w *World) Item(id uo.Serial) *game.Item {
+	return w.ods.Item(id)
+}
+
+// Delete removes an item or mobile from the world.
+func (w *World) Delete(obj any) {
+	if obj == nil {
+		return
+	}
+	switch o := obj.(type) {
+	case *game.Mobile:
+		w.ods.RemoveMobile(o)
+	case *game.Item:
+		w.ods.RemoveItem(o)
+	default:
+		panic("invalid type sent to World.Delete")
+	}
 }
 
 // AuthenticateAccount attempts to authenticate an account by username and
@@ -336,17 +318,20 @@ func (w *World) Delete(o game.Object) {
 func (w *World) AuthenticateAccount(username, passwordHash string) *game.Account {
 	w.alock.Lock()
 	defer w.alock.Unlock()
-
+	// Find account or create new
 	a := w.accounts[username]
 	newAccount := false
 	if a == nil {
 		a = game.NewAccount(username, passwordHash, game.RolePlayer)
 		newAccount = true
 	}
-	if !a.ComparePasswordHash(passwordHash) {
+	// Authenticate password
+	if a.PasswordHash != passwordHash {
 		return nil
 	}
+	// New account handling
 	if newAccount {
+		// Auto-create the super-user on first user login
 		if len(w.accounts) == 0 {
 			a = game.NewAccount(username, passwordHash, game.RoleAll)
 			log.Printf("warning: new user %s granted all roles and marked as the super-user", username)
@@ -398,48 +383,96 @@ func (w *World) Main(wg *sync.WaitGroup) {
 			w.m.Update(w.time)
 			// OPLInfo updates
 			for s := range w.oplUpdateList {
-				o := w.Find(s)
-				if o == nil || o.Removed() {
+				// Bind object
+				obj := w.Find(s)
+				if obj == nil {
+					// Ignore objects that have already been removed
 					continue
 				}
-				if c, ok := o.Parent().(game.Container); ok {
-					oi := world.Find(o.Serial())
-					if i, ok := oi.(game.Item); ok {
-						c.UpdateItemOPL(i)
+				// Handle items and mobiles
+				switch o := obj.(type) {
+				case *game.Item:
+					if o.Removed {
+						// Ignore items slated for removal
+						continue
 					}
-				} else {
-					rp := game.RootParent(o)
-					for _, m := range w.m.GetNetStatesInRange(rp.Location(), uo.MaxViewRange) {
-						if rp.Location().XYDistance(m.Location()) <= m.ViewRange() {
-							oi := w.Find(o.Serial())
-							_, info := oi.OPLPackets(oi)
-							if info != nil {
-								m.NetState().Send(info)
-							}
+					if o.Container != nil {
+						// For items in containers we need the container to
+						// distribute the OPL updates to all observers
+						o.Container.UpdateItemOPL(o)
+					} else if o.Wearer != nil {
+						// For items worn by a mobile we need to update every
+						// net state within range of that mobile
+						_, info := o.OPLPackets()
+						for _, m := range w.m.NetStatesInRange(o.Wearer.Location) {
+							m.NetState.Send(info)
 						}
+					} else {
+						// For items on the ground we need to update every net
+						// state in range of the item itself
+						_, info := o.OPLPackets()
+						for _, m := range w.m.NetStatesInRange(o.Location) {
+							m.NetState.Send(info)
+						}
+					}
+				case *game.Mobile:
+					if o.Removed {
+						// Ignore items slated for removal
+						continue
+					}
+					// Distribute the OPL info to every net state in range of
+					// the mobile.
+					_, info := o.OPLPackets()
+					for _, m := range w.m.NetStatesInRange(o.Location) {
+						m.NetState.Send(info)
 					}
 				}
 			}
+			// Clear the OPL update list
 			w.oplUpdateList = make(map[uo.Serial]struct{})
 			// Update objects
 			for s := range w.updateList {
-				o := w.Find(s)
-				if o == nil || o.Removed() {
+				obj := w.Find(s)
+				if obj == nil {
+					// Ignore objects that have already been removed
 					continue
 				}
-				if c, ok := o.Parent().(game.Container); ok {
-					if i, ok := o.(game.Item); ok {
-						c.UpdateItem(i)
+				switch o := obj.(type) {
+				case *game.Item:
+					if o.Removed {
+						// Ignore objects that are slated for removal
+						continue
 					}
-				} else {
-					rp := game.RootParent(o)
-					for _, m := range w.m.GetNetStatesInRange(rp.Location(), uo.MaxViewRange) {
-						if rp.Location().XYDistance(m.Location()) <= m.ViewRange() {
-							m.NetState().UpdateObject(o)
+					if o.Container != nil {
+						// For items within a container the container has to
+						// distribute the update to all container observers
+						o.Container.UpdateItem(o)
+					} else if o.Wearer != nil {
+						// For items being worn by a mobile we need to
+						// distribute the update to all net states in range of
+						// the mobile wearing the item.
+						for _, m := range w.m.NetStatesInRange(o.Wearer.Location) {
+							m.NetState.UpdateObject(o)
 						}
+					} else {
+						// For items on the ground we need to distribute the
+						// update to all net states in range of the item.
+						for _, m := range w.m.NetStatesInRange(o.Location) {
+							m.NetState.UpdateObject(o)
+						}
+					}
+				case *game.Mobile:
+					if o.Removed {
+						// Ignore objects that are slated for removal
+						continue
+					}
+					// Distribute the update to all net states in range
+					for _, m := range w.m.NetStatesInRange(o.Location) {
+						m.NetState.UpdateObject(o)
 					}
 				}
 			}
+			// Clear the update list
 			w.updateList = make(map[uo.Serial]struct{})
 		case r := <-w.requestQueue:
 			// Handle graceful shutdown
@@ -470,33 +503,45 @@ func (w *World) GetItemDefinition(g uo.Graphic) *uo.StaticDefinition {
 	return tiledatamul.GetStaticDefinition(int(g))
 }
 
-// Update implements the game.World interface.
-func (w *World) Update(o game.Object) {
-	w.updateList[o.Serial()] = struct{}{}
+// UpdateItem schedules an update packet for the item.
+func (w *World) UpdateItem(i *game.Item) {
+	w.updateList[i.Serial] = struct{}{}
 }
 
-// BroadcastPacket implements the game.World interface.
+// UpdateMobile schedules an update packet for the item.
+func (w *World) UpdateMobile(m *game.Mobile) {
+	w.updateList[m.Serial] = struct{}{}
+}
+
+// BroadcastPacket broadcasts an arbitrary server packet to every connected
+// client. Use this for things like server-wide system messages or global
+// lighting and weather effects.
 func (w *World) BroadcastPacket(p serverpacket.Packet) {
 	BroadcastPacket(p)
 }
 
-// BroadcastMessage implements the game.World interface.
-func (w *World) BroadcastMessage(speaker game.Object, fmtstr string, args ...interface{}) {
+// BroadcastMessage broadcasts lower-left system message to every connected
+// client from the given speaker. Use nil for speaker for the system.
+func (w *World) BroadcastMessage(speaker any, fmtstr string, args ...interface{}) {
 	sid := uo.SerialSystem
 	body := uo.BodySystem
 	font := uo.FontNormal
 	hue := uo.Hue(1153)
 	name := ""
 	text := fmt.Sprintf(fmtstr, args...)
-	stype := uo.SpeechTypeSystem
+	sType := uo.SpeechTypeSystem
 	if speaker != nil {
-		sid = speaker.Serial()
-		stype = uo.SpeechTypeNormal
-		name = speaker.DisplayName()
-		if item, ok := speaker.(game.Item); ok {
-			body = uo.Body(item.Graphic())
-		} else if mob, ok := speaker.(game.Mobile); ok {
-			body = mob.Body()
+		switch s := speaker.(type) {
+		case *game.Item:
+			sid = s.Serial
+			sType = uo.SpeechTypeNormal
+			name = s.DisplayName()
+			body = uo.Body(s.Graphic)
+		case *game.Mobile:
+			sid = s.Serial
+			sType = uo.SpeechTypeNormal
+			name = s.DisplayName()
+			body = s.Body
 		}
 	}
 	w.BroadcastPacket(&serverpacket.Speech{
@@ -506,20 +551,31 @@ func (w *World) BroadcastMessage(speaker game.Object, fmtstr string, args ...int
 		Hue:     hue,
 		Name:    name,
 		Text:    text,
-		Type:    stype,
+		Type:    sType,
 	})
 }
 
-// Insert inserts the object into the world's datastores blindly. Used during
-// unmarshalling.
-func (w *World) Insert(o game.Object) {
-	w.ods.Insert(o)
+// Insert inserts the object into the world's datastores blindly. *Only* used
+// during a restore from backup.
+func (w *World) Insert(obj any) {
+	switch o := obj.(type) {
+	case *game.Item:
+		w.ods.InsertItem(o)
+	case *game.Mobile:
+		w.ods.InsertMobile(o)
+	}
 }
 
-// UpdateOPLInfo adds the object to the list of objects that must have their OPL
+// UpdateItemOPLInfo adds the item to the list of items that must have their OPL
 // data updated client-side.
-func (w *World) UpdateOPLInfo(o game.Object) {
-	w.oplUpdateList[o.Serial()] = struct{}{}
+func (w *World) UpdateItemOPLInfo(i *game.Item) {
+	w.oplUpdateList[i.Serial] = struct{}{}
+}
+
+// UpdateMobileOPLInfo adds the mobile to the list of mobiles that must have
+// their OPL data updated client-side.
+func (w *World) UpdateMobileOPLInfo(m *game.Mobile) {
+	w.oplUpdateList[m.Serial] = struct{}{}
 }
 
 // Accounts returns a slice of pointers to all accounts on the server for admin

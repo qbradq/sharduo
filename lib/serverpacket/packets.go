@@ -13,8 +13,8 @@ import (
 	"time"
 	"unicode/utf8"
 
-	dc "github.com/qbradq/sharduo/lib/dataconv"
 	"github.com/qbradq/sharduo/lib/uo"
+	"github.com/qbradq/sharduo/lib/util"
 )
 
 // Packet is the interface all server packets implement.
@@ -26,9 +26,9 @@ type Packet interface {
 // Utility function to properly write a hue value.
 func putHue(w io.Writer, hue uo.Hue) {
 	if hue == uo.HueDefault {
-		dc.PutUint16(w, 0)
+		util.PutUInt16(w, 0)
 	} else {
-		dc.PutUint16(w, uint16(hue+1))
+		util.PutUInt16(w, uint16(hue+1))
 	}
 }
 
@@ -50,20 +50,20 @@ type ServerList struct {
 func (p *ServerList) Write(w io.Writer) {
 	length := 6 + 40*len(p.Entries)
 	// Header
-	dc.PutByte(w, 0xa8)                     // ID
-	dc.PutUint16(w, uint16(length))         // Length
-	dc.PutByte(w, 0xcc)                     // Client flags
-	dc.PutUint16(w, uint16(len(p.Entries))) // Server count
+	util.PutByte(w, 0xa8)                     // ID
+	util.PutUInt16(w, uint16(length))         // Length
+	util.PutByte(w, 0xcc)                     // Client flags
+	util.PutUInt16(w, uint16(len(p.Entries))) // Server count
 	// Server list
 	for idx, entry := range p.Entries {
-		dc.PutUint16(w, uint16(idx))     // Server index
-		dc.PutStringN(w, entry.Name, 32) // Server name
-		dc.Pad(w, 2)                     // Padding and timezone offset
+		util.PutUInt16(w, uint16(idx))     // Server index
+		util.PutStringN(w, entry.Name, 32) // Server name
+		util.Pad(w, 2)                     // Padding and timezone offset
 		// The IP is backward
-		dc.PutByte(w, entry.IP.To4()[3])
-		dc.PutByte(w, entry.IP.To4()[2])
-		dc.PutByte(w, entry.IP.To4()[1])
-		dc.PutByte(w, entry.IP.To4()[0])
+		util.PutByte(w, entry.IP.To4()[3])
+		util.PutByte(w, entry.IP.To4()[2])
+		util.PutByte(w, entry.IP.To4()[1])
+		util.PutByte(w, entry.IP.To4()[0])
 	}
 }
 
@@ -80,14 +80,14 @@ type ConnectToGameServer struct {
 
 // Write implements the Packet interface.
 func (p *ConnectToGameServer) Write(w io.Writer) {
-	dc.PutByte(w, 0x8c) // ID
+	util.PutByte(w, 0x8c) // ID
 	// IP Address (right-way around)
-	dc.PutByte(w, p.IP.To4()[0])
-	dc.PutByte(w, p.IP.To4()[1])
-	dc.PutByte(w, p.IP.To4()[2])
-	dc.PutByte(w, p.IP.To4()[3])
-	dc.PutUint16(w, p.Port) // Port
-	dc.PutUint32(w, uint32(p.Key))
+	util.PutByte(w, p.IP.To4()[0])
+	util.PutByte(w, p.IP.To4()[1])
+	util.PutByte(w, p.IP.To4()[2])
+	util.PutByte(w, p.IP.To4()[3])
+	util.PutUInt16(w, p.Port) // Port
+	util.PutUInt32(w, uint32(p.Key))
 }
 
 // CharacterList is sent on game server login and lists all characters on the
@@ -100,16 +100,16 @@ type CharacterList struct {
 // Write implements the Packet interface.
 func (p *CharacterList) Write(w io.Writer) {
 	length := 4 + len(p.Names)*60 + 1 + 4
-	dc.PutByte(w, 0xa9)               // ID
-	dc.PutUint16(w, uint16(length))   // Length
-	dc.PutByte(w, byte(len(p.Names))) // Number of character slots
+	util.PutByte(w, 0xa9)               // ID
+	util.PutUInt16(w, uint16(length))   // Length
+	util.PutByte(w, byte(len(p.Names))) // Number of character slots
 	for _, name := range p.Names {
-		dc.PutStringN(w, name, 30)
-		dc.Pad(w, 30)
+		util.PutStringN(w, name, 30)
+		util.Pad(w, 30)
 	}
-	dc.PutByte(w, 0)
+	util.PutByte(w, 0)
 	// Flags
-	dc.PutUint32(w, 0x0000003c)
+	util.PutUInt32(w, 0x0000003c)
 }
 
 // LoginComplete is sent after character login is successful.
@@ -117,7 +117,7 @@ type LoginComplete struct{}
 
 // Write implements the Packet interface.
 func (p *LoginComplete) Write(w io.Writer) {
-	dc.PutByte(w, 0x55) // ID
+	util.PutByte(w, 0x55) // ID
 }
 
 // LoginDenied is sent when character login is denied for any reason.
@@ -128,8 +128,8 @@ type LoginDenied struct {
 
 // Write implements the Packet interface.
 func (p *LoginDenied) Write(w io.Writer) {
-	dc.PutByte(w, 0x82) // ID
-	dc.PutByte(w, byte(p.Reason))
+	util.PutByte(w, 0x82) // ID
+	util.PutByte(w, byte(p.Reason))
 }
 
 // EnterWorld is sent just after character login to bring them into the world.
@@ -148,21 +148,21 @@ type EnterWorld struct {
 
 // Write implements the Packet interface.
 func (p *EnterWorld) Write(w io.Writer) {
-	dc.PutByte(w, 0x1b) // ID
-	dc.PutUint32(w, uint32(p.Player))
-	dc.Pad(w, 4)
-	dc.PutUint16(w, uint16(p.Body))
-	dc.PutUint16(w, uint16(p.Location.X))
-	dc.PutUint16(w, uint16(p.Location.Y))
-	dc.PutByte(w, 0)
-	dc.PutByte(w, byte(p.Location.Z))
-	dc.PutByte(w, byte(p.Facing))
-	dc.PutByte(w, 0)
-	dc.Fill(w, 0xff, 4)
-	dc.Pad(w, 4)
-	dc.PutUint16(w, uint16(p.Width))
-	dc.PutUint16(w, uint16(p.Height))
-	dc.Pad(w, 6)
+	util.PutByte(w, 0x1b) // ID
+	util.PutUInt32(w, uint32(p.Player))
+	util.Pad(w, 4)
+	util.PutUInt16(w, uint16(p.Body))
+	util.PutUInt16(w, uint16(p.Location.X))
+	util.PutUInt16(w, uint16(p.Location.Y))
+	util.PutByte(w, 0)
+	util.PutByte(w, byte(p.Location.Z))
+	util.PutByte(w, byte(p.Facing))
+	util.PutByte(w, 0)
+	util.Fill(w, 0xff, 4)
+	util.Pad(w, 4)
+	util.PutUInt16(w, uint16(p.Width))
+	util.PutUInt16(w, uint16(p.Height))
+	util.Pad(w, 6)
 }
 
 // Version is sent to the client to request the client version of the packet.
@@ -170,8 +170,8 @@ type Version struct{}
 
 // Write implements the Packet interface.
 func (p *Version) Write(w io.Writer) {
-	dc.PutByte(w, 0xbd) // ID
-	dc.PutUint16(w, 3)  // Packet length
+	util.PutByte(w, 0xbd) // ID
+	util.PutUInt16(w, 3)  // Packet length
 }
 
 // Speech is sent to the client for all kinds of speech including system
@@ -195,15 +195,15 @@ type Speech struct {
 
 // Write implements the Packet interface.
 func (p *Speech) Write(w io.Writer) {
-	dc.PutByte(w, 0x1c) // ID
-	dc.PutUint16(w, uint16(44+len(p.Text)+1))
-	dc.PutUint32(w, uint32(p.Speaker))
-	dc.PutUint16(w, uint16(p.Body))
-	dc.PutByte(w, byte(p.Type))
+	util.PutByte(w, 0x1c) // ID
+	util.PutUInt16(w, uint16(44+len(p.Text)+1))
+	util.PutUInt32(w, uint32(p.Speaker))
+	util.PutUInt16(w, uint16(p.Body))
+	util.PutByte(w, byte(p.Type))
 	putHue(w, p.Hue)
-	dc.PutUint16(w, uint16(p.Font))
-	dc.PutStringN(w, p.Name, 30)
-	dc.PutString(w, p.Text)
+	util.PutUInt16(w, uint16(p.Font))
+	util.PutStringN(w, p.Name, 30)
+	util.PutString(w, p.Text)
 }
 
 // Ping is sent to the client in response to a client ping packet.
@@ -214,8 +214,8 @@ type Ping struct {
 
 // Write implements the Packet interface.
 func (p *Ping) Write(w io.Writer) {
-	dc.PutByte(w, 0x73)  // ID
-	dc.PutByte(w, p.Key) // Key
+	util.PutByte(w, 0x73)  // ID
+	util.PutByte(w, p.Key) // Key
 }
 
 // ClientViewRange sets the client's view range
@@ -226,8 +226,8 @@ type ClientViewRange struct {
 
 // Write implements the Packet interface.
 func (p *ClientViewRange) Write(w io.Writer) {
-	dc.PutByte(w, 0xC8)    // ID
-	dc.PutByte(w, p.Range) // View range
+	util.PutByte(w, 0xC8)    // ID
+	util.PutByte(w, p.Range) // View range
 }
 
 // MoveAcknowledge acknowledges a ClientWalkRequest packet.
@@ -240,9 +240,9 @@ type MoveAcknowledge struct {
 
 // Write implements the Packet interface.
 func (p *MoveAcknowledge) Write(w io.Writer) {
-	dc.PutByte(w, 0x22)              // ID
-	dc.PutByte(w, byte(p.Sequence))  // Move sequence number
-	dc.PutByte(w, byte(p.Notoriety)) // Player's notoriety
+	util.PutByte(w, 0x22)              // ID
+	util.PutByte(w, byte(p.Sequence))  // Move sequence number
+	util.PutByte(w, byte(p.Notoriety)) // Player's notoriety
 }
 
 // EquippedMobile is sent to add or update a mobile with equipment graphics.
@@ -282,29 +282,29 @@ type EquippedMobileItem struct {
 
 // Write implements the Packet interface.
 func (p *EquippedMobile) Write(w io.Writer) {
-	dc.PutByte(w, 0x78) // Packet ID
-	dc.PutUint16(w, uint16(19+len(p.Equipment)*9+4))
-	dc.PutUint32(w, uint32(p.ID))
-	dc.PutUint16(w, uint16(p.Body))
-	dc.PutUint16(w, uint16(p.Location.X))
-	dc.PutUint16(w, uint16(p.Location.Y))
-	dc.PutByte(w, byte(p.Location.Z))
+	util.PutByte(w, 0x78) // Packet ID
+	util.PutUInt16(w, uint16(19+len(p.Equipment)*9+4))
+	util.PutUInt32(w, uint32(p.ID))
+	util.PutUInt16(w, uint16(p.Body))
+	util.PutUInt16(w, uint16(p.Location.X))
+	util.PutUInt16(w, uint16(p.Location.Y))
+	util.PutByte(w, byte(p.Location.Z))
 	// Facing
 	if p.IsRunning {
-		dc.PutByte(w, byte(p.Facing.SetRunningFlag()))
+		util.PutByte(w, byte(p.Facing.SetRunningFlag()))
 	} else {
-		dc.PutByte(w, byte(p.Facing.StripRunningFlag()))
+		util.PutByte(w, byte(p.Facing.StripRunningFlag()))
 	}
 	putHue(w, p.Hue)
-	dc.PutByte(w, byte(p.Flags))
-	dc.PutByte(w, byte(p.Notoriety))
+	util.PutByte(w, byte(p.Flags))
+	util.PutByte(w, byte(p.Notoriety))
 	for _, item := range p.Equipment {
-		dc.PutUint32(w, uint32(item.ID))
-		dc.PutUint16(w, uint16(item.Graphic.SetHueFlag()))
-		dc.PutByte(w, uint8(item.Layer))
+		util.PutUInt32(w, uint32(item.ID))
+		util.PutUInt16(w, uint16(item.Graphic.SetHueFlag()))
+		util.PutByte(w, uint8(item.Layer))
 		putHue(w, item.Hue)
 	}
-	dc.PutUint32(w, 0x00000000) // End of list marker
+	util.PutUInt32(w, 0x00000000) // End of list marker
 }
 
 // Target is used to send and recieve targeting commands to the client
@@ -319,11 +319,11 @@ type Target struct {
 
 // Write implements the Packet interface.
 func (p *Target) Write(w io.Writer) {
-	dc.PutByte(w, 0x6C) // Packet ID
-	dc.PutByte(w, byte(p.TargetType))
-	dc.PutUint32(w, uint32(p.Serial))
-	dc.PutByte(w, byte(p.CursorType))
-	dc.Pad(w, 12)
+	util.PutByte(w, 0x6C) // Packet ID
+	util.PutByte(w, byte(p.TargetType))
+	util.PutUInt32(w, uint32(p.Serial))
+	util.PutByte(w, byte(p.CursorType))
+	util.Pad(w, 12)
 }
 
 // StatusBarInfo sends basic status info to the client.
@@ -370,28 +370,28 @@ type StatusBarInfo struct {
 
 // Write implements the Packet interface.
 func (p *StatusBarInfo) Write(w io.Writer) {
-	dc.PutByte(w, 0x11) // Packet ID
-	dc.PutUint16(w, 70) // Packet length
-	dc.PutUint32(w, uint32(p.Mobile))
-	dc.PutStringN(w, p.Name, 30)
-	dc.PutUint16(w, uint16(p.HP))
-	dc.PutUint16(w, uint16(p.MaxHP))
-	dc.PutBool(w, p.NameChangeFlag)
-	dc.PutByte(w, 0x03) // UO:R status bar information
-	dc.PutBool(w, p.Female)
-	dc.PutUint16(w, uint16(p.Strength))
-	dc.PutUint16(w, uint16(p.Dexterity))
-	dc.PutUint16(w, uint16(p.Intelligence))
-	dc.PutUint16(w, uint16(p.Stamina))
-	dc.PutUint16(w, uint16(p.MaxStamina))
-	dc.PutUint16(w, uint16(p.Mana))
-	dc.PutUint16(w, uint16(p.MaxMana))
-	dc.PutUint32(w, uint32(p.Gold))
-	dc.PutUint16(w, uint16(p.ArmorRating))
-	dc.PutUint16(w, uint16(p.Weight))
-	dc.PutUint16(w, uint16(p.StatsCap))
-	dc.PutByte(w, byte(p.Followers))
-	dc.PutByte(w, byte(p.MaxFollowers))
+	util.PutByte(w, 0x11) // Packet ID
+	util.PutUInt16(w, 70) // Packet length
+	util.PutUInt32(w, uint32(p.Mobile))
+	util.PutStringN(w, p.Name, 30)
+	util.PutUInt16(w, uint16(p.HP))
+	util.PutUInt16(w, uint16(p.MaxHP))
+	util.PutBool(w, p.NameChangeFlag)
+	util.PutByte(w, 0x03) // UO:R status bar information
+	util.PutBool(w, p.Female)
+	util.PutUInt16(w, uint16(p.Strength))
+	util.PutUInt16(w, uint16(p.Dexterity))
+	util.PutUInt16(w, uint16(p.Intelligence))
+	util.PutUInt16(w, uint16(p.Stamina))
+	util.PutUInt16(w, uint16(p.MaxStamina))
+	util.PutUInt16(w, uint16(p.Mana))
+	util.PutUInt16(w, uint16(p.MaxMana))
+	util.PutUInt32(w, uint32(p.Gold))
+	util.PutUInt16(w, uint16(p.ArmorRating))
+	util.PutUInt16(w, uint16(p.Weight))
+	util.PutUInt16(w, uint16(p.StatsCap))
+	util.PutByte(w, byte(p.Followers))
+	util.PutByte(w, byte(p.MaxFollowers))
 }
 
 // ObjectInfo sends information about a single item or multi to the client.
@@ -422,17 +422,17 @@ type ObjectInfo struct {
 
 // Write implements the Packet interface.
 func (p *ObjectInfo) Write(w io.Writer) {
-	dc.PutByte(w, 0xF3)     // Packet ID
-	dc.PutUint16(w, 0x0001) // Always 0x0001 on OSI according to POL
+	util.PutByte(w, 0xF3)     // Packet ID
+	util.PutUInt16(w, 0x0001) // Always 0x0001 on OSI according to POL
 	// Data type
 	if p.IsMulti {
-		dc.PutByte(w, 0x02)
+		util.PutByte(w, 0x02)
 	} else {
-		dc.PutByte(w, 0x00)
+		util.PutByte(w, 0x00)
 	}
-	dc.PutUint32(w, uint32(p.Serial))
-	dc.PutUint16(w, uint16(p.Graphic))
-	dc.PutByte(w, byte(p.GraphicIncrement))
+	util.PutUInt32(w, uint32(p.Serial))
+	util.PutUInt16(w, uint16(p.Graphic))
+	util.PutByte(w, byte(p.GraphicIncrement))
 	// Amount POL server documentation says the amount field is repeated,
 	// ClassicUO ignores the second as unknown.
 	var n int
@@ -443,17 +443,17 @@ func (p *ObjectInfo) Write(w io.Writer) {
 	} else {
 		n = p.Amount
 	}
-	dc.PutUint16(w, uint16(n))
-	dc.PutUint16(w, uint16(n))
+	util.PutUInt16(w, uint16(n))
+	util.PutUInt16(w, uint16(n))
 	// Location
-	dc.PutUint16(w, uint16(p.Location.X&0x7FFF))
-	dc.PutUint16(w, uint16(p.Location.Y&0x3FFF))
-	dc.PutByte(w, byte(p.Location.Z))
+	util.PutUInt16(w, uint16(p.Location.X&0x7FFF))
+	util.PutUInt16(w, uint16(p.Location.Y&0x3FFF))
+	util.PutByte(w, byte(p.Location.Z))
 	// Facing
-	dc.PutByte(w, 0)
+	util.PutByte(w, 0)
 	// Hue
 	if p.IsMulti {
-		dc.PutUint16(w, 0)
+		util.PutUInt16(w, 0)
 	} else {
 		putHue(w, p.Hue)
 	}
@@ -462,9 +462,9 @@ func (p *ObjectInfo) Write(w io.Writer) {
 	if p.Movable {
 		flags |= 0x20
 	}
-	dc.PutByte(w, flags) // Movable if normally not
+	util.PutByte(w, flags) // Movable if normally not
 	// Unknown
-	dc.Pad(w, 2)
+	util.Pad(w, 2)
 }
 
 // DeleteObject tells the client to forget about an object
@@ -475,8 +475,8 @@ type DeleteObject struct {
 
 // Write implements the Packet interface.
 func (p *DeleteObject) Write(w io.Writer) {
-	dc.PutByte(w, 0x1D) // Packet ID
-	dc.PutUint32(w, uint32(p.Serial))
+	util.PutByte(w, 0x1D) // Packet ID
+	util.PutUInt32(w, uint32(p.Serial))
 }
 
 // OpenPaperDoll tells the client to open the paper doll window for a mobile
@@ -501,10 +501,10 @@ func (p *OpenPaperDoll) Write(w io.Writer) {
 	if p.Alterable {
 		flags |= 0x02
 	}
-	dc.PutByte(w, 0x88) // Open paper doll
-	dc.PutUint32(w, uint32(p.Serial))
-	dc.PutStringN(w, p.Text, 60)
-	dc.PutByte(w, flags)
+	util.PutByte(w, 0x88) // Open paper doll
+	util.PutUInt32(w, uint32(p.Serial))
+	util.PutStringN(w, p.Text, 60)
+	util.PutByte(w, flags)
 }
 
 // MoveSpeed sets the movement speed of the player on the client. This is a
@@ -517,10 +517,10 @@ type MoveSpeed struct {
 
 // Write implements the Packet interface.
 func (p *MoveSpeed) Write(w io.Writer) {
-	dc.PutByte(w, 0xBF)     // General Information packet
-	dc.PutUint16(w, 6)      // Packet length
-	dc.PutUint16(w, 0x0026) // MoveSpeed sub-command
-	dc.PutByte(w, byte(p.MoveSpeed))
+	util.PutByte(w, 0xBF)     // General Information packet
+	util.PutUInt16(w, 6)      // Packet length
+	util.PutUInt16(w, 0x0026) // MoveSpeed sub-command
+	util.PutByte(w, byte(p.MoveSpeed))
 }
 
 // DrawPlayer updates the player's location and appearance
@@ -541,17 +541,17 @@ type DrawPlayer struct {
 
 // Write implements the Packet interface.
 func (p *DrawPlayer) Write(w io.Writer) {
-	dc.PutByte(w, 0x20) // Packet ID
-	dc.PutUint32(w, uint32(p.ID))
-	dc.PutUint16(w, uint16(p.Body))
-	dc.Pad(w, 1)
+	util.PutByte(w, 0x20) // Packet ID
+	util.PutUInt32(w, uint32(p.ID))
+	util.PutUInt16(w, uint16(p.Body))
+	util.Pad(w, 1)
 	putHue(w, p.Hue)
-	dc.PutByte(w, byte(p.Flags))
-	dc.PutUint16(w, uint16(p.Location.X))
-	dc.PutUint16(w, uint16(p.Location.Y))
-	dc.Pad(w, 2)
-	dc.PutByte(w, byte(p.Facing))
-	dc.PutByte(w, byte(int8(p.Location.Z)))
+	util.PutByte(w, byte(p.Flags))
+	util.PutUInt16(w, uint16(p.Location.X))
+	util.PutUInt16(w, uint16(p.Location.Y))
+	util.Pad(w, 2)
+	util.PutByte(w, byte(p.Facing))
+	util.PutByte(w, byte(int8(p.Location.Z)))
 }
 
 // DropApproved is sent to the client to acknowledge a drop or equip request.
@@ -559,7 +559,7 @@ type DropApproved struct{}
 
 // Write implements the Packet interface.
 func (p *DropApproved) Write(w io.Writer) {
-	dc.PutByte(w, 0x29) // Packet ID
+	util.PutByte(w, 0x29) // Packet ID
 }
 
 // WornItem is sent to clients to inform them of an item added to a mobile's
@@ -579,12 +579,12 @@ type WornItem struct {
 
 // Write implements the Packet interface.
 func (p *WornItem) Write(w io.Writer) {
-	dc.PutByte(w, 0x2E) // Packet ID
-	dc.PutUint32(w, uint32(p.Item))
-	dc.PutUint16(w, uint16(p.Graphic))
-	dc.Pad(w, 1)
-	dc.PutByte(w, byte(p.Layer))
-	dc.PutUint32(w, uint32(p.Wearer))
+	util.PutByte(w, 0x2E) // Packet ID
+	util.PutUInt32(w, uint32(p.Item))
+	util.PutUInt16(w, uint16(p.Graphic))
+	util.Pad(w, 1)
+	util.PutByte(w, byte(p.Layer))
+	util.PutUInt32(w, uint32(p.Wearer))
 	putHue(w, p.Hue)
 }
 
@@ -595,8 +595,8 @@ type MoveItemReject struct {
 
 // Write implements the Packet interface.
 func (p *MoveItemReject) Write(w io.Writer) {
-	dc.PutByte(w, 0x27) // Packet ID
-	dc.PutByte(w, byte(p.Reason))
+	util.PutByte(w, 0x27) // Packet ID
+	util.PutByte(w, byte(p.Reason))
 }
 
 // MoveMobile moves an existing mobile on the client side
@@ -621,21 +621,21 @@ type MoveMobile struct {
 
 // Write implements the Packet interface.
 func (p *MoveMobile) Write(w io.Writer) {
-	dc.PutByte(w, 0x77) // Packet ID
-	dc.PutUint32(w, uint32(p.ID))
-	dc.PutUint16(w, uint16(p.Body))
-	dc.PutUint16(w, uint16(p.Location.X))
-	dc.PutUint16(w, uint16(p.Location.Y))
-	dc.PutByte(w, byte(int8(p.Location.Z)))
+	util.PutByte(w, 0x77) // Packet ID
+	util.PutUInt32(w, uint32(p.ID))
+	util.PutUInt16(w, uint16(p.Body))
+	util.PutUInt16(w, uint16(p.Location.X))
+	util.PutUInt16(w, uint16(p.Location.Y))
+	util.PutByte(w, byte(int8(p.Location.Z)))
 	// Facing
 	if p.Running {
-		dc.PutByte(w, byte(p.Facing.SetRunningFlag()))
+		util.PutByte(w, byte(p.Facing.SetRunningFlag()))
 	} else {
-		dc.PutByte(w, byte(p.Facing.StripRunningFlag()))
+		util.PutByte(w, byte(p.Facing.StripRunningFlag()))
 	}
 	putHue(w, p.Hue)
-	dc.PutByte(w, byte(p.Flags))
-	dc.PutByte(w, byte(p.Notoriety))
+	util.PutByte(w, byte(p.Flags))
+	util.PutByte(w, byte(p.Notoriety))
 }
 
 // DragItem makes the client play an animation of the item being dragged from
@@ -662,19 +662,19 @@ type DragItem struct {
 
 // Write implements the Packet interface.
 func (p *DragItem) Write(w io.Writer) {
-	dc.PutByte(w, 0x23) // Packet ID
-	dc.PutUint16(w, uint16(p.Graphic))
-	dc.PutByte(w, byte(p.GraphicOffset))
+	util.PutByte(w, 0x23) // Packet ID
+	util.PutUInt16(w, uint16(p.Graphic))
+	util.PutByte(w, byte(p.GraphicOffset))
 	putHue(w, p.Hue)
-	dc.PutUint16(w, uint16(p.Amount))
-	dc.PutUint32(w, uint32(p.Source))
-	dc.PutUint16(w, uint16(p.SourceLocation.X))
-	dc.PutUint16(w, uint16(p.SourceLocation.Y))
-	dc.PutByte(w, byte(int8(p.SourceLocation.Z)))
-	dc.PutUint32(w, uint32(p.Destination))
-	dc.PutUint16(w, uint16(p.DestinationLocation.X))
-	dc.PutUint16(w, uint16(p.DestinationLocation.Y))
-	dc.PutByte(w, byte(int8(p.DestinationLocation.Z)))
+	util.PutUInt16(w, uint16(p.Amount))
+	util.PutUInt32(w, uint32(p.Source))
+	util.PutUInt16(w, uint16(p.SourceLocation.X))
+	util.PutUInt16(w, uint16(p.SourceLocation.Y))
+	util.PutByte(w, byte(int8(p.SourceLocation.Z)))
+	util.PutUInt32(w, uint32(p.Destination))
+	util.PutUInt16(w, uint16(p.DestinationLocation.X))
+	util.PutUInt16(w, uint16(p.DestinationLocation.Y))
+	util.PutByte(w, byte(int8(p.DestinationLocation.Z)))
 }
 
 // OpenContainerGump opens a container gump on the client.
@@ -687,10 +687,10 @@ type OpenContainerGump struct {
 
 // Write implements the Packet interface.
 func (p *OpenContainerGump) Write(w io.Writer) {
-	dc.PutByte(w, 0x24) // Packet ID
-	dc.PutUint32(w, uint32(p.GumpSerial))
-	dc.PutUint16(w, uint16(p.Gump))
-	dc.PutUint16(w, uint16(0x007D)) // No idea what this does but it's required > 7.0.9.x
+	util.PutByte(w, 0x24) // Packet ID
+	util.PutUInt32(w, uint32(p.GumpSerial))
+	util.PutUInt16(w, uint16(p.Gump))
+	util.PutUInt16(w, uint16(0x007D)) // No idea what this does but it's required > 7.0.9.x
 }
 
 // AddItemToContainer adds an item to an already-open container gump.
@@ -713,15 +713,15 @@ type AddItemToContainer struct {
 
 // Write implements the Packet interface.
 func (p *AddItemToContainer) Write(w io.Writer) {
-	dc.PutByte(w, 0x25) // Packet ID
-	dc.PutUint32(w, uint32(p.Item))
-	dc.PutUint16(w, uint16(p.Graphic))
-	dc.PutByte(w, byte(p.GraphicOffset))
-	dc.PutUint16(w, uint16(p.Amount))
-	dc.PutUint16(w, uint16(p.Location.X))
-	dc.PutUint16(w, uint16(p.Location.Y))
-	dc.Pad(w, 1) // Grid index
-	dc.PutUint32(w, uint32(p.Container))
+	util.PutByte(w, 0x25) // Packet ID
+	util.PutUInt32(w, uint32(p.Item))
+	util.PutUInt16(w, uint16(p.Graphic))
+	util.PutByte(w, byte(p.GraphicOffset))
+	util.PutUInt16(w, uint16(p.Amount))
+	util.PutUInt16(w, uint16(p.Location.X))
+	util.PutUInt16(w, uint16(p.Location.Y))
+	util.Pad(w, 1) // Grid index
+	util.PutUInt32(w, uint32(p.Container))
 	putHue(w, p.Hue)
 }
 
@@ -757,32 +757,32 @@ type Contents struct {
 
 // Write implements the Packet interface.
 func (p *Contents) Write(w io.Writer) {
-	dc.PutByte(w, 0x3C)                        // Packet ID
-	dc.PutUint16(w, uint16(5+len(p.Items)*20)) // Packet length
-	dc.PutUint16(w, uint16(len(p.Items)))
+	util.PutByte(w, 0x3C)                        // Packet ID
+	util.PutUInt16(w, uint16(5+len(p.Items)*20)) // Packet length
+	util.PutUInt16(w, uint16(len(p.Items)))
 	if p.ReverseOrder {
 		for i := len(p.Items) - 1; i >= 0; i-- {
 			item := p.Items[i]
-			dc.PutUint32(w, uint32(item.Serial))
-			dc.PutUint16(w, uint16(item.Graphic))
-			dc.PutByte(w, byte(item.GraphicOffset))
-			dc.PutUint16(w, uint16(item.Amount))
-			dc.PutUint16(w, uint16(item.Location.X))
-			dc.PutUint16(w, uint16(item.Location.Y))
-			dc.Pad(w, 1) // Grid index
-			dc.PutUint32(w, uint32(item.Container))
+			util.PutUInt32(w, uint32(item.Serial))
+			util.PutUInt16(w, uint16(item.Graphic))
+			util.PutByte(w, byte(item.GraphicOffset))
+			util.PutUInt16(w, uint16(item.Amount))
+			util.PutUInt16(w, uint16(item.Location.X))
+			util.PutUInt16(w, uint16(item.Location.Y))
+			util.Pad(w, 1) // Grid index
+			util.PutUInt32(w, uint32(item.Container))
 			putHue(w, item.Hue)
 		}
 	} else {
 		for _, item := range p.Items {
-			dc.PutUint32(w, uint32(item.Serial))
-			dc.PutUint16(w, uint16(item.Graphic))
-			dc.PutByte(w, byte(item.GraphicOffset))
-			dc.PutUint16(w, uint16(item.Amount))
-			dc.PutUint16(w, uint16(item.Location.X))
-			dc.PutUint16(w, uint16(item.Location.Y))
-			dc.Pad(w, 1) // Grid index
-			dc.PutUint32(w, uint32(item.Container))
+			util.PutUInt32(w, uint32(item.Serial))
+			util.PutUInt16(w, uint16(item.Graphic))
+			util.PutByte(w, byte(item.GraphicOffset))
+			util.PutUInt16(w, uint16(item.Amount))
+			util.PutUInt16(w, uint16(item.Location.X))
+			util.PutUInt16(w, uint16(item.Location.Y))
+			util.Pad(w, 1) // Grid index
+			util.PutUInt32(w, uint32(item.Container))
 			putHue(w, item.Hue)
 		}
 	}
@@ -799,11 +799,11 @@ type CloseGump struct {
 
 // Write implements the Packet interface.
 func (p *CloseGump) Write(w io.Writer) {
-	dc.PutByte(w, 0xBF)             // General information packet ID
-	dc.PutUint16(w, uint16(13))     // Length
-	dc.PutUint16(w, uint16(0x0004)) // Close gump subcommand
-	dc.PutUint32(w, uint32(p.Gump))
-	dc.PutUint32(w, uint32(p.Button))
+	util.PutByte(w, 0xBF)             // General information packet ID
+	util.PutUInt16(w, uint16(13))     // Length
+	util.PutUInt16(w, uint16(0x0004)) // Close gump subcommand
+	util.PutUInt32(w, uint32(p.Gump))
+	util.PutUInt32(w, uint32(p.Button))
 }
 
 // MoveReject sends a movement rejection packet to the client.
@@ -818,12 +818,12 @@ type MoveReject struct {
 
 // Write implements the Packet interface.
 func (p *MoveReject) Write(w io.Writer) {
-	dc.PutByte(w, 0x21) // Packet ID
-	dc.PutByte(w, p.Sequence)
-	dc.PutUint16(w, uint16(p.Location.X))
-	dc.PutUint16(w, uint16(p.Location.Y))
-	dc.PutByte(w, byte(p.Facing))
-	dc.PutByte(w, byte(int8(p.Location.Z)))
+	util.PutByte(w, 0x21) // Packet ID
+	util.PutByte(w, p.Sequence)
+	util.PutUInt16(w, uint16(p.Location.X))
+	util.PutUInt16(w, uint16(p.Location.Y))
+	util.PutByte(w, byte(p.Facing))
+	util.PutByte(w, byte(int8(p.Location.Z)))
 }
 
 // SingleSkillUpdate sends an update for a single skill.
@@ -838,14 +838,14 @@ type SingleSkillUpdate struct {
 
 // Write implements the Packet interface.
 func (p *SingleSkillUpdate) Write(w io.Writer) {
-	dc.PutByte(w, 0x3A)                       // Packet ID
-	dc.PutUint16(w, 13)                       // Packet length
-	dc.PutByte(w, byte(uo.SkillUpdateSingle)) // Update type
-	dc.PutUint16(w, uint16(p.Skill))          // Skill index
-	dc.PutUint16(w, uint16(p.Value))          // Display value
-	dc.PutUint16(w, uint16(p.Value))          // Base value
-	dc.PutByte(w, byte(p.Lock))               // Lock code
-	dc.PutUint16(w, 1000)                     // Skill cap
+	util.PutByte(w, 0x3A)                       // Packet ID
+	util.PutUInt16(w, 13)                       // Packet length
+	util.PutByte(w, byte(uo.SkillUpdateSingle)) // Update type
+	util.PutUInt16(w, uint16(p.Skill))          // Skill index
+	util.PutUInt16(w, uint16(p.Value))          // Display value
+	util.PutUInt16(w, uint16(p.Value))          // Base value
+	util.PutByte(w, byte(p.Lock))               // Lock code
+	util.PutUInt16(w, 1000)                     // Skill cap
 }
 
 // FullSkillUpdate sends an update for all skills.
@@ -856,15 +856,15 @@ type FullSkillUpdate struct {
 
 // Write implements the Packet interface.
 func (p *FullSkillUpdate) Write(w io.Writer) {
-	dc.PutByte(w, 0x3A)                             // Packet ID
-	dc.PutUint16(w, uint16(4+len(p.SkillValues)*9)) // Packet length
-	dc.PutByte(w, byte(uo.SkillUpdateAll))          // Update type
+	util.PutByte(w, 0x3A)                             // Packet ID
+	util.PutUInt16(w, uint16(4+len(p.SkillValues)*9)) // Packet length
+	util.PutByte(w, byte(uo.SkillUpdateAll))          // Update type
 	for id, value := range p.SkillValues {
-		dc.PutUint16(w, uint16(id+1))       // Skill ID - Not sure why this is 1-based in this one packet, but oh well
-		dc.PutUint16(w, uint16(value))      // Displayed value
-		dc.PutUint16(w, uint16(value))      // Base value
-		dc.PutByte(w, byte(uo.SkillLockUp)) // Skill lock
-		dc.PutUint16(w, 1000)               // Skill cap
+		util.PutUInt16(w, uint16(id+1))       // Skill ID - Not sure why this is 1-based in this one packet, but oh well
+		util.PutUInt16(w, uint16(value))      // Displayed value
+		util.PutUInt16(w, uint16(value))      // Base value
+		util.PutByte(w, byte(uo.SkillLockUp)) // Skill lock
+		util.PutUInt16(w, 1000)               // Skill cap
 	}
 }
 
@@ -890,23 +890,23 @@ type ClilocMessage struct {
 func (p *ClilocMessage) Write(w io.Writer) {
 	args := strings.Join(p.Arguments, "\t")
 	// Calculate packet length
-	l := 50                            // Fixed portions of the packet, including the terminating null
-	l += len([]rune(args)) * 2         // Two bytes per rune
-	dc.PutByte(w, 0xC1)                // Packet ID
-	dc.PutUint16(w, uint16(l))         // Packet length
-	dc.PutUint32(w, uint32(p.Speaker)) // Speaker's ID
-	dc.PutUint16(w, uint16(p.Body))    // Speaker's body graphic
+	l := 50                              // Fixed portions of the packet, including the terminating null
+	l += len([]rune(args)) * 2           // Two bytes per rune
+	util.PutByte(w, 0xC1)                // Packet ID
+	util.PutUInt16(w, uint16(l))         // Packet length
+	util.PutUInt32(w, uint32(p.Speaker)) // Speaker's ID
+	util.PutUInt16(w, uint16(p.Body))    // Speaker's body graphic
 	// Message type handling
 	if p.Speaker == uo.SerialSystem {
-		dc.PutByte(w, byte(0x06))
+		util.PutByte(w, byte(0x06))
 	} else {
-		dc.PutByte(w, byte(0x07))
+		util.PutByte(w, byte(0x07))
 	}
-	putHue(w, p.Hue)                  // Message hue
-	dc.PutUint16(w, uint16(p.Font))   // Message font
-	dc.PutUint32(w, uint32(p.Cliloc)) // Message index number
-	dc.PutStringN(w, p.Name, 30)
-	dc.PutUTF16LEString(w, args)
+	putHue(w, p.Hue)                    // Message hue
+	util.PutUInt16(w, uint16(p.Font))   // Message font
+	util.PutUInt32(w, uint32(p.Cliloc)) // Message index number
+	util.PutStringN(w, p.Name, 30)
+	util.PutUTF16LEString(w, args)
 }
 
 // Sound tells the client to play a sound from a specific location.
@@ -919,14 +919,14 @@ type Sound struct {
 
 // Write implements the Packet interface.
 func (p *Sound) Write(w io.Writer) {
-	dc.PutByte(w, 0x54)                     // Packet ID
-	dc.PutByte(w, 0x01)                     // Sound type, 0=quiet, 1=normal
-	dc.PutUint16(w, uint16(p.Sound))        // Sound ID
-	dc.PutUint16(w, 0x00)                   // Volume, ServUO always sets this to 0
-	dc.PutUint16(w, uint16(p.Location.X))   // X position
-	dc.PutUint16(w, uint16(p.Location.Y))   // Y position
-	dc.PutByte(w, 0x00)                     // Facing byte? Always 0
-	dc.PutByte(w, byte(int8(p.Location.Z))) // Z position
+	util.PutByte(w, 0x54)                     // Packet ID
+	util.PutByte(w, 0x01)                     // Sound type, 0=quiet, 1=normal
+	util.PutUInt16(w, uint16(p.Sound))        // Sound ID
+	util.PutUInt16(w, 0x00)                   // Volume, ServUO always sets this to 0
+	util.PutUInt16(w, uint16(p.Location.X))   // X position
+	util.PutUInt16(w, uint16(p.Location.Y))   // Y position
+	util.PutByte(w, 0x00)                     // Facing byte? Always 0
+	util.PutByte(w, byte(int8(p.Location.Z))) // Z position
 }
 
 // Music tells the client to start playing the given song.
@@ -936,8 +936,8 @@ type Music struct {
 
 // Write implements the Packet interface.
 func (p *Music) Write(w io.Writer) {
-	dc.PutByte(w, 0x6D)             // Packet ID
-	dc.PutUint16(w, uint16(p.Song)) // Song ID
+	util.PutByte(w, 0x6D)             // Packet ID
+	util.PutUInt16(w, uint16(p.Song)) // Song ID
 }
 
 // Animation tells the client to animate a mobile.
@@ -952,11 +952,11 @@ type Animation struct {
 
 // Write implements the Packet interface.
 func (p *Animation) Write(w io.Writer) {
-	dc.PutByte(w, 0xE2)                        // Packet ID
-	dc.PutUint32(w, uint32(p.Serial))          // Mobile to animate
-	dc.PutUint16(w, uint16(p.AnimationType))   // Animation to play
-	dc.PutUint16(w, uint16(p.AnimationAction)) // Sub-animation to play
-	dc.PutByte(w, 0)                           // Mode
+	util.PutByte(w, 0xE2)                        // Packet ID
+	util.PutUInt32(w, uint32(p.Serial))          // Mobile to animate
+	util.PutUInt16(w, uint16(p.AnimationType))   // Animation to play
+	util.PutUInt16(w, uint16(p.AnimationAction)) // Sub-animation to play
+	util.PutByte(w, 0)                           // Mode
 }
 
 // Time tells the client the server time.
@@ -967,10 +967,10 @@ type Time struct {
 
 // Write implements the Packet interface.
 func (p *Time) Write(w io.Writer) {
-	dc.PutByte(w, 0x5B) // Packet ID
-	dc.PutByte(w, byte(p.Time.Hour()))
-	dc.PutByte(w, byte(p.Time.Minute()))
-	dc.PutByte(w, byte(p.Time.Second()))
+	util.PutByte(w, 0x5B) // Packet ID
+	util.PutByte(w, byte(p.Time.Hour()))
+	util.PutByte(w, byte(p.Time.Minute()))
+	util.PutByte(w, byte(p.Time.Second()))
 }
 
 // GlobalLightLevel sets the overall light level for the client.
@@ -981,8 +981,8 @@ type GlobalLightLevel struct {
 
 // Write implements the Packet interface.
 func (p *GlobalLightLevel) Write(w io.Writer) {
-	dc.PutByte(w, 0x4F) // Packet ID
-	dc.PutByte(w, byte(p.LightLevel))
+	util.PutByte(w, 0x4F) // Packet ID
+	util.PutByte(w, byte(p.LightLevel))
 }
 
 // PersonalLightLevel sets the personal light level for the mobile.
@@ -995,9 +995,9 @@ type PersonalLightLevel struct {
 
 // Write implements the Packet interface.
 func (p *PersonalLightLevel) Write(w io.Writer) {
-	dc.PutByte(w, 0x4E) // Packet ID
-	dc.PutUint32(w, uint32(p.Serial))
-	dc.PutByte(w, byte(p.LightLevel))
+	util.PutByte(w, 0x4E) // Packet ID
+	util.PutUInt32(w, uint32(p.Serial))
+	util.PutByte(w, byte(p.LightLevel))
 }
 
 // ctxMenuEntry is an entry for a context menu.
@@ -1025,17 +1025,17 @@ func (p *ContextMenu) Add(id uint16, cliloc uo.Cliloc) {
 
 // Write implements the Packet interface.
 func (p *ContextMenu) Write(w io.Writer) {
-	dc.PutByte(w, 0xBF)                          // General packet ID
-	dc.PutUint16(w, uint16(12+len(p.Entries)*6)) // Packet length
-	dc.PutUint16(w, 0x0014)                      // Subcommand ID
-	dc.Pad(w, 1)
-	dc.PutByte(w, 0x01) // Subsubcommand
-	dc.PutUint32(w, uint32(p.Serial))
-	dc.PutByte(w, byte(len(p.Entries)))
+	util.PutByte(w, 0xBF)                          // General packet ID
+	util.PutUInt16(w, uint16(12+len(p.Entries)*6)) // Packet length
+	util.PutUInt16(w, 0x0014)                      // Subcommand ID
+	util.Pad(w, 1)
+	util.PutByte(w, 0x01) // Subsubcommand
+	util.PutUInt32(w, uint32(p.Serial))
+	util.PutByte(w, byte(len(p.Entries)))
 	for _, e := range p.Entries {
-		dc.PutUint16(w, uint16(e.ID))
-		dc.PutUint16(w, uint16(e.Cliloc))
-		dc.PutUint16(w, 0x0000) // Enabled
+		util.PutUInt16(w, uint16(e.ID))
+		util.PutUInt16(w, uint16(e.Cliloc))
+		util.PutUInt16(w, 0x0000) // Enabled
 	}
 }
 
@@ -1066,19 +1066,19 @@ func (p *GUMP) Write(w io.Writer) {
 		for _, line := range p.Lines { // Length of the lines of text
 			l += utf8.RuneCountInString(line) * 2
 		}
-		dc.PutByte(w, 0xB0)                       // General packet ID
-		dc.PutUint16(w, uint16(l))                // Packet length
-		dc.PutUint32(w, uint32(p.Sender))         // Player mobile serial
-		dc.PutUint32(w, uint32(p.TypeCode))       // GUMP serial
-		dc.PutUint32(w, uint32(p.Location.X))     // Screen location X
-		dc.PutUint32(w, uint32(p.Location.Y))     // Screen location Y
-		dc.PutUint16(w, uint16(len(p.Layout)))    // Layout data length
-		dc.PutStringN(w, p.Layout, len(p.Layout)) // Layout data
-		dc.PutUint16(w, uint16(len(p.Lines)))     // Number of text lines
+		util.PutByte(w, 0xB0)                       // General packet ID
+		util.PutUInt16(w, uint16(l))                // Packet length
+		util.PutUInt32(w, uint32(p.Sender))         // Player mobile serial
+		util.PutUInt32(w, uint32(p.TypeCode))       // GUMP serial
+		util.PutUInt32(w, uint32(p.Location.X))     // Screen location X
+		util.PutUInt32(w, uint32(p.Location.Y))     // Screen location Y
+		util.PutUInt16(w, uint16(len(p.Layout)))    // Layout data length
+		util.PutStringN(w, p.Layout, len(p.Layout)) // Layout data
+		util.PutUInt16(w, uint16(len(p.Lines)))     // Number of text lines
 		for _, line := range p.Lines {
 			lrc := utf8.RuneCountInString(line)
-			dc.PutUint16(w, uint16(lrc))     // Length of the line in runes
-			dc.PutUTF16StringN(w, line, lrc) // Line data
+			util.PutUInt16(w, uint16(lrc))     // Length of the line in runes
+			util.PutUTF16StringN(w, line, lrc) // Line data
 		}
 	} else {
 		// Compress layout data
@@ -1091,8 +1091,8 @@ func (p *GUMP) Write(w io.Writer) {
 		lbraw := bytes.NewBuffer(nil)
 		for _, line := range p.Lines {
 			lrc := utf8.RuneCountInString(line)
-			dc.PutUint16(lbraw, uint16(lrc))
-			dc.PutUTF16StringN(lbraw, line, lrc)
+			util.PutUInt16(lbraw, uint16(lrc))
+			util.PutUTF16StringN(lbraw, line, lrc)
 		}
 		ldraw := lbraw.Bytes()
 		lb := bytes.NewBuffer(nil)
@@ -1103,19 +1103,19 @@ func (p *GUMP) Write(w io.Writer) {
 		// Calculate packet length
 		l := 39 + len(fd) + len(ld)
 		// Write the packet
-		dc.PutByte(w, 0xDD)                    // Packet ID
-		dc.PutUint16(w, uint16(l))             // Packet length
-		dc.PutUint32(w, uint32(p.Sender))      // Player mobile's serial
-		dc.PutUint32(w, uint32(p.TypeCode))    // GUMP serial
-		dc.PutUint32(w, uint32(p.Location.X))  // Screen location X
-		dc.PutUint32(w, uint32(p.Location.Y))  // Screen location Y
-		dc.PutUint32(w, uint32(len(fd)+4))     // Compressed layout length
-		dc.PutUint32(w, uint32(len(p.Layout))) // Decompressed layout length
-		w.Write(fd)                            // Compressed layout
-		dc.PutUint32(w, uint32(len(p.Lines)))  // Number of lines
-		dc.PutUint32(w, uint32(len(ld)+4))     // Compressed lines length
-		dc.PutUint32(w, uint32(len(ldraw)))    // Decompressed lines length
-		w.Write(ld)                            // Compressed lines
+		util.PutByte(w, 0xDD)                    // Packet ID
+		util.PutUInt16(w, uint16(l))             // Packet length
+		util.PutUInt32(w, uint32(p.Sender))      // Player mobile's serial
+		util.PutUInt32(w, uint32(p.TypeCode))    // GUMP serial
+		util.PutUInt32(w, uint32(p.Location.X))  // Screen location X
+		util.PutUInt32(w, uint32(p.Location.Y))  // Screen location Y
+		util.PutUInt32(w, uint32(len(fd)+4))     // Compressed layout length
+		util.PutUInt32(w, uint32(len(p.Layout))) // Decompressed layout length
+		w.Write(fd)                              // Compressed layout
+		util.PutUInt32(w, uint32(len(p.Lines)))  // Number of lines
+		util.PutUInt32(w, uint32(len(ld)+4))     // Compressed lines length
+		util.PutUInt32(w, uint32(len(ldraw)))    // Decompressed lines length
+		w.Write(ld)                              // Compressed lines
 	}
 }
 
@@ -1149,25 +1149,25 @@ type GraphicalEffect struct {
 
 // Write implements the Packet interface.
 func (p *GraphicalEffect) Write(w io.Writer) {
-	dc.PutByte(w, 0xC0) // Packet ID
-	dc.PutByte(w, byte(p.GFXType))
-	dc.PutUint32(w, uint32(p.Source))
-	dc.PutUint32(w, uint32(p.Target))
-	dc.PutUint16(w, uint16(p.Graphic))
-	dc.PutUint16(w, uint16(p.SourceLocation.X))
-	dc.PutUint16(w, uint16(p.SourceLocation.Y))
-	dc.PutByte(w, byte(p.SourceLocation.Z))
-	dc.PutUint16(w, uint16(p.TargetLocation.X))
-	dc.PutUint16(w, uint16(p.TargetLocation.Y))
-	dc.PutByte(w, byte(p.TargetLocation.Z))
-	dc.PutByte(w, byte(p.Speed))
-	dc.PutByte(w, byte(p.Duration))
-	dc.Pad(w, 2)
-	dc.PutBool(w, p.Fixed)
-	dc.PutBool(w, p.Explodes)
-	dc.Pad(w, 2)
+	util.PutByte(w, 0xC0) // Packet ID
+	util.PutByte(w, byte(p.GFXType))
+	util.PutUInt32(w, uint32(p.Source))
+	util.PutUInt32(w, uint32(p.Target))
+	util.PutUInt16(w, uint16(p.Graphic))
+	util.PutUInt16(w, uint16(p.SourceLocation.X))
+	util.PutUInt16(w, uint16(p.SourceLocation.Y))
+	util.PutByte(w, byte(p.SourceLocation.Z))
+	util.PutUInt16(w, uint16(p.TargetLocation.X))
+	util.PutUInt16(w, uint16(p.TargetLocation.Y))
+	util.PutByte(w, byte(p.TargetLocation.Z))
+	util.PutByte(w, byte(p.Speed))
+	util.PutByte(w, byte(p.Duration))
+	util.Pad(w, 2)
+	util.PutBool(w, p.Fixed)
+	util.PutBool(w, p.Explodes)
+	util.Pad(w, 2)
 	putHue(w, p.Hue)
-	dc.PutUint32(w, uint32(p.GFXBlendMode))
+	util.PutUInt32(w, uint32(p.GFXBlendMode))
 }
 
 // BuyWindow transfers the buy window details to the client.
@@ -1186,14 +1186,14 @@ func (p *BuyWindow) Write(w io.Writer) {
 	for _, i := range p.Items {
 		l += 5 + len(i.Description)
 	}
-	dc.PutByte(w, 0x74)               // Packet ID
-	dc.PutUint16(w, uint16(l))        // Packet length
-	dc.PutUint32(w, uint32(p.Serial)) // Container serial
-	dc.PutByte(w, byte(len(p.Items))) // Number of items
+	util.PutByte(w, 0x74)               // Packet ID
+	util.PutUInt16(w, uint16(l))        // Packet length
+	util.PutUInt32(w, uint32(p.Serial)) // Container serial
+	util.PutByte(w, byte(len(p.Items))) // Number of items
 	for _, i := range p.Items {
-		dc.PutUint32(w, i.Price)                            // Item price
-		dc.PutByte(w, byte(len(i.Description)))             // Description length
-		dc.PutStringN(w, i.Description, len(i.Description)) // Description
+		util.PutUInt32(w, i.Price)                            // Item price
+		util.PutByte(w, byte(len(i.Description)))             // Description length
+		util.PutStringN(w, i.Description, len(i.Description)) // Description
 	}
 }
 
@@ -1279,18 +1279,18 @@ func (p *SellWindow) Write(w io.Writer) {
 	for _, i := range p.Items {
 		l += 14 + len(i.Description)
 	}
-	dc.PutByte(w, 0x9E)                   // Packet ID
-	dc.PutUint16(w, uint16(l))            // Packet length
-	dc.PutUint32(w, uint32(p.Vendor))     // Vendor serial
-	dc.PutUint16(w, uint16(len(p.Items))) // Number of items
+	util.PutByte(w, 0x9E)                   // Packet ID
+	util.PutUInt16(w, uint16(l))            // Packet length
+	util.PutUInt32(w, uint32(p.Vendor))     // Vendor serial
+	util.PutUInt16(w, uint16(len(p.Items))) // Number of items
 	for _, i := range p.Items {
-		dc.PutUint32(w, uint32(i.Serial))                   // Item serial
-		dc.PutUint16(w, uint16(i.Graphic))                  // Item graphic
-		putHue(w, i.Hue)                                    // Item hue
-		dc.PutUint16(w, uint16(i.Amount))                   // Item amount
-		dc.PutUint16(w, uint16(i.Price)/2)                  // Item price per unit
-		dc.PutUint16(w, uint16(len(i.Description)))         // Length of the description string
-		dc.PutStringN(w, i.Description, len(i.Description)) // Item descrition
+		util.PutUInt32(w, uint32(i.Serial))                   // Item serial
+		util.PutUInt16(w, uint16(i.Graphic))                  // Item graphic
+		putHue(w, i.Hue)                                      // Item hue
+		util.PutUInt16(w, uint16(i.Amount))                   // Item amount
+		util.PutUInt16(w, uint16(i.Price)/2)                  // Item price per unit
+		util.PutUInt16(w, uint16(len(i.Description)))         // Length of the description string
+		util.PutStringN(w, i.Description, len(i.Description)) // Item descrition
 	}
 }
 
@@ -1302,10 +1302,10 @@ type NameResponse struct {
 
 // Write implements the Packet interface.
 func (p *NameResponse) Write(w io.Writer) {
-	dc.PutByte(w, 0x98)                  // Packet ID
-	dc.PutUint16(w, 37)                  // Packet length
-	dc.PutUint32(w, uint32(p.Serial))    // Serial of the object
-	dc.PutStringNWithNull(w, p.Name, 30) // Name of the object
+	util.PutByte(w, 0x98)                  // Packet ID
+	util.PutUInt16(w, 37)                  // Packet length
+	util.PutUInt32(w, uint32(p.Serial))    // Serial of the object
+	util.PutStringNWithNull(w, p.Name, 30) // Name of the object
 }
 
 // OPLPacket is sent in response to generic packet 0x10 and populates object
@@ -1351,19 +1351,19 @@ func (p *OPLPacket) Compile() {
 	}
 	// Write the packet to a temporary buffer
 	b := bytes.NewBuffer(nil)
-	dc.PutByte(b, 0xD6)               // Packet ID
-	dc.Pad(b, 2)                      // Leave room for the packet length
-	dc.PutUint16(b, 1)                // Unknown 1
-	dc.PutUint32(b, uint32(p.Serial)) // Object serial
-	dc.Pad(b, 6)                      // Unknown 2 and padding for hash value
+	util.PutByte(b, 0xD6)               // Packet ID
+	util.Pad(b, 2)                      // Leave room for the packet length
+	util.PutUInt16(b, 1)                // Unknown 1
+	util.PutUInt32(b, uint32(p.Serial)) // Object serial
+	util.Pad(b, 6)                      // Unknown 2 and padding for hash value
 	entries := append(p.Entries, p.TailEntries...)
 	for _, e := range entries {
-		dc.PutUint32(b, 1042971) // ~1_NOTHING~
+		util.PutUInt32(b, 1042971) // ~1_NOTHING~
 		lrc := utf8.RuneCountInString(e)
-		dc.PutUint16(b, uint16(lrc*2))  // String length in bytes
-		dc.PutUTF16LEStringN(b, e, lrc) // Little-endian string, no NULL termination
+		util.PutUInt16(b, uint16(lrc*2))  // String length in bytes
+		util.PutUTF16LEStringN(b, e, lrc) // Little-endian string, no NULL termination
 	}
-	dc.Pad(b, 4) // Terminating NULL cliloc ID
+	util.Pad(b, 4) // Terminating NULL cliloc ID
 	// Calculate and insert the buffer hash
 	p.buf = b.Bytes()
 	p.Hash = crc32.ChecksumIEEE(p.buf)
@@ -1380,9 +1380,9 @@ type OPLInfo struct {
 
 // Write implements the Packet interface.
 func (p *OPLInfo) Write(w io.Writer) {
-	dc.PutByte(w, 0xDC)               // Packet ID
-	dc.PutUint32(w, uint32(p.Serial)) // Object serial
-	dc.PutUint32(w, p.Hash)           // OPL hash
+	util.PutByte(w, 0xDC)               // Packet ID
+	util.PutUInt32(w, uint32(p.Serial)) // Object serial
+	util.PutUInt32(w, p.Hash)           // OPL hash
 }
 
 // UpdateHealth is sent to notify the client of the current HP levels of another
@@ -1395,11 +1395,11 @@ type UpdateHealth struct {
 
 // Write implements the Packet interface.
 func (p *UpdateHealth) Write(w io.Writer) {
-	dc.PutByte(w, 0xA1) // Packet ID
-	dc.PutUint32(w, uint32(p.Serial))
-	dc.PutUint16(w, 25)
+	util.PutByte(w, 0xA1) // Packet ID
+	util.PutUInt32(w, uint32(p.Serial))
+	util.PutUInt16(w, 25)
 	r := float64(p.Hits) / float64(p.MaxHits)
-	dc.PutUint16(w, uint16(r*25))
+	util.PutUInt16(w, uint16(r*25))
 }
 
 // TextEntryGUMP is sent to request a string of text from the client via a
@@ -1416,19 +1416,19 @@ type TextEntryGUMP struct {
 func (p *TextEntryGUMP) Write(w io.Writer) {
 	// Calculate length
 	l := 19 + len(p.Value) + 1 + len(p.Description) + 1
-	dc.PutByte(w, 0xAB)                     // Packet ID
-	dc.PutUint16(w, uint16(l))              // Packet length
-	dc.PutUint32(w, uint32(p.Serial))       // GUMP serial
-	dc.Pad(w, 2)                            // Parent and button IDs?
-	dc.PutUint16(w, uint16(len(p.Value)+1)) // Value length
-	dc.PutString(w, p.Value)                // Value
-	if p.CanCancel {                        // Cancel flag
-		dc.PutByte(w, 1)
+	util.PutByte(w, 0xAB)                     // Packet ID
+	util.PutUInt16(w, uint16(l))              // Packet length
+	util.PutUInt32(w, uint32(p.Serial))       // GUMP serial
+	util.Pad(w, 2)                            // Parent and button IDs?
+	util.PutUInt16(w, uint16(len(p.Value)+1)) // Value length
+	util.PutString(w, p.Value)                // Value
+	if p.CanCancel {                          // Cancel flag
+		util.PutByte(w, 1)
 	} else {
-		dc.PutByte(w, 0)
+		util.PutByte(w, 0)
 	}
-	dc.PutByte(w, 1)                              // Style normal
-	dc.PutUint32(w, uint32(p.MaxLength))          // Maximum length
-	dc.PutUint16(w, uint16(len(p.Description)+1)) // Description text
-	dc.PutString(w, p.Description)
+	util.PutByte(w, 1)                              // Style normal
+	util.PutUInt32(w, uint32(p.MaxLength))          // Maximum length
+	util.PutUInt16(w, uint16(len(p.Description)+1)) // Description text
+	util.PutString(w, p.Description)
 }

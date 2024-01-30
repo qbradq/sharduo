@@ -68,13 +68,3 @@ func (s Serial) StripSelfFlag() Serial {
 func (s Serial) IsNil() bool {
 	return s == SerialZero || s == SerialMobileNil || s == SerialItemNil || s == SerialMobileSelfNil
 }
-
-// RandomMobileSerial returns a randomized Serial fit for a mobile
-func RandomMobileSerial(rng RandomSource) Serial {
-	return Serial(rng.Random(int(SerialFirstMobile), int(SerialLastMobile)))
-}
-
-// RandomItemSerial returns a randomized Serial fit for an item
-func RandomItemSerial(rng RandomSource) Serial {
-	return Serial(rng.Random(int(SerialFirstItem), int(SerialLastItem)))
-}

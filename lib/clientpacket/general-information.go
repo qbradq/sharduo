@@ -1,8 +1,8 @@
 package clientpacket
 
 import (
-	dc "github.com/qbradq/sharduo/lib/dataconv"
 	"github.com/qbradq/sharduo/lib/uo"
+	"github.com/qbradq/sharduo/lib/util"
 )
 
 func init() {
@@ -47,7 +47,7 @@ type ContextMenuRequest struct {
 func newContextMenuRequest(in []byte) Packet {
 	return &ContextMenuRequest{
 		baseGIPacket: baseGIPacket{id: 0xBF, sc: 0x13},
-		Serial:       uo.Serial(dc.GetUint32(in[0:4])),
+		Serial:       uo.Serial(util.ParseUInt32(in[0:4])),
 	}
 }
 
@@ -64,7 +64,7 @@ type ContextMenuSelection struct {
 func newContextMenuSelection(in []byte) Packet {
 	return &ContextMenuSelection{
 		baseGIPacket: baseGIPacket{id: 0xBF, sc: 0x15},
-		Serial:       uo.Serial(dc.GetUint32(in[0:4])),
-		EntryID:      dc.GetUint16(in[4:6]),
+		Serial:       uo.Serial(util.ParseUInt32(in[0:4])),
+		EntryID:      util.ParseUInt16(in[4:6]),
 	}
 }

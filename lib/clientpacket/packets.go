@@ -4,8 +4,8 @@ import (
 	"strconv"
 	"strings"
 
-	dc "github.com/qbradq/sharduo/lib/dataconv"
 	"github.com/qbradq/sharduo/lib/uo"
+	"github.com/qbradq/sharduo/lib/util"
 )
 
 // Global packet registry
@@ -54,7 +54,7 @@ func New(data []byte) Packet {
 
 	length := InfoTable[data[0]].Length
 	if length == -1 {
-		length = int(dc.GetUint16(data[1:3]))
+		length = int(util.ParseUInt16(data[1:3]))
 		pdat = data[3:length]
 	} else if length == 0 {
 		return newUnknownPacket("client-packets", data[0])
@@ -140,11 +140,11 @@ type LoginSeed struct {
 func newLoginSeed(in []byte) Packet {
 	return &LoginSeed{
 		basePacket:   basePacket{id: 0xEF},
-		Seed:         dc.GetUint32(in[0:4]),
-		VersionMajor: int(dc.GetUint32(in[4:8])),
-		VersionMinor: int(dc.GetUint32(in[8:12])),
-		VersionPatch: int(dc.GetUint32(in[12:16])),
-		VersionExtra: int(dc.GetUint32(in[16:20])),
+		Seed:         util.ParseUInt32(in[0:4]),
+		VersionMajor: int(util.ParseUInt32(in[4:8])),
+		VersionMinor: int(util.ParseUInt32(in[8:12])),
+		VersionPatch: int(util.ParseUInt32(in[12:16])),
+		VersionExtra: int(util.ParseUInt32(in[16:20])),
 	}
 }
 
@@ -161,8 +161,8 @@ type AccountLogin struct {
 func newAccountLogin(in []byte) Packet {
 	return &AccountLogin{
 		basePacket: basePacket{id: 0x80},
-		Username:   dc.NullString(in[0:30]),
-		Password:   dc.NullString(in[30:60]),
+		Username:   util.ParseNullString(in[0:30]),
+		Password:   util.ParseNullString(in[30:60]),
 	}
 }
 
@@ -177,7 +177,7 @@ type SelectServer struct {
 func newSelectServer(in []byte) Packet {
 	return &SelectServer{
 		basePacket: basePacket{id: 0xA0},
-		Index:      int(dc.GetUint16(in[0:2])),
+		Index:      int(util.ParseUInt16(in[0:2])),
 	}
 }
 
@@ -195,9 +195,9 @@ type GameServerLogin struct {
 func newGameServerLogin(in []byte) Packet {
 	return &GameServerLogin{
 		basePacket: basePacket{id: 91},
-		Key:        uo.Serial(dc.GetUint32(in[:4])),
-		Username:   dc.NullString(in[4:34]),
-		Password:   dc.NullString(in[34:64]),
+		Key:        uo.Serial(util.ParseUInt32(in[:4])),
+		Username:   util.ParseNullString(in[4:34]),
+		Password:   util.ParseNullString(in[34:64]),
 	}
 }
 
@@ -211,7 +211,7 @@ type CharacterLogin struct {
 func newCharacterLogin(in []byte) Packet {
 	p := &CharacterLogin{
 		basePacket: basePacket{id: 0x5D},
-		Slot:       int(dc.GetUint32(in[64:68])),
+		Slot:       int(util.ParseUInt32(in[64:68])),
 	}
 	return p
 }
@@ -227,7 +227,7 @@ func newVersion(in []byte) Packet {
 	// Length check not required, it can be nil
 	p := &Version{
 		basePacket: basePacket{id: 0xBD},
-		String:     dc.NullString(in),
+		String:     util.ParseNullString(in),
 	}
 	return p
 }
@@ -267,8 +267,8 @@ func newSpeech(in []byte) Packet {
 	s := &Speech{
 		basePacket: basePacket{id: 0xAD},
 		Type:       uo.SpeechType(in[0]),
-		Hue:        uo.Hue(dc.GetUint16(in[1:3])),
-		Font:       uo.Font(dc.GetUint16(in[3:5])),
+		Hue:        uo.Hue(util.ParseUInt16(in[1:3])),
+		Font:       uo.Font(util.ParseUInt16(in[3:5])),
 	}
 	if s.Type >= uo.SpeechTypeClientParsed {
 		if len(in) < 13 {
@@ -281,10 +281,10 @@ func newSpeech(in []byte) Packet {
 		if len(in) < 13+skip {
 			return newMalformedPacket(0xAD)
 		}
-		s.Text = dc.NullString(in[12+skip:])
+		s.Text = util.ParseNullString(in[12+skip:])
 		return s
 	}
-	s.Text = dc.UTF16String(in[9:])
+	s.Text = util.ParseUTF16String(in[9:])
 	return s
 }
 
@@ -298,7 +298,7 @@ type SingleClick struct {
 func newSingleClick(in []byte) Packet {
 	p := &SingleClick{
 		basePacket: basePacket{id: 0x09},
-		Object:     uo.Serial(dc.GetUint32(in)),
+		Object:     uo.Serial(util.ParseUInt32(in)),
 	}
 	return p
 }
@@ -313,7 +313,7 @@ type DoubleClick struct {
 }
 
 func newDoubleClick(in []byte) Packet {
-	s := uo.Serial(dc.GetUint32(in[:4]))
+	s := uo.Serial(util.ParseUInt32(in[:4]))
 	isPaperDoll := s.IsSelf()
 	s = s.StripSelfFlag()
 	p := &DoubleClick{
@@ -338,7 +338,7 @@ func newPlayerStatusRequest(in []byte) Packet {
 	p := &PlayerStatusRequest{
 		basePacket:        basePacket{id: 0x34},
 		StatusRequestType: uo.StatusRequestType(in[4]),
-		PlayerMobileID:    uo.Serial(dc.GetUint32(in[5:])),
+		PlayerMobileID:    uo.Serial(util.ParseUInt32(in[5:])),
 	}
 	return p
 }
@@ -347,11 +347,11 @@ func newPlayerStatusRequest(in []byte) Packet {
 type ViewRange struct {
 	basePacket
 	// Requested view range, clamped to between 4 and 18 inclusive
-	Range int16
+	Range int
 }
 
 func newClientViewRange(in []byte) Packet {
-	r := uo.BoundViewRange(int16(in[0]))
+	r := uo.BoundViewRange(int(in[0]))
 	p := &ViewRange{
 		basePacket: basePacket{id: 0xC8},
 		Range:      r,
@@ -382,7 +382,7 @@ func newWalkRequest(in []byte) Packet {
 		Direction:   d,
 		IsRunning:   r,
 		Sequence:    int(in[1]),
-		FastWalkKey: dc.GetUint32(in[2:]),
+		FastWalkKey: util.ParseUInt32(in[2:]),
 	}
 	return p
 }
@@ -409,15 +409,15 @@ func newTargetResponse(in []byte) Packet {
 	p := &TargetResponse{
 		basePacket:   basePacket{id: 0x6C},
 		TargetType:   uo.TargetType(in[0]),
-		TargetSerial: uo.Serial(dc.GetUint32(in[1:5])),
+		TargetSerial: uo.Serial(util.ParseUInt32(in[1:5])),
 		CursorType:   uo.CursorType(in[5]),
-		TargetObject: uo.Serial(dc.GetUint32(in[6:10])),
+		TargetObject: uo.Serial(util.ParseUInt32(in[6:10])),
 		Location: uo.Point{
-			X: int16(dc.GetUint16(in[10:12])),
-			Y: int16(dc.GetUint16(in[12:14])),
-			Z: int8(in[15]),
+			X: int(util.ParseUInt16(in[10:12])),
+			Y: int(util.ParseUInt16(in[12:14])),
+			Z: int(int8(in[15])),
 		},
-		Graphic: uo.Graphic(dc.GetUint16(in[16:18])),
+		Graphic: uo.Graphic(util.ParseUInt16(in[16:18])),
 	}
 	return p
 }
@@ -434,8 +434,8 @@ type LiftRequest struct {
 func newLiftRequest(in []byte) Packet {
 	p := &LiftRequest{
 		basePacket: basePacket{id: 0x07},
-		Item:       uo.Serial(dc.GetUint32(in[0:4])),
-		Amount:     int(dc.GetUint16(in[4:6])),
+		Item:       uo.Serial(util.ParseUInt32(in[0:4])),
+		Amount:     int(util.ParseUInt16(in[4:6])),
 	}
 	return p
 }
@@ -455,14 +455,14 @@ type DropRequest struct {
 func newDropRequest(in []byte) Packet {
 	p := &DropRequest{
 		basePacket: basePacket{id: 0x08},
-		Item:       uo.Serial(dc.GetUint32(in[0:4])),
+		Item:       uo.Serial(util.ParseUInt32(in[0:4])),
 		Location: uo.Point{
-			X: int16(dc.GetUint16(in[4:6])),
-			Y: int16(dc.GetUint16(in[6:8])),
-			Z: int8(in[8]),
+			X: int(util.ParseUInt16(in[4:6])),
+			Y: int(util.ParseUInt16(in[6:8])),
+			Z: int(int8(in[8])),
 		},
 		// Skip one byte for the grid index
-		Container: uo.Serial(dc.GetUint32(in[10:14])),
+		Container: uo.Serial(util.ParseUInt32(in[10:14])),
 	}
 	return p
 }
@@ -479,8 +479,8 @@ type WearItemRequest struct {
 func newWearItemRequest(in []byte) Packet {
 	p := &WearItemRequest{
 		basePacket: basePacket{id: 0x13},
-		Item:       uo.Serial(dc.GetUint32(in[0:4])),
-		Wearer:     uo.Serial(dc.GetUint32(in[5:9])),
+		Item:       uo.Serial(util.ParseUInt32(in[0:4])),
+		Wearer:     uo.Serial(util.ParseUInt32(in[5:9])),
 	}
 	return p
 }
@@ -523,26 +523,26 @@ type GUMPReply struct {
 func newGUMPReply(in []byte) Packet {
 	p := &GUMPReply{
 		basePacket:   basePacket{id: 0xB1},
-		MobileSerial: uo.Serial(dc.GetUint32(in[0:4])),
-		GUMPSerial:   uo.Serial(dc.GetUint32(in[4:8])),
-		Button:       dc.GetUint32(in[8:12]),
+		MobileSerial: uo.Serial(util.ParseUInt32(in[0:4])),
+		GUMPSerial:   uo.Serial(util.ParseUInt32(in[4:8])),
+		Button:       util.ParseUInt32(in[8:12]),
 		TextEntries:  make(map[uint16]string),
 	}
-	sc := dc.GetUint32(in[12:16])
+	sc := util.ParseUInt32(in[12:16])
 	p.Switches = make([]uint32, sc)
 	ofs := 16
 	for i := uint32(0); i < sc; i++ {
-		p.Switches[i] = dc.GetUint32(in[ofs : ofs+4])
+		p.Switches[i] = util.ParseUInt32(in[ofs : ofs+4])
 		ofs += 4
 	}
-	tc := dc.GetUint32(in[ofs : ofs+4])
+	tc := util.ParseUInt32(in[ofs : ofs+4])
 	ofs += 4
 	for i := 0; uint32(i) < tc; i++ {
-		tid := dc.GetUint16(in[ofs : ofs+2])
+		tid := util.ParseUInt16(in[ofs : ofs+2])
 		ofs += 2
-		tl := int(dc.GetUint16(in[ofs : ofs+2]))
+		tl := int(util.ParseUInt16(in[ofs : ofs+2]))
 		ofs += 2
-		text := dc.UTF16String(in[ofs : ofs+tl*2])
+		text := util.ParseUTF16String(in[ofs : ofs+tl*2])
 		ofs += tl * 2
 		p.TextEntries[tid] = text
 	}
@@ -584,7 +584,7 @@ type BuyItems struct {
 func newBuyItems(in []byte) Packet {
 	p := &BuyItems{
 		basePacket: basePacket{id: 0x3B},
-		Vendor:     uo.Serial(dc.GetUint32(in[0:4])),
+		Vendor:     uo.Serial(util.ParseUInt32(in[0:4])),
 	}
 	ofs := 5
 	for {
@@ -593,8 +593,8 @@ func newBuyItems(in []byte) Packet {
 			break
 		}
 		p.BoughtItems = append(p.BoughtItems, BoughtItem{
-			Item:   uo.Serial(dc.GetUint32(in[ofs+1 : ofs+5])),
-			Amount: int(dc.GetUint16(in[ofs+5 : ofs+7])),
+			Item:   uo.Serial(util.ParseUInt32(in[ofs+1 : ofs+5])),
+			Amount: int(util.ParseUInt16(in[ofs+5 : ofs+7])),
 		})
 		ofs += 7
 	}
@@ -621,15 +621,15 @@ type SellResponse struct {
 func newSellResponse(in []byte) Packet {
 	p := &SellResponse{
 		basePacket: basePacket{id: 0x9F},
-		Vendor:     uo.Serial(dc.GetUint32(in[0:4])),
+		Vendor:     uo.Serial(util.ParseUInt32(in[0:4])),
 	}
-	count := dc.GetUint16(in[4:6])
+	count := util.ParseUInt16(in[4:6])
 	p.SellItems = make([]SellItem, 0, count)
 	ofs := 6
 	for i := uint16(0); i < count; i++ {
 		p.SellItems = append(p.SellItems, SellItem{
-			Serial: uo.Serial(dc.GetUint32(in[ofs+0 : ofs+4])),
-			Amount: int(dc.GetUint16(in[ofs+4 : ofs+6])),
+			Serial: uo.Serial(util.ParseUInt32(in[ofs+0 : ofs+4])),
+			Amount: int(util.ParseUInt16(in[ofs+4 : ofs+6])),
 		})
 		ofs += 6
 	}
@@ -645,7 +645,7 @@ type NameRequest struct {
 func newNameRequest(in []byte) Packet {
 	p := &NameRequest{
 		basePacket: basePacket{id: 0x98},
-		Serial:     uo.Serial(dc.GetUint32(in[0:4])),
+		Serial:     uo.Serial(util.ParseUInt32(in[0:4])),
 	}
 	return p
 }
@@ -663,7 +663,7 @@ func newOPLCacheMiss(in []byte) Packet {
 	n := len(in) / 4
 	p.Serials = make([]uo.Serial, n)
 	for i := 0; i < n; i++ {
-		p.Serials[i] = uo.Serial(dc.GetUint32(in[i*4 : i*4+4]))
+		p.Serials[i] = uo.Serial(util.ParseUInt32(in[i*4 : i*4+4]))
 	}
 	return p
 }
@@ -679,8 +679,8 @@ type RenameRequest struct {
 func newRenameRequest(in []byte) Packet {
 	return &RenameRequest{
 		basePacket: basePacket{id: 0x75},
-		Serial:     uo.Serial(dc.GetUint32(in[0:4])),
-		Name:       dc.NullString(in[4:34]),
+		Serial:     uo.Serial(util.ParseUInt32(in[0:4])),
+		Name:       util.ParseNullString(in[4:34]),
 	}
 }
 
@@ -744,7 +744,7 @@ type TextGUMPReply struct {
 func newTextGUMPReply(in []byte) Packet {
 	return &TextGUMPReply{
 		basePacket: basePacket{id: 0xAC},
-		Serial:     uo.Serial(dc.GetUint32(in[0:4])),
+		Serial:     uo.Serial(util.ParseUInt32(in[0:4])),
 		Text:       string(in[9 : len(in)-1]),
 	}
 }
