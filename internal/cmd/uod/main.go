@@ -147,15 +147,6 @@ func initialize() {
 		gracefulShutdown,
 		func() string { return world.LatestSavePath() })
 
-	// Marshal system initialization
-	marshal.SetInsertFunction(func(i interface{}) {
-		o, ok := i.(game.Object)
-		if !ok {
-			return
-		}
-		world.Insert(o)
-	})
-
 	// Initialize our data structures
 	log.Println("info: allocating world data structures")
 	world = NewWorld(configuration.SaveDirectory)

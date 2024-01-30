@@ -2,9 +2,11 @@ package game
 
 import (
 	"io"
+	"sort"
 	"sync"
 
 	"github.com/qbradq/sharduo/lib/uo"
+	"github.com/qbradq/sharduo/lib/uo/file"
 	"github.com/qbradq/sharduo/lib/util"
 )
 
@@ -127,5 +129,129 @@ func (m *Map) ReadDeepStorage(r io.Reader, ds *Datastore) {
 			m.ds[item.Serial] = item
 			ds.InsertItem(item)
 		}
+	}
+}
+
+// GetTile returns the tile information at the given location.
+func (m *Map) GetTile(x, y int) uo.Tile {
+	l := uo.Point{
+		X: x,
+		Y: y,
+	}.Bound()
+	cx := l.X / uo.ChunkWidth
+	cy := l.Y / uo.ChunkHeight
+	c := m.chunks[cy*uo.MapChunksWidth+cx]
+	tx := l.X % uo.ChunkWidth
+	ty := l.Y % uo.ChunkHeight
+	return c.Tiles[ty*uo.ChunkWidth+tx]
+}
+
+// LoadFromMul reads in all of the segments of the given MapMul object and
+// updates the map
+func (m *Map) LoadFromMuls(mMul *file.MapMul, sMul *file.StaticsMul) {
+	fn := func(x, y int) (lowest, average, highest int) {
+		zTop := m.GetTile(x, y).RawZ()
+		zLeft := m.GetTile(x, y+1).RawZ()
+		zRight := m.GetTile(x+1, y).RawZ()
+		zBottom := m.GetTile(x+1, y+1).RawZ()
+		lowest = zTop
+		if zLeft < lowest {
+			lowest = zLeft
+		}
+		if zRight < lowest {
+			lowest = zRight
+		}
+		if zBottom < lowest {
+			lowest = zBottom
+		}
+		highest = zTop
+		if zLeft > highest {
+			highest = zLeft
+		}
+		if zRight > highest {
+			highest = zRight
+		}
+		if zBottom > highest {
+			highest = zBottom
+		}
+		tbdif := zTop - zBottom
+		if tbdif < 0 {
+			tbdif *= -1
+		}
+		lrdif := zLeft - zRight
+		if lrdif < 0 {
+			lrdif *= -1
+		}
+		if tbdif > lrdif {
+			average = zLeft + zRight
+		} else {
+			average = zTop + zBottom
+		}
+		if average < 0 {
+			average--
+		}
+		average /= 2
+		return lowest, average, highest
+	}
+	// Load the tiles
+	for iy := 0; iy < uo.MapHeight; iy++ {
+		for ix := 0; ix < uo.MapWidth; ix++ {
+			cx := ix / uo.ChunkWidth
+			cy := iy / uo.ChunkHeight
+			c := m.chunks[cy*uo.MapChunksWidth+cx]
+			tx := ix % uo.ChunkWidth
+			ty := iy % uo.ChunkHeight
+			c.Tiles[ty*uo.ChunkWidth+tx] = mMul.GetTile(ix, iy)
+		}
+	}
+	// Pre-calculate tile elevations
+	for iy := 0; iy < uo.MapHeight; iy++ {
+		for ix := 0; ix < uo.MapWidth; ix++ {
+			cx := ix / uo.ChunkWidth
+			cy := iy / uo.ChunkHeight
+			c := m.chunks[cy*uo.MapChunksWidth+cx]
+			tx := ix % uo.ChunkWidth
+			ty := iy % uo.ChunkHeight
+			t := c.Tiles[ty*uo.ChunkWidth+tx]
+			lowest, avg, height := fn(ix, iy)
+			t = t.SetElevations(lowest, avg, height)
+			c.Tiles[ty*uo.ChunkWidth+tx] = t
+		}
+	}
+	// Load the statics
+	for _, static := range sMul.Statics() {
+		cx := static.Location.X / uo.ChunkWidth
+		cy := static.Location.Y / uo.ChunkHeight
+		c := m.chunks[cy*uo.MapChunksWidth+cx]
+		c.Statics = append(c.Statics, static)
+	}
+	// Sort statics by bottom Z
+	for iy := 0; iy < uo.MapChunksHeight; iy++ {
+		for ix := 0; ix < uo.MapChunksWidth; ix++ {
+			c := m.chunks[iy*uo.MapChunksWidth+ix]
+			sort.Slice(c.Statics, func(i, j int) bool {
+				si := c.Statics[i]
+				sj := c.Statics[j]
+				sit := si.Location.Z + si.Height()
+				sjt := sj.Location.Z + sj.Height()
+				if si.Location.Z == sj.Location.Z {
+					return sit < sjt
+				}
+				return si.Location.Z < sj.Location.Z
+			})
+		}
+	}
+}
+
+// AfterUnmarshal calls AfterUnmarshalOntoMap calls for all map objects. We do
+// this with a pre-compiled list of objects so that calls to
+// AfterUnmarshalOntoMap can call world.Remove() if needed.
+func (m *Map) AfterUnmarshal() {
+	var mobs []*Mobile
+	for _, c := range m.chunks {
+		mobs = append(mobs, c.Mobiles...)
+	}
+	for _, m := range mobs {
+		m.AfterUnmarshalOntoMap()
 	}
 }

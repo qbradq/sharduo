@@ -146,3 +146,9 @@ func (m *Mobile) CanSee(o *Object) bool {
 // RecalculateStats recalculates all internal cache states.
 func (m *Mobile) RecalculateStats() {
 }
+
+// AfterUnmarshalOntoMap is called after all of the tiles, statics, items and
+// mobiles have been loaded and placed on the map. It updates internal states
+// that are required for proper movement and control.
+func (m *Mobile) AfterUnmarshalOntoMap() {
+}

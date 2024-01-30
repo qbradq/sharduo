@@ -4,9 +4,12 @@ import (
 	"log"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/qbradq/sharduo/internal/commands"
+	"github.com/qbradq/sharduo/internal/configuration"
 	"github.com/qbradq/sharduo/internal/game"
+	"github.com/qbradq/sharduo/internal/gumps"
 	"github.com/qbradq/sharduo/lib/clientpacket"
 	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/template"
@@ -38,10 +41,100 @@ func init() {
 	packetHandlers.Add(0xBF, handleGeneralInformation)
 	packetHandlers.Add(0xC8, handleViewRange)
 	packetHandlers.Add(0xD6, handleOPLCacheMiss)
+	packetHandlers.Add(0xFE, handleCharacterLogout)
+	packetHandlers.Add(0xFF, handleCharacterLogin)
 }
 
 // Registry of packet handler functions
 var packetHandlers = util.NewRegistry[byte, func(*NetState, clientpacket.Packet)]("packet-handlers")
+
+func handleCharacterLogin(n *NetState, cp clientpacket.Packet) {
+	var player game.Mobile
+	// Attempt to load the player
+	if n.Account.Player != uo.SerialMobileNil {
+		o := world.Find(r.NetState.account.Player())
+		if p, ok := o.(game.Mobile); ok {
+			if p.NetState() != nil {
+				// Connecting to an already connected player, disconnect the
+				// existing connection.
+				p.NetState().Disconnect()
+				p.SetNetState(nil)
+				return nil
+			}
+			player = p
+		}
+		// In case the player mobile was in deep storage we try to remove it
+		game.GetWorld().Map().RetrieveObject(player.Serial())
+	}
+	// Create a new character if needed
+	if player == nil {
+		// New player setup
+		tn := "PlayerMobile"
+		if r.NetState.account.HasRole(game.RoleSuperUser | game.RoleDeveloper) {
+			tn = "DeveloperMobile"
+		} else if r.NetState.account.HasRole(game.RoleGameMaster) {
+			tn = "GameMasterMobile"
+		} else if r.NetState.account.HasRole(game.RoleStaff) {
+			tn = "AdministratorMobile"
+		}
+		player = template.Create[game.Mobile](tn)
+		player.SetLocation(configuration.StartingLocation)
+		player.SetFacing(configuration.StartingFacing)
+		// TODO Generic player starting equipment - gold, book, candle, dagger
+		i := template.Create[game.Item]("GoldCoin")
+		i.SetAmount(1000)
+		player.DropToBackpack(i, true)
+		// TODO DEBUG REMOVE Mining alpha test equipment
+		w := template.Create[game.Wearable]("Pickaxe")
+		if !player.Equip(w) {
+			player.DropToBackpack(w, true)
+		}
+		i = template.Create[game.Item]("IronOre")
+		i.SetAmount(5)
+		player.DropToBackpack(i, true)
+		i = template.Create[game.Item]("IronIngot")
+		i.SetAmount(10)
+		player.DropToBackpack(i, true)
+	}
+	world.Map().SetNewParent(player, nil)
+	world.Update(player)
+	r.NetState.m = player
+	r.NetState.account.SetPlayer(player.Serial())
+	r.NetState.m.SetNetState(r.NetState)
+	Broadcast("Welcome %s to %s!", r.NetState.m.DisplayName(),
+		configuration.GameServerName)
+	// Send the EnterWorld packet
+	facing := r.NetState.m.Facing()
+	if r.NetState.m.Running() {
+		facing = facing.SetRunningFlag()
+	} else {
+		facing = facing.StripRunningFlag()
+	}
+	r.NetState.Send(&serverpacket.EnterWorld{
+		Player:   r.NetState.m.Serial(),
+		Body:     r.NetState.m.Body(),
+		Location: r.NetState.m.Location(),
+		Facing:   facing,
+		Width:    uo.MapWidth,
+		Height:   uo.MapHeight,
+	})
+	r.NetState.Send(&serverpacket.LoginComplete{})
+	r.NetState.Send(&serverpacket.Time{
+		Time: time.Now(),
+	})
+	world.Map().SendEverything(r.NetState.m)
+	r.NetState.SendObject(r.NetState.m)
+	r.NetState.GUMP(gumps.New("welcome"), r.NetState.m, nil)
+}
+
+func handleCharacterLogout(n *NetState, cp clientpacket.Packet) {
+	f := game.GetWorld().Map().RegionFeaturesAt(r.Mobile.Location())
+	if f&game.RegionFeatureSafeLogout != 0 {
+		game.ExecuteEventHandler("PlayerLogout", r.Mobile, nil, nil)
+	} else {
+		game.NewTimer(uo.DurationMinute*10, "PlayerLogout", r.Mobile, nil, false, nil)
+	}
+}
 
 func handlePing(n *NetState, cp clientpacket.Packet) {
 	p := cp.(*clientpacket.Ping)

@@ -182,7 +182,7 @@ func handleLoginConnection(conn *net.TCPConn) {
 	if account == nil {
 		reject = true
 		rejectReason = uo.LoginDeniedReasonBadPass
-	} else if account.Locked() || account.SuspendedUntil().After(time.Now()) {
+	} else if account.Locked || account.SuspendedUntil.After(time.Now()) {
 		reject = true
 		rejectReason = uo.LoginDeniedReasonAccountBlocked
 	}
@@ -200,7 +200,7 @@ func handleLoginConnection(conn *net.TCPConn) {
 		time.Sleep(time.Second * 5)
 		return
 	}
-	log.Printf("info: user login successful for %s", account.Username())
+	log.Printf("info: user login successful for %s", account.Username)
 
 	// Server list packet
 	var sp serverpacket.Packet

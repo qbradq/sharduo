@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/qbradq/sharduo/internal/game"
+	"github.com/qbradq/sharduo/lib/clientpacket"
 	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
@@ -25,6 +26,13 @@ var ErrSaveFileLocked = errors.New("the save file is currently locked")
 
 // File truncation error
 var ErrSaveFileExists = errors.New("refusing to truncate existing save file")
+
+// worldPacket is a value that joins a client packet with the net state it came
+// in on.
+type worldPacket struct {
+	Packet   clientpacket.Packet // The packet to process
+	NetState *NetState           // The net state it came in on
+}
 
 // World encapsulates all of the data for the world and the goroutine that
 // manipulates it.
@@ -38,7 +46,7 @@ type World struct {
 	// Account access mutex
 	alock sync.Mutex
 	// Inbound requests
-	requestQueue chan WorldRequest
+	requestQueue chan worldPacket
 	// Save/Load Mutex
 	lock sync.Mutex
 	// Save directory string
@@ -61,7 +69,7 @@ func NewWorld(savePath string) *World {
 		m:             game.NewMap(),
 		ods:           game.NewDatastore(),
 		accounts:      make(map[string]*game.Account),
-		requestQueue:  make(chan WorldRequest, 1024*16),
+		requestQueue:  make(chan worldPacket, 1024*16),
 		savePath:      savePath,
 		updateList:    make(map[uo.Serial]struct{}),
 		oplUpdateList: make(map[uo.Serial]struct{}),
@@ -238,21 +246,19 @@ func (w *World) Marshal() (*sync.WaitGroup, error) {
 	return wg, nil
 }
 
-// SendRequest sends a WorldRequest to the world's goroutine. Returns true if
-// the command was successfully queued. This never blocks.
-func (w *World) SendRequest(cmd WorldRequest) (closed bool) {
+// SendPacket sends a packet to the world's goroutine. Returns true on success.
+// This never blocks.
+func (w *World) SendPacket(p clientpacket.Packet, ns *NetState) (closed bool) {
 	defer func() {
 		if recover() != nil {
 			closed = true
 		}
 	}()
-	w.requestQueue <- cmd
+	w.requestQueue <- worldPacket{
+		Packet:   p,
+		NetState: ns,
+	}
 	return true
-}
-
-// Random returns the uo.RandomSource the world is using for sync operations
-func (w *World) Random() uo.RandomSource {
-	return w.rng
 }
 
 // addNewObjectToDataStores adds a new object to the world data stores. It is
@@ -473,17 +479,17 @@ func (w *World) Main(wg *sync.WaitGroup) {
 			w.updateList = make(map[uo.Serial]struct{})
 		case r := <-w.requestQueue:
 			// Handle graceful shutdown
-			if r == nil {
+			if r.Packet == nil {
 				ticker.Stop()
 				done = true
 				break
 			}
-			// If we are not trying to handle a tick we process packets.
-			if err := r.Execute(); err != nil {
-				if r.GetNetState() != nil {
-					r.GetNetState().Speech(nil, err.Error())
-				}
-				log.Println(err)
+			// If we are not trying to handle a tick we process packets
+			fn, found := packetHandlers.Get(r.Packet.ID())
+			if !found || fn == nil {
+				log.Printf("error: unhandled packet 0x%02X", r.Packet.ID())
+			} else {
+				fn(r.NetState, r.Packet)
 			}
 		}
 	}

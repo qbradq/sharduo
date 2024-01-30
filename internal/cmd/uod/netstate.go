@@ -70,7 +70,7 @@ func NewNetState(conn *net.TCPConn) *NetState {
 		conn:               conn,
 		sendQueue:          make(chan serverpacket.Packet, 1024*16),
 		observedContainers: make(map[uo.Serial]*game.Item),
-		updateGroup:        world.Random().Random(0, int(uo.DurationSecond)-1),
+		updateGroup:        util.Random(0, int(uo.DurationSecond)-1),
 		deadline:           world.Time() + uo.DurationMinute*5,
 		gumps:              make(map[uo.Serial]*gumpDescription),
 	}
@@ -168,13 +168,10 @@ func (n *NetState) TakeAction() bool {
 func (n *NetState) Service() {
 	// When this goroutine ends so will the TCP connection.
 	defer n.Disconnect()
-
 	// Give the player 15 minutes at the login / character create screen
 	n.deadline = world.Time() + uo.DurationMinute*15
-
 	// Start SendService
 	go n.SendService()
-
 	// Configure TCP QoS
 	n.conn.SetKeepAlive(false)
 	n.conn.SetLinger(0)
@@ -184,13 +181,11 @@ func (n *NetState) Service() {
 	n.conn.SetDeadline(time.Now().Add(time.Minute * 15))
 	r := clientpacket.NewReader(n.conn)
 	log.Printf("info: connection from %s", n.conn.RemoteAddr().String())
-
 	// Connection header
 	if err := r.ReadConnectionHeader(); err != nil {
 		log.Printf("error: %s", err.Error())
 		return
 	}
-
 	// Game server login packet
 	cp, err := r.ReadPacket()
 	if err != nil {
@@ -208,14 +203,12 @@ func (n *NetState) Service() {
 		return
 	}
 	n.account = account
-
 	// Character list
 	n.Send(&serverpacket.CharacterList{
 		Names: []string{
 			account.Username, "", "", "", "", "",
 		},
 	})
-
 	// Character login
 	cp, err = r.ReadPacket()
 	if err != nil {
@@ -227,13 +220,7 @@ func (n *NetState) Service() {
 		log.Println("error: unexpected packet during character login")
 		return
 	}
-
-	world.SendRequest(&CharacterLoginRequest{
-		BaseWorldRequest: BaseWorldRequest{
-			NetState: n,
-		},
-	})
-
+	world.SendPacket(&CharacterLogin{}, n)
 	// Start the read loop
 	n.readLoop(r)
 }
@@ -297,12 +284,7 @@ func (n *NetState) readLoop(r *clientpacket.Reader) {
 			// Do nothing
 		default:
 			// Let the world goroutine handle the packet
-			world.SendRequest(&ClientPacketRequest{
-				BaseWorldRequest: BaseWorldRequest{
-					NetState: n,
-				},
-				Packet: cp,
-			})
+			world.SendPacket(cp, n)
 		}
 	}
 }

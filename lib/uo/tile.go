@@ -74,17 +74,17 @@ type Tile struct {
 	// Pointer to the tile definition for this tile
 	def *TileDefinition
 	// Altitude of the tile's North West corner
-	z int8
+	z int
 	// Altitude of the tile's lowest point
-	lowest int8
+	lowest int
 	// Height of the tile
-	highest int8
+	highest int
 	// Height of the standing point
-	avg int8
+	avg int
 }
 
 // NewTile returns a Tile value with the given properties
-func NewTile(z int8, def *TileDefinition) Tile {
+func NewTile(z int, def *TileDefinition) Tile {
 	return Tile{
 		def: def,
 		z:   z,
@@ -102,22 +102,22 @@ func (t Tile) Ignore() bool {
 func (t Tile) BaseGraphic() Graphic { return t.def.Graphic }
 
 // RawZ returns the elevation of the tile from map0.mul
-func (t Tile) RawZ() int8 { return t.z }
+func (t Tile) RawZ() int { return t.z }
 
 // Z returns the elevation of the lowest corder of the tile
-func (t Tile) Z() int8 { return t.lowest }
+func (t Tile) Z() int { return t.lowest }
 
 // Height returns the height of the tile
-func (t Tile) Height() int8 { return t.highest - t.lowest }
+func (t Tile) Height() int { return t.highest - t.lowest }
 
 // Highest returns the highest point of the tile
-func (t Tile) Highest() int8 { return t.highest }
+func (t Tile) Highest() int { return t.highest }
 
 // StandingHeight returns the standing height of the tile, which is always 0
-func (t Tile) StandingHeight() int8 { return t.avg }
+func (t Tile) StandingHeight() int { return t.avg }
 
 // SetElevations sets the three pre-calculated elevation parameters
-func (t Tile) SetElevations(lowest, avg, height int8) Tile {
+func (t Tile) SetElevations(lowest, avg, height int) Tile {
 	t.lowest = lowest
 	t.avg = avg
 	t.highest = height

@@ -28,7 +28,7 @@ func StopGameService() {
 
 func GameServerMain(wg *sync.WaitGroup) {
 	var err error
-
+	// Panic handler
 	defer func() {
 		if p := recover(); p != nil {
 			log.Printf("panic: %v\n%s\n", p, debug.Stack())
@@ -36,7 +36,7 @@ func GameServerMain(wg *sync.WaitGroup) {
 		}
 	}()
 	defer wg.Done()
-
+	// Open listener
 	gameServerListener, err = net.ListenTCP("tcp", &net.TCPAddr{
 		IP:   net.ParseIP(configuration.GameServerAddress),
 		Port: configuration.GameServerPort,
@@ -46,7 +46,7 @@ func GameServerMain(wg *sync.WaitGroup) {
 		return
 	}
 	log.Printf("info: game server listening at %s:%d\n", configuration.GameServerAddress, configuration.GameServerPort)
-
+	// Accept connections
 	for {
 		c, err := gameServerListener.AcceptTCP()
 		if err != nil {
@@ -69,7 +69,7 @@ func GameServerMain(wg *sync.WaitGroup) {
 		}
 		go handleGameConnection(c)
 	}
-
+	// Cleanup
 	gameServerListener.Close()
 	gameNetStates.Range(func(key, value interface{}) bool {
 		ns := key.(*NetState)
