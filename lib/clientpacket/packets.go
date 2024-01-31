@@ -366,7 +366,7 @@ type WalkRequest struct {
 	// Direction to walk
 	Direction uo.Direction
 	// If true this is a run request
-	IsRunning bool
+	Running bool
 	// Walk sequence number
 	Sequence int
 	// Fast-walk prevention key
@@ -380,7 +380,7 @@ func newWalkRequest(in []byte) Packet {
 	p := &WalkRequest{
 		basePacket:  basePacket{id: 0x02},
 		Direction:   d,
-		IsRunning:   r,
+		Running:     r,
 		Sequence:    int(in[1]),
 		FastWalkKey: util.ParseUInt32(in[2:]),
 	}

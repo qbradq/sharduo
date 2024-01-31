@@ -1,8 +1,10 @@
 package game
 
 import (
+	"fmt"
 	"io"
 	"sort"
+	"strings"
 	"sync"
 
 	"github.com/qbradq/sharduo/lib/uo"
@@ -34,6 +36,14 @@ func (m *Map) Update(now uo.Time) {
 // nsRetBuf is the static buffer used for the return value of
 // [Map.NetStatesInRange].
 var nsRetBuf []*Mobile
+
+// mwRetBuf is the static buffer used for the return value of
+// [Map.MobilesWithin].
+var mwRetBuf []*Mobile
+
+// iwRetBuf is the static buffer used for the return value of
+// [Map.ItemsWithin].
+var iwRetBuf []*Item
 
 // NetStatesInRange returns a slice of all of the mobiles with attached net
 // states who's view range is within range of the given point on the map.
@@ -253,5 +263,160 @@ func (m *Map) AfterUnmarshal() {
 	}
 	for _, m := range mobs {
 		m.AfterUnmarshalOntoMap()
+	}
+}
+
+// StoreObject moves an object to deep storage.
+func (m *Map) StoreObject(obj any) {
+	switch o := obj.(type) {
+	case *Mobile:
+		m.ds[o.Serial] = o
+	case *Item:
+		m.ds[o.Serial] = o
+	}
+}
+
+// RetrieveObject removes an object from deep storage and returns it.
+func (m *Map) RetrieveObject(s uo.Serial) any {
+	o, found := m.ds[s]
+	if found {
+		delete(m.ds, s)
+		return o
+	}
+	return nil
+}
+
+// MobilesWithin returns all mobiles within the bounds. Subsequent calls to
+// MobilesWithin reuse the same backing array for return values.
+func (m *Map) MobilesWithin(b uo.Bounds) []*Mobile {
+	var p uo.Point
+	cb := uo.Bounds{
+		X: b.X / uo.ChunkWidth,
+		Y: b.Y / uo.ChunkHeight,
+		W: b.W / uo.ChunkWidth,
+		H: b.H / uo.ChunkHeight,
+	}
+	if b.W%uo.ChunkWidth != 0 {
+		cb.W++
+	}
+	if b.H%uo.ChunkHeight != 0 {
+		cb.H++
+	}
+	mwRetBuf = mwRetBuf[:0]
+	for p.Y = cb.Y; p.Y < cb.Y+cb.H; p.Y++ {
+		for p.X = cb.X; p.X < cb.X+cb.W; p.X++ {
+			c := m.chunks[p.Y*uo.MapChunksWidth+p.X]
+			for _, m := range c.Mobiles {
+				if b.Contains(m.Location) {
+					mwRetBuf = append(mwRetBuf, m)
+				}
+			}
+		}
+	}
+	return mwRetBuf
+}
+
+// ItemsWithin returns all items within the bounds. Subsequent calls to
+// ItemsWithin reuse the same backing array for return values.
+func (m *Map) ItemsWithin(b uo.Bounds) []*Item {
+	var p uo.Point
+	cb := uo.Bounds{
+		X: b.X / uo.ChunkWidth,
+		Y: b.Y / uo.ChunkHeight,
+		W: b.W / uo.ChunkWidth,
+		H: b.H / uo.ChunkHeight,
+	}
+	if b.W%uo.ChunkWidth != 0 {
+		cb.W++
+	}
+	if b.H%uo.ChunkHeight != 0 {
+		cb.H++
+	}
+	iwRetBuf = iwRetBuf[:0]
+	for p.Y = cb.Y; p.Y < cb.Y+cb.H; p.Y++ {
+		for p.X = cb.X; p.X < cb.X+cb.W; p.X++ {
+			c := m.chunks[p.Y*uo.MapChunksWidth+p.X]
+			for _, i := range c.Items {
+				if b.Contains(i.Location) {
+					iwRetBuf = append(iwRetBuf, i)
+				}
+			}
+		}
+	}
+	return iwRetBuf
+}
+
+// EverythingWithin returns all items and mobiles within the bounds. Subsequent
+// calls to EverythingWithin will reuse the return buffers for
+// [Map.MobilesWithin] and [Map.ItemsWithin].
+func (m *Map) EverythingWithin(b uo.Bounds) ([]*Mobile, []*Item) {
+	var p uo.Point
+	cb := uo.Bounds{
+		X: b.X / uo.ChunkWidth,
+		Y: b.Y / uo.ChunkHeight,
+		W: b.W / uo.ChunkWidth,
+		H: b.H / uo.ChunkHeight,
+	}
+	if b.W%uo.ChunkWidth != 0 {
+		cb.W++
+	}
+	if b.H%uo.ChunkHeight != 0 {
+		cb.H++
+	}
+	mwRetBuf = mwRetBuf[:0]
+	iwRetBuf = iwRetBuf[:0]
+	for p.Y = cb.Y; p.Y < cb.Y+cb.H; p.Y++ {
+		for p.X = cb.X; p.X < cb.X+cb.W; p.X++ {
+			c := m.chunks[p.Y*uo.MapChunksWidth+p.X]
+			for _, m := range c.Mobiles {
+				if b.Contains(m.Location) {
+					mwRetBuf = append(mwRetBuf, m)
+				}
+			}
+			for _, i := range c.Items {
+				if b.Contains(i.Location) {
+					iwRetBuf = append(iwRetBuf, i)
+				}
+			}
+		}
+	}
+	return mwRetBuf, iwRetBuf
+}
+
+// SendEverything sends all mobiles and items to the given mobile's net state.
+func (m *Map) SendEverything(mob *Mobile) {
+	if mob.NetState == nil {
+		return
+	}
+	mobs, items := m.EverythingWithin(mob.Location.BoundsByRadius(mob.ViewRange))
+	for _, m := range mobs {
+		mob.NetState.SendObject(m)
+	}
+	for _, i := range items {
+		mob.NetState.SendObject(i)
+	}
+}
+
+// SendSpeech sends speech to all mobiles in range.
+func (m *Map) SendSpeech(from *Mobile, r int, format string, args ...any) {
+	text := fmt.Sprintf(format, args...)
+	mobs := m.MobilesWithin(from.Location.BoundsByRadius(r))
+	sort.Slice(mobs, func(i, j int) bool {
+		return mobs[i].Location.XYDistance(from.Location) <
+			mobs[j].Location.XYDistance(from.Location)
+	})
+	isAllCommand := len(text) >= 4 && strings.ToLower(text[:4]) == "all "
+	speechEventHandled := false
+	for _, mob := range mobs {
+		if from.Location.XYDistance(mob.Location) <= mob.ViewRange {
+			if mob.NetState != nil {
+				mob.NetState.Speech(from, text)
+			}
+			// Make sure we don't trigger every listener in range, just the
+			// closest, unless it is an "all" command.
+			if !speechEventHandled {
+				speechEventHandled = mob.ExecuteEvent("Speech", from, text) && !isAllCommand
+			}
+		}
 	}
 }

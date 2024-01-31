@@ -9,8 +9,15 @@ type NetState interface {
 	// true on success. This function will fail if the connection's send packet
 	// channel is full but will not block.
 	Send(serverpacket.Packet) bool
+	// Disconnect disconnects the backing connection, cleans up the net state
+	// and schedules the player's character - if any - to logout.
+	Disconnect()
+	// SendObject sends initial data packets for the object.
+	SendObject(any)
 	// UpdateObject sends an update packet for the object.
 	UpdateObject(any)
+	// Speech sends a speech packet to the attached client.
+	Speech(any, string, ...any)
 }
 
 // ContainerObserver is implemented by anything that can be notified of changes

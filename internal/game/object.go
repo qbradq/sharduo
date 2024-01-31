@@ -10,9 +10,10 @@ import (
 // Object holds all of the common dynamic data for all items and mobiles.
 type Object struct {
 	// Static variables
-	Name      string // Descriptive name without articles
-	ArticleA  bool   // If true the article A is used to refer to this item
-	ArticleAn bool   // If true the article An is used to refer to this item
+	Name      string            // Descriptive name without articles
+	ArticleA  bool              // If true the article A is used to refer to this item
+	ArticleAn bool              // If true the article An is used to refer to this item
+	Events    map[string]string // Raw event names
 	// Persistent variables
 	Serial   uo.Serial    // Unique serial of the object
 	Location uo.Point     // Location of the object
@@ -52,4 +53,14 @@ func (o *Object) DisplayName() string {
 		return "an " + o.Name
 	}
 	return o.Name
+}
+
+// ExecuteEvent executes the named event handler if any is configured. Returns
+// true if the handler was found and also returned true.
+func (o *Object) ExecuteEvent(which string, s, v any) bool {
+	hn, ok := o.Events[which]
+	if !ok {
+		return false
+	}
+	return ExecuteEventHandler(hn, o, s, v)
 }

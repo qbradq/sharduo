@@ -25,6 +25,7 @@ type Item struct {
 	Flags       ItemFlags  // Boolean item flags
 	Graphic     uo.Graphic // Base graphic to use for the item
 	Layer       uo.Layer   // Layer the object is worn on
+	Weight      float64    // Weight of the item, NOT the stack, just one of these items
 	MaxWeight   float64    // Maximum weight that can be held in this container
 	MaxItems    int        // Maximum number of items that can be held in this container
 	GUMPGraphic uo.GUMP    // GUMP graphic to use for containers
@@ -64,6 +65,25 @@ func (i *Item) Read(r io.Reader) {
 		item := &Item{}
 		item.Read(r)
 		i.Contents[idx] = item
+	}
+}
+
+// RecalculateStats recalculates all internal cache states.
+func (i *Item) RecalculateStats() {
+	i.ItemCount = len(i.Contents)
+	i.Gold = 0
+	i.ContainedWeight = 0
+	if !i.HasFlags(ItemFlagsContainer) {
+		return
+	}
+	for _, c := range i.Contents {
+		i.ContainedWeight += c.Weight
+		if c.HasFlags(ItemFlagsContainer) {
+			c.RecalculateStats()
+			i.ItemCount += c.ItemCount
+			i.Gold += c.Gold
+			i.ContainedWeight += c.ContainedWeight
+		}
 	}
 }
 
@@ -150,10 +170,6 @@ func (i *Item) UpdateItemOPL(item *Item) {
 	for _, o := range i.Observers {
 		o.ContainerItemOPLChanged(i, item)
 	}
-}
-
-// RecalculateStats recalculates all internal cache states.
-func (i *Item) RecalculateStats() {
 }
 
 // ContextMenu returns a new context menu packet.

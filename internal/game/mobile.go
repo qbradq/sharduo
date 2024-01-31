@@ -21,6 +21,9 @@ type Mobile struct {
 	BaseStrength     int                  // Base strength value
 	BaseDexterity    int                  // Base dexterity value
 	BaseIntelligence int                  // Base intelligence value
+	MaxHits          int                  // Current max hit points
+	MaxMana          int                  // Current max mana
+	MaxStamina       int                  // Current max stamina
 	BaseSkills       [uo.SkillCount]int   // Base skill values in tenths of a percent
 	Equipment        [uo.LayerCount]*Item // Current equipment set
 	// Transient values
@@ -28,18 +31,16 @@ type Mobile struct {
 	NetState      NetState                // Connected net state if any
 	ControlMaster *Mobile                 // Mobile that is currently commanding this mobile
 	Hits          int                     // Current hit points
-	MaxHits       int                     // Current max hit points
 	Mana          int                     // Current mana
-	MaxMana       int                     // Current max mana
 	Stamina       int                     // Current stamina
-	MaxStamina    int                     // Current max stamina
 	Strength      int                     // Current strength value
 	Dexterity     int                     // Current dexterity value
 	Intelligence  int                     // Current intelligence value
 	Skills        [uo.SkillCount]int      // Current skill values in tenths of a percent
 	Running       bool                    // If true the mobile is running
-	Weight        float64                 // Current weight of the mobile including all equipment excluding special equipment like mount items and the bank box
+	Weight        float64                 // Current weight of all equipment plus the contents of the backpack
 	MaxWeight     float64                 // Max carry weight of the mobile
+	ViewRange     int                     // Range at which items are reported to the client, valid values are [5-18]
 	opl           *serverpacket.OPLPacket // Cached OPLPacket
 	oplInfo       *serverpacket.OPLInfo   // Cached OPLInfo packet
 }
@@ -47,13 +48,16 @@ type Mobile struct {
 // Write writes the persistent data of the item to w.
 func (m *Mobile) Write(w io.Writer) {
 	m.Object.Write(w)
-	util.PutUInt32(w, 0)                      // Version
-	util.PutBool(w, m.Female)                 // Female flag
-	util.PutBool(w, m.Player)                 // Player flag
-	util.PutByte(w, byte(m.BaseStrength))     // Strength
-	util.PutByte(w, byte(m.BaseDexterity))    // Dexterity
-	util.PutByte(w, byte(m.BaseIntelligence)) // Intelligence
-	for _, v := range m.BaseSkills {          // Skills
+	util.PutUInt32(w, 0)                          // Version
+	util.PutBool(w, m.Female)                     // Female flag
+	util.PutBool(w, m.Player)                     // Player flag
+	util.PutUInt16(w, uint16(m.BaseStrength))     // Strength
+	util.PutUInt16(w, uint16(m.BaseDexterity))    // Dexterity
+	util.PutUInt16(w, uint16(m.BaseIntelligence)) // Intelligence
+	util.PutUInt16(w, uint16(m.MaxHits))          // Max hits
+	util.PutUInt16(w, uint16(m.MaxMana))          // Max mana
+	util.PutUInt16(w, uint16(m.MaxStamina))       // Max stamina
+	for _, v := range m.BaseSkills {              // Skills
 		util.PutUInt16(w, uint16(v))
 	}
 	for _, e := range m.Equipment { // Equipment
@@ -69,20 +73,56 @@ func (m *Mobile) Write(w io.Writer) {
 // Read reads the persistent data of the mobile from r.
 func (m *Mobile) Read(r io.Reader) {
 	m.Object.Read(r)
-	_ = util.GetUInt32(r)                     // Version
-	m.Female = util.GetBool(r)                // Female flag
-	m.Player = util.GetBool(r)                // Player flag
-	m.BaseStrength = int(util.GetByte(r))     // Strength
-	m.BaseDexterity = int(util.GetByte(r))    // Dexterity
-	m.BaseIntelligence = int(util.GetByte(r)) // Intelligence
-	for i := range m.Skills {                 // Skills
-		m.Skills[i] = int(util.GetUInt16(r))
+	_ = util.GetUInt32(r)                       // Version
+	m.Female = util.GetBool(r)                  // Female flag
+	m.Player = util.GetBool(r)                  // Player flag
+	m.BaseStrength = int(util.GetUInt16(r))     // Strength
+	m.BaseDexterity = int(util.GetUInt16(r))    // Dexterity
+	m.BaseIntelligence = int(util.GetUInt16(r)) // Intelligence
+	m.MaxHits = int(util.GetUInt16(r))          // Max hits
+	m.MaxMana = int(util.GetUInt16(r))          // Max mana
+	m.MaxStamina = int(util.GetUInt16(r))       // Max stamina
+	for i := range m.BaseSkills {               // Skills
+		m.BaseSkills[i] = int(util.GetUInt16(r))
 	}
 	for layer := range m.Equipment { // Equipment
 		if util.GetBool(r) {
 			i := &Item{}
 			i.Read(r)
 			m.Equipment[layer] = i
+		}
+	}
+	// Establish sane defaults for variables that need non-zero default values
+	m.ViewRange = uo.MaxViewRange
+}
+
+// RecalculateStats recalculates all internal cache states.
+func (m *Mobile) RecalculateStats() {
+	m.Strength = m.BaseStrength
+	m.Dexterity = m.BaseDexterity
+	m.Intelligence = m.BaseIntelligence
+	if m.Player {
+		m.MaxHits = m.Strength/2 + 50
+		m.MaxMana = m.Intelligence
+		m.MaxStamina = m.Dexterity
+		m.MaxWeight = float64(int(float64(m.Strength)*3.5 + 40))
+	}
+	m.Hits = m.MaxHits
+	m.Mana = m.MaxMana
+	m.Stamina = m.MaxStamina
+	m.Skills = m.BaseSkills // Note to self, this does an array copy
+	m.Weight = 0
+	for layer, e := range m.Equipment {
+		if layer < int(uo.LayerFirstValid) || layer == int(uo.LayerBankBox) {
+			continue
+		}
+		if layer > int(uo.LayerLastValid) {
+			break
+		}
+		m.Weight += e.Weight
+		if e.HasFlags(ItemFlagsContainer) {
+			e.RecalculateStats()
+			m.Weight += e.ContainedWeight
 		}
 	}
 }
@@ -141,10 +181,6 @@ func (m *Mobile) CanSee(o *Object) bool {
 		return false
 	}
 	return false
-}
-
-// RecalculateStats recalculates all internal cache states.
-func (m *Mobile) RecalculateStats() {
 }
 
 // AfterUnmarshalOntoMap is called after all of the tiles, statics, items and

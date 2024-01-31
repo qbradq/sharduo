@@ -4,7 +4,9 @@ import "github.com/qbradq/sharduo/internal/game"
 
 // CharacterLogin is sent by the game service to request the world load in the
 // player's mobile.
-type CharacterLogin struct{}
+type CharacterLogin struct {
+	CharacterIndex int // Index of character selected for login
+}
 
 // ID returns the pseudo packet ID.
 func (p *CharacterLogin) ID() byte { return 0xFF }

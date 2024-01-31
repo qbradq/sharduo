@@ -148,9 +148,6 @@ func (n *NetState) Disconnect() {
 	})
 }
 
-// Account returns the account associated with this NetState.
-func (n *NetState) Account() *game.Account { return n.account }
-
 // TakeAction returns true if an action is allowed at this time. Examples of
 // actions are double-clicking basically anything or lifting an item. This
 // method assumes that the action will be taken after this call and sets
