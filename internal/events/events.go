@@ -7,30 +7,31 @@ import (
 
 func init() {
 	game.ExecuteEventHandler = func(e string, r, s, p any) bool {
-		fn := GetEventHandler(e)
+		fn := getEventHandler(e)
 		if fn == nil {
 			return true
 		}
 		return (*fn)(r, s, p)
 	}
+	game.EventIndex = getEventHandlerIndex
 }
 
-// EventHandler is the function signature of event handlers
-type EventHandler func(any, any, any) bool
+// eventHandler is the function signature of event handlers
+type eventHandler func(any, any, any) bool
 
 // Event handler registrar
-var evreg *util.Registry[string, *EventHandler] = util.NewRegistry[string, *EventHandler]("events")
+var evreg *util.Registry[string, *eventHandler] = util.NewRegistry[string, *eventHandler]("events")
 
 // Event handler back-reference registrar
-var evbr map[*EventHandler]string = map[*EventHandler]string{}
+var evbr map[*eventHandler]string = map[*eventHandler]string{}
 
 // Event handler index back-reference registrar
-var evhibr map[*EventHandler]uint16 = map[*EventHandler]uint16{}
+var evhibr map[*eventHandler]uint16 = map[*eventHandler]uint16{}
 
 // Event handlers by index
-var evidx []*EventHandler = []*EventHandler{nil}
+var evidx []*eventHandler = []*eventHandler{nil}
 
-func reg(name string, fn EventHandler) {
+func reg(name string, fn eventHandler) {
 	evreg.Add(name, &fn)
 	evbr[&fn] = name
 	idx := uint16(len(evidx))
@@ -38,40 +39,40 @@ func reg(name string, fn EventHandler) {
 	evhibr[&fn] = idx
 }
 
-// GetEventHandler returns the named event handler or nil if it does not exist
-func GetEventHandler(which string) *EventHandler {
+// getEventHandler returns the named event handler or nil if it does not exist
+func getEventHandler(which string) *eventHandler {
 	fn, _ := evreg.Get(which)
 	return fn
 }
 
-// GetEventName returns the name of the event handler
-func GetEventName(fn *EventHandler) string {
+// getEventName returns the name of the event handler
+func getEventName(fn *eventHandler) string {
 	return evbr[fn]
 }
 
-// GetEventIndex returns the index number of the event handler. A return value
+// getEventIndex returns the index number of the event handler. A return value
 // of 0 means nil or event handler not found.
 // NOTE: This index number can change when events are added. DO NOT PERSIST THIS
 // VALUE!
-func GetEventIndex(fn *EventHandler) uint16 {
+func getEventIndex(fn *eventHandler) uint16 {
 	return evhibr[fn]
 }
 
 // GetEventHandlerByIndex returns the event handler by index or nil if it does
 // not exist.
-func GetEventHandlerByIndex(idx uint16) *EventHandler {
+func GetEventHandlerByIndex(idx uint16) *eventHandler {
 	if idx >= uint16(len(evidx)) {
 		return nil
 	}
 	return evidx[idx]
 }
 
-// GetEventHandlerIndex returns the event handler index by name. A return value
+// getEventHandlerIndex returns the event handler index by name. A return value
 // of 0 means nil or event handler not found.
 // NOTE: This index number can change when events are added. DO NOT PERSIST THIS
 // VALUE!
-func GetEventHandlerIndex(which string) uint16 {
-	fn := GetEventHandler(which)
+func getEventHandlerIndex(which string) uint16 {
+	fn := getEventHandler(which)
 	if fn == nil {
 		return 0
 	}

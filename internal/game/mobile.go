@@ -152,3 +152,7 @@ func (m *Mobile) RecalculateStats() {
 // that are required for proper movement and control.
 func (m *Mobile) AfterUnmarshalOntoMap() {
 }
+
+// ContextMenu returns a new context menu packet.
+func (m *Mobile) ContextMenu(p *ContextMenu, mob *Mobile) {
+}

@@ -25,14 +25,16 @@ func handleGeneralInformation(n *NetState, cp clientpacket.Packet) {
 
 func handleContextMenuRequest(n *NetState, cp clientpacket.GeneralInformationPacket) {
 	p := cp.(*clientpacket.ContextMenuRequest)
-	o := world.Find(p.Serial)
-	if o == nil {
+	obj := world.Find(p.Serial)
+	if obj == nil {
 		return
 	}
-	menu := game.BuildContextMenu(o, n.m)
-	if menu != nil {
-		n.Send((*serverpacket.ContextMenu)(menu))
+	var menu *game.ContextMenu
+	switch o := obj.(type) {
+	case *game.Mobile:
+		o.ContextMenu(menu, n.m)
 	}
+	n.Send((*serverpacket.ContextMenu)(menu))
 }
 
 func handleContextMenuSelection(n *NetState, cp clientpacket.GeneralInformationPacket) {

@@ -96,9 +96,9 @@ func handleGameConnection(c *net.TCPConn) {
 	ns.m = nil
 	if m != nil {
 		m.NetState = nil
-		world.SendRequest(&CharacterLogoutRequest{
+		world.SendPacket(&CharacterLogout{
 			Mobile: m,
-		})
+		}, ns)
 	}
 }
 

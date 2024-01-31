@@ -13,3 +13,6 @@ var Find func(uo.Serial) any
 
 // ExecuteEventHandler must execute the named event handler.
 var ExecuteEventHandler func(string, any, any, any) bool
+
+// EventIndex must return a unique index number for the given event name.
+var EventIndex func(string) uint16

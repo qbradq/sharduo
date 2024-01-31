@@ -30,6 +30,9 @@ archives/
 # Client data directory
 client/
 
+# Tools directory
+tools/
+
 # Machine-specific configuration files
 /configuration.ini
 /crontab

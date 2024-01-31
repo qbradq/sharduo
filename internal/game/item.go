@@ -155,3 +155,10 @@ func (i *Item) UpdateItemOPL(item *Item) {
 // RecalculateStats recalculates all internal cache states.
 func (i *Item) RecalculateStats() {
 }
+
+// ContextMenu returns a new context menu packet.
+func (i *Item) ContextMenu(p *ContextMenu, m *Mobile) {
+	if i.HasFlags(ItemFlagsContainer) {
+		p.Append("OpenContainer", 3000362) // Open
+	}
+}

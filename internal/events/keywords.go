@@ -117,7 +117,7 @@ func KeywordsCommand(receiver, source game.Object, v any) bool {
 }
 
 // keywordEvents maps keywords to the event handlers they belong to
-var keywordEvents = map[string]EventHandler{
+var keywordEvents = map[string]eventHandler{
 	"balance":  BankBalance,
 	"bank":     OpenBankBox,
 	"buy":      VendorBuy,
