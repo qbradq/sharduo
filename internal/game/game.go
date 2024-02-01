@@ -16,3 +16,6 @@ var ExecuteEventHandler func(string, any, any, any) bool
 
 // EventIndex must return a unique index number for the given event name.
 var EventIndex func(string) uint16
+
+// World is the current world we are simulating.
+var World WorldInterface

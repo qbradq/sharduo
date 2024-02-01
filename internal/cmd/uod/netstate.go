@@ -551,10 +551,17 @@ func (n *NetState) MoveMobile(mob *game.Mobile) {
 
 // RemoveObject sends a packet to the client that removes the object from the
 // client's view of the game.
-func (n *NetState) RemoveObject(o *game.Object) {
-	n.Send(&serverpacket.DeleteObject{
-		Serial: o.Serial,
-	})
+func (n *NetState) RemoveObject(obj any) {
+	switch o := obj.(type) {
+	case *game.Mobile:
+		n.Send(&serverpacket.DeleteObject{
+			Serial: o.Serial,
+		})
+	case *game.Item:
+		n.Send(&serverpacket.DeleteObject{
+			Serial: o.Serial,
+		})
+	}
 }
 
 // DrawPlayer sends the draw player packet to the client.

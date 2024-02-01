@@ -41,6 +41,7 @@ type Mobile struct {
 	Weight        float64                 // Current weight of all equipment plus the contents of the backpack
 	MaxWeight     float64                 // Max carry weight of the mobile
 	ViewRange     int                     // Range at which items are reported to the client, valid values are [5-18]
+	StandingOn    uo.CommonObject         // Object the mobile is standing on
 	opl           *serverpacket.OPLPacket // Cached OPLPacket
 	oplInfo       *serverpacket.OPLInfo   // Cached OPLInfo packet
 }
@@ -191,4 +192,24 @@ func (m *Mobile) AfterUnmarshalOntoMap() {
 
 // ContextMenu returns a new context menu packet.
 func (m *Mobile) ContextMenu(p *ContextMenu, mob *Mobile) {
+}
+
+// AfterMove handles things that happen every time a mobile steps such as
+// stamina decay.
+func (m *Mobile) AfterMove() {
+	// Max weight checks
+	w := int(m.Weight)
+	mw := int(m.MaxWeight)
+	if w > mw {
+		sc := w - mw
+		m.Stamina -= sc
+		if m.Stamina < 0 {
+			m.Stamina = 0
+		}
+		World.UpdateMobile(m)
+	}
+	// Check for containers that we need to close
+	if m.NetState != nil {
+		m.NetState.ContainerRangeCheck()
+	}
 }

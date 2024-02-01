@@ -150,6 +150,7 @@ func initialize() {
 	// Initialize our data structures
 	log.Println("info: allocating world data structures")
 	world = NewWorld(configuration.SaveDirectory)
+	game.World = world
 	log.Println("info: populating map data structures")
 	world.Map().LoadFromMuls(mapmul, staticsmul)
 

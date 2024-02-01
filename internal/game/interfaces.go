@@ -1,6 +1,11 @@
 package game
 
-import "github.com/qbradq/sharduo/lib/serverpacket"
+import (
+	"time"
+
+	"github.com/qbradq/sharduo/lib/serverpacket"
+	"github.com/qbradq/sharduo/lib/uo"
+)
 
 // NetState is implemented by the game server and is responsible for
 // communicating with the client.
@@ -18,6 +23,16 @@ type NetState interface {
 	UpdateObject(any)
 	// Speech sends a speech packet to the attached client.
 	Speech(any, string, ...any)
+	// MoveMobile sends a packet to inform the client that the mobile moved.
+	MoveMobile(*Mobile)
+	// Cliloc sends a localized client message packet to the attached client.
+	Cliloc(any, uo.Cliloc, ...string)
+	// RemoveObject sends a packet to the client that removes the object from
+	// the client's view of the game.
+	RemoveObject(any)
+	// ContainerRangeCheck checks all observed containers and closes them as
+	// needed based on range.
+	ContainerRangeCheck()
 }
 
 // ContainerObserver is implemented by anything that can be notified of changes
@@ -47,4 +62,47 @@ type ContainerObserver interface {
 
 // Spawner implements an interface allowing for the control of object spawning.
 type Spawner interface {
+}
+
+// World is the interface the server's game world model must implement for the
+// internal game objects to work properly.
+type WorldInterface interface {
+	// Find returns a pointer to the object with the given ID or nil
+	Find(uo.Serial) any
+	// Delete removes the given object from the world and delets it from the
+	// data stores.
+	Delete(any)
+	// UpdateItem schedules an update packet for the item. It is safe to update
+	// the same object rapidly in succession. No duplicate packets will be sent.
+	UpdateItem(*Item)
+	// UpdateMobile schedules an update packet for the item. It is safe to
+	// update the same object rapidly in succession. No duplicate packets will
+	// be sent.
+	UpdateMobile(*Mobile)
+	// UpdateItemOPLInfo adds the item to the list of items that must have their
+	// OPL data updated client-side.
+	UpdateItemOPLInfo(*Item)
+	// UpdateMobileOPLInfo adds the mobile to the list of mobiles that must have
+	// their OPL data updated client-side.
+	UpdateMobileOPLInfo(*Mobile)
+	// Map returns the map the world is using.
+	Map() *Map
+	// GetItemDefinition returns the uo.StaticDefinition that holds the static
+	// data for a given item graphic.
+	GetItemDefinition(uo.Graphic) *uo.StaticDefinition
+	// Time returns the current time in the Sossarian universe. This is what
+	// timers use to avoid complications with DST, save lag, rollbacks, and
+	// downtime.
+	Time() uo.Time
+	// ServerTime returns the current wall-clock time of the server. This is
+	// updated once per tick.
+	ServerTime() time.Time
+	// BroadcastPacket sends the packet to every net state connected to the
+	// game service with an attached mobile.
+	BroadcastPacket(serverpacket.Packet)
+	// BroadcastMessage sends a system message to every net state with a mobile
+	BroadcastMessage(*Mobile, string, ...any)
+	// Accounts returns a slice of pointers to the accounts on the server. This
+	// should only be used for admin GUMPs and commands.
+	Accounts() []*Account
 }

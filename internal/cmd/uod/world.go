@@ -407,14 +407,14 @@ func (w *World) Main(wg *sync.WaitGroup) {
 						// For items worn by a mobile we need to update every
 						// net state within range of that mobile
 						_, info := o.OPLPackets()
-						for _, m := range w.m.NetStatesInRange(o.Wearer.Location) {
+						for _, m := range w.m.NetStatesInRange(o.Wearer.Location, 0) {
 							m.NetState.Send(info)
 						}
 					} else {
 						// For items on the ground we need to update every net
 						// state in range of the item itself
 						_, info := o.OPLPackets()
-						for _, m := range w.m.NetStatesInRange(o.Location) {
+						for _, m := range w.m.NetStatesInRange(o.Location, 0) {
 							m.NetState.Send(info)
 						}
 					}
@@ -426,7 +426,7 @@ func (w *World) Main(wg *sync.WaitGroup) {
 					// Distribute the OPL info to every net state in range of
 					// the mobile.
 					_, info := o.OPLPackets()
-					for _, m := range w.m.NetStatesInRange(o.Location) {
+					for _, m := range w.m.NetStatesInRange(o.Location, 0) {
 						m.NetState.Send(info)
 					}
 				}
@@ -454,13 +454,13 @@ func (w *World) Main(wg *sync.WaitGroup) {
 						// For items being worn by a mobile we need to
 						// distribute the update to all net states in range of
 						// the mobile wearing the item.
-						for _, m := range w.m.NetStatesInRange(o.Wearer.Location) {
+						for _, m := range w.m.NetStatesInRange(o.Wearer.Location, 0) {
 							m.NetState.UpdateObject(o)
 						}
 					} else {
 						// For items on the ground we need to distribute the
 						// update to all net states in range of the item.
-						for _, m := range w.m.NetStatesInRange(o.Location) {
+						for _, m := range w.m.NetStatesInRange(o.Location, 0) {
 							m.NetState.UpdateObject(o)
 						}
 					}
@@ -470,7 +470,7 @@ func (w *World) Main(wg *sync.WaitGroup) {
 						continue
 					}
 					// Distribute the update to all net states in range
-					for _, m := range w.m.NetStatesInRange(o.Location) {
+					for _, m := range w.m.NetStatesInRange(o.Location, 0) {
 						m.NetState.UpdateObject(o)
 					}
 				}
@@ -525,7 +525,7 @@ func (w *World) BroadcastPacket(p serverpacket.Packet) {
 
 // BroadcastMessage broadcasts lower-left system message to every connected
 // client from the given speaker. Use nil for speaker for the system.
-func (w *World) BroadcastMessage(speaker any, fmtstr string, args ...interface{}) {
+func (w *World) BroadcastMessage(s *game.Mobile, fmtstr string, args ...any) {
 	sid := uo.SerialSystem
 	body := uo.BodySystem
 	font := uo.FontNormal
@@ -533,19 +533,11 @@ func (w *World) BroadcastMessage(speaker any, fmtstr string, args ...interface{}
 	name := ""
 	text := fmt.Sprintf(fmtstr, args...)
 	sType := uo.SpeechTypeSystem
-	if speaker != nil {
-		switch s := speaker.(type) {
-		case *game.Item:
-			sid = s.Serial
-			sType = uo.SpeechTypeNormal
-			name = s.DisplayName()
-			body = uo.Body(s.Graphic)
-		case *game.Mobile:
-			sid = s.Serial
-			sType = uo.SpeechTypeNormal
-			name = s.DisplayName()
-			body = s.Body
-		}
+	if s != nil {
+		sid = s.Serial
+		sType = uo.SpeechTypeNormal
+		name = s.DisplayName()
+		body = s.Body
 	}
 	w.BroadcastPacket(&serverpacket.Speech{
 		Speaker: sid,

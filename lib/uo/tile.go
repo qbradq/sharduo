@@ -6,16 +6,16 @@ type CommonObject interface {
 	// BaseGraphic returns the item graphic of the object
 	BaseGraphic() Graphic
 	// Z returns the permanent Z location of the lowest point of the object
-	Z() int8
+	Z() int
 	// Height returns the height of the object.
-	Height() int8
+	Height() int
 	// Highest returns the highest elevation of the object.
-	Highest() int8
+	Highest() int
 	// StandingHeight returns the height at which other objects rest above this
 	// object's position. For solid objects this is equal to Z()+Height(). For
 	// Bridge() type objects - typically stairs - this is Z()+Height()/2 rounded
 	// down. For all non-solid objects the return value will be Z().
-	StandingHeight() int8
+	StandingHeight() int
 	// Flag accessors
 	Background() bool
 	Weapon() bool
@@ -37,7 +37,7 @@ type CommonObject interface {
 	PartialHue() bool
 	NoHouse() bool
 	Map() bool
-	Container() bool
+	StaticContainer() bool
 	Wearable() bool
 	LightSource() bool
 	Animation() bool
@@ -124,40 +124,40 @@ func (t Tile) SetElevations(lowest, avg, height int) Tile {
 	return t
 }
 
-func (t Tile) Background() bool   { return t.def.TileFlags&TileFlagsBackground != 0 }
-func (t Tile) Weapon() bool       { return t.def.TileFlags&TileFlagsWeapon != 0 }
-func (t Tile) Transparent() bool  { return t.def.TileFlags&TileFlagsTransparent != 0 }
-func (t Tile) Translucent() bool  { return t.def.TileFlags&TileFlagsTranslucent != 0 }
-func (t Tile) Wall() bool         { return t.def.TileFlags&TileFlagsWall != 0 }
-func (t Tile) Damaging() bool     { return t.def.TileFlags&TileFlagsDamaging != 0 }
-func (t Tile) Impassable() bool   { return t.def.TileFlags&TileFlagsImpassable != 0 }
-func (t Tile) Wet() bool          { return t.def.TileFlags&TileFlagsWet != 0 }
-func (t Tile) Surface() bool      { return !t.Impassable() }
-func (t Tile) Bridge() bool       { return t.def.TileFlags&TileFlagsBridge != 0 }
-func (t Tile) Generic() bool      { return t.def.TileFlags&TileFlagsGeneric != 0 }
-func (t Tile) Window() bool       { return t.def.TileFlags&TileFlagsWindow != 0 }
-func (t Tile) NoShoot() bool      { return t.def.TileFlags&TileFlagsNoShoot != 0 }
-func (t Tile) ArticleA() bool     { return t.def.TileFlags&TileFlagsArticleA != 0 }
-func (t Tile) ArticleAn() bool    { return t.def.TileFlags&TileFlagsArticleAn != 0 }
-func (t Tile) Internal() bool     { return t.def.TileFlags&TileFlagsInternal != 0 }
-func (t Tile) Foliage() bool      { return t.def.TileFlags&TileFlagsFoliage != 0 }
-func (t Tile) PartialHue() bool   { return t.def.TileFlags&TileFlagsPartialHue != 0 }
-func (t Tile) NoHouse() bool      { return t.def.TileFlags&TileFlagsNoHouse != 0 }
-func (t Tile) Map() bool          { return t.def.TileFlags&TileFlagsMap != 0 }
-func (t Tile) Container() bool    { return t.def.TileFlags&TileFlagsContainer != 0 }
-func (t Tile) Wearable() bool     { return t.def.TileFlags&TileFlagsWearable != 0 }
-func (t Tile) LightSource() bool  { return t.def.TileFlags&TileFlagsLightSource != 0 }
-func (t Tile) Animation() bool    { return t.def.TileFlags&TileFlagsAnimation != 0 }
-func (t Tile) NoDiagonal() bool   { return t.def.TileFlags&TileFlagsNoDiagonal != 0 }
-func (t Tile) Armor() bool        { return t.def.TileFlags&TileFlagsArmor != 0 }
-func (t Tile) Roof() bool         { return t.def.TileFlags&TileFlagsRoof != 0 }
-func (t Tile) Door() bool         { return t.def.TileFlags&TileFlagsDoor != 0 }
-func (t Tile) StairBack() bool    { return t.def.TileFlags&TileFlagsStairBack != 0 }
-func (t Tile) StairRight() bool   { return t.def.TileFlags&TileFlagsStairRight != 0 }
-func (t Tile) AlphaBlend() bool   { return t.def.TileFlags&TileFlagsAlphaBlend != 0 }
-func (t Tile) UseNewArt() bool    { return t.def.TileFlags&TileFlagsUseNewArt != 0 }
-func (t Tile) ArtUsed() bool      { return t.def.TileFlags&TileFlagsArtUsed != 0 }
-func (t Tile) NoShadow() bool     { return t.def.TileFlags&TileFlagsBackground != 0 }
-func (t Tile) PixelBleed() bool   { return t.def.TileFlags&TileFlagsPixelBleed != 0 }
-func (t Tile) PlayAnimOnce() bool { return t.def.TileFlags&TileFlagsPlayAnimOnce != 0 }
-func (t Tile) MultiMovable() bool { return t.def.TileFlags&TileFlagsMultiMovable != 0 }
+func (t Tile) Background() bool      { return t.def.TileFlags&TileFlagsBackground != 0 }
+func (t Tile) Weapon() bool          { return t.def.TileFlags&TileFlagsWeapon != 0 }
+func (t Tile) Transparent() bool     { return t.def.TileFlags&TileFlagsTransparent != 0 }
+func (t Tile) Translucent() bool     { return t.def.TileFlags&TileFlagsTranslucent != 0 }
+func (t Tile) Wall() bool            { return t.def.TileFlags&TileFlagsWall != 0 }
+func (t Tile) Damaging() bool        { return t.def.TileFlags&TileFlagsDamaging != 0 }
+func (t Tile) Impassable() bool      { return t.def.TileFlags&TileFlagsImpassable != 0 }
+func (t Tile) Wet() bool             { return t.def.TileFlags&TileFlagsWet != 0 }
+func (t Tile) Surface() bool         { return !t.Impassable() }
+func (t Tile) Bridge() bool          { return t.def.TileFlags&TileFlagsBridge != 0 }
+func (t Tile) Generic() bool         { return t.def.TileFlags&TileFlagsGeneric != 0 }
+func (t Tile) Window() bool          { return t.def.TileFlags&TileFlagsWindow != 0 }
+func (t Tile) NoShoot() bool         { return t.def.TileFlags&TileFlagsNoShoot != 0 }
+func (t Tile) ArticleA() bool        { return t.def.TileFlags&TileFlagsArticleA != 0 }
+func (t Tile) ArticleAn() bool       { return t.def.TileFlags&TileFlagsArticleAn != 0 }
+func (t Tile) Internal() bool        { return t.def.TileFlags&TileFlagsInternal != 0 }
+func (t Tile) Foliage() bool         { return t.def.TileFlags&TileFlagsFoliage != 0 }
+func (t Tile) PartialHue() bool      { return t.def.TileFlags&TileFlagsPartialHue != 0 }
+func (t Tile) NoHouse() bool         { return t.def.TileFlags&TileFlagsNoHouse != 0 }
+func (t Tile) Map() bool             { return t.def.TileFlags&TileFlagsMap != 0 }
+func (t Tile) StaticContainer() bool { return t.def.TileFlags&TileFlagsContainer != 0 }
+func (t Tile) Wearable() bool        { return t.def.TileFlags&TileFlagsWearable != 0 }
+func (t Tile) LightSource() bool     { return t.def.TileFlags&TileFlagsLightSource != 0 }
+func (t Tile) Animation() bool       { return t.def.TileFlags&TileFlagsAnimation != 0 }
+func (t Tile) NoDiagonal() bool      { return t.def.TileFlags&TileFlagsNoDiagonal != 0 }
+func (t Tile) Armor() bool           { return t.def.TileFlags&TileFlagsArmor != 0 }
+func (t Tile) Roof() bool            { return t.def.TileFlags&TileFlagsRoof != 0 }
+func (t Tile) Door() bool            { return t.def.TileFlags&TileFlagsDoor != 0 }
+func (t Tile) StairBack() bool       { return t.def.TileFlags&TileFlagsStairBack != 0 }
+func (t Tile) StairRight() bool      { return t.def.TileFlags&TileFlagsStairRight != 0 }
+func (t Tile) AlphaBlend() bool      { return t.def.TileFlags&TileFlagsAlphaBlend != 0 }
+func (t Tile) UseNewArt() bool       { return t.def.TileFlags&TileFlagsUseNewArt != 0 }
+func (t Tile) ArtUsed() bool         { return t.def.TileFlags&TileFlagsArtUsed != 0 }
+func (t Tile) NoShadow() bool        { return t.def.TileFlags&TileFlagsBackground != 0 }
+func (t Tile) PixelBleed() bool      { return t.def.TileFlags&TileFlagsPixelBleed != 0 }
+func (t Tile) PlayAnimOnce() bool    { return t.def.TileFlags&TileFlagsPlayAnimOnce != 0 }
+func (t Tile) MultiMovable() bool    { return t.def.TileFlags&TileFlagsMultiMovable != 0 }

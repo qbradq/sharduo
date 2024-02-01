@@ -46,10 +46,38 @@ var mwRetBuf []*Mobile
 var iwRetBuf []*Item
 
 // NetStatesInRange returns a slice of all of the mobiles with attached net
-// states who's view range is within range of the given point on the map.
-// Subsequent calls to NetStatesInRange reuses the same return array.
-func (m *Map) NetStatesInRange(p uo.Point) []*Mobile {
-	nsRetBuf = nsRetBuf[:]
+// states who's view range is within range of the given point on the map. The
+// second parameter is an additional range to apply to view ranges. This is
+// useful for example when distributing mobile movements. Subsequent calls to
+// NetStatesInRange reuses the same return array.
+func (m *Map) NetStatesInRange(cp uo.Point, extra int) []*Mobile {
+	var p uo.Point
+	b := cp.BoundsByRadius(uo.MaxViewRange)
+	cb := uo.Bounds{
+		X: b.X / uo.ChunkWidth,
+		Y: b.Y / uo.ChunkHeight,
+		W: b.W / uo.ChunkWidth,
+		H: b.H / uo.ChunkHeight,
+	}
+	if b.W%uo.ChunkWidth != 0 {
+		cb.W++
+	}
+	if b.H%uo.ChunkHeight != 0 {
+		cb.H++
+	}
+	nsRetBuf = nsRetBuf[:0]
+	for p.Y = cb.Y; p.Y < cb.Y+cb.H; p.Y++ {
+		for p.X = cb.X; p.X < cb.X+cb.W; p.X++ {
+			c := m.chunks[p.Y*uo.MapChunksWidth+p.X]
+			for _, m := range c.Mobiles {
+				if m.NetState == nil ||
+					m.Location.XYDistance(cp) > m.ViewRange+extra {
+					continue
+				}
+				nsRetBuf = append(nsRetBuf, m)
+			}
+		}
+	}
 	return nsRetBuf
 }
 
@@ -419,4 +447,326 @@ func (m *Map) SendSpeech(from *Mobile, r int, format string, args ...any) {
 			}
 		}
 	}
+}
+
+// MoveMobile moves a mobile in the given direction. Returns true if the
+// movement was successful.
+func (m *Map) MoveMobile(mob *Mobile, dir uo.Direction) bool {
+	dir = dir.Bound().StripRunningFlag()
+	if mob.Facing != dir {
+		// Change facing request
+		mob.Facing = dir
+		for _, om := range m.NetStatesInRange(mob.Location, 1) {
+			om.NetState.MoveMobile(mob)
+		}
+		return true
+	} // else move request
+	// Stamina check
+	if mob.Stamina <= 0 {
+		if mob.NetState != nil {
+			mob.NetState.Cliloc(nil, 500110) // You are too fatigued to move.
+			return false
+		}
+	}
+	ol := mob.Location
+	// Check movement
+	success, nl, floor := m.canMoveTo(mob, dir)
+	if !success {
+		return false
+	}
+	// Check diagonals if required
+	if dir.IsDiagonal() {
+		if success, _, _ := m.canMoveTo(mob, dir.Left()); !success {
+			return false
+		}
+		if success, _, _ := m.canMoveTo(mob, dir.Right()); !success {
+			return false
+		}
+	}
+	oc := m.chunks[(ol.Y/uo.ChunkHeight)*uo.MapChunksWidth+(ol.X/uo.ChunkWidth)]
+	nc := m.chunks[(nl.Y/uo.ChunkHeight)*uo.MapChunksWidth+(nl.X/uo.ChunkWidth)]
+	// If this is a mobile with an attached net state we need to check for
+	// new and old objects.
+	if mob.NetState != nil {
+		mobs, items := m.EverythingWithin(mob.Location.BoundsByRadius(mob.ViewRange + 1))
+		for _, om := range mobs {
+			if ol.XYDistance(om.Location) <= mob.ViewRange &&
+				nl.XYDistance(om.Location) > mob.ViewRange {
+				// Mobile used to be in range and isn't anymore, delete it
+				mob.NetState.RemoveObject(om)
+			} else if ol.XYDistance(om.Location) > mob.ViewRange &&
+				nl.XYDistance(om.Location) <= mob.ViewRange {
+				// Mobile used to be out of range but is in range now, send
+				// information about it
+				mob.NetState.SendObject(om)
+			}
+		}
+		for _, oi := range items {
+			if ol.XYDistance(oi.Location) <= mob.ViewRange &&
+				nl.XYDistance(oi.Location) > mob.ViewRange {
+				// Item used to be in range and isn't anymore, delete it
+				mob.NetState.RemoveObject(oi)
+			} else if ol.XYDistance(oi.Location) > mob.ViewRange &&
+				nl.XYDistance(oi.Location) <= mob.ViewRange {
+				// Item used to be out of range but is in range now, send
+				// information about it
+				mob.NetState.SendObject(oi)
+			}
+		}
+	}
+	// Chunk updates
+	if oc != nc {
+		oc.RemoveMobile(mob)
+	}
+	mob.Location = nl
+	// Now we need to check for attached net states that we might need to push
+	// the movement to
+	otherMobs := m.NetStatesInRange(mob.Location, 1)
+	for _, om := range otherMobs {
+		if ol.XYDistance(om.Location) <= om.ViewRange &&
+			nl.XYDistance(om.Location) > om.ViewRange {
+			// We used to be in visible range of the other mobile but are
+			// moving out of that range, delete us
+			om.NetState.RemoveObject(mob)
+		} else if ol.XYDistance(om.Location) > om.ViewRange &&
+			nl.XYDistance(om.Location) <= om.ViewRange {
+			// We used to be outside the visible range of the other mobile but
+			// are moving into that range, send us
+			om.NetState.SendObject(mob)
+		} else {
+			om.NetState.MoveMobile(mob)
+		}
+	}
+	// Update mobile standing
+	mob.StandingOn = floor
+	if oc != nc {
+		nc.AddMobile(mob)
+	}
+	mob.AfterMove()
+	return true
+}
+
+// canMoveTo returns true if the mobile can move from its current location in
+// the given direction. If the first return value is true the second return
+// value will be the new location of the mobile if it were to move to the new
+// location, and the third return value is a description of the surface they
+// would be standing on. This method enforces rules about surfaces that block
+// movement and minimum height clearance. Note that the required clearance for
+// all mobiles is uo.PlayerHeight. Many places in Britannia - especially in and
+// around dungeons - would block monster movement if they were given heights
+// greater than this value.
+func (m *Map) canMoveTo(mob *Mobile, d uo.Direction) (bool, uo.Point, uo.CommonObject) {
+	ol := mob.Location
+	nl := ol.Forward(d.Bound()).WrapAndBound(ol)
+	nl.Z = mob.StandingOn.Highest()
+	floor, ceiling := m.GetFloorAndCeiling(nl, false, true)
+	// No floor to stand on, bail
+	if floor == nil {
+		return false, ol, nil
+	}
+	fz := floor.StandingHeight()
+	if ceiling != nil {
+		// See if there is enough room for the mobile to fit if it took the step
+		cz := ceiling.Z()
+		if cz-fz < uo.PlayerHeight {
+			return false, ol, floor
+		}
+	}
+	// Consider the step height
+	if tile, ok := floor.(uo.Tile); ok {
+		// The mobile is standing on the tile matrix
+		if tile.Impassable() {
+			// Check tile flags
+			return false, ol, floor
+		}
+		// There are no step height restrictions when following the terrain
+		nl.Z = fz
+	} else {
+		// The mobile is standing on an item, either static or dynamic
+		if !floor.Surface() && !floor.Wet() {
+			// Check tile flags
+			return false, ol, floor
+		}
+		// Consider step height
+		oldFloor := mob.StandingOn
+		oldTop := oldFloor.Highest()
+		if !floor.Bridge() && fz-oldTop > uo.StepHeight {
+			// Can't go up that much in one step
+			return false, ol, floor
+		}
+		nl.Z = fz
+	}
+	return true, nl, floor
+}
+
+// GetFloorAndCeiling returns the objects that make up the floor below and the
+// ceiling above the given reference location. These objects may be any of the
+// objects contained within the map such as Tiles, Items, Statics, and Multis.
+// A nil return value means that there is no floor below the position, or that
+// there is no ceiling above the position. Normally at least one of the return
+// values will be non-nil referencing at least the tile matrix. However there
+// are certain places on the map - such as cave entrances - where the tile
+// matrix is ignored. In these cases both return values may be nil if there are
+// no items or statics to create a surface. If the ignoreDynamicItems argument
+// is true then only Items with the static flag will be considered. If the
+// considerStepHeight parameter is true then gaps less than or equal to
+// uo.StepHeight will be ignored.
+//
+// NOTE: This function requires that all statics and items are z-sorted bottom
+// to top.
+func (m *Map) GetFloorAndCeiling(l uo.Point, ignoreDynamicItems, considerStepHeight bool) (uo.CommonObject, uo.CommonObject) {
+	var floorObject uo.CommonObject
+	var ceilingObject uo.CommonObject
+	floor := int(uo.MapMinZ)
+	ceiling := int(uo.MapMaxZ)
+	footHeight := int(l.Z)
+	// Consider tile matrix
+	c := m.chunks[(l.Y/uo.ChunkHeight)*uo.MapChunksWidth+(l.X/uo.ChunkWidth)]
+	t := c.Tiles[(l.Y%uo.ChunkHeight)*uo.ChunkWidth+(l.X%uo.ChunkWidth)]
+	if !t.Ignore() {
+		bottom := int(t.Z())
+		avg := int(t.StandingHeight())
+		if footHeight+int(uo.PlayerHeight) < bottom {
+			// Mobile is completely below ground
+			ceiling = avg
+			ceilingObject = t
+		} else if footHeight < bottom {
+			// Mobile's feet are below the tile matrix but the head is above,
+			// project upward
+			floor = avg
+			floorObject = t
+			if floor > footHeight {
+				footHeight = floor
+			}
+		} else if footHeight >= avg {
+			// Mobile is above or on the ground
+			floor = avg
+			floorObject = t
+		} else {
+			// Mobile is down inside a tile in the tile matrix
+			floor = avg
+			floorObject = t
+			if floor > footHeight {
+				footHeight = floor
+			}
+		}
+	}
+	// Consider statics
+	for _, static := range c.Statics {
+		// Ignore statics that are not at the location
+		if static.Location.X != l.X || static.Location.Y != l.Y {
+			continue
+		}
+		// Only select solid statics ignoring things like leaves
+		if !static.Surface() && !static.Impassable() {
+			continue
+		}
+		sz := int(static.Z())
+		stz := int(static.Highest())
+		if stz < floor {
+			// Static is below our current floor position, ignore
+			continue
+		}
+		if stz == floor {
+			// Static is even with our current floor position, so we need to
+			// try to defer to the object with the most passability
+			if floorObject.Impassable() {
+				floorObject = static
+			}
+			continue
+		}
+		if (considerStepHeight && stz <= footHeight+int(uo.StepHeight)) || stz <= footHeight {
+			// Static is underfoot, consider it a possible floor
+			floor = stz
+			floorObject = static
+			continue
+		}
+		if sz <= footHeight {
+			// Feet are inside or resting on this static so project upward
+			floor = stz
+			footHeight = floor
+			floorObject = static
+			continue
+		}
+		if considerStepHeight && static.Bridge() && sz > footHeight {
+			// Feet are between the floor and a section of stair that is
+			// floating more than uo.StepHeight units above the floor. This is a
+			// common case an the client expects to be able to "hop" up onto
+			// stairs like this. So we project upward.
+			floor = stz
+			footHeight = floor
+			floorObject = static
+			continue
+		}
+		// Underside of the static is above the foot position so that is the
+		// ceiling
+		ceiling = sz
+		ceilingObject = static
+		break
+	}
+	// Consider items
+	for _, item := range c.Items {
+		// Ignore dynamic items if requested
+		if ignoreDynamicItems && !item.HasFlags(ItemFlagsStatic) {
+			continue
+		}
+		// Only look at items at our location
+		if item.Location.X != l.X || item.Location.Y != l.Y {
+			continue
+		}
+		// Only select solid items. This ignores passible items like gold.
+		if !item.Surface() && !item.Impassable() {
+			continue
+		}
+		iz := int(item.Z())
+		itz := int(item.Highest())
+		if itz < floor {
+			// Item is below the current floor, ignore it
+			continue
+		}
+		if itz == floor {
+			// Item is even with our current floor, defer to the object with the
+			// most passability.
+			if floorObject.Impassable() {
+				floorObject = item
+			}
+			continue
+		}
+		if (considerStepHeight && itz <= footHeight+int(uo.StepHeight)) || itz <= footHeight {
+			// Item is underfoot, consider it a possible floor
+			if itz >= floor {
+				// Surface of item is between the static floor and the foot
+				// height so consider it a possible floor
+				floor = itz
+				floorObject = item
+			} // Else the item is below the static floor so ignore it
+			continue
+		}
+		if iz <= footHeight {
+			// Feet are inside or resting on this item so project upward
+			floor = itz
+			footHeight = floor
+			floorObject = item
+			continue
+		}
+		if considerStepHeight && item.Bridge() && iz > footHeight {
+			// Feet are between the floor and a section of stair that is
+			// floating more than uo.StepHeight units above the floor. This is a
+			// common case an the client expects to be able to "hop" up onto
+			// stairs like this. So we project upward.
+			floor = itz
+			footHeight = floor
+			floorObject = item
+			continue
+		}
+		// Underside of the item is above the foot position so this is the last
+		// item we need to check
+		if iz < ceiling {
+			// Underside of item is below the static ceiling so this item is the
+			// ceiling
+			ceilingObject = item
+		}
+		break
+	}
+	return floorObject, ceilingObject
 }
