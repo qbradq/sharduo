@@ -30,6 +30,7 @@ type Mobile struct {
 	Account       *Account                // Connected account if any
 	NetState      NetState                // Connected net state if any
 	ControlMaster *Mobile                 // Mobile that is currently commanding this mobile
+	Cursor        *Item                   // The item in the mobile's cursor if any
 	Hits          int                     // Current hit points
 	Mana          int                     // Current mana
 	Stamina       int                     // Current stamina
@@ -69,6 +70,12 @@ func (m *Mobile) Write(w io.Writer) {
 		util.PutBool(w, true)
 		e.Write(w)
 	}
+	if m.Cursor != nil { // Item in cursor
+		util.PutBool(w, true)
+		m.Cursor.Write(w)
+	} else {
+		util.PutBool(w, false)
+	}
 }
 
 // Read reads the persistent data of the mobile from r.
@@ -92,6 +99,11 @@ func (m *Mobile) Read(r io.Reader) {
 			i.Read(r)
 			m.Equipment[layer] = i
 		}
+	}
+	if util.GetBool(r) { // Item in cursor
+		item := &Item{}
+		item.Read(r)
+		m.DropToFeet(item)
 	}
 	// Establish sane defaults for variables that need non-zero default values
 	m.ViewRange = uo.MaxViewRange
@@ -134,7 +146,7 @@ func (m *Mobile) OPLPackets() (*serverpacket.OPLPacket, *serverpacket.OPLInfo) {
 		m.opl = &serverpacket.OPLPacket{
 			Serial: m.Serial,
 		}
-		// Base mobil eproperties
+		// Base mobile properties
 		m.opl.AppendColor(colornames.White, m.DisplayName(), false)
 		m.opl.Compile()
 		m.oplInfo = &serverpacket.OPLInfo{
@@ -188,10 +200,12 @@ func (m *Mobile) CanSee(o *Object) bool {
 // mobiles have been loaded and placed on the map. It updates internal states
 // that are required for proper movement and control.
 func (m *Mobile) AfterUnmarshalOntoMap() {
+	// TODO Stub
 }
 
 // ContextMenu returns a new context menu packet.
 func (m *Mobile) ContextMenu(p *ContextMenu, mob *Mobile) {
+	// TODO Stub
 }
 
 // AfterMove handles things that happen every time a mobile steps such as
@@ -212,4 +226,35 @@ func (m *Mobile) AfterMove() {
 	if m.NetState != nil {
 		m.NetState.ContainerRangeCheck()
 	}
+}
+
+// CanAccess returns true if this mobile is allowed access to the given object.
+func (m *Mobile) CanAccess(obj any) bool {
+	// TODO Stub
+	return true
+}
+
+// DropToFeet drops the item at the mobile's feet forcefully.
+func (m *Mobile) DropToFeet(i *Item) {
+	i.Location = m.Location
+	World.Map().AddItem(i, true)
+}
+
+// HasLineOfSight returns true if there is line of sight between this mobile and
+// the given object.
+func (m *Mobile) HasLineOfSight(target any) bool {
+	l := uo.Point{
+		X: m.Location.X,
+		Y: m.Location.Y,
+		Z: m.Location.Z + uo.PlayerHeight, // Use our eye position, not the foot position
+	}
+	var t uo.Point
+	switch o := target.(type) {
+	case *Mobile:
+		t = o.Location
+		t.Z += uo.PlayerHeight // Look other mobiles in the eye
+	case *Item:
+		t = o.Location
+	}
+	return World.Map().LineOfSight(l, t)
 }

@@ -30,10 +30,11 @@ type Item struct {
 	MaxWeight   float64              // Maximum weight that can be held in this container
 	MaxItems    int                  // Maximum number of items that can be held in this container
 	GUMPGraphic uo.GUMP              // GUMP graphic to use for containers
-	def         *uo.StaticDefinition // Item properties pointer
+	Def         *uo.StaticDefinition // Item properties pointer
 	// Persistent variables
-	Amount   int     // Stack amount
-	Contents []*Item // Contents of the container
+	Amount   int         // Stack amount
+	Contents []*Item     // Contents of the container
+	LootType uo.LootType // Persistent loot type so we can bless arbitrary items
 	// Transient values
 	Wearer          *Mobile                 // Pointer to the mobile currently wearing this item if any, note this only indicates if the item is directly equipped to the mobile, not within equipped containers
 	Container       *Item                   // Pointer to the parent container if any
@@ -43,6 +44,7 @@ type Item struct {
 	ContainedWeight float64                 // Cache of the total weight held in this and all sub containers
 	opl             *serverpacket.OPLPacket // Cached OPLPacket
 	oplInfo         *serverpacket.OPLInfo   // Cached OPLInfo
+	decayAt         uo.Time                 // When this item should decay on the map
 }
 
 // Write writes the persistent data of the item to w.
@@ -50,6 +52,7 @@ func (i *Item) Write(w io.Writer) {
 	i.Object.Write(w)
 	util.PutUInt32(w, 0)                       // Version
 	util.PutUInt16(w, uint16(i.Amount))        // Stack amount
+	util.PutByte(w, byte(i.LootType))          // Loot type
 	util.PutUInt32(w, uint32(len(i.Contents))) // Contents
 	for _, item := range i.Contents {
 		item.Write(w)
@@ -59,10 +62,11 @@ func (i *Item) Write(w io.Writer) {
 // Read reads the persistent data of the item from r.
 func (i *Item) Read(r io.Reader) {
 	i.Object.Read(r)
-	_ = util.GetUInt32(r)             // Version
-	i.Amount = int(util.GetUInt16(r)) // Stack amount
-	n := int(util.GetUInt32(r))       // Contents item count
-	i.Contents = make([]*Item, n)     // Contents
+	_ = util.GetUInt32(r)                     // Version
+	i.Amount = int(util.GetUInt16(r))         // Stack amount
+	i.LootType = uo.LootType(util.GetByte(r)) // Loot type
+	n := int(util.GetUInt32(r))               // Contents item count
+	i.Contents = make([]*Item, n)             // Contents
 	for idx := 0; idx < n; idx++ {
 		item := &Item{}
 		item.Read(r)
@@ -181,53 +185,72 @@ func (i *Item) ContextMenu(p *ContextMenu, m *Mobile) {
 	}
 }
 
+// RefreshDecayDeadline refreshes the decay deadline for the item.
+func (i *Item) RefreshDecayDeadline() {
+	if i.Spawner != nil {
+		// If we are being managed by a spawner we don't decay
+		i.decayAt = uo.TimeNever
+		return
+	}
+	switch i.LootType {
+	case uo.LootTypeNormal:
+		i.decayAt = World.Time() + uo.DurationHour
+	case uo.LootTypeBlessed:
+		i.decayAt = World.Time() + uo.DurationHour
+	case uo.LootTypeNewbied:
+		i.decayAt = World.Time() + uo.DurationSecond*15
+	case uo.LootTypeSystem:
+		i.decayAt = uo.TimeNever
+	}
+}
+
 func (i *Item) StandingHeight() int {
 	if !i.Surface() && !i.Wet() && !i.Impassable() {
 		return 0
 	}
 	if i.Bridge() {
-		return i.def.Height / 2
+		return i.Def.Height / 2
 	}
-	return i.def.Height
+	return i.Def.Height
 }
-func (i *Item) Height() int             { return i.def.Height }
-func (i *Item) Highest() int            { return i.Location.Z + i.def.Height }
+func (i *Item) Height() int             { return i.Def.Height }
+func (i *Item) Highest() int            { return i.Location.Z + i.Def.Height }
 func (i *Item) Z() int                  { return i.Location.Z }
-func (i *Item) Background() bool        { return i.def.TileFlags&uo.TileFlagsBackground != 0 }
-func (i *Item) Weapon() bool            { return i.def.TileFlags&uo.TileFlagsWeapon != 0 }
-func (i *Item) Transparent() bool       { return i.def.TileFlags&uo.TileFlagsTransparent != 0 }
-func (i *Item) Translucent() bool       { return i.def.TileFlags&uo.TileFlagsTranslucent != 0 }
-func (i *Item) Wall() bool              { return i.def.TileFlags&uo.TileFlagsWall != 0 }
-func (i *Item) Damaging() bool          { return i.def.TileFlags&uo.TileFlagsDamaging != 0 }
-func (i *Item) Impassable() bool        { return i.def.TileFlags&uo.TileFlagsImpassable != 0 }
-func (i *Item) Wet() bool               { return i.def.TileFlags&uo.TileFlagsWet != 0 }
-func (i *Item) Surface() bool           { return i.def.TileFlags&uo.TileFlagsSurface != 0 }
-func (i *Item) Bridge() bool            { return i.def.TileFlags&uo.TileFlagsBridge != 0 }
-func (i *Item) Generic() bool           { return i.def.TileFlags&uo.TileFlagsGeneric != 0 }
-func (i *Item) Window() bool            { return i.def.TileFlags&uo.TileFlagsWindow != 0 }
-func (i *Item) NoShoot() bool           { return i.def.TileFlags&uo.TileFlagsNoShoot != 0 }
-func (i *Item) ArticleA() bool          { return i.def.TileFlags&uo.TileFlagsArticleA != 0 }
-func (i *Item) ArticleAn() bool         { return i.def.TileFlags&uo.TileFlagsArticleAn != 0 }
-func (i *Item) Internal() bool          { return i.def.TileFlags&uo.TileFlagsInternal != 0 }
-func (i *Item) Foliage() bool           { return i.def.TileFlags&uo.TileFlagsFoliage != 0 }
-func (i *Item) PartialHue() bool        { return i.def.TileFlags&uo.TileFlagsPartialHue != 0 }
-func (i *Item) NoHouse() bool           { return i.def.TileFlags&uo.TileFlagsNoHouse != 0 }
-func (i *Item) Map() bool               { return i.def.TileFlags&uo.TileFlagsMap != 0 }
-func (i *Item) StaticContainer() bool   { return i.def.TileFlags&uo.TileFlagsContainer != 0 }
-func (i *Item) Wearable() bool          { return i.def.TileFlags&uo.TileFlagsWearable != 0 }
-func (i *Item) LightSource() bool       { return i.def.TileFlags&uo.TileFlagsLightSource != 0 }
-func (i *Item) Animation() bool         { return i.def.TileFlags&uo.TileFlagsAnimation != 0 }
-func (i *Item) NoDiagonal() bool        { return i.def.TileFlags&uo.TileFlagsNoDiagonal != 0 }
-func (i *Item) Armor() bool             { return i.def.TileFlags&uo.TileFlagsArmor != 0 }
-func (i *Item) Roof() bool              { return i.def.TileFlags&uo.TileFlagsRoof != 0 }
-func (i *Item) Door() bool              { return i.def.TileFlags&uo.TileFlagsDoor != 0 }
-func (i *Item) StairBack() bool         { return i.def.TileFlags&uo.TileFlagsStairBack != 0 }
-func (i *Item) StairRight() bool        { return i.def.TileFlags&uo.TileFlagsStairRight != 0 }
-func (i *Item) AlphaBlend() bool        { return i.def.TileFlags&uo.TileFlagsAlphaBlend != 0 }
-func (i *Item) UseNewArt() bool         { return i.def.TileFlags&uo.TileFlagsUseNewArt != 0 }
-func (i *Item) ArtUsed() bool           { return i.def.TileFlags&uo.TileFlagsArtUsed != 0 }
-func (i *Item) NoShadow() bool          { return i.def.TileFlags&uo.TileFlagsBackground != 0 }
-func (i *Item) PixelBleed() bool        { return i.def.TileFlags&uo.TileFlagsPixelBleed != 0 }
-func (i *Item) PlayAnimOnce() bool      { return i.def.TileFlags&uo.TileFlagsPlayAnimOnce != 0 }
-func (i *Item) MultiMovable() bool      { return i.def.TileFlags&uo.TileFlagsMultiMovable != 0 }
+func (i *Item) Background() bool        { return i.Def.TileFlags&uo.TileFlagsBackground != 0 }
+func (i *Item) Weapon() bool            { return i.Def.TileFlags&uo.TileFlagsWeapon != 0 }
+func (i *Item) Transparent() bool       { return i.Def.TileFlags&uo.TileFlagsTransparent != 0 }
+func (i *Item) Translucent() bool       { return i.Def.TileFlags&uo.TileFlagsTranslucent != 0 }
+func (i *Item) Wall() bool              { return i.Def.TileFlags&uo.TileFlagsWall != 0 }
+func (i *Item) Damaging() bool          { return i.Def.TileFlags&uo.TileFlagsDamaging != 0 }
+func (i *Item) Impassable() bool        { return i.Def.TileFlags&uo.TileFlagsImpassable != 0 }
+func (i *Item) Wet() bool               { return i.Def.TileFlags&uo.TileFlagsWet != 0 }
+func (i *Item) Surface() bool           { return i.Def.TileFlags&uo.TileFlagsSurface != 0 }
+func (i *Item) Bridge() bool            { return i.Def.TileFlags&uo.TileFlagsBridge != 0 }
+func (i *Item) Generic() bool           { return i.Def.TileFlags&uo.TileFlagsGeneric != 0 }
+func (i *Item) Window() bool            { return i.Def.TileFlags&uo.TileFlagsWindow != 0 }
+func (i *Item) NoShoot() bool           { return i.Def.TileFlags&uo.TileFlagsNoShoot != 0 }
+func (i *Item) ArticleA() bool          { return i.Def.TileFlags&uo.TileFlagsArticleA != 0 }
+func (i *Item) ArticleAn() bool         { return i.Def.TileFlags&uo.TileFlagsArticleAn != 0 }
+func (i *Item) Internal() bool          { return i.Def.TileFlags&uo.TileFlagsInternal != 0 }
+func (i *Item) Foliage() bool           { return i.Def.TileFlags&uo.TileFlagsFoliage != 0 }
+func (i *Item) PartialHue() bool        { return i.Def.TileFlags&uo.TileFlagsPartialHue != 0 }
+func (i *Item) NoHouse() bool           { return i.Def.TileFlags&uo.TileFlagsNoHouse != 0 }
+func (i *Item) Map() bool               { return i.Def.TileFlags&uo.TileFlagsMap != 0 }
+func (i *Item) StaticContainer() bool   { return i.Def.TileFlags&uo.TileFlagsContainer != 0 }
+func (i *Item) Wearable() bool          { return i.Def.TileFlags&uo.TileFlagsWearable != 0 }
+func (i *Item) LightSource() bool       { return i.Def.TileFlags&uo.TileFlagsLightSource != 0 }
+func (i *Item) Animation() bool         { return i.Def.TileFlags&uo.TileFlagsAnimation != 0 }
+func (i *Item) NoDiagonal() bool        { return i.Def.TileFlags&uo.TileFlagsNoDiagonal != 0 }
+func (i *Item) Armor() bool             { return i.Def.TileFlags&uo.TileFlagsArmor != 0 }
+func (i *Item) Roof() bool              { return i.Def.TileFlags&uo.TileFlagsRoof != 0 }
+func (i *Item) Door() bool              { return i.Def.TileFlags&uo.TileFlagsDoor != 0 }
+func (i *Item) StairBack() bool         { return i.Def.TileFlags&uo.TileFlagsStairBack != 0 }
+func (i *Item) StairRight() bool        { return i.Def.TileFlags&uo.TileFlagsStairRight != 0 }
+func (i *Item) AlphaBlend() bool        { return i.Def.TileFlags&uo.TileFlagsAlphaBlend != 0 }
+func (i *Item) UseNewArt() bool         { return i.Def.TileFlags&uo.TileFlagsUseNewArt != 0 }
+func (i *Item) ArtUsed() bool           { return i.Def.TileFlags&uo.TileFlagsArtUsed != 0 }
+func (i *Item) NoShadow() bool          { return i.Def.TileFlags&uo.TileFlagsBackground != 0 }
+func (i *Item) PixelBleed() bool        { return i.Def.TileFlags&uo.TileFlagsPixelBleed != 0 }
+func (i *Item) PlayAnimOnce() bool      { return i.Def.TileFlags&uo.TileFlagsPlayAnimOnce != 0 }
+func (i *Item) MultiMovable() bool      { return i.Def.TileFlags&uo.TileFlagsMultiMovable != 0 }
 func (i *Item) BaseGraphic() uo.Graphic { return i.Graphic }

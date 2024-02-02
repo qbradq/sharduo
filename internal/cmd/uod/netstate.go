@@ -486,46 +486,48 @@ func (n *NetState) updateMobile(mobile *game.Mobile) {
 	}
 }
 
-// UpdateObject sends an update packet for the object.
-func (n *NetState) UpdateObject(obj any) {
-	if n.m == nil || obj == nil {
+// UpdateMobile sends an update packet for the mobile.
+func (n *NetState) UpdateMobile(m *game.Mobile) {
+	if n.m == nil || m == nil {
 		return
 	}
-	switch o := obj.(type) {
-	case *game.Item:
-		if o.Removed || !n.m.CanSee(&o.Object) {
-			return
-		}
-		n.itemInfo(o)
-	case *game.Mobile:
-		if o.Removed || !n.m.CanSee(&o.Object) {
-			return
-		}
-		n.updateMobile(o)
-	default:
-		log.Println("error: NetState.SendObject() unknown object interface")
+	if m.Removed || !n.m.CanSee(&m.Object) {
+		return
 	}
+	n.updateMobile(m)
 }
 
-// SendObject sends an initial information packet for the object.
-func (n *NetState) SendObject(obj any) {
-	if n.m == nil || obj == nil {
+// UpdateItem sends an update packet for the item.
+func (n *NetState) UpdateItem(i *game.Item) {
+	if n.m == nil || i == nil {
 		return
 	}
-	switch o := obj.(type) {
-	case *game.Item:
-		if o.Removed || !n.m.CanSee(&o.Object) {
-			return
-		}
-		n.itemInfo(o)
-	case *game.Mobile:
-		if o.Removed || !n.m.CanSee(&o.Object) {
-			return
-		}
-		n.sendMobile(o)
-	default:
-		log.Println("error: NetState.SendObject() unknown object interface")
+	if i.Removed || !n.m.CanSee(&i.Object) {
+		return
 	}
+	n.itemInfo(i)
+}
+
+// SendMobile sends an initial information packet for the mobile.
+func (n *NetState) SendMobile(m *game.Mobile) {
+	if n.m == nil || m == nil {
+		return
+	}
+	if m.Removed || !n.m.CanSee(&m.Object) {
+		return
+	}
+	n.sendMobile(m)
+}
+
+// SendItem sends an initial information packet for the item.
+func (n *NetState) SendItem(i *game.Item) {
+	if n.m == nil || i == nil {
+		return
+	}
+	if i.Removed || !n.m.CanSee(&i.Object) {
+		return
+	}
+	n.itemInfo(i)
 }
 
 // MoveMobile sends a packet to inform the client that the mobile moved.
@@ -549,19 +551,20 @@ func (n *NetState) MoveMobile(mob *game.Mobile) {
 	})
 }
 
-// RemoveObject sends a packet to the client that removes the object from the
+// RemoveMobile sends a packet to the client that removes the mobile from the
 // client's view of the game.
-func (n *NetState) RemoveObject(obj any) {
-	switch o := obj.(type) {
-	case *game.Mobile:
-		n.Send(&serverpacket.DeleteObject{
-			Serial: o.Serial,
-		})
-	case *game.Item:
-		n.Send(&serverpacket.DeleteObject{
-			Serial: o.Serial,
-		})
-	}
+func (n *NetState) RemoveMobile(m *game.Mobile) {
+	n.Send(&serverpacket.DeleteObject{
+		Serial: m.Serial,
+	})
+}
+
+// RemoveItem sends a packet to the client that removes the item from the
+// client's view of the game.
+func (n *NetState) RemoveItem(i *game.Item) {
+	n.Send(&serverpacket.DeleteObject{
+		Serial: i.Serial,
+	})
 }
 
 // DrawPlayer sends the draw player packet to the client.

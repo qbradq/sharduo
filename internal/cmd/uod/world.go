@@ -287,6 +287,16 @@ func (w *World) Find(id uo.Serial) any {
 	return w.ods.Item(id)
 }
 
+// FindMobile returns the item with the given serial or nil.
+func (w *World) FindMobile(id uo.Serial) *game.Mobile {
+	return w.ods.Mobile(id)
+}
+
+// FindItem returns the item with the given serial or nil.
+func (w *World) FindItem(id uo.Serial) *game.Item {
+	return w.ods.Item(id)
+}
+
 // Mobile returns the mobile with the given serial or nil.
 func (w *World) Mobile(id uo.Serial) *game.Mobile {
 	return w.ods.Mobile(id)
@@ -455,13 +465,13 @@ func (w *World) Main(wg *sync.WaitGroup) {
 						// distribute the update to all net states in range of
 						// the mobile wearing the item.
 						for _, m := range w.m.NetStatesInRange(o.Wearer.Location, 0) {
-							m.NetState.UpdateObject(o)
+							m.NetState.UpdateItem(o)
 						}
 					} else {
 						// For items on the ground we need to distribute the
 						// update to all net states in range of the item.
 						for _, m := range w.m.NetStatesInRange(o.Location, 0) {
-							m.NetState.UpdateObject(o)
+							m.NetState.UpdateItem(o)
 						}
 					}
 				case *game.Mobile:
@@ -471,7 +481,7 @@ func (w *World) Main(wg *sync.WaitGroup) {
 					}
 					// Distribute the update to all net states in range
 					for _, m := range w.m.NetStatesInRange(o.Location, 0) {
-						m.NetState.UpdateObject(o)
+						m.NetState.UpdateMobile(o)
 					}
 				}
 			}

@@ -1,6 +1,10 @@
 package game
 
-import "github.com/qbradq/sharduo/lib/uo"
+import (
+	"sort"
+
+	"github.com/qbradq/sharduo/lib/uo"
+)
 
 // chunk manages the data for a single chunk of the map.
 type chunk struct {
@@ -32,8 +36,12 @@ func (c *chunk) RemoveMobile(m *Mobile) {
 }
 
 // AddItem adds the item to the chunk.
-func (c *chunk) AddItem(i *Item) {
-	c.Items = append(c.Items, i)
+func (c *chunk) AddItem(item *Item) {
+	c.Items = append(c.Items, item)
+	// Keep items Z-sorted
+	sort.Slice(c.Items, func(i, j int) bool {
+		return c.Items[i].Location.Z < c.Items[j].Location.Z
+	})
 }
 
 // RemoveItem removes the item from the chunk.

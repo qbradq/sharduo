@@ -58,8 +58,8 @@ func handleCharacterLogin(n *NetState, cp clientpacket.Packet) {
 		return
 	}
 	ps := n.account.Characters[p.CharacterIndex]
-	obj := world.Find(ps)
-	if m, ok := obj.(*game.Mobile); ok {
+	m := world.FindMobile(ps)
+	if m != nil {
 		if m.NetState != nil {
 			// Connecting to an already connected player, disconnect the
 			// existing connection.
@@ -99,7 +99,7 @@ func handleCharacterLogin(n *NetState, cp clientpacket.Packet) {
 		Time: time.Now(),
 	})
 	world.m.SendEverything(n.m)
-	n.SendObject(n.m)
+	n.SendMobile(n.m)
 	n.GUMP(gumps.New("welcome"), n.m.Serial, 0)
 }
 
@@ -159,7 +159,14 @@ func handleStatusRequest(n *NetState, cp clientpacket.Packet) {
 	switch p.StatusRequestType {
 	case uo.StatusRequestTypeBasic:
 		m := game.Find(p.PlayerMobileID)
-		n.SendObject(m)
+		if m == nil {
+			break
+		}
+		mob, ok := m.(*game.Mobile)
+		if !ok {
+			break
+		}
+		n.SendMobile(mob)
 	case uo.StatusRequestTypeSkills:
 		n.SendAllSkills()
 	}
@@ -190,11 +197,12 @@ func handleSingleClickRequest(n *NetState, cp clientpacket.Packet) {
 		return
 	}
 	p := cp.(*clientpacket.SingleClick)
-	o := world.Find(p.Object)
-	if o == nil {
-		return
+	switch o := world.Find(p.Object).(type) {
+	case *game.Mobile:
+		n.Speech(o, o.DisplayName())
+	case *game.Item:
+		n.Speech(o, o.DisplayName())
 	}
-	n.Speech(o, o.DisplayName())
 }
 
 func handleDoubleClickRequest(n *NetState, cp clientpacket.Packet) {
@@ -213,25 +221,20 @@ func handleDoubleClickRequest(n *NetState, cp clientpacket.Packet) {
 		}
 		return
 	}
-	o := world.Find(p.Object.StripSelfFlag())
-	if o == nil {
-		return
-	}
-	// If this is a mobile we can skip a lot of checks
-	if o.Serial().IsMobile() {
+	switch o := world.Find(p.Object.StripSelfFlag()).(type) {
+	case *game.Mobile:
 		// Range check just to make sure the player can actually see this thing
 		// on-screen
-		targetLocation := game.RootParent(o).Location()
-		if n.m.Location().XYDistance(targetLocation) > n.m.ViewRange() {
+		if n.m.Location.XYDistance(o.Location) > n.m.ViewRange {
 			return
 		}
-		game.DynamicDispatch("DoubleClick", o, n.m, nil)
-		return
+		o.ExecuteEvent("DoubleClick", n.m, nil)
+	case *game.Item:
+		if !n.m.CanAccess(o) {
+			return
+		}
+		o.ExecuteEvent("DoubleClick", n.m, nil)
 	}
-	if !n.m.CanAccess(o) {
-		return
-	}
-	game.DynamicDispatch("DoubleClick", o, n.m, nil)
 }
 
 func handleViewRange(n *NetState, cp clientpacket.Packet) {
@@ -241,7 +244,7 @@ func handleViewRange(n *NetState, cp clientpacket.Packet) {
 	p := cp.(*clientpacket.ViewRange)
 	world.Map().UpdateViewRangeForMobile(n.m, p.Range)
 	n.Send(&serverpacket.ClientViewRange{
-		Range: byte(n.m.ViewRange()),
+		Range: byte(n.m.ViewRange),
 	})
 }
 
@@ -254,27 +257,23 @@ func handleLiftRequest(n *NetState, cp clientpacket.Packet) {
 		n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		return
 	}
-	if n.m.IsItemOnCursor() {
-		n.m.DropItemInCursor()
+	if n.m.Cursor != nil {
+		n.m.DropToFeet(n.m.Cursor)
+		n.m.Cursor = nil
 		n.DropReject(uo.MoveItemRejectReasonAlreadyHoldingItem)
 		return
 	}
 	p := cp.(*clientpacket.LiftRequest)
-	o := world.Find(p.Item)
-	if o == nil {
+	item := world.FindItem(p.Item)
+	if item == nil {
 		n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		return
 	}
-	item, ok := o.(game.Item)
-	if !ok {
-		n.DropReject(uo.MoveItemRejectReasonUnspecified)
-		return
-	}
-	if !item.Movable() {
+	if item.HasFlags(game.ItemFlagsFixed) {
 		n.DropReject(uo.MoveItemRejectReasonCannotLift)
 		return
 	}
-	if n.m.Location().XYDistance(game.RootParent(item).Location()) > uo.MaxLiftRange {
+	if n.m.Location.XYDistance(game.MapLocation(item)) > uo.MaxLiftRange {
 		n.DropReject(uo.MoveItemRejectReasonOutOfRange)
 		return
 	}
@@ -307,7 +306,7 @@ func handleDropRequest(n *NetState, cp clientpacket.Packet) {
 	p := cp.(*clientpacket.DropRequest)
 	// Do not trust the serial coming from the client, only drop what we are
 	// holding.
-	item := n.m.ItemInCursor()
+	item := n.m.Cursor()
 	n.m.RequestCursorState(game.CursorStateDrop)
 	if p.Container == uo.SerialSystem {
 		// Drop to map request
@@ -390,7 +389,7 @@ func handleWearItemRequest(n *NetState, cp clientpacket.Packet) {
 		n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		return
 	}
-	if item.Serial() != n.m.ItemInCursor().Serial() {
+	if item.Serial() != n.m.Cursor().Serial() {
 		n.m.DropItemInCursor()
 		n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		return

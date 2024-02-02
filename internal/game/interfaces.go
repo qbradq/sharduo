@@ -17,19 +17,26 @@ type NetState interface {
 	// Disconnect disconnects the backing connection, cleans up the net state
 	// and schedules the player's character - if any - to logout.
 	Disconnect()
-	// SendObject sends initial data packets for the object.
-	SendObject(any)
-	// UpdateObject sends an update packet for the object.
-	UpdateObject(any)
+	// SendMobile sends an initial information packet for the mobile.
+	SendMobile(*Mobile)
+	// SendItem sends an initial information packet for the item.
+	SendItem(*Item)
+	// UpdateMobile sends an update packet for the mobile.
+	UpdateMobile(*Mobile)
+	// UpdateItem sends an update packet for the item.
+	UpdateItem(*Item)
 	// Speech sends a speech packet to the attached client.
 	Speech(any, string, ...any)
 	// MoveMobile sends a packet to inform the client that the mobile moved.
 	MoveMobile(*Mobile)
 	// Cliloc sends a localized client message packet to the attached client.
 	Cliloc(any, uo.Cliloc, ...string)
-	// RemoveObject sends a packet to the client that removes the object from
+	// RemoveMobile sends a packet to the client that removes the mobile from
 	// the client's view of the game.
-	RemoveObject(any)
+	RemoveMobile(*Mobile)
+	// RemoveItem sends a packet to the client that removes the item from the
+	// client's view of the game.
+	RemoveItem(*Item)
 	// ContainerRangeCheck checks all observed containers and closes them as
 	// needed based on range.
 	ContainerRangeCheck()
@@ -69,7 +76,11 @@ type Spawner interface {
 type WorldInterface interface {
 	// Find returns a pointer to the object with the given ID or nil
 	Find(uo.Serial) any
-	// Delete removes the given object from the world and delets it from the
+	// FindMobile returns the item with the given serial or nil.
+	FindMobile(uo.Serial) *Mobile
+	// FindItem returns the item with the given serial or nil.
+	FindItem(uo.Serial) *Item
+	// Delete removes the given object from the world and deletes it from the
 	// data stores.
 	Delete(any)
 	// UpdateItem schedules an update packet for the item. It is safe to update

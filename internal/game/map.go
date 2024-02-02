@@ -3,6 +3,7 @@ package game
 import (
 	"fmt"
 	"io"
+	"math"
 	"sort"
 	"strings"
 	"sync"
@@ -418,10 +419,24 @@ func (m *Map) SendEverything(mob *Mobile) {
 	}
 	mobs, items := m.EverythingWithin(mob.Location.BoundsByRadius(mob.ViewRange))
 	for _, m := range mobs {
-		mob.NetState.SendObject(m)
+		mob.NetState.SendMobile(m)
 	}
 	for _, i := range items {
-		mob.NetState.SendObject(i)
+		mob.NetState.SendItem(i)
+	}
+}
+
+// RemoveEverything removes all mobiles and items to the given mobile's net state.
+func (m *Map) RemoveEverything(mob *Mobile) {
+	if mob.NetState == nil {
+		return
+	}
+	mobs, items := m.EverythingWithin(mob.Location.BoundsByRadius(mob.ViewRange))
+	for _, m := range mobs {
+		mob.NetState.RemoveMobile(m)
+	}
+	for _, i := range items {
+		mob.NetState.RemoveItem(i)
 	}
 }
 
@@ -493,24 +508,24 @@ func (m *Map) MoveMobile(mob *Mobile, dir uo.Direction) bool {
 			if ol.XYDistance(om.Location) <= mob.ViewRange &&
 				nl.XYDistance(om.Location) > mob.ViewRange {
 				// Mobile used to be in range and isn't anymore, delete it
-				mob.NetState.RemoveObject(om)
+				mob.NetState.RemoveMobile(om)
 			} else if ol.XYDistance(om.Location) > mob.ViewRange &&
 				nl.XYDistance(om.Location) <= mob.ViewRange {
 				// Mobile used to be out of range but is in range now, send
 				// information about it
-				mob.NetState.SendObject(om)
+				mob.NetState.SendMobile(om)
 			}
 		}
 		for _, oi := range items {
 			if ol.XYDistance(oi.Location) <= mob.ViewRange &&
 				nl.XYDistance(oi.Location) > mob.ViewRange {
 				// Item used to be in range and isn't anymore, delete it
-				mob.NetState.RemoveObject(oi)
+				mob.NetState.RemoveItem(oi)
 			} else if ol.XYDistance(oi.Location) > mob.ViewRange &&
 				nl.XYDistance(oi.Location) <= mob.ViewRange {
 				// Item used to be out of range but is in range now, send
 				// information about it
-				mob.NetState.SendObject(oi)
+				mob.NetState.SendItem(oi)
 			}
 		}
 	}
@@ -527,12 +542,12 @@ func (m *Map) MoveMobile(mob *Mobile, dir uo.Direction) bool {
 			nl.XYDistance(om.Location) > om.ViewRange {
 			// We used to be in visible range of the other mobile but are
 			// moving out of that range, delete us
-			om.NetState.RemoveObject(mob)
+			om.NetState.RemoveMobile(mob)
 		} else if ol.XYDistance(om.Location) > om.ViewRange &&
 			nl.XYDistance(om.Location) <= om.ViewRange {
 			// We used to be outside the visible range of the other mobile but
 			// are moving into that range, send us
-			om.NetState.SendObject(mob)
+			om.NetState.SendMobile(mob)
 		} else {
 			om.NetState.MoveMobile(mob)
 		}
@@ -769,4 +784,339 @@ func (m *Map) GetFloorAndCeiling(l uo.Point, ignoreDynamicItems, considerStepHei
 		break
 	}
 	return floorObject, ceilingObject
+}
+
+// UpdateViewRangeForMobile handles an update of the mobile's ViewRange value
+// in a way that sends the correct packets to the attached NetState, if any.
+func (m *Map) UpdateViewRangeForMobile(mob *Mobile, r int) {
+	if mob.NetState == nil {
+		return
+	}
+	r = uo.BoundViewRange(r)
+	if r == mob.ViewRange {
+		return
+	}
+	if r < mob.ViewRange {
+		// Look for the set of currently-visible objects that will no longer be
+		mobs, items := m.EverythingWithin(mob.Location.BoundsByRadius(mob.ViewRange))
+		for _, om := range mobs {
+			if mob.Location.XYDistance(om.Location) > r {
+				mob.NetState.RemoveMobile(om)
+			}
+		}
+		for _, oi := range items {
+			if mob.Location.XYDistance(oi.Location) > r {
+				mob.NetState.RemoveItem(oi)
+			}
+		}
+	} else {
+		// Look for the set of currently-non-visible objects that will be
+		mobs, items := m.EverythingWithin(mob.Location.BoundsByRadius(mob.ViewRange))
+		for _, om := range mobs {
+			if mob.Location.XYDistance(om.Location) > mob.ViewRange {
+				mob.NetState.SendMobile(om)
+			}
+		}
+		for _, oi := range items {
+			if mob.Location.XYDistance(oi.Location) > mob.ViewRange {
+				mob.NetState.SendItem(oi)
+			}
+		}
+	}
+	mob.ViewRange = r
+}
+
+// AddItem adds an item to the map sending all proper updates. The item will be
+// stacked on top of any other items at the location. It returns false only if
+// the item could not fit on the map.
+func (m *Map) AddItem(i *Item, force bool) bool {
+	if i == nil {
+		return false
+	}
+	if !force && !m.plop(i) {
+		return false
+	}
+	i.Container = nil
+	c := m.chunks[(i.Location.Y/uo.ChunkHeight)*uo.MapChunksWidth+(i.Location.X/uo.ChunkWidth)]
+	c.AddItem(i)
+	// Send the new object to all mobiles in range with an attached net state
+	for _, mob := range m.NetStatesInRange(i.Location, 0) {
+		mob.NetState.SendItem(i)
+	}
+	i.RefreshDecayDeadline()
+	return true
+}
+
+// AddMobile adds a mobile to the map sending all proper updates.
+func (m *Map) AddMobile(mob *Mobile, force bool) bool {
+	// If this is a mobile with a NetState we have to send all of the items
+	// and mobiles in range.
+	if mob.NetState != nil {
+		m.SendEverything(mob)
+	}
+	// If this is a mobile that doesn't know what it's standing on we need to
+	// tell it. This is the case when a mobile is first created  and when
+	// loading from save.
+	if mob.StandingOn == nil {
+		floor, _ := m.GetFloorAndCeiling(mob.Location, false, false)
+		mob.StandingOn = floor
+	}
+	return true
+}
+
+// RemoveItem removes the item from the map. Any other items that were resting
+// on this one will be plopped downward.
+func (m *Map) RemoveItem(i *Item) {
+	c := m.chunks[(i.Location.Y/uo.ChunkHeight)*uo.MapChunksWidth+(i.Location.X/uo.ChunkWidth)]
+	c.RemoveItem(i)
+	m.plopItems(i.Location, i.Def.Height)
+	// Tell other mobiles with net states in range about the object removal
+	for _, mob := range m.NetStatesInRange(i.Location, 0) {
+		if mob.Location.XYDistance(i.Location) <= mob.ViewRange {
+			mob.NetState.RemoveItem(i)
+		}
+	}
+}
+
+// RemoveMobile removes the mobile from the map.
+func (m *Map) RemoveMobile(mob *Mobile) {
+	c := m.chunks[(mob.Location.Y/uo.ChunkHeight)*uo.MapChunksWidth+(mob.Location.X/uo.ChunkWidth)]
+	c.RemoveMobile(mob)
+	// Tell other mobiles with net states in range about the object removal
+	for _, om := range m.NetStatesInRange(mob.Location, 0) {
+		if om.Location.XYDistance(mob.Location) <= om.ViewRange {
+			om.NetState.RemoveMobile(mob)
+		}
+	}
+	// If this is a mobile with a net state we need to remove all objects
+	if mob.NetState != nil {
+		m.RemoveEverything(mob)
+	}
+}
+
+// plop attempts to adjust the Z position of the object such that it fits on the
+// map, sits above any other objects already at the location, and does not poke
+// through a floor or ceiling of some kind. It returns true on success. The
+// object's Z position might be altered on success, but not always. The object
+// is never altered on failure.
+//
+// NOTES
+//
+//	This function enforces the uo.MaxItemStackHeight restriction. If the total
+//	height of items at the location would be greater than this limit this
+//	function will fail.
+//
+// Explanation
+//  1. Query floor and ceiling
+//  2. Process all items to find top of stack relative to the floor
+//  3. If the gap between the top of the stack and either the ceiling or the
+//     stack height limit is less than the object height the object is untouched
+//     and we return false. Otherwise the object's Z position is updated to rest
+//     on top of the stack.
+func (m *Map) plop(toPlop *Item) bool {
+	l := toPlop.Location
+	floor, ceiling := m.GetFloorAndCeiling(l, true, false)
+	if floor == nil {
+		// No floor to place item on, bail
+		return false
+	}
+	fz := floor.StandingHeight()
+	cz := uo.MapMaxZ
+	if ceiling != nil {
+		cz = ceiling.Z()
+	}
+	// Find the Z level that would make this item set on top of other non-solid
+	// items at the same location
+	tz := fz
+	c := m.chunks[(l.Y/uo.ChunkHeight)*uo.MapChunksWidth+(l.X/uo.ChunkWidth)]
+	for _, item := range c.Items {
+		// Only look at items at our location
+		if item.Location.X != l.X || item.Location.Y != l.Y {
+			continue
+		}
+		iz := item.Location.Z
+		itz := item.Location.Z + item.Def.Height
+		if itz < tz {
+			// Item is below the stack so go to the next item
+			continue
+		}
+		if iz < cz {
+			// The item is between the current stack top and the current ceiling
+			// so it is the new top item
+			tz = itz
+			continue
+		}
+		// Else the item's underside is above the ceiling so we have hit the end
+		// of the stack
+		break
+	}
+	// Limit item stack height to the max
+	if (tz-fz)+toPlop.Def.Height > uo.MaxItemStackHeight {
+		return false
+	}
+	// Note this will move the item upward when ploping under a solid stack of
+	// items which is the intended behavior
+	l.Z = tz
+	toPlop.Location = l
+	return true
+}
+
+// plopItems adjusts the Z position of every object in the location above the Z
+// position and below the ceiling. This has the effect of letting all these
+// items fall by the given amount.
+//
+// NOTES
+//
+//	As a side-effect this function calls world.Update on each item modified.
+//
+// Explanation
+//  1. Determine the ceiling altitude considering the tile matrix and statics.
+//  2. Process all items in the location:
+//     a. If the item's Z position is under the ceiling apply the offset.
+//     b. Make sure no item's Z position is set lower than the static floor.
+func (m *Map) plopItems(l uo.Point, drop int) {
+	_, ceiling := m.GetFloorAndCeiling(l, true, false)
+	fz := l.Z
+	cz := uo.MapMaxZ
+	if ceiling != nil {
+		cz = ceiling.Z()
+	}
+	// Process items to adjust Z position
+	c := m.chunks[(l.Y/uo.ChunkHeight)*uo.MapChunksWidth+(l.X/uo.ChunkWidth)]
+	for _, item := range c.Items {
+		// Only look at items at our location
+		if item.Location.X != l.X || item.Location.Y != l.Y {
+			continue
+		}
+		iz := item.Z()
+		if iz < fz {
+			// Item is below the reference point, ignore it
+			continue
+		}
+		if iz >= cz {
+			// Item is on or above the ceiling so we are done
+			break
+		}
+		// Item is in the stack
+		il := item.Location
+		il.Z -= drop
+		if il.Z < fz {
+			il.Z = fz
+		}
+		item.Location = il
+		World.UpdateItem(item)
+	}
+}
+
+// LineOfSight returns true if there is line of site between the two locations.
+// The reference used for the Bresenham Line Algorithm was
+// https://www.baeldung.com/cs/bresenhams-line-algorithm#:~:text=3.-,Description,words%2C%20only%20very%20cheap%20operations.
+func (m *Map) LineOfSight(a, b uo.Point) bool {
+	// Control variables for the line algorithm
+	dx := b.X - a.X
+	if dx < 0 {
+		dx *= -1
+	}
+	sx := 1
+	if a.X >= b.X {
+		sx = -1
+	}
+	dy := b.Y - a.Y
+	if dy < 0 {
+		dy *= -1
+	}
+	dy *= -1
+	sy := 1
+	if a.Y >= b.Y {
+		sy = -1
+	}
+	e := dx + dy
+	// Z stepping control
+	dtx := float64(b.X - a.X)
+	dty := float64(b.Y - a.Y)
+	dl := math.Sqrt(dtx*dtx + dty*dty)
+	sz := float64(b.Z-a.Z) / dl
+	az := float64(a.Z)
+	// Process positions
+	for {
+		// Check point for sight blocking
+		bottom := a.Z
+		top := int(float64(a.Z) + sz)
+		c := m.chunks[(a.Y/uo.ChunkHeight)*uo.MapChunksWidth+(a.X/uo.ChunkWidth)]
+		t := c.Tiles[(a.Y%uo.ChunkHeight)*uo.ChunkWidth+(a.X%uo.ChunkWidth)]
+		if !t.Ignore() && t.NWZ <= top && t.HighestZ >= bottom {
+			// The tile matrix blocks line of site at this point
+			return false
+		}
+		// Consider statics
+		for _, static := range c.Statics {
+			// Ignore statics that are not at the location
+			if static.Location.X != a.X || static.Location.Y != a.Y {
+				continue
+			}
+			// Only care about vis-blocking statics
+			if !static.Surface() && !static.Impassable() && !static.Wall() && !static.NoShoot() {
+				continue
+			}
+			z := static.Location.Z
+			tz := static.Location.Z + static.Def.Height
+			if tz < bottom {
+				// Still haven't made it to the required range
+				continue
+			}
+			if z <= top {
+				// This static blocks line of site
+				return false
+			}
+			// If we get there there are not any statics blocking line of site
+			break
+		}
+		for _, item := range c.Items {
+			// Ignore items that are not at the location
+			l := item.Location
+			if l.X != a.X || l.Y != a.Y {
+				continue
+			}
+			// Only care about vis-blocking items
+			if !item.Surface() && !item.Impassable() && !item.Wall() && !item.NoShoot() {
+				continue
+			}
+			z := item.Location.Z
+			tz := item.Location.Z + item.Def.Height
+			if tz < bottom {
+				// Still haven't made it to the required range
+				continue
+			}
+			if z <= top {
+				// This item blocks line of site
+				return false
+			}
+			// If we get there there are not any items blocking line of site
+			break
+		}
+		// Nothing blocking line of site at this location, continue line
+		if a.X == b.X && a.Y == b.Y {
+			// If we get here then we have clear LOS
+			return true
+		}
+		// Line algorithm
+		e2 := e * 2
+		if e2 >= dy {
+			if a.X == b.X {
+				break
+			}
+			e += dy
+			a.X += sx
+		}
+		if e2 <= dx {
+			if a.Y == b.Y {
+				break
+			}
+			e += dx
+			a.Y += sy
+		}
+		az += sz
+		a.Z = int(az)
+	}
+	return false
 }
