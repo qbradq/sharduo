@@ -1,5 +1,29 @@
 package uo
 
+import (
+	"fmt"
+	"strconv"
+	"strings"
+)
+
+func flexNum(in []byte) int {
+	if len(in) < 1 {
+		return 0
+	}
+	if in[0] != '"' {
+		v, err := strconv.ParseInt(string(in), 0, 32)
+		if err != nil {
+			return 0
+		}
+		return int(v)
+	}
+	v, err := strconv.ParseInt(string(in[1:len(in)-1]), 0, 32)
+	if err != nil {
+		return 0
+	}
+	return int(v)
+}
+
 // Random constants
 const (
 	MinStackAmount            int  = 1
@@ -255,6 +279,12 @@ const (
 	BodySystem      Body = 0x7fff
 )
 
+// UnmarshalJSON implements json.Unmarshaler.
+func (b *Body) UnmarshalJSON(in []byte) error {
+	*b = Body(flexNum(in))
+	return nil
+}
+
 // MoveSpeed represents one of the available movement speeds.
 type MoveSpeed byte
 
@@ -300,6 +330,12 @@ const (
 	GUMPDefault          GUMP = 0x0046 // Partial skull with glowing eyes
 	GUMPContainerDefault GUMP = 0x03E8 // Huge chest, old login gump
 )
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (g *GUMP) UnmarshalJSON(in []byte) error {
+	*g = GUMP(flexNum(in))
+	return nil
+}
 
 // Protocol extension request types
 type ProtocolExtensionRequest byte
@@ -350,6 +386,12 @@ const (
 	SoundDefaultDrop Sound = 0x42
 	SoundBagDrop     Sound = 0x48
 )
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (s *Sound) UnmarshalJSON(in []byte) error {
+	*s = Sound(flexNum(in))
+	return nil
+}
 
 // AnimationType indicates which animation type to play on the client side
 type AnimationType uint16
@@ -443,9 +485,29 @@ type LootType uint8
 const (
 	LootTypeNormal  LootType = 0 // Drops on death, decays in 1 hour
 	LootTypeBlessed LootType = 1 // Does not drop on death, decays in 1 hour
-	LootTypeNewbied LootType = 2 // Does not drop on death, decays in 15 seconds
+	LootTypeNewbie  LootType = 2 // Does not drop on death, decays in 15 seconds
 	LootTypeSystem  LootType = 3 // Does not drop on death, never decays
 )
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (t *LootType) UnmarshalJSON(in []byte) error {
+	if len(in) < 1 {
+		*t = LootTypeNormal
+	} else if in[0] == '"' {
+		s := strings.ToLower(string(in[1 : len(in)-1]))
+		switch s {
+		case "blessed":
+			*t = LootTypeBlessed
+		case "newbie":
+			*t = LootTypeNewbie
+		case "system":
+			*t = LootTypeSystem
+		default:
+			panic(fmt.Errorf("unsupported loot type %s", s))
+		}
+	}
+	return nil
+}
 
 // Door location offsets
 var DoorOffsets = []Point{

@@ -33,6 +33,7 @@ func (c *chunk) RemoveMobile(m *Mobile) {
 	}
 	copy(c.Mobiles[idx:], c.Mobiles[idx+1:])
 	c.Mobiles[len(c.Mobiles)-1] = nil
+	c.Mobiles = c.Mobiles[:len(c.Mobiles)-1]
 }
 
 // AddItem adds the item to the chunk.
@@ -58,4 +59,5 @@ func (c *chunk) RemoveItem(item *Item) {
 	}
 	copy(c.Items[idx:], c.Items[idx+1:])
 	c.Items[len(c.Items)-1] = nil
+	c.Items = c.Items[:len(c.Items)-1]
 }

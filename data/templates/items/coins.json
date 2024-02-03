@@ -1,0 +1,17 @@
+{
+    "BaseCoin": {
+        "BaseTemplate": "BaseItem",
+        "DropSoundOverride": "0x02E6",
+        "Weight": 0.02,
+        "Flags": [
+            "Stackable"
+        ]
+    },
+    "GoldCoin": {
+        "BaseTemplate": "BaseCoin",
+        "Name": "gold coin",
+        "ArticleA": true,
+        "Plural": "gold coins",
+        "Graphic": "0x0EED"
+    }
+}

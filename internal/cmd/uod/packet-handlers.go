@@ -287,11 +287,9 @@ func handleLiftRequest(n *NetState, cp clientpacket.Packet) {
 		return
 	}
 	item.Split(p.Amount)
-	if !n.m.PickUp(item) {
-		n.DropReject(uo.MoveItemRejectReasonUnspecified)
-	}
+	n.m.Cursor = item
 	// Play lift sound
-	n.Sound(item.LiftSound(), game.RootParent(item).Location())
+	n.Sound(item.LiftSound, game.MapLocation(item))
 }
 
 func handleDropRequest(n *NetState, cp clientpacket.Packet) {

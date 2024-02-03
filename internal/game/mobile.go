@@ -49,8 +49,12 @@ type Mobile struct {
 
 // Write writes the persistent data of the item to w.
 func (m *Mobile) Write(w io.Writer) {
-	m.Object.Write(w)
 	util.PutUInt32(w, 0)                          // Version
+	util.PutString(w, m.TemplateName)             // Template name
+	util.PutUInt32(w, uint32(m.Serial))           // Serial
+	util.PutPoint(w, m.Location)                  // Location
+	util.PutByte(w, byte(m.Facing))               // Facing
+	util.PutUInt16(w, uint16(m.Hue))              // Hue
 	util.PutBool(w, m.Female)                     // Female flag
 	util.PutBool(w, m.Player)                     // Player flag
 	util.PutUInt16(w, uint16(m.BaseStrength))     // Strength
@@ -78,10 +82,17 @@ func (m *Mobile) Write(w io.Writer) {
 	}
 }
 
-// Read reads the persistent data of the mobile from r.
-func (m *Mobile) Read(r io.Reader) {
-	m.Object.Read(r)
-	_ = util.GetUInt32(r)                       // Version
+// NewMobileFromReader reads the persistent data of the mobile from r and
+// returns the mobile. It also inserts the mobile into the world datastores.
+func NewMobileFromReader(r io.Reader) *Mobile {
+	_ = util.GetUInt32(r)   // Version
+	tn := util.GetString(r) // Template name
+	m := constructMobile(tn)
+	m.TemplateName = tn
+	m.Serial = uo.Serial(util.GetUInt32(r))     // Serial
+	m.Location = util.GetPoint(r)               // Location
+	m.Facing = uo.Direction(util.GetByte(r))    // Facing
+	m.Hue = uo.Hue(util.GetUInt16(r))           // Hue
 	m.Female = util.GetBool(r)                  // Female flag
 	m.Player = util.GetBool(r)                  // Player flag
 	m.BaseStrength = int(util.GetUInt16(r))     // Strength
@@ -95,18 +106,15 @@ func (m *Mobile) Read(r io.Reader) {
 	}
 	for layer := range m.Equipment { // Equipment
 		if util.GetBool(r) {
-			i := &Item{}
-			i.Read(r)
-			m.Equipment[layer] = i
+			m.Equipment[layer] = NewItemFromReader(r)
 		}
 	}
 	if util.GetBool(r) { // Item in cursor
-		item := &Item{}
-		item.Read(r)
-		m.DropToFeet(item)
+		m.DropToFeet(NewItemFromReader(r))
 	}
 	// Establish sane defaults for variables that need non-zero default values
 	m.ViewRange = uo.MaxViewRange
+	return m
 }
 
 // RecalculateStats recalculates all internal cache states.
@@ -257,4 +265,18 @@ func (m *Mobile) HasLineOfSight(target any) bool {
 		t = o.Location
 	}
 	return World.Map().LineOfSight(l, t)
+}
+
+// InvalidateOPL schedules an OPL update.
+func (m *Mobile) InvalidateOPL() {
+	m.opl = nil
+	m.oplInfo = nil
+	World.UpdateMobileOPLInfo(m)
+}
+
+// AdjustWeight implements the Object interface
+func (m *Mobile) AdjustWeight(n float64) {
+	m.Weight += n
+	m.InvalidateOPL()
+	World.UpdateMobile(m)
 }

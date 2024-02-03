@@ -1,28 +1,152 @@
 package game
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
+	"log"
+	"path/filepath"
+	"reflect"
 
+	"github.com/qbradq/sharduo/data"
 	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
 	"golang.org/x/image/colornames"
 )
 
+func init() {
+	// Load all item templates
+	errors := false
+	for _, err := range data.Walk("templates/items", func(s string, b []byte) []error {
+		// Ignore legacy files
+		if filepath.Ext(s) != ".json" {
+			return nil
+		}
+		// Load prototypes
+		ps := map[string]*Item{}
+		if err := json.Unmarshal(b, &ps); err != nil {
+			return []error{err}
+		}
+		// Prototype prep
+		for k, p := range ps {
+			// Check for duplicates
+			if _, duplicate := itemPrototypes[k]; duplicate {
+				return []error{fmt.Errorf("duplicate item prototype %s", k)}
+			}
+			// Initialize non-zero default values
+			p.Def = World.ItemDefinition(p.Graphic)
+			p.TemplateName = k
+			itemPrototypes[k] = p
+		}
+		return nil
+	}) {
+		errors = true
+		log.Printf("error: during item prototype load: %v", err)
+	}
+	if errors {
+		panic("errors during item prototype load")
+	}
+	// Resolve all base templates
+	var fn func(*Item)
+	fn = func(i *Item) {
+		// Skip resolved templates and root templates
+		if i.btResolved || i.BaseTemplate == "" {
+			return
+		}
+		// Resolve base template
+		p := itemPrototypes[i.BaseTemplate]
+		if p == nil {
+			panic(fmt.Errorf("item template %s referenced non-existent base template %s",
+				i.TemplateName, i.BaseTemplate))
+		}
+		fn(p)
+		// Merge values
+		pr := reflect.ValueOf(p)
+		ir := reflect.ValueOf(i)
+		for i := 0; i < pr.NumField(); i++ {
+			sf := pr.Type().Field(i)
+			switch sf.Name {
+			case "Events":
+				// Merge events map
+				prf := pr.Field(i)
+				irf := ir.Field(i)
+				for _, k := range prf.MapKeys() {
+					if irf.MapIndex(k).IsZero() {
+						irf.MapIndex(k).Set(prf.MapIndex(k))
+					}
+				}
+			case "Flags":
+				// Merge flag bits
+				ir.Field(i).Set(reflect.ValueOf(ItemFlags(pr.Field(i).Int() | ir.Field(i).Int())))
+			default:
+				// Just copy the value
+				ir.Field(i).Set(pr.Field(i))
+			}
+		}
+		// Flag prototype as done
+		i.btResolved = true
+	}
+}
+
+// constructItem creates a new item from the named template.
+func constructItem(which string) *Item {
+	p := itemPrototypes[which]
+	if p == nil {
+		panic(fmt.Errorf("unknown item prototype %s", which))
+	}
+	i := &Item{}
+	*i = *p
+
+	return i
+}
+
+// NewItem creates a new item and adds it to the world datastores.
+func NewItem(which string) *Item {
+	i := constructItem(which)
+	World.Add(i)
+	return i
+}
+
+// itemPrototypes contains all of the prototype items.
+var itemPrototypes map[string]*Item
+
 // ItemFlags encode boolean information about an item.
-type ItemFlags uint64
+type ItemFlags uint8
 
 const (
-	ItemFlagsContainer ItemFlags = 0x0000000000000001 // Item is a container
-	ItemFlagsFixed     ItemFlags = 0x0000000000000002 // Item is fixed within the world and cannot be moved normally
-	ItemFlagsStatic    ItemFlags = 0x0000000000000004 // Item is static
+	ItemFlagsContainer ItemFlags = 0b00000001 // Item is a container
+	ItemFlagsFixed     ItemFlags = 0b00000010 // Item is fixed within the world and cannot be moved normally
+	ItemFlagsStatic    ItemFlags = 0b00000100 // Item is static
+	ItemFlagsStackable ItemFlags = 0b00001000 // Item is stackable
 )
+
+// UnmarshalJSON implements the json.Unmarshaler interface.
+func (f *ItemFlags) UnmarshalJSON(in []byte) error {
+	flags := []string{}
+	if err := json.Unmarshal(in, &flags); err != nil {
+		return err
+	}
+	for _, s := range flags {
+		switch s {
+		case "container":
+			*f |= ItemFlagsContainer
+		case "fixed":
+			*f |= ItemFlagsFixed
+		case "static":
+			*f |= ItemFlagsStatic
+		case "stackable":
+			*f |= ItemFlagsStackable
+		}
+	}
+	return nil
+}
 
 // Item describes any item in the world.
 type Item struct {
 	Object
 	// Static variables
+	Def         *uo.StaticDefinition // Item properties pointer
 	Flags       ItemFlags            // Boolean item flags
 	Graphic     uo.Graphic           // Base graphic to use for the item
 	Layer       uo.Layer             // Layer the object is worn on
@@ -30,27 +154,29 @@ type Item struct {
 	MaxWeight   float64              // Maximum weight that can be held in this container
 	MaxItems    int                  // Maximum number of items that can be held in this container
 	GUMPGraphic uo.GUMP              // GUMP graphic to use for containers
-	Def         *uo.StaticDefinition // Item properties pointer
+	LiftSound   uo.Sound             // Sound this item makes when lifted
 	// Persistent variables
 	Amount   int         // Stack amount
 	Contents []*Item     // Contents of the container
 	LootType uo.LootType // Persistent loot type so we can bless arbitrary items
 	// Transient values
-	Wearer          *Mobile                 // Pointer to the mobile currently wearing this item if any, note this only indicates if the item is directly equipped to the mobile, not within equipped containers
-	Container       *Item                   // Pointer to the parent container if any
-	Observers       []ContainerObserver     // All observers currently observing this container
-	ItemCount       int                     // Cache of the total number of contained items including all sub-containers
-	Gold            int                     // Cache of the total amount of gold coins contained in this and all sub containers
-	ContainedWeight float64                 // Cache of the total weight held in this and all sub containers
-	opl             *serverpacket.OPLPacket // Cached OPLPacket
-	oplInfo         *serverpacket.OPLInfo   // Cached OPLInfo
-	decayAt         uo.Time                 // When this item should decay on the map
+	Wearer          *Mobile             // Pointer to the mobile currently wearing this item if any, note this only indicates if the item is directly equipped to the mobile, not within equipped containers
+	Container       *Item               // Pointer to the parent container if any
+	Observers       []ContainerObserver // All observers currently observing this container
+	ItemCount       int                 // Cache of the total number of contained items including all sub-containers
+	Gold            int                 // Cache of the total amount of gold coins contained in this and all sub containers
+	ContainedWeight float64             // Cache of the total weight held in this and all sub containers
+	decayAt         uo.Time             // When this item should decay on the map
 }
 
 // Write writes the persistent data of the item to w.
 func (i *Item) Write(w io.Writer) {
-	i.Object.Write(w)
 	util.PutUInt32(w, 0)                       // Version
+	util.PutString(w, i.TemplateName)          // Template name
+	util.PutUInt32(w, uint32(i.Serial))        // Serial
+	util.PutPoint(w, i.Location)               // Location
+	util.PutByte(w, byte(i.Facing))            // Facing
+	util.PutUInt16(w, uint16(i.Hue))           // Hue
 	util.PutUInt16(w, uint16(i.Amount))        // Stack amount
 	util.PutByte(w, byte(i.LootType))          // Loot type
 	util.PutUInt32(w, uint32(len(i.Contents))) // Contents
@@ -59,19 +185,26 @@ func (i *Item) Write(w io.Writer) {
 	}
 }
 
-// Read reads the persistent data of the item from r.
-func (i *Item) Read(r io.Reader) {
-	i.Object.Read(r)
-	_ = util.GetUInt32(r)                     // Version
+// NewItemFromReader reads the persistent data of the item from r and returns a
+// new item. This also inserts the item into the world datastore.
+func NewItemFromReader(r io.Reader) *Item {
+	_ = util.GetUInt32(r)   // Version
+	tn := util.GetString(r) // Template name
+	i := constructItem(tn)
+	i.TemplateName = tn
+	i.Serial = uo.Serial(util.GetUInt32(r))   // Serial
+	i.Location = util.GetPoint(r)             // Location
+	i.Facing = uo.Direction(util.GetByte(r))  // Facing
+	i.Hue = uo.Hue(util.GetUInt16(r))         // Hue
 	i.Amount = int(util.GetUInt16(r))         // Stack amount
 	i.LootType = uo.LootType(util.GetByte(r)) // Loot type
 	n := int(util.GetUInt32(r))               // Contents item count
 	i.Contents = make([]*Item, n)             // Contents
 	for idx := 0; idx < n; idx++ {
-		item := &Item{}
-		item.Read(r)
-		i.Contents[idx] = item
+		i.Contents[idx] = NewItemFromReader(r)
 	}
+	World.Insert(i)
+	return i
 }
 
 // RecalculateStats recalculates all internal cache states.
@@ -185,6 +318,42 @@ func (i *Item) ContextMenu(p *ContextMenu, m *Mobile) {
 	}
 }
 
+// Split splits off a number of items from a stack. nil is returned if
+// n < 1 || n >= item.Amount(). nil is also returned for all non-stackable
+// items. In the event of an error during duplication the error will be
+// logged and nil will be returned. Otherwise a new duplicate item is
+// created with the remaining amount. This item is removed from its parent.
+// If this remove operation fails this function returns nil. The new
+// object is then force-added to the old parent in the same location.
+// The parent of this item is then set to the new item. If nil is returned
+// this item's amount and parent has not changed.
+func (i *Item) Split(n int) *Item {
+	// No new item required in these cases
+	if !i.HasFlags(ItemFlagsStackable) || n < 1 || n >= i.Amount {
+		return nil
+	}
+	// Create the new item
+	item := NewItem(i.TemplateName)
+	// Remove this item from its parent
+	if i.Container == nil {
+		World.Map().RemoveItem(i)
+	} else {
+		i.Container.RemoveItem(i)
+	}
+	item.Amount = i.Amount - n
+	i.Amount = n
+	// Force the remainder back where we came from
+	item.Location = i.Location
+	if i.Container == nil {
+		World.Map().AddItem(item, false)
+	} else {
+		i.Container.AddItem(item, false)
+	}
+	i.Container = item
+	i.Container.AdjustWeightAndCount(i.Weight*float64(-n), -n)
+	return item
+}
+
 // RefreshDecayDeadline refreshes the decay deadline for the item.
 func (i *Item) RefreshDecayDeadline() {
 	if i.Spawner != nil {
@@ -197,11 +366,82 @@ func (i *Item) RefreshDecayDeadline() {
 		i.decayAt = World.Time() + uo.DurationHour
 	case uo.LootTypeBlessed:
 		i.decayAt = World.Time() + uo.DurationHour
-	case uo.LootTypeNewbied:
+	case uo.LootTypeNewbie:
 		i.decayAt = World.Time() + uo.DurationSecond*15
 	case uo.LootTypeSystem:
 		i.decayAt = uo.TimeNever
 	}
+}
+
+// AddItem adds an item to this item's inventory.
+func (i *Item) AddItem(item *Item, force bool) error {
+	ai := 1 + item.ItemCount
+	aw := item.Weight + item.ContainedWeight
+	// Check item and weight limits
+	if !force {
+		if i.ItemCount+ai > i.MaxItems {
+			return &UOError{
+				Cliloc: 1080017, // That container cannot hold more items.
+			}
+		}
+		if i.ContainedWeight+aw > i.MaxWeight {
+			return &UOError{
+				Cliloc: 1080016, // That container cannot hold more weight.
+			}
+		}
+	}
+	i.Contents = append(i.Contents, item)
+	i.AdjustWeightAndCount(aw, ai)
+	return nil
+}
+
+// RemoveItem removes an item from this item's inventory.
+func (i *Item) RemoveItem(item *Item) {
+	idx := -1
+	for i, oi := range i.Contents {
+		if oi == item {
+			idx = i
+			break
+		}
+	}
+	if idx < 0 {
+		return
+	}
+	copy(i.Contents[idx:], i.Contents[idx+1:])
+	i.Contents[len(i.Contents)-1] = nil
+	i.Contents = i.Contents[:len(i.Contents)-1]
+	i.AdjustWeightAndCount(-item.Weight+item.ContainedWeight, -item.ItemCount+1)
+}
+
+// AdjustWeightAndCount adjusts the contained weight and item count of the
+// container.
+func (i *Item) AdjustWeightAndCount(w float64, n int) {
+	i.InvalidateOPL()
+	i.ContainedWeight += w
+	i.ItemCount += n
+	if i.TemplateName == "PlayerBankBox" {
+		// We are a mobile's bank box, don't propagate up
+		return
+	}
+	if i.Container != nil {
+		// We are a sub-container, propagate the adjustment up
+		i.Container.AdjustWeightAndCount(w, n)
+	} else if i.Wearer != nil {
+		i.Wearer.InvalidateOPL()
+		if i.Wearer.Cursor == i {
+			// We are being held by a mobile's cursor, don't need to do anything
+			return
+		}
+		// We are a mobile's backpack, send the weight adjustment up
+		i.Wearer.AdjustWeight(w)
+	}
+}
+
+// InvalidateOPL schedules an OPL update.
+func (i *Item) InvalidateOPL() {
+	i.opl = nil
+	i.oplInfo = nil
+	World.UpdateItemOPLInfo(i)
 }
 
 func (i *Item) StandingHeight() int {

@@ -26,42 +26,26 @@ var ErrWrongPacket = errors.New("wrong packet")
 
 // gumpDescription describes a GUMP instance.
 type gumpDescription struct {
-	// The GUMP being managed
-	g gumps.GUMP
-	// Serial of the target object
-	t uo.Serial
-	// Serial of the parameter object
-	p uo.Serial
+	g gumps.GUMP // The GUMP being managed
+	t uo.Serial  // Serial of the target object
+	p uo.Serial  // Serial of the parameter object
 }
 
 // NetState manages the network state of a single connection.
 type NetState struct {
-	// TCP connection we are connected through
-	conn *net.TCPConn
-	// Queue of packets to send on conn
-	sendQueue chan serverpacket.Packet
-	// Mobile being controlled by this client, if any
-	m *game.Mobile
-	// Account of the player or a mock account, never nil
-	account *game.Account
-	// All containers being observed by the player
-	observedContainers map[uo.Serial]*game.Item
-	// Function to execute when the next targeting request comes in
-	targetCallback func(*clientpacket.TargetResponse)
-	// When the outstanding targeting request will expire
-	targetDeadline uo.Time
-	// Used in load balancing
-	updateGroup int
-	// When this connection should be closed due to inactivity
-	deadline uo.Time
-	// Make sure we don't try to close conn more than once
-	disconnectLock sync.Once
-	// All open GUMPs on the client side
-	gumps map[uo.Serial]*gumpDescription
-	// When the next action can be taken
-	nextActionTime uo.Time
-	// Function to trigger in response to a text GUMP reply (packet 0xAC)
-	textReplyFn func(string)
+	conn               *net.TCPConn                       // TCP connection we are connected through
+	sendQueue          chan serverpacket.Packet           // Queue of packets to send on conn
+	m                  *game.Mobile                       // Mobile being controlled by this client, if any
+	account            *game.Account                      // Account of the player or a mock account, never nil
+	observedContainers map[uo.Serial]*game.Item           // All containers being observed by the player
+	targetCallback     func(*clientpacket.TargetResponse) // Function to execute when the next targeting request comes in
+	targetDeadline     uo.Time                            // When the outstanding targeting request will expire
+	updateGroup        int                                // Used in load balancing
+	deadline           uo.Time                            // When this connection should be closed due to inactivity
+	disconnectLock     sync.Once                          // Make sure we don't try to close conn more than once
+	gumps              map[uo.Serial]*gumpDescription     // All open GUMPs on the client side
+	nextActionTime     uo.Time                            // When the next action can be taken
+	textReplyFn        func(string)                       // Function to trigger in response to a text GUMP reply (packet 0xAC)
 }
 
 // NewNetState constructs a new NetState object.

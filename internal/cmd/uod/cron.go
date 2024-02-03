@@ -19,14 +19,10 @@ import (
 
 // cronJob represents one cron job.
 type cronJob struct {
-	// Minute of the hour to execute, -1 means all
-	minute int
-	// Hour of the day to execute, -1 means all
-	hour int
-	// Day of the week to execute, -1 means all
-	day int
-	// Command line to run
-	command string
+	minute  int    // Minute of the hour to execute, -1 means all
+	hour    int    // Hour of the day to execute, -1 means all
+	day     int    // Day of the week to execute, -1 means all
+	command string // Command line to run
 }
 
 // cron is the global Cron object.
@@ -34,10 +30,8 @@ var cron Cron
 
 // Cron reads the crontab file and executes commands at the prescribed time.
 type Cron struct {
-	// List of cron jobs
-	jobs []cronJob
-	// Done channel
-	done chan struct{}
+	jobs []cronJob     // List of cron jobs
+	done chan struct{} // Done channel
 }
 
 // InitializeCron loads the crontab into the global cron object.

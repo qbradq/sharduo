@@ -98,9 +98,6 @@ type WorldInterface interface {
 	UpdateMobileOPLInfo(*Mobile)
 	// Map returns the map the world is using.
 	Map() *Map
-	// GetItemDefinition returns the uo.StaticDefinition that holds the static
-	// data for a given item graphic.
-	GetItemDefinition(uo.Graphic) *uo.StaticDefinition
 	// Time returns the current time in the Sossarian universe. This is what
 	// timers use to avoid complications with DST, save lag, rollbacks, and
 	// downtime.
@@ -116,4 +113,14 @@ type WorldInterface interface {
 	// Accounts returns a slice of pointers to the accounts on the server. This
 	// should only be used for admin GUMPs and commands.
 	Accounts() []*Account
+	// GetItemDefinition returns the uo.StaticDefinition that holds the static
+	// data for a given item graphic.
+	ItemDefinition(g uo.Graphic) *uo.StaticDefinition
+	// Add adds a new object to the world data stores. It is assigned a unique
+	// serial appropriate for its type. The object is returned. As a special
+	// case this function refuses to add a nil value to the game data store.
+	Add(any)
+	// Insert inserts the object into the world's datastores blindly. *Only*
+	// used during a restore from backup.
+	Insert(any)
 }

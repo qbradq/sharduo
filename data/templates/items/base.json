@@ -1,0 +1,17 @@
+{
+    "BaseItem": {
+        "LiftSound": "0x57",
+        "Amount": 1,
+        "Weight": 255
+    },
+    "Check": {
+        "BaseTemplate": "BaseItem",
+        "Graphic": "0x14EF",
+        "FlippedGraphic": "0x14F0",
+        "Weight": 1,
+        "Hue": 51,
+        "Events": {
+            "DoubleClick": "CashCheck"
+        }
+    }
+}

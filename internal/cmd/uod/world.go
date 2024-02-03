@@ -37,30 +37,18 @@ type worldPacket struct {
 // World encapsulates all of the data for the world and the goroutine that
 // manipulates it.
 type World struct {
-	// The world map
-	m *game.Map
-	// The object data store for the entire world
-	ods *game.Datastore
-	// Collection of all accounts
-	accounts map[string]*game.Account
-	// Account access mutex
-	alock sync.Mutex
-	// Inbound requests
-	requestQueue chan worldPacket
-	// Save/Load Mutex
-	lock sync.Mutex
-	// Save directory string
-	savePath string
-	// Collection of all objects that need to be updated
-	updateList map[uo.Serial]struct{}
-	// Collection of all objects that need to have OPLInfo packets sent
-	oplUpdateList map[uo.Serial]struct{}
-	// Current time in the Sossarian universe in seconds
-	time uo.Time
-	// Current time on the server
-	wallClockTime time.Time
-	// Pointer to the super-user account
-	superUser *game.Account
+	m             *game.Map                // The world map
+	ods           *game.Datastore          // The object data store for the entire world
+	accounts      map[string]*game.Account // Collection of all accounts
+	al            sync.Mutex               // Account access mutex
+	requestQueue  chan worldPacket         // Inbound requests
+	lock          sync.Mutex               // Save/Load Mutex
+	savePath      string                   // Save directory string
+	updateList    map[uo.Serial]struct{}   // Collection of all objects that need to be updated
+	oplUpdateList map[uo.Serial]struct{}   // Collection of all objects that need to have OPLInfo packets sent
+	time          uo.Time                  // Current time in the Sossarian universe in seconds
+	wallClockTime time.Time                // Current time on the server
+	superUser     *game.Account            // Pointer to the super-user account
 }
 
 // NewWorld creates a new, empty world
@@ -151,8 +139,7 @@ func (w *World) Unmarshal() error {
 	// Done
 	end = time.Now()
 	elapsed = end.Sub(start)
-	log.Printf("info: save unmarshaled in %ds%03dms", elapsed.Milliseconds()/1000, elapsed.Milliseconds()%1000)
-
+	log.Printf("info: save restored in %ds%03dms", elapsed.Milliseconds()/1000, elapsed.Milliseconds()%1000)
 	return nil
 }
 
@@ -261,22 +248,19 @@ func (w *World) SendPacket(p clientpacket.Packet, ns *NetState) (closed bool) {
 	return true
 }
 
-// addNewObjectToDataStores adds a new object to the world data stores. It is
-// assigned a unique serial. The object is returned. As a special case this
-// function refuses to add a nil value to the game data store.
-func (w *World) addNewObjectToDataStores(obj any) any {
+// Add adds a new object to the world data stores. It is assigned a unique
+// serial appropriate for its type. The object is returned. As a special case
+// this function refuses to add a nil value to the game data store.
+func (w *World) Add(obj any) {
 	if obj == nil {
-		return nil
+		return
 	}
 	switch o := obj.(type) {
 	case *game.Mobile:
 		w.ods.StoreMobile(o)
 	case *game.Item:
 		w.ods.StoreItem(o)
-	default:
-		panic("invalid type sent to World.addNewObjectToDataStores()")
 	}
-	return obj
 }
 
 // Find returns the mobile or item with the given serial or nil.
@@ -329,8 +313,8 @@ func (w *World) Delete(obj any) {
 // exist in the accounts datastore at all, the newly created account will have
 // super-user permissions and a message will be logged.
 func (w *World) AuthenticateAccount(username, passwordHash string) *game.Account {
-	w.alock.Lock()
-	defer w.alock.Unlock()
+	w.al.Lock()
+	defer w.al.Unlock()
 	// Find account or create new
 	a := w.accounts[username]
 	newAccount := false
@@ -512,7 +496,7 @@ func (w *World) Map() *game.Map {
 
 // GetItemDefinition returns the uo.StaticDefinition that holds the static data
 // for a given item graphic.
-func (w *World) GetItemDefinition(g uo.Graphic) *uo.StaticDefinition {
+func (w *World) ItemDefinition(g uo.Graphic) *uo.StaticDefinition {
 	return tiledatamul.GetStaticDefinition(int(g))
 }
 
@@ -535,13 +519,13 @@ func (w *World) BroadcastPacket(p serverpacket.Packet) {
 
 // BroadcastMessage broadcasts lower-left system message to every connected
 // client from the given speaker. Use nil for speaker for the system.
-func (w *World) BroadcastMessage(s *game.Mobile, fmtstr string, args ...any) {
+func (w *World) BroadcastMessage(s *game.Mobile, fs string, args ...any) {
 	sid := uo.SerialSystem
 	body := uo.BodySystem
 	font := uo.FontNormal
 	hue := uo.Hue(1153)
 	name := ""
-	text := fmt.Sprintf(fmtstr, args...)
+	text := fmt.Sprintf(fs, args...)
 	sType := uo.SpeechTypeSystem
 	if s != nil {
 		sid = s.Serial

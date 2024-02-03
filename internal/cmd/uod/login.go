@@ -24,10 +24,8 @@ var loginServerConnections sync.Map
 
 // loginServerConnection is a wrapper struct for login server connections
 type loginServerConnection struct {
-	// TCP connection
-	c *net.TCPConn
-	// Deadline for this connection to time out
-	deadline time.Time
+	c        *net.TCPConn // TCP connection
+	deadline time.Time    // Deadline for this connection to time out
 }
 
 // StopLoginService attempts to gracefully stop the login service.
