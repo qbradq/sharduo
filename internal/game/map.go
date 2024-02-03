@@ -126,14 +126,10 @@ func (m *Map) ReadObjects(r io.Reader, ds *Datastore) {
 	n := int(util.GetUInt32(r)) // Number of chunks in the file
 	for i := 0; i < n; i++ {
 		for util.GetBool(r) {
-			item := &Item{}
-			item.Read(r)
-			ds.InsertItem(item)
+			ds.InsertItem(NewItemFromReader(r))
 		}
 		for util.GetBool(r) {
-			mob := &Mobile{}
-			mob.Read(r)
-			ds.InsertMobile(mob)
+			ds.InsertMobile(NewMobileFromReader(r))
 		}
 	}
 }
@@ -158,13 +154,11 @@ func (m *Map) ReadDeepStorage(r io.Reader, ds *Datastore) {
 	n := int(util.GetUInt32(r)) // Number of objects
 	for i := 0; i < n; i++ {
 		if util.GetBool(r) {
-			mob := &Mobile{}
-			mob.Read(r)
+			mob := NewMobileFromReader(r)
 			m.ds[mob.Serial] = mob
 			ds.InsertMobile(mob)
 		} else {
-			item := &Item{}
-			item.Read(r)
+			item := NewItemFromReader(r)
 			m.ds[item.Serial] = item
 			ds.InsertItem(item)
 		}

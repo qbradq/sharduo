@@ -1,13 +1,118 @@
 package game
 
 import (
+	"encoding/json"
+	"fmt"
 	"io"
+	"log"
+	"path/filepath"
+	"reflect"
 
+	"github.com/qbradq/sharduo/data"
 	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
 	"golang.org/x/image/colornames"
 )
+
+func init() {
+	// Load all item templates
+	errors := false
+	for _, err := range data.Walk("templates/mobiles", func(s string, b []byte) []error {
+		// Ignore legacy files
+		if filepath.Ext(s) != ".json" {
+			return nil
+		}
+		// Load prototypes
+		ps := map[string]*Mobile{}
+		if err := json.Unmarshal(b, &ps); err != nil {
+			return []error{err}
+		}
+		// Prototype prep
+		for k, p := range ps {
+			// Check for duplicates
+			if _, duplicate := mobilePrototypes[k]; duplicate {
+				return []error{fmt.Errorf("duplicate mobile prototype %s", k)}
+			}
+			// Initialize non-zero default values
+			p.TemplateName = k
+			mobilePrototypes[k] = p
+		}
+		return nil
+	}) {
+		errors = true
+		log.Printf("error: during mobile prototype load: %v", err)
+	}
+	if errors {
+		panic("errors during mobile prototype load")
+	}
+	// Resolve all base templates
+	var fn func(*Mobile)
+	fn = func(i *Mobile) {
+		// Skip resolved templates and root templates
+		if i.btResolved || i.BaseTemplate == "" {
+			return
+		}
+		// Resolve base template
+		p := mobilePrototypes[i.BaseTemplate]
+		if p == nil {
+			panic(fmt.Errorf("mobile template %s referenced non-existent base template %s",
+				i.TemplateName, i.BaseTemplate))
+		}
+		fn(p)
+		// Merge values
+		pr := reflect.ValueOf(p)
+		ir := reflect.ValueOf(i)
+		for i := 0; i < pr.NumField(); i++ {
+			sf := pr.Type().Field(i)
+			switch sf.Name {
+			case "PostCreationEvents":
+				// Prepend array contents
+				prf := pr.Field(i)
+				irf := ir.Field(i)
+				irf.Set(reflect.AppendSlice(prf, irf))
+			case "Events":
+				// Merge events map
+				prf := pr.Field(i)
+				irf := ir.Field(i)
+				for _, k := range prf.MapKeys() {
+					if irf.MapIndex(k).IsZero() {
+						irf.MapIndex(k).Set(prf.MapIndex(k))
+					}
+				}
+			case "Flags":
+				// Merge flag bits
+				ir.Field(i).Set(reflect.ValueOf(ItemFlags(pr.Field(i).Int() | ir.Field(i).Int())))
+			default:
+				// Just copy the value
+				ir.Field(i).Set(pr.Field(i))
+			}
+		}
+		// Flag prototype as done
+		i.btResolved = true
+	}
+}
+
+// constructMobile creates a new item from the named template.
+func constructMobile(which string) *Mobile {
+	p := mobilePrototypes[which]
+	if p == nil {
+		panic(fmt.Errorf("unknown mobile prototype %s", which))
+	}
+	m := &Mobile{}
+	*m = *p
+	return m
+}
+
+// NewMobile creates a new mobile and adds it to the world datastores.
+func NewMobile(which string) *Mobile {
+	m := constructMobile(which)
+	World.Add(m)
+	return m
+}
+
+// mobilePrototypes contains all mobile prototypes.
+var mobilePrototypes = map[string]*Mobile{}
 
 // Mobile describes a thinking actor.
 type Mobile struct {
@@ -16,16 +121,16 @@ type Mobile struct {
 	Body          uo.Body      // Body to use for this mobile
 	BaseNotoriety uo.Notoriety // Base notoriety level for this mobile
 	// Persistent values
-	Female           bool                 // If true the mobile is female
-	Player           bool                 // If true this is a player's character
-	BaseStrength     int                  // Base strength value
-	BaseDexterity    int                  // Base dexterity value
-	BaseIntelligence int                  // Base intelligence value
-	MaxHits          int                  // Current max hit points
-	MaxMana          int                  // Current max mana
-	MaxStamina       int                  // Current max stamina
-	BaseSkills       [uo.SkillCount]int   // Base skill values in tenths of a percent
-	Equipment        [uo.LayerCount]*Item // Current equipment set
+	Female           bool               // If true the mobile is female
+	Player           bool               // If true this is a player's character
+	BaseStrength     int                // Base strength value
+	BaseDexterity    int                // Base dexterity value
+	BaseIntelligence int                // Base intelligence value
+	MaxHits          int                // Current max hit points
+	MaxMana          int                // Current max mana
+	MaxStamina       int                // Current max stamina
+	BaseSkills       [uo.SkillCount]int // Base skill values in tenths of a percent
+	Equipment        Equipment          // Current equipment set
 	// Transient values
 	Account       *Account                // Connected account if any
 	NetState      NetState                // Connected net state if any

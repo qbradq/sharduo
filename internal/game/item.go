@@ -67,8 +67,13 @@ func init() {
 		for i := 0; i < pr.NumField(); i++ {
 			sf := pr.Type().Field(i)
 			switch sf.Name {
+			case "PostCreationEvents":
+				// Prepend array contents
+				prf := pr.Field(i)
+				irf := ir.Field(i)
+				irf.Set(reflect.AppendSlice(prf, irf))
 			case "Events":
-				// Merge events map
+				// Merge map
 				prf := pr.Field(i)
 				irf := ir.Field(i)
 				for _, k := range prf.MapKeys() {

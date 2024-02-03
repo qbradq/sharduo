@@ -129,6 +129,11 @@ const (
 	LayerCount                    Layer = LayerLastValid + 1
 )
 
+// Valid returns true if the layer is a valid lady.
+func (l Layer) Valid() bool {
+	return l >= LayerFirstValid && l <= LayerLastValid
+}
+
 // A StatusFlag describes the status of a mobile
 type StatusFlag byte
 
