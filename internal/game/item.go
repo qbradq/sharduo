@@ -126,6 +126,7 @@ const (
 	ItemFlagsFixed     ItemFlags = 0b00000010 // Item is fixed within the world and cannot be moved normally
 	ItemFlagsStatic    ItemFlags = 0b00000100 // Item is static
 	ItemFlagsStackable ItemFlags = 0b00001000 // Item is stackable
+	ItemFlagsUses      ItemFlags = 0b00010000 // Item has uses instead of durability
 )
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
@@ -144,6 +145,8 @@ func (f *ItemFlags) UnmarshalJSON(in []byte) error {
 			*f |= ItemFlagsStatic
 		case "stackable":
 			*f |= ItemFlagsStackable
+		case "uses":
+			*f |= ItemFlagsUses
 		}
 	}
 	return nil
@@ -164,13 +167,16 @@ type Item struct {
 	GUMPGraphic    uo.GUMP              // GUMP graphic to use for containers
 	Bounds         uo.Bounds            // Container GUMP bounds
 	LiftSound      uo.Sound             // Sound this item makes when lifted
+	Value          int                  // Purchase price of the item if it can be bought
 	// Persistent variables
-	Flipped  bool        // If true the item is currently flipped
-	Amount   int         // Stack amount
-	Contents []*Item     // Contents of the container
-	LootType uo.LootType // Persistent loot type so we can bless arbitrary items
-	IArg     int         // Generic int argument
-	MArg     *Mobile     // Generic mobile argument
+	Flipped       bool        // If true the item is currently flipped
+	Amount        int         // Stack amount
+	Contents      []*Item     // Contents of the container
+	LootType      uo.LootType // Persistent loot type so we can bless arbitrary items
+	MaxDurability int         // Maximum durability, 0 means this item does not use durability
+	Durability    int         // Current durability
+	IArg          int         // Generic int argument
+	MArg          *Mobile     // Generic mobile argument
 	// Transient values
 	Wearer          *Mobile                        // Pointer to the mobile currently wearing this item if any, note this only indicates if the item is directly equipped to the mobile, not within equipped containers
 	Container       *Item                          // Pointer to the parent container if any
@@ -183,17 +189,19 @@ type Item struct {
 
 // Write writes the persistent data of the item to w.
 func (i *Item) Write(w io.Writer) {
-	util.PutUInt32(w, 0)                // Version
-	util.PutString(w, i.TemplateName)   // Template name
-	util.PutUInt32(w, uint32(i.Serial)) // Serial
-	util.PutPoint(w, i.Location)        // Location
-	util.PutByte(w, byte(i.Facing))     // Facing
-	util.PutUInt16(w, uint16(i.Hue))    // Hue
-	util.PutBool(w, i.Flipped)          // Flipped flag
-	util.PutUInt16(w, uint16(i.Amount)) // Stack amount
-	util.PutByte(w, byte(i.LootType))   // Loot type
-	util.PutUInt32(w, uint32(i.IArg))   // Generic int argument
-	if i.MArg != nil {                  // Generic mobile argument
+	util.PutUInt32(w, 0)                       // Version
+	util.PutString(w, i.TemplateName)          // Template name
+	util.PutUInt32(w, uint32(i.Serial))        // Serial
+	util.PutPoint(w, i.Location)               // Location
+	util.PutByte(w, byte(i.Facing))            // Facing
+	util.PutUInt16(w, uint16(i.Hue))           // Hue
+	util.PutBool(w, i.Flipped)                 // Flipped flag
+	util.PutUInt16(w, uint16(i.Amount))        // Stack amount
+	util.PutByte(w, byte(i.LootType))          // Loot type
+	util.PutUInt16(w, uint16(i.MaxDurability)) // Maximum durability
+	util.PutUInt16(w, uint16(i.Durability))    // Current durability
+	util.PutUInt32(w, uint32(i.IArg))          // Generic int argument
+	if i.MArg != nil {                         // Generic mobile argument
 		util.PutBool(w, true)
 		i.MArg.Write(w)
 	} else {
@@ -219,6 +227,8 @@ func NewItemFromReader(r io.Reader) *Item {
 	i.Flipped = util.GetBool(r)               // Flipped flag
 	i.Amount = int(util.GetUInt16(r))         // Stack amount
 	i.LootType = uo.LootType(util.GetByte(r)) // Loot type
+	i.MaxDurability = int(util.GetUInt16(r))  // Maximum durability
+	i.Durability = int(util.GetUInt16(r))     // Current durability
 	i.IArg = int(util.GetUInt32(r))           // Generic int argument
 	if util.GetBool(r) {                      // Generic mobile argument
 		i.MArg = NewMobileFromReader(r)
@@ -286,6 +296,19 @@ func (i *Item) OPLPackets() (*serverpacket.OPLPacket, *serverpacket.OPLInfo) {
 				i.ItemCount, i.MaxItems,
 				int(i.ContainedWeight), int(i.MaxWeight)),
 				false)
+		}
+		if i.MaxDurability > 0 {
+			if i.HasFlags(ItemFlagsUses) {
+				i.opl.AppendColor(colornames.Aqua, fmt.Sprintf(
+					"Uses: %d/%d",
+					i.Durability, i.MaxDurability,
+				), false)
+			} else {
+				i.opl.AppendColor(colornames.Gray, fmt.Sprintf(
+					"Durability: %d/%d",
+					i.Durability, i.MaxDurability,
+				), false)
+			}
 		}
 		i.opl.Compile()
 		i.oplInfo = &serverpacket.OPLInfo{
@@ -517,13 +540,27 @@ func (i *Item) InvalidateOPL() {
 	World.UpdateItemOPLInfo(i)
 }
 
-// Consume removes items of the given template name from the container and all
-// sub-containers until the amount specified has been consumed. If there are not
-// enough items to satisfy the amount the function returns false and no items
-// are modified or removed.
-func (i *Item) Consume(tn string, n int) bool {
-	// TODO Stub
-	return false
+// Remove cleanly removes this item from its parent and the world datastores.
+func (i *Item) Remove() {
+	if i.Container != nil {
+		i.Container.RemoveItem(i)
+	} else {
+		World.Map().RemoveItem(i)
+	}
+	World.RemoveItem(i)
+}
+
+// Consume removes n from the amount and removes the item if none are left.
+// Returns true on success.
+func (i *Item) Consume(n int) bool {
+	if n > i.Amount {
+		return false
+	}
+	i.Amount -= n
+	if i.Amount == 0 {
+		i.Remove()
+	}
+	return true
 }
 
 // ConsumeGold removes gold from the container and all sub-containers until the
@@ -640,6 +677,15 @@ func (i *Item) SetBaseGraphicForBody(body uo.Body) {
 	case 0xE4:
 		i.Graphic = 0x3EA1
 	}
+}
+
+// ConsumeUse consumes a use off of this item returning true if successful.
+func (i *Item) ConsumeUse() bool {
+	if i.Durability < 1 {
+		return false
+	}
+	i.Durability--
+	return true
 }
 
 func (i *Item) StandingHeight() int {

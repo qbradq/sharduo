@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/uo/file"
 	"github.com/qbradq/sharduo/lib/util"
@@ -88,11 +89,19 @@ func (m *Map) NetStatesInRange(cp uo.Point, extra int) []*Mobile {
 
 // Write writes out top-level map information.
 func (m *Map) Write(wg *sync.WaitGroup, w io.Writer) {
+	util.PutUInt32(w, 0)         // Version
+	for _, c := range m.chunks { // Ore map
+		util.PutUInt32(w, uint32(c.Ore))
+	}
 	defer wg.Done()
 }
 
 // Read reads in top-level map information.
 func (m *Map) Read(r io.Reader) {
+	_ = util.GetUInt32(r)        // Version
+	for _, c := range m.chunks { // Ore map
+		c.Ore = int(util.GetUInt32(r))
+	}
 }
 
 // WriteObjects writes out all objects that are directly on the map split into
@@ -100,6 +109,7 @@ func (m *Map) Read(r io.Reader) {
 func (m *Map) WriteObjects(wg *sync.WaitGroup, w io.Writer, pool, pools int) {
 	defer wg.Done()
 	l := len(m.chunks)
+	util.PutUInt32(w, 0) // Version
 	util.PutUInt32(w, uint32(l/pools))
 	for i := pool; i < l; i += pools {
 		c := m.chunks[i]
@@ -127,6 +137,7 @@ func (m *Map) WriteObjects(wg *sync.WaitGroup, w io.Writer, pool, pools int) {
 // ReadObjects reads in all objects that are directly on the map from the
 // reader.
 func (m *Map) ReadObjects(r io.Reader, ds *Datastore) {
+	_ = util.GetUInt32(r)       // Version
 	n := int(util.GetUInt32(r)) // Number of chunks in the file
 	for i := 0; i < n; i++ {
 		for util.GetBool(r) {
@@ -1173,4 +1184,155 @@ func (m *Map) ItemBaseQuery(tn string, b uo.Bounds) []*Item {
 		}
 	}
 	return ibqRetBuf
+}
+
+// PlayEffect plays a graphic effect with the given parameters for all clients
+// in range.
+func (m *Map) PlayEffect(t uo.GFXType, src, trg any, gfx uo.Graphic, speed, duration uint8, fixed, explodes bool, hue uo.Hue, bm uo.GFXBlendMode) {
+	var sl uo.Point
+	ss := uo.SerialMobileNil
+	switch o := src.(type) {
+	case *Mobile:
+		ss = o.Serial
+		sl = o.Location
+	case *Item:
+		ss = o.Serial
+		sl = o.Location
+	}
+	var tl uo.Point
+	ts := uo.SerialMobileNil
+	switch o := trg.(type) {
+	case *Mobile:
+		ts = o.Serial
+		tl = o.Location
+	case *Item:
+		ts = o.Serial
+		tl = o.Location
+	}
+	p := &serverpacket.GraphicalEffect{
+		GFXType:        t,
+		Source:         ss,
+		Target:         ts,
+		Graphic:        gfx,
+		SourceLocation: sl,
+		TargetLocation: tl,
+		Speed:          speed,
+		Duration:       duration,
+		Fixed:          fixed,
+		Explodes:       explodes,
+		Hue:            hue,
+		GFXBlendMode:   bm,
+	}
+	for _, mob := range m.NetStatesInRange(tl, 0) {
+		mob.NetState.Send(p)
+	}
+}
+
+// SendCliloc sends a cliloc message to all clients in range of the location.
+func (m *Map) SendCliloc(from any, c uo.Cliloc, args ...string) {
+	var l uo.Point
+	var s uo.Serial
+	var b uo.Body
+	var n string
+	switch o := from.(type) {
+	case *Mobile:
+		l = o.Location
+		s = o.Serial
+		b = o.Body
+		n = o.DisplayName()
+	case *Item:
+		l = o.Location
+		s = o.Serial
+		b = uo.Body(o.CurrentGraphic())
+		n = o.DisplayName()
+	}
+	p := &serverpacket.ClilocMessage{
+		Speaker:   s,
+		Body:      b,
+		Hue:       1157,
+		Name:      n,
+		Cliloc:    c,
+		Arguments: args,
+	}
+	for _, mob := range m.NetStatesInRange(l, 0) {
+		mob.NetState.Send(p)
+	}
+}
+
+// HasOre returns true if the chunk at the given location has ore remaining.
+func (m *Map) HasOre(l uo.Point) bool {
+	c := m.chunks[(l.Y/uo.ChunkHeight)*uo.MapChunksWidth+(l.X/uo.ChunkWidth)]
+	return c.Ore != 0
+}
+
+// PlayAnimation plays an animation for a mobile for all clients in range.
+func (m *Map) PlayAnimation(who *Mobile, at uo.AnimationType, aa uo.AnimationAction) {
+	p := &serverpacket.Animation{
+		Serial:          who.Serial,
+		AnimationType:   at,
+		AnimationAction: aa,
+	}
+	l := who.Location
+	for _, mob := range m.NetStatesInRange(l, 0) {
+		if mob.Location.XYDistance(l) <= mob.ViewRange {
+			mob.NetState.Send(p)
+		}
+	}
+}
+
+// ConsumeOre attempts to consume the specified amount of ore from the chunk at
+// the specified location and returns the number of ore piles consumed.
+func (m *Map) ConsumeOre(l uo.Point, n int) int {
+	if n < 1 {
+		return 0
+	}
+	c := m.chunks[(l.Y/uo.ChunkHeight)*uo.MapChunksWidth+(l.X/uo.ChunkWidth)]
+	if n > c.Ore {
+		n = c.Ore
+		c.Ore = 0
+	} else {
+		c.Ore -= n
+	}
+	return n
+}
+
+// Query returns true if there is a static or dynamic item within range of the
+// given location who's BaseGraphic property is contained within the given set.
+func (m *Map) Query(center uo.Point, queryRange int, set map[uo.Graphic]struct{}) bool {
+	b := uo.Bounds{
+		X: center.X - queryRange,
+		Y: center.Y - queryRange,
+		W: queryRange*2 + 1,
+		H: queryRange*2 + 1,
+	}
+	tl := uo.Point{
+		X: b.X,
+		Y: b.Y,
+	}
+	scx := b.X / uo.ChunkWidth
+	scy := b.Y / uo.ChunkHeight
+	ecx := b.X + b.W - 1/uo.ChunkWidth
+	ecy := b.Y + b.H - 1/uo.ChunkHeight
+	for cy := scy; cy <= ecy; cy++ {
+		for cx := scx; cx <= ecx; cx++ {
+			l := uo.Point{
+				X: cx * uo.ChunkWidth,
+				Y: cy * uo.ChunkHeight,
+			}.WrapAndBound(tl)
+			ccx := int(l.X) / uo.ChunkWidth
+			ccy := int(l.Y) / uo.ChunkHeight
+			c := m.chunks[ccy*uo.MapChunksWidth+ccx]
+			for _, s := range c.Statics {
+				if _, ok := set[s.BaseGraphic()]; ok && center.XYDistance(s.Location) <= queryRange {
+					return true
+				}
+			}
+			for _, i := range c.Items {
+				if _, ok := set[i.Graphic]; ok && center.XYDistance(i.Location) <= queryRange {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }

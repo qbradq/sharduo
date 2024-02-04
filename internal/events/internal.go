@@ -6,37 +6,28 @@ import (
 )
 
 func init() {
-	reg("PlayerLogout", PlayerLogout)
-	reg("WhisperTime", WhisperTime)
+	reg("PlayerLogout", playerLogout)
+	reg("WhisperTime", whisperTime)
 }
 
-// WhisperTime whispers the current Sossarian time to the source.
-func WhisperTime(receiver, source game.Object, v any) bool {
-	if source == nil {
+// whisperTime whispers the current Sossarian time to the source.
+func whisperTime(receiver, source, v any) bool {
+	sm := source.(game.Mobile)
+	if sm.NetState == nil {
 		return false
 	}
-	m, ok := source.(game.Mobile)
-	if !ok {
-		return false
-	}
-	if m.NetState() == nil {
-		return false
-	}
-	m.NetState().Speech(source, "%d", game.GetWorld().Time())
+	sm.NetState.Speech(source, "%d", game.World.Time())
 	return true
 }
 
-// PlayerLogout logs out the player mobile receiver.
-func PlayerLogout(receiver, source game.Object, v any) bool {
-	if receiver == nil {
+// playerLogout logs out the player mobile receiver.
+func playerLogout(receiver, source, v any) bool {
+	rm := receiver.(game.Mobile)
+	if rm.NetState != nil {
 		return false
 	}
-	rm, ok := receiver.(game.Mobile)
-	if !ok || rm.NetState() != nil {
-		return false
-	}
-	game.GetWorld().Map().PlayEffect(uo.GFXTypeFixed, receiver, receiver, 0x3728,
+	game.World.Map().PlayEffect(uo.GFXTypeFixed, receiver, receiver, 0x3728,
 		15, 10, true, false, uo.HueDefault, uo.GFXBlendModeNormal)
-	game.GetWorld().Map().StoreObject(receiver)
+	game.World.Map().StoreObject(receiver)
 	return true
 }

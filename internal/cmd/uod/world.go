@@ -580,9 +580,11 @@ func (w *World) Accounts() []*game.Account {
 // RemoveItem removes the item from the world datastores.
 func (w *World) RemoveItem(i *game.Item) {
 	w.ods.RemoveItem(i)
+	i.Removed = true
 }
 
 // RemoveMobile removes the item from the world datastores.
-func (w *World) RemoveMobile(i *game.Item) {
-	w.ods.RemoveItem(i)
+func (w *World) RemoveMobile(m *game.Mobile) {
+	w.ods.RemoveMobile(m)
+	m.Removed = true
 }

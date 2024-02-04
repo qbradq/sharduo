@@ -41,6 +41,20 @@ func MapLocation(i *Item) uo.Point {
 	}
 }
 
+// Owner returns the mobile that is either wearing this item or contained within
+// its backpack or bank box. May return nil.
+func Owner(i *Item) *Mobile {
+	for {
+		if i.Wearer != nil {
+			return i.Wearer
+		}
+		if i.Container == nil {
+			return nil
+		}
+		i = i.Container
+	}
+}
+
 // UOError represents a game rules violation and contains information on how
 // to alert the player.
 type UOError struct {

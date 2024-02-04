@@ -51,6 +51,8 @@ type NetState interface {
 	WornItem(*Item, *Mobile)
 	// GUMP sends a generic GUMP to the client.
 	GUMP(any, uo.Serial, uo.Serial)
+	// UpdateSkill implements the game.NetState interface.
+	UpdateSkill(uo.Skill, uo.SkillLock, int)
 }
 
 // ContainerObserver is implemented by anything that can be notified of changes
@@ -137,5 +139,5 @@ type WorldInterface interface {
 	// RemoveItem removes the item from the world datastores.
 	RemoveItem(*Item)
 	// RemoveMobile removes the item from the world datastores.
-	RemoveMobile(*Item)
+	RemoveMobile(*Mobile)
 }

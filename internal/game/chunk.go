@@ -12,6 +12,7 @@ type chunk struct {
 	Mobiles []*Mobile                               // List of all mobiles within the chunk
 	Tiles   [uo.ChunkWidth * uo.ChunkHeight]uo.Tile // Tile matrix
 	Statics []uo.Static                             // All statics within the chunk
+	Ore     int                                     // Amount of ore left in the chunk
 }
 
 // AddMobile adds the mobile to the chunk.

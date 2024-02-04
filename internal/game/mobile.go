@@ -104,6 +104,10 @@ func constructMobile(which string) *Mobile {
 	for _, en := range m.PostCreationEvents {
 		m.ExecuteEvent(en, nil, nil)
 	}
+	// Attach new player data struct if needed
+	if m.Player {
+		m.PlayerData = NewPlayerData()
+	}
 	return m
 }
 
@@ -126,6 +130,7 @@ type Mobile struct {
 	// Persistent values
 	Female           bool               // If true the mobile is female
 	Player           bool               // If true this is a player's character
+	PlayerData       *PlayerData        // Player specific data, only valid if Player is true
 	BaseStrength     int                // Base strength value
 	BaseDexterity    int                // Base dexterity value
 	BaseIntelligence int                // Base intelligence value
@@ -190,6 +195,9 @@ func (m *Mobile) Write(w io.Writer) {
 	} else {
 		util.PutBool(w, false)
 	}
+	if m.Player { // Player data
+		m.PlayerData.Write(w)
+	}
 }
 
 // NewMobileFromReader reads the persistent data of the mobile from r and
@@ -221,6 +229,9 @@ func NewMobileFromReader(r io.Reader) *Mobile {
 	}
 	if util.GetBool(r) { // Item in cursor
 		m.DropToFeet(NewItemFromReader(r))
+	}
+	if m.Player { // Player data
+		m.PlayerData = NewPlayerDataFromReader(r)
 	}
 	// Establish sane defaults for variables that need non-zero default values
 	m.ViewRange = uo.MaxViewRange
@@ -451,7 +462,7 @@ func (m *Mobile) Dismount() {
 	mi.MArg.Location = m.Location
 	mi.MArg.Facing = m.Facing
 	World.Map().AddMobile(mi.MArg, true)
-	World.RemoveMobile(mi)
+	World.RemoveItem(mi)
 }
 
 // Mount mounts the given mobile on m.
@@ -508,4 +519,131 @@ func (m *Mobile) InBank(i *Item) bool {
 		}
 		i = i.Container
 	}
+}
+
+// Stable adds the mobile to this player's stables. Calling this on a non-player
+// mobile is a no-op.
+func (m *Mobile) Stable(om *Mobile) *UOError {
+	if !m.Player {
+		return &UOError{
+			Message: "Mobile.Stable() called for non-player mobile",
+		}
+	}
+	if len(m.PlayerData.StabledPets) >= MaxStabledPets {
+		return &UOError{
+			Cliloc: 1042565, // You have too many pets in the stables!
+		}
+	}
+	m.PlayerData.StabledPets = append(m.PlayerData.StabledPets, om)
+	return nil
+}
+
+// Equipped returns true if the given item is currently being worn by this
+// mobile.
+func (m *Mobile) Equipped(i *Item) bool {
+	if !i.Layer.Valid() {
+		return false
+	}
+	return m.Equipment[i.Layer] == i
+}
+
+// SkillCheck implements the Mobile interface.
+func (m *Mobile) SkillCheck(which uo.Skill, min, max int) bool {
+	if which > uo.SkillLast {
+		return false
+	}
+	// Get the skill value and look for corner cases
+	v := m.Skills[which]
+	if v < min {
+		// No chance
+		return false
+	}
+	if v >= max {
+		// No challenge
+		return true
+	}
+	// Calculate success
+	spread := max - min
+	chance := ((v - min) * 1000) / (max - min)
+	success := false
+	if util.Random(0, spread) < chance {
+		success = true
+	}
+	// Calculate skill gain
+	tryGainSkill := v < 1000
+	// TODO Check skill lock
+	if tryGainSkill {
+		gc := 1000
+		gc += 1000 - v
+		gc /= 2
+		if success {
+			gc *= 1500
+			gc /= 1000
+		}
+		gc /= 2
+		if gc < 10 {
+			gc = 10
+		}
+		if gc > 1000 {
+			gc = 1000
+		}
+		// NPCs get double the skill gain chance
+		if !m.Player {
+			gc *= 2
+		}
+		toGain := 0
+		if v <= 100 {
+			// Always gain when below 10.0 skill, and make gains faster
+			toGain = util.Random(0, 4) + 1
+		} else if util.Random(0, 1000) < gc {
+			// Just a chance of gain
+			toGain = 1
+		}
+		if toGain > 0 {
+			// Execute skill gain
+			m.Skills[which] = v + toGain
+			if m.NetState != nil {
+				m.NetState.UpdateSkill(which, uo.SkillLockUp, v+toGain)
+			}
+		}
+	}
+	// Determine if we can gain a stat
+	if util.Random(0, 100) >= 5 {
+		// 5% chance of stat gain on every skill use
+		return success
+	}
+	// TODO Consider total stat cap
+	info := uo.SkillInfo[which]
+	primaryStat := info.PrimaryStat
+	secondaryStat := info.SecondaryStat
+	statToConsider := primaryStat
+	if util.Random(0, 3) == 0 {
+		statToConsider = secondaryStat
+	}
+	// TODO Consider stat locks
+	sv := 0
+	switch statToConsider {
+	case uo.StatStrength:
+		sv = m.BaseStrength
+	case uo.StatDexterity:
+		sv = m.BaseDexterity
+	case uo.StatIntelligence:
+		sv = m.BaseIntelligence
+	}
+	if sv >= 100 {
+		// Can't gain any more
+		return success
+	}
+	// Apply stat gain
+	switch statToConsider {
+	case uo.StatStrength:
+		m.BaseStrength++
+	case uo.StatDexterity:
+		m.BaseDexterity++
+	case uo.StatIntelligence:
+		m.BaseIntelligence++
+	}
+	// If we've gotten this far we need to send a status update for the new stat
+	World.UpdateMobile(m)
+	return success
 }
