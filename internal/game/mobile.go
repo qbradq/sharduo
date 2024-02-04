@@ -443,3 +443,69 @@ func (m *Mobile) DropToBankBox(i *Item, force bool) bool {
 func (m *Mobile) CanBeCommandedBy(s *Mobile) bool {
 	return m.ControlMaster == s
 }
+
+// Dismount implements the Mobile interface.
+func (m *Mobile) Dismount() {
+	mi := m.Equipment[uo.LayerMount]
+	m.Equipment[uo.LayerMount] = nil
+	mi.MArg.Location = m.Location
+	mi.MArg.Facing = m.Facing
+	World.Map().AddMobile(mi.MArg, true)
+	World.RemoveMobile(mi)
+}
+
+// Mount mounts the given mobile on m.
+func (m *Mobile) Mount(mount *Mobile) {
+	if mount == nil || m.Equipment[uo.LayerMount] != nil {
+		return
+	}
+	mi := NewItem("MountItem")
+	mi.SetBaseGraphicForBody(mount.Body)
+	mi.Hue = mount.Hue
+	mi.MArg = mount
+	World.Map().RemoveMobile(mount)
+	m.Equipment[uo.LayerMount] = mi
+	World.UpdateMobile(m)
+}
+
+// Equip attempts to equip an item, returns true on success.
+func (m *Mobile) Equip(i *Item) bool {
+	if !i.Layer.Valid() {
+		return false
+	}
+	if m.Equipment[i.Layer] != nil {
+		return false
+	}
+	m.Equipment[i.Layer] = i
+	m.Weight += i.Weight + i.ContainedWeight
+	for _, om := range World.Map().NetStatesInRange(m.Location, 0) {
+		om.NetState.WornItem(i, m)
+	}
+	return true
+}
+
+// UnEquip attempts to remove the item, returns true on success.
+func (m *Mobile) UnEquip(i *Item) bool {
+	if m.Equipment[i.Layer] != i {
+		return false
+	}
+	m.Equipment[i.Layer] = nil
+	for _, om := range World.Map().NetStatesInRange(m.Location, 0) {
+		om.NetState.RemoveItem(i)
+	}
+	return true
+}
+
+// InBank returns true if the item is somewhere within the mobile's bank box.
+func (m *Mobile) InBank(i *Item) bool {
+	bb := m.Equipment[uo.LayerBankBox]
+	for {
+		if i.Container == nil {
+			return false
+		}
+		if i.Container == bb {
+			return true
+		}
+		i = i.Container
+	}
+}

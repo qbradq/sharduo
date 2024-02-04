@@ -566,7 +566,7 @@ func (n *NetState) DrawPlayer() {
 	})
 }
 
-// WornItem sends the WornItem packet to the given mobile
+// WornItem sends the WornItem packet to the given mobile.
 func (n *NetState) WornItem(i *game.Item, wearer *game.Mobile) {
 	n.Send(&serverpacket.WornItem{
 		Item:    i.Serial,

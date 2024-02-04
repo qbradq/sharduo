@@ -6,7 +6,7 @@ import (
 )
 
 func init() {
-	reg("UseDoor", UseDoor)
+	reg("UseDoor", useDoor)
 }
 
 var doorOpenSounds = map[string]uo.Sound{
@@ -84,7 +84,7 @@ func doUseDoor(ri *game.Item, sm *game.Mobile, force bool) bool {
 	return true
 }
 
-func UseDoor(receiver, source, v any) bool {
+func useDoor(receiver, source, v any) bool {
 	force, ok := v.(bool)
 	if !ok {
 		force = false

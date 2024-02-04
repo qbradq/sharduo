@@ -45,6 +45,12 @@ type NetState interface {
 	Sound(uo.Sound, uo.Point)
 	// TargetSendCursor sends a targeting request to the client.
 	TargetSendCursor(uo.TargetType, func(*clientpacket.TargetResponse))
+	// OpenPaperDoll opens a paper doll GUMP for mobile m on the client.
+	OpenPaperDoll(m *Mobile)
+	// WornItem sends the WornItem packet to the given mobile.
+	WornItem(*Item, *Mobile)
+	// GUMP sends a generic GUMP to the client.
+	GUMP(any, uo.Serial, uo.Serial)
 }
 
 // ContainerObserver is implemented by anything that can be notified of changes

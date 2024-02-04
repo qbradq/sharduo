@@ -170,28 +170,35 @@ type Item struct {
 	Contents []*Item     // Contents of the container
 	LootType uo.LootType // Persistent loot type so we can bless arbitrary items
 	IArg     int         // Generic int argument
+	MArg     *Mobile     // Generic mobile argument
 	// Transient values
-	Wearer          *Mobile             // Pointer to the mobile currently wearing this item if any, note this only indicates if the item is directly equipped to the mobile, not within equipped containers
-	Container       *Item               // Pointer to the parent container if any
-	Observers       []ContainerObserver // All observers currently observing this container
-	ItemCount       int                 // Cache of the total number of contained items including all sub-containers
-	Gold            int                 // Cache of the total amount of gold coins contained in this and all sub containers
-	ContainedWeight float64             // Cache of the total weight held in this and all sub containers
-	decayAt         uo.Time             // When this item should decay on the map
+	Wearer          *Mobile                        // Pointer to the mobile currently wearing this item if any, note this only indicates if the item is directly equipped to the mobile, not within equipped containers
+	Container       *Item                          // Pointer to the parent container if any
+	Observers       map[ContainerObserver]struct{} // All observers currently observing this container
+	ItemCount       int                            // Cache of the total number of contained items including all sub-containers
+	Gold            int                            // Cache of the total amount of gold coins contained in this and all sub containers
+	ContainedWeight float64                        // Cache of the total weight held in this and all sub containers
+	decayAt         uo.Time                        // When this item should decay on the map
 }
 
 // Write writes the persistent data of the item to w.
 func (i *Item) Write(w io.Writer) {
-	util.PutUInt32(w, 0)                       // Version
-	util.PutString(w, i.TemplateName)          // Template name
-	util.PutUInt32(w, uint32(i.Serial))        // Serial
-	util.PutPoint(w, i.Location)               // Location
-	util.PutByte(w, byte(i.Facing))            // Facing
-	util.PutUInt16(w, uint16(i.Hue))           // Hue
-	util.PutBool(w, i.Flipped)                 // Flipped flag
-	util.PutUInt16(w, uint16(i.Amount))        // Stack amount
-	util.PutByte(w, byte(i.LootType))          // Loot type
-	util.PutUInt32(w, uint32(i.IArg))          // Generic int argument
+	util.PutUInt32(w, 0)                // Version
+	util.PutString(w, i.TemplateName)   // Template name
+	util.PutUInt32(w, uint32(i.Serial)) // Serial
+	util.PutPoint(w, i.Location)        // Location
+	util.PutByte(w, byte(i.Facing))     // Facing
+	util.PutUInt16(w, uint16(i.Hue))    // Hue
+	util.PutBool(w, i.Flipped)          // Flipped flag
+	util.PutUInt16(w, uint16(i.Amount)) // Stack amount
+	util.PutByte(w, byte(i.LootType))   // Loot type
+	util.PutUInt32(w, uint32(i.IArg))   // Generic int argument
+	if i.MArg != nil {                  // Generic mobile argument
+		util.PutBool(w, true)
+		i.MArg.Write(w)
+	} else {
+		util.PutBool(w, false)
+	}
 	util.PutUInt32(w, uint32(len(i.Contents))) // Contents
 	for _, item := range i.Contents {
 		item.Write(w)
@@ -213,8 +220,11 @@ func NewItemFromReader(r io.Reader) *Item {
 	i.Amount = int(util.GetUInt16(r))         // Stack amount
 	i.LootType = uo.LootType(util.GetByte(r)) // Loot type
 	i.IArg = int(util.GetUInt32(r))           // Generic int argument
-	n := int(util.GetUInt32(r))               // Contents item count
-	i.Contents = make([]*Item, n)             // Contents
+	if util.GetBool(r) {                      // Generic mobile argument
+		i.MArg = NewMobileFromReader(r)
+	}
+	n := int(util.GetUInt32(r))   // Contents item count
+	i.Contents = make([]*Item, n) // Contents
 	for idx := 0; idx < n; idx++ {
 		i.Contents[idx] = NewItemFromReader(r)
 	}
@@ -243,27 +253,18 @@ func (i *Item) RecalculateStats() {
 
 // AddObserver adds a ContainerObserver to the list of current observers.
 func (i *Item) AddObserver(o ContainerObserver) {
-	for _, co := range i.Observers {
+	for co := range i.Observers {
 		if co == o {
 			return
 		}
 	}
-	i.Observers = append(i.Observers, o)
+	i.Observers[o] = struct{}{}
 }
 
 // RemoveObserver removes the ContainerObserver from the list of current
 // observers.
 func (i *Item) RemoveObserver(o ContainerObserver) {
-	idx := -1
-	for ii, co := range i.Observers {
-		if co == o {
-			idx = ii
-			break
-		}
-	}
-	if idx >= 0 {
-		i.Observers = append(i.Observers[:idx], i.Observers[idx+1:]...)
-	}
+	delete(i.Observers, o)
 }
 
 // HasFlags returns true if all of the given flags is set on this item.
@@ -313,7 +314,7 @@ func (i *Item) RootContainer() *Item {
 
 // UpdateItem updates the item for all observers.
 func (i *Item) UpdateItem(item *Item) {
-	for _, o := range i.Observers {
+	for o := range i.Observers {
 		o.ContainerItemAdded(i, item)
 	}
 }
@@ -321,7 +322,7 @@ func (i *Item) UpdateItem(item *Item) {
 // UpdateItemOPL updates the OPL information for the given item for every
 // observer currently observing this container.
 func (i *Item) UpdateItemOPL(item *Item) {
-	for _, o := range i.Observers {
+	for o := range i.Observers {
 		o.ContainerItemOPLChanged(i, item)
 	}
 }
@@ -451,7 +452,7 @@ func (i *Item) AddItem(item *Item, force bool) error {
 		i.AdjustGold(item.Amount)
 	}
 	// Let all observers know about the new item
-	for _, o := range i.Observers {
+	for o := range i.Observers {
 		o.ContainerItemAdded(i, item)
 	}
 	return nil
@@ -605,6 +606,40 @@ func (i *Item) CurrentGraphic() uo.Graphic {
 		return i.FlippedGraphic
 	}
 	return i.Graphic
+}
+
+// Open implements the object interface.
+func (i *Item) Open(m *Mobile) {
+	if m.NetState == nil {
+		return
+	}
+	observer, ok := m.NetState.(ContainerObserver)
+	if !ok {
+		return
+	}
+	// TODO access calculations
+	if i.Observers == nil {
+		i.Observers = make(map[ContainerObserver]struct{})
+	}
+	i.Observers[observer] = struct{}{}
+	observer.ContainerOpen(i)
+}
+
+// SetBaseGraphicForBody sets the base graphic of the item correctly for the
+// given mount body.
+func (i *Item) SetBaseGraphicForBody(body uo.Body) {
+	switch body {
+	case 0xC8:
+		i.Graphic = 0x3E9F
+	case 0xCC:
+		i.Graphic = 0x3EA2
+	case 0xDC:
+		i.Graphic = 0x3EA6
+	case 0xE2:
+		i.Graphic = 0x3EA0
+	case 0xE4:
+		i.Graphic = 0x3EA1
+	}
 }
 
 func (i *Item) StandingHeight() int {

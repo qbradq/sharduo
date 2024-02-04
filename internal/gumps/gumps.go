@@ -67,7 +67,7 @@ func New(name string) GUMP {
 }
 
 // Edit opens the editing GUMP for the object if any
-func Edit(m game.Mobile, o game.Object) {
+func Edit(m *game.Mobile, o any) {
 	if m == nil || o == nil || m.NetState() == nil {
 		return
 	}

@@ -9,16 +9,16 @@ import (
 // Pet commands
 
 func init() {
-	reg("CommandDrop", CommandDrop)
-	reg("CommandFollow", CommandFollow)
-	reg("CommandFollowMe", CommandFollowMe)
-	reg("CommandRelease", CommandRelease)
-	reg("CommandStay", CommandStay)
+	reg("CommandDrop", commandDrop)
+	reg("CommandFollow", commandFollow)
+	reg("CommandFollowMe", commandFollowMe)
+	reg("CommandRelease", commandRelease)
+	reg("CommandStay", commandStay)
 }
 
-// CommandFollow allows commanding a pet to follow another mobile with a
+// commandFollow allows commanding a pet to follow another mobile with a
 // targeting cursor.
-func CommandFollow(receiver, source, v any) bool {
+func commandFollow(receiver, source, v any) bool {
 	rm := receiver.(*game.Mobile)
 	sm := source.(*game.Mobile)
 	if sm.NetState == nil {
@@ -38,9 +38,9 @@ func CommandFollow(receiver, source, v any) bool {
 	return true
 }
 
-// CommandFollowMe commands a pet to follow the source mobile if that mobile can
+// commandFollowMe commands a pet to follow the source mobile if that mobile can
 // command the receiving mobile.
-func CommandFollowMe(receiver, source, v any) bool {
+func commandFollowMe(receiver, source, v any) bool {
 	rm := receiver.(*game.Mobile)
 	sm := source.(*game.Mobile)
 	if !rm.CanBeCommandedBy(sm) {
@@ -51,9 +51,9 @@ func CommandFollowMe(receiver, source, v any) bool {
 	return true
 }
 
-// CommandStay commands a pet to stay in its current location
+// commandStay commands a pet to stay in its current location
 // command the receiving mobile.
-func CommandStay(receiver, source, v any) bool {
+func commandStay(receiver, source, v any) bool {
 	rm := receiver.(*game.Mobile)
 	sm := source.(*game.Mobile)
 	if !rm.CanBeCommandedBy(sm) {
@@ -64,8 +64,8 @@ func CommandStay(receiver, source, v any) bool {
 	return true
 }
 
-// CommandDrop commands a pet to drop all inventory contents at their feet.
-func CommandDrop(receiver, source, v any) bool {
+// commandDrop commands a pet to drop all inventory contents at their feet.
+func commandDrop(receiver, source, v any) bool {
 	rm := receiver.(*game.Mobile)
 	sm := source.(*game.Mobile)
 	if !rm.CanBeCommandedBy(sm) {
@@ -84,8 +84,8 @@ func CommandDrop(receiver, source, v any) bool {
 	return true
 }
 
-// CommandRelease commands a pet forget its control master.
-func CommandRelease(receiver, source, v any) bool {
+// commandRelease commands a pet forget its control master.
+func commandRelease(receiver, source, v any) bool {
 	rm := receiver.(*game.Mobile)
 	sm := source.(*game.Mobile)
 	if !rm.CanBeCommandedBy(sm) {

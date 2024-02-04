@@ -7,8 +7,8 @@ import (
 	"github.com/qbradq/sharduo/lib/uo"
 )
 
-// BankBalance says the source's account balance.
-func BankBalance(receiver, source, v any) bool {
+// bankBalance says the source's account balance.
+func bankBalance(receiver, source, v any) bool {
 	sm := source.(*game.Mobile)
 	if sm.NetState == nil {
 		return false
@@ -21,8 +21,8 @@ func BankBalance(receiver, source, v any) bool {
 	return true
 }
 
-// BankCheck creates a bank check for the given amount.
-func BankCheck(receiver, source, v any) bool {
+// bankCheck creates a bank check for the given amount.
+func bankCheck(receiver, source, v any) bool {
 	n, err := strconv.ParseInt(v.(string), 0, 32)
 	if err != nil || n < 1000 {
 		return false
@@ -47,8 +47,8 @@ func BankCheck(receiver, source, v any) bool {
 	return true
 }
 
-// BankDeposit deposits the amount of gold into the bank.
-func BankDeposit(receiver, source, v any) bool {
+// bankDeposit deposits the amount of gold into the bank.
+func bankDeposit(receiver, source, v any) bool {
 	n, err := strconv.ParseInt(v.(string), 0, 32)
 	if err != nil || n < 1 {
 		return false
@@ -71,8 +71,8 @@ func BankDeposit(receiver, source, v any) bool {
 	return false
 }
 
-// BankWithdraw withdraws the amount of gold from the bank.
-func BankWithdraw(receiver, source, v any) bool {
+// bankWithdraw withdraws the amount of gold from the bank.
+func bankWithdraw(receiver, source, v any) bool {
 	n, err := strconv.ParseInt(v.(string), 0, 32)
 	if err != nil || n < 1 {
 		return false

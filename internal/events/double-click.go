@@ -9,284 +9,245 @@ import (
 	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/internal/gumps"
 	"github.com/qbradq/sharduo/lib/clientpacket"
-	"github.com/qbradq/sharduo/lib/template"
 	"github.com/qbradq/sharduo/lib/uo"
 )
 
 func init() {
-	reg("CashCheck", CashCheck)
-	reg("Edit", Edit)
-	reg("HarvestCrop", HarvestCrop)
-	reg("Mount", Mount)
-	reg("OpenBackpack", OpenBackpack)
-	reg("OpenBankBox", OpenBankBox)
-	reg("OpenContainer", OpenContainer)
-	reg("OpenPaperDoll", OpenPaperDoll)
-	reg("OpenTeleportGUMP", OpenTeleportGUMP)
-	reg("PlayerDoubleClick", PlayerDoubleClick)
-	reg("TransferHue", TransferHue)
+	reg("CashCheck", cashCheck)
+	reg("Edit", editObject)
+	reg("HarvestCrop", harvestCrop)
+	reg("Mount", mountMobile)
+	reg("OpenBackpack", openBackpack)
+	reg("OpenBankBox", openBankBox)
+	reg("OpenContainer", openContainer)
+	reg("OpenPaperDoll", openPaperDoll)
+	reg("OpenTeleportGUMP", openTeleportGUMP)
+	reg("PlayerDoubleClick", playerDoubleClick)
+	reg("TransferHue", transferHue)
 }
 
-// PlayerDoubleClick selects between the open paper doll and dismount actions
+// playerDoubleClick selects between the open paper doll and dismount actions
 // based on the identity of the source.
-func PlayerDoubleClick(receiver, source game.Object, v any) bool {
-	rm, ok := receiver.(game.Mobile)
-	if !ok {
-		return false
-	}
-	sm, ok := source.(game.Mobile)
-	if !ok {
-		return false
-	}
-	if receiver.Serial() != source.Serial() {
+func playerDoubleClick(receiver, source, v any) bool {
+	rm := receiver.(*game.Mobile)
+	sm := source.(*game.Mobile)
+	if rm.Serial != sm.Serial {
 		// Someone is trying to open our paper doll, just send it
-		if sm.NetState() != nil {
-			sm.NetState().OpenPaperDoll(rm)
+		if sm.NetState != nil {
+			sm.NetState.OpenPaperDoll(rm)
 		}
 		return true
 	}
-	if rm.IsMounted() {
+	if rm.Equipment[uo.LayerMount] != nil {
 		rm.Dismount()
 	} else {
-		sm.NetState().OpenPaperDoll(rm)
+		sm.NetState.OpenPaperDoll(rm)
 	}
 	return true
 }
 
-// OpenPaperDoll opens the paper doll of the receiver mobile to the source.
-func OpenPaperDoll(receiver, source game.Object, v any) bool {
-	rm, ok := receiver.(game.Mobile)
-	if !ok {
-		return false
-	}
-	sm, ok := source.(game.Mobile)
-	if !ok {
-		return false
-	}
-	if sm.NetState() != nil {
-		sm.NetState().OpenPaperDoll(rm)
+// openPaperDoll opens the paper doll of the receiver mobile to the source.
+func openPaperDoll(receiver, source, v any) bool {
+	rm := receiver.(*game.Mobile)
+	sm := source.(*game.Mobile)
+	if sm.NetState != nil {
+		sm.NetState.OpenPaperDoll(rm)
 	}
 	return true
 }
 
-// OpenContainer opens this container for the mobile. As an additional
+// openContainer opens this container for the mobile. As an additional
 // restriction it checks the Z distance against the uo.ContainerOpen* limits.
-func OpenContainer(receiver, source game.Object, v any) bool {
-	rc, ok := receiver.(game.Container)
-	if !ok {
+func openContainer(receiver, source, v any) bool {
+	ri := receiver.(*game.Item)
+	sm := source.(*game.Mobile)
+	if sm.NetState == nil {
 		return false
 	}
-	sm, ok := source.(game.Mobile)
-	if !ok || sm.NetState() == nil {
-		return false
-	}
-	rl := game.RootParent(receiver).Location()
-	sl := game.RootParent(source).Location()
+	rl := game.MapLocation(ri)
+	sl := sm.Location
 	dz := rl.Z - sl.Z
-	if game.RootParent(rc).Location().XYDistance(sm.Location()) > uo.MaxUseRange {
-		sm.NetState().Cliloc(nil, 500312) // You cannot reach that.
+	if rl.XYDistance(sl) > uo.MaxUseRange {
+		sm.NetState.Cliloc(nil, 500312) // You cannot reach that.
 		return false
 	}
 	if dz < uo.ContainerOpenLowerLimit || dz > uo.ContainerOpenUpperLimit {
-		sm.NetState().Cliloc(nil, 500312) // You cannot reach that.
+		sm.NetState.Cliloc(nil, 500312) // You cannot reach that.
 		return false
 	}
 	// Line of sight check
-	if !sm.HasLineOfSight(rc) {
-		sm.NetState().Cliloc(nil, 500950) // You cannot see that.
+	if !sm.HasLineOfSight(ri) {
+		sm.NetState.Cliloc(nil, 500950) // You cannot see that.
 		return false
 	}
-	rc.Open(sm)
+	ri.Open(sm)
 	return true
 }
 
-// Mount attempts to mount the source mobile onto the receiver.
-func Mount(receiver, source game.Object, v any) bool {
-	rm, ok := receiver.(game.Mobile)
-	if !ok {
-		return false
-	}
-	sm, ok := source.(game.Mobile)
-	if !ok {
-		return false
-	}
-	if rm.ControlMaster() == nil || rm.ControlMaster().Serial() != sm.Serial() {
+// mountMobile attempts to mount the source mobile onto the receiver.
+func mountMobile(receiver, source, v any) bool {
+	rm := receiver.(*game.Mobile)
+	sm := source.(*game.Mobile)
+	if rm.ControlMaster != sm {
 		return false
 	}
 	// Range check
-	if game.RootParent(sm).Location().XYDistance(rm.Location()) > uo.MaxUseRange {
-		sm.NetState().Cliloc(nil, 502803) // It's too far away.
+	if sm.Location.XYDistance(rm.Location) > uo.MaxUseRange {
+		sm.NetState.Cliloc(nil, 502803) // It's too far away.
 		return false
 	}
 	// Line of sight check
 	if !sm.HasLineOfSight(rm) {
-		sm.NetState().Cliloc(nil, 500950) // You cannot see that.
+		sm.NetState.Cliloc(nil, 500950) // You cannot see that.
 		return false
 	}
 	sm.Mount(rm)
 	return true
 }
 
-// OpenBackpack attempts to open the backpack of the receiver as in snooping or
+// openBackpack attempts to open the backpack of the receiver as in snooping or
 // pack animals.
-func OpenBackpack(receiver, source game.Object, v any) bool {
-	sm, ok := source.(game.Mobile)
-	if !ok {
+func openBackpack(receiver, source, v any) bool {
+	sm := source.(*game.Mobile)
+	if sm.NetState == nil {
 		return false
 	}
-	if sm.NetState() == nil {
-		return false
-	}
-	rm, ok := receiver.(game.Mobile)
-	if !ok {
-		return false
-	}
+	rm := receiver.(*game.Mobile)
 	// Control check
-	if rm.ControlMaster() != nil && rm.ControlMaster().Serial() != sm.Serial() {
+	if rm.ControlMaster != sm {
 		// TODO Snooping?
 		return false
 	}
 	// Range check
-	if game.RootParent(sm).Location().XYDistance(rm.Location()) > uo.MaxUseRange {
-		sm.NetState().Cliloc(nil, 502803) // It's too far away.
+	if sm.Location.XYDistance(rm.Location) > uo.MaxUseRange {
+		sm.NetState.Cliloc(nil, 502803) // It's too far away.
 		return false
 	}
 	// Line of sight check
 	if !sm.HasLineOfSight(rm) {
-		sm.NetState().Cliloc(nil, 500950) // You cannot see that.
+		sm.NetState.Cliloc(nil, 500950) // You cannot see that.
 		return false
 	}
-	bpo := rm.EquipmentInSlot(uo.LayerBackpack)
-	if bpo == nil {
-		// Something very wrong
-		return false
-	}
-	bp, ok := bpo.(game.Container)
-	if !ok {
-		// Something very wrong
-		return false
-	}
+	bp := rm.Equipment[uo.LayerBackpack]
 	bp.Open(sm)
 	return true
 }
 
-// OpenBankBox attempts to open the bank box of the source.
-func OpenBankBox(receiver, source game.Object, v any) bool {
-	m, ok := source.(game.Mobile)
-	if !ok {
+// openBankBox attempts to open the bank box of the source.
+func openBankBox(receiver, source, v any) bool {
+	sm := source.(*game.Mobile)
+	if sm.NetState == nil {
 		return false
 	}
-	if m.NetState() == nil {
-		return false
-	}
-	bbo := m.EquipmentInSlot(uo.LayerBankBox)
-	if bbo == nil {
-		return false
-	}
-	bb, ok := bbo.(game.Container)
-	if !ok {
-		return false
-	}
-	bb.Open(m)
-	game.GetWorld().Map().SendCliloc(receiver, uo.SpeechNormalRange, 1080021,
-		strconv.Itoa(bb.ItemCount()), strconv.Itoa(int(bb.Weight()))) // Bank container has ~1_VAL~ items, ~2_VAL~ stones
+	bb := sm.Equipment[uo.LayerBankBox]
+	bb.Open(sm)
+	sm.NetState.Cliloc(receiver, 1080021, strconv.Itoa(bb.ItemCount),
+		strconv.Itoa(int(bb.ContainedWeight))) // Bank container has ~1_VAL~ items, ~2_VAL~ stones
 	return true
 }
 
-func TransferHue(receiver, source game.Object, v any) bool {
+func transferHue(receiver, source, v any) bool {
 	if receiver == nil || source == nil {
 		return false
 	}
-	sm, ok := source.(game.Mobile)
-	if !ok || sm.NetState() == nil {
+	sm := source.(*game.Mobile)
+	if sm.NetState == nil {
 		return false
 	}
-	sm.NetState().Speech(source, "Target object to set hue %d", receiver.Hue())
-	sm.NetState().TargetSendCursor(uo.TargetTypeObject, func(tr *clientpacket.TargetResponse) {
-		o := game.GetWorld().Find(tr.TargetObject)
-		if o == nil {
+	var hue uo.Hue
+	switch o := receiver.(type) {
+	case *game.Mobile:
+		hue = o.Hue
+	case *game.Item:
+		hue = o.Hue
+	}
+	sm.NetState.Speech(source, "Target object to set hue %d", hue)
+	sm.NetState.TargetSendCursor(uo.TargetTypeObject, func(tr *clientpacket.TargetResponse) {
+		obj := game.World.Find(tr.TargetObject)
+		if obj == nil {
 			return
 		}
-		o.SetHue(receiver.Hue())
-		game.GetWorld().Update(o)
+		switch o := obj.(type) {
+		case *game.Mobile:
+			o.Hue = hue
+			game.World.UpdateMobile(o)
+		case *game.Item:
+			o.Hue = hue
+			game.World.UpdateItem(o)
+		}
 	})
 	return true
 }
 
-func Edit(receiver, source game.Object, v any) bool {
-	sm, ok := source.(game.Mobile)
-	if !ok || sm.NetState() == nil || !sm.NetState().Account().HasRole(game.RoleGameMaster) {
+func editObject(receiver, source, v any) bool {
+	sm := source.(*game.Mobile)
+	if sm.NetState == nil || !sm.Account.HasRole(game.RoleGameMaster) {
 		return false
 	}
 	gumps.Edit(sm, receiver)
 	return true
 }
 
-func OpenTeleportGUMP(receiver, source game.Object, v any) bool {
-	if source == nil {
+func openTeleportGUMP(receiver, source, v any) bool {
+	sm := source.(*game.Mobile)
+	if sm.NetState == nil {
 		return false
 	}
-	sm, ok := source.(game.Mobile)
-	if !ok {
-		return false
-	}
-	if sm.NetState() == nil {
-		return false
-	}
-	sm.NetState().GUMP(gumps.New("teleport"), source, nil)
+	sm.NetState.GUMP(gumps.New("teleport"), sm.Serial, 0)
 	return true
 }
 
-func HarvestCrop(receiver, source game.Object, v any) bool {
-	sm, ok := source.(game.Mobile)
-	if !ok || sm.NetState() == nil {
+func harvestCrop(receiver, source, v any) bool {
+	sm := source.(*game.Mobile)
+	if sm.NetState == nil {
 		return false
 	}
+	ri := receiver.(*game.Item)
 	// Range check
-	if game.RootParent(sm).Location().XYDistance(receiver.Point()) > uo.MaxUseRange {
-		sm.NetState().Cliloc(nil, 502803) // It's too far away.
+	if sm.Location.XYDistance(ri.Location) > uo.MaxUseRange {
+		sm.NetState.Cliloc(nil, 502803) // It's too far away.
 		return false
 	}
 	// Line of sight check
 	if !sm.HasLineOfSight(receiver) {
-		sm.NetState().Cliloc(nil, 500950) // You cannot see that.
+		sm.NetState.Cliloc(nil, 500950) // You cannot see that.
 		return false
 	}
-	tn := strings.TrimSuffix(receiver.TemplateName(), "Crop")
-	i := template.Create[game.Item](tn)
+	tn := strings.TrimSuffix(ri.TemplateName, "Crop")
+	i := game.NewItem(tn)
 	if i == nil {
 		return false
 	}
 	if !sm.DropToBackpack(i, false) {
 		sm.DropToFeet(i)
 	}
-	game.Remove(receiver)
+	game.World.RemoveItem(ri)
 	return true
 }
 
-func CashCheck(receiver, source game.Object, v any) bool {
-	check := receiver.(*game.Check)
-	sm, ok := source.(game.Mobile)
-	if !ok || sm.NetState() == nil {
+func cashCheck(receiver, source, v any) bool {
+	check := receiver.(*game.Item)
+	sm := source.(*game.Mobile)
+	if sm.NetState == nil {
 		return false
 	}
 	if !sm.InBank(check) {
-		sm.NetState().Speech(sm, "That must be in your bank box to use.")
+		sm.NetState.Speech(sm, "That must be in your bank box to use.")
 		return false
 	}
-	game.Remove(check)
+	game.World.RemoveItem(check)
 	for {
-		n := check.CheckAmount()
+		n := check.IArg
 		if n < 1 {
 			break
 		}
 		if n > uo.MaxStackAmount {
 			n = uo.MaxStackAmount
 		} else {
-			check.SetCheckAmount(check.CheckAmount() - n)
+			check.IArg -= n
 		}
-		gc := template.Create[game.Item]("GoldCoin")
-		gc.SetAmount(n)
+		gc := game.NewItem("GoldCoin")
+		gc.Amount = n
 		sm.DropToBankBox(gc, true)
 	}
 	return true
