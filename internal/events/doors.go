@@ -37,69 +37,63 @@ var doorCloseSounds = map[string]uo.Sound{
 
 var doorCloseTimers = map[uo.Serial]uo.Serial{}
 
-func doUseDoor(receiver, source game.Object, force bool) bool {
-	sm, ok := source.(game.Mobile)
-	if !ok || sm.NetState() == nil {
-		return false
-	}
+func doUseDoor(ri *game.Item, sm *game.Mobile, force bool) bool {
 	// Range check
-	if !force && receiver.Point().XYDistance(source.Point()) > uo.MaxUseRange {
-		sm.NetState().Cliloc(nil, 502803) // It's too far away.
+	if !force && ri.Location.XYDistance(sm.Location) > uo.MaxUseRange {
+		sm.NetState.Cliloc(nil, 502803) // It's too far away.
 		return false
 	}
 	// Line of sight check
-	if !force && !sm.HasLineOfSight(receiver) {
-		sm.NetState().Cliloc(nil, 500950) // You cannot see that.
+	if !force && !sm.HasLineOfSight(ri) {
+		sm.NetState.Cliloc(nil, 500950) // You cannot see that.
 		return false
 	}
 	// Select door offsets, sounds, ect
-	ri, ok := receiver.(game.Item)
-	if !ok {
-		return false
-	}
-	l := ri.Location()
-	ofs := uo.DoorOffsets[int(ri.Facing())]
+	l := ri.Location
+	ofs := uo.DoorOffsets[int(ri.Facing)]
 	var s uo.Sound
-	if ri.Flipped() {
+	if ri.Flipped {
 		l.X -= ofs.X
 		l.Y -= ofs.Y
-		s = doorCloseSounds[ri.TemplateName()]
+		s = doorCloseSounds[ri.TemplateName]
 	} else {
 		l.X += ofs.X
 		l.Y += ofs.Y
-		s = doorOpenSounds[ri.TemplateName()]
+		s = doorOpenSounds[ri.TemplateName]
 	}
 	// Skip map fit check, not all doors on the retail map have clearance with
 	// the terrain to properly open
-	game.GetWorld().Map().ForceRemoveObject(ri)
-	ri.Flip()
-	ri.SetLocation(l)
-	ri.SetDefForGraphic(ri.Graphic())
-	game.GetWorld().Map().ForceAddObject(ri)
-	game.GetWorld().Map().PlaySound(s, l)
+	game.World.Map().RemoveItem(ri)
+	ri.Flipped = !ri.Flipped
+	ri.Location = l
+	ri.Def = game.World.ItemDefinition(ri.CurrentGraphic())
+	game.World.Map().AddItem(ri, true)
+	game.World.Map().PlaySound(s, l)
 	// Auto-close functionality
-	if ri.Flipped() {
+	if ri.Flipped {
 		// Door is now open, setup a timer to close it
-		doorCloseTimers[ri.Serial()] = game.NewTimer(uo.DurationSecond*20, "UseDoor", ri, source, true, true)
+		doorCloseTimers[ri.Serial] = game.NewTimer(uo.DurationSecond*20, "UseDoor", ri, sm, true, true)
 	} else {
 		// Door is now closed, make sure there are no pending timers
-		s, found := doorCloseTimers[ri.Serial()]
+		s, found := doorCloseTimers[ri.Serial]
 		if found {
 			game.CancelTimer(s)
-			delete(doorCloseTimers, ri.Serial())
+			delete(doorCloseTimers, ri.Serial)
 		}
 	}
 	return true
 }
 
-func UseDoor(receiver, source game.Object, v any) bool {
+func UseDoor(receiver, source, v any) bool {
 	force, ok := v.(bool)
 	if !ok {
 		force = false
 	}
-	doors := game.GetWorld().Map().ItemBaseQuery("BaseDoor", receiver.Point().BoundsByRadius(1))
+	ri := receiver.(*game.Item)
+	sm := source.(*game.Mobile)
+	doors := game.World.Map().ItemBaseQuery("BaseDoor", ri.Location.BoundsByRadius(1))
 	for _, d := range doors {
-		if !doUseDoor(d, source, force) {
+		if !doUseDoor(d, sm, force) {
 			return false
 		}
 	}

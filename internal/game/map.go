@@ -46,6 +46,10 @@ var mwRetBuf []*Mobile
 // [Map.ItemsWithin].
 var iwRetBuf []*Item
 
+// ibqRetBuf is the static buffer used for the return value of
+// [Map.ItemBaseQuery].
+var ibqRetBuf []*Item
+
 // NetStatesInRange returns a slice of all of the mobiles with attached net
 // states who's view range is within range of the given point on the map. The
 // second parameter is an additional range to apply to view ranges. This is
@@ -1113,4 +1117,60 @@ func (m *Map) LineOfSight(a, b uo.Point) bool {
 		a.Z = int(az)
 	}
 	return false
+}
+
+// PlaySound plays a sound at the given location for all clients in range.
+func (m *Map) PlaySound(which uo.Sound, from uo.Point) {
+	for _, mob := range m.NetStatesInRange(from, 0) {
+		mob.NetState.Sound(which, from)
+	}
+}
+
+// ItemBaseQuery returns a slice of all of the items who's direct BaseTemplate
+// property matches the given template name. The second parameter may be the
+// zero value, in which case the entire map is searched. WARNING: This can be
+// expensive and will hang the server. Subsequent calls to ItemBaseQuery will
+// reuse the same backing array for the return value.
+func (m *Map) ItemBaseQuery(tn string, b uo.Bounds) []*Item {
+	ibqRetBuf = ibqRetBuf[:0]
+	if b == uo.BoundsZero {
+		// Full map query
+		for _, c := range m.chunks {
+			for _, i := range c.Items {
+				if i.BaseTemplate == tn {
+					ibqRetBuf = append(ibqRetBuf, i)
+				}
+			}
+		}
+		return ibqRetBuf
+	}
+	// Spacial query
+	var p uo.Point
+	cb := uo.Bounds{
+		X: b.X / uo.ChunkWidth,
+		Y: b.Y / uo.ChunkHeight,
+		W: b.W / uo.ChunkWidth,
+		H: b.H / uo.ChunkHeight,
+	}
+	if b.W%uo.ChunkWidth != 0 {
+		cb.W++
+	}
+	if b.H%uo.ChunkHeight != 0 {
+		cb.H++
+	}
+	mwRetBuf = mwRetBuf[:0]
+	for p.Y = cb.Y; p.Y < cb.Y+cb.H; p.Y++ {
+		for p.X = cb.X; p.X < cb.X+cb.W; p.X++ {
+			c := m.chunks[p.Y*uo.MapChunksWidth+p.X]
+			for _, item := range c.Items {
+				if !b.Contains(item.Location) {
+					continue
+				}
+				if item.BaseTemplate == tn {
+					ibqRetBuf = append(ibqRetBuf, item)
+				}
+			}
+		}
+	}
+	return ibqRetBuf
 }

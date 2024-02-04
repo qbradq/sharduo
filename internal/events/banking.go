@@ -27,7 +27,7 @@ func BankCheck(receiver, source, v any) bool {
 	if err != nil || n < 1000 {
 		return false
 	}
-	sm := source.(game.Mobile)
+	sm := source.(*game.Mobile)
 	if sm.NetState == nil {
 		return false
 	}
@@ -53,7 +53,7 @@ func BankDeposit(receiver, source, v any) bool {
 	if err != nil || n < 1 {
 		return false
 	}
-	sm := source.(game.Mobile)
+	sm := source.(*game.Mobile)
 	if sm.NetState == nil {
 		return false
 	}
@@ -77,7 +77,7 @@ func BankWithdraw(receiver, source, v any) bool {
 	if err != nil || n < 1 {
 		return false
 	}
-	sm := source.(game.Mobile)
+	sm := source.(*game.Mobile)
 	if sm.NetState == nil {
 		return false
 	}

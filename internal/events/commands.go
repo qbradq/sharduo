@@ -18,112 +18,81 @@ func init() {
 
 // CommandFollow allows commanding a pet to follow another mobile with a
 // targeting cursor.
-func CommandFollow(receiver, source game.Object, v any) bool {
-	rm, ok := receiver.(game.Mobile)
-	if !ok {
-		return false
-	}
-	sm, ok := source.(game.Mobile)
-	if !ok || sm.NetState() == nil {
+func CommandFollow(receiver, source, v any) bool {
+	rm := receiver.(*game.Mobile)
+	sm := source.(*game.Mobile)
+	if sm.NetState == nil {
 		return false
 	}
 	if !rm.CanBeCommandedBy(sm) {
 		return false
 	}
-	sm.NetState().TargetSendCursor(uo.TargetTypeObject, func(tr *clientpacket.TargetResponse) {
-		tm := game.Find[game.Mobile](tr.TargetObject)
+	sm.NetState.TargetSendCursor(uo.TargetTypeObject, func(tr *clientpacket.TargetResponse) {
+		tm := game.World.FindMobile(tr.TargetObject)
 		if tm == nil {
 			return
 		}
-		rm.SetAI("Follow")
-		rm.SetAIGoal(tm)
+		rm.AI = "Follow"
+		rm.AIGoal = tm
 	})
 	return true
 }
 
 // CommandFollowMe commands a pet to follow the source mobile if that mobile can
 // command the receiving mobile.
-func CommandFollowMe(receiver, source game.Object, v any) bool {
-	rm, ok := receiver.(game.Mobile)
-	if !ok {
-		return false
-	}
-	sm, ok := source.(game.Mobile)
-	if !ok {
-		return false
-	}
+func CommandFollowMe(receiver, source, v any) bool {
+	rm := receiver.(*game.Mobile)
+	sm := source.(*game.Mobile)
 	if !rm.CanBeCommandedBy(sm) {
 		return false
 	}
-	rm.SetAI("Follow")
-	rm.SetAIGoal(sm)
+	rm.AI = "Follow"
+	rm.AIGoal = sm
 	return true
 }
 
 // CommandStay commands a pet to stay in its current location
 // command the receiving mobile.
-func CommandStay(receiver, source game.Object, v any) bool {
-	rm, ok := receiver.(game.Mobile)
-	if !ok {
-		return false
-	}
-	sm, ok := source.(game.Mobile)
-	if !ok {
-		return false
-	}
+func CommandStay(receiver, source, v any) bool {
+	rm := receiver.(*game.Mobile)
+	sm := source.(*game.Mobile)
 	if !rm.CanBeCommandedBy(sm) {
 		return false
 	}
-	rm.SetAI("Stay")
-	rm.SetAIGoal(nil)
+	rm.AI = "Stay"
+	rm.AIGoal = nil
 	return true
 }
 
 // CommandDrop commands a pet to drop all inventory contents at their feet.
-func CommandDrop(receiver, source game.Object, v any) bool {
-	rm, ok := receiver.(game.Mobile)
-	if !ok {
-		return false
-	}
-	sm, ok := source.(game.Mobile)
-	if !ok {
-		return false
-	}
+func CommandDrop(receiver, source, v any) bool {
+	rm := receiver.(*game.Mobile)
+	sm := source.(*game.Mobile)
 	if !rm.CanBeCommandedBy(sm) {
 		return false
 	}
-	bpo := rm.EquipmentInSlot(uo.LayerBackpack)
-	if bpo == nil {
+	bp := rm.Equipment[uo.LayerBackpack]
+	if bp == nil {
 		return false
 	}
-	bp, ok := bpo.(game.Container)
-	if !ok {
-		return false
-	}
-	contents := bp.Contents()
-	items := make([]game.Item, len(contents))
-	copy(items, contents)
+	items := make([]*game.Item, len(bp.Contents))
+	copy(items, bp.Contents)
 	for _, item := range items {
+		bp.RemoveItem(item)
 		rm.DropToFeet(item)
 	}
 	return true
 }
 
-// CommandRelease commands a pet to drop all inventory contents at their feet.
-func CommandRelease(receiver, source game.Object, v any) bool {
-	rm, ok := receiver.(game.Mobile)
-	if !ok {
-		return false
-	}
-	sm, ok := source.(game.Mobile)
-	if !ok {
-		return false
-	}
+// CommandRelease commands a pet forget its control master.
+func CommandRelease(receiver, source, v any) bool {
+	rm := receiver.(*game.Mobile)
+	sm := source.(*game.Mobile)
 	if !rm.CanBeCommandedBy(sm) {
 		return false
 	}
-	rm.SetControlMaster(nil)
-	rm.SetAI("WalkRandom")
-	rm.SetAIGoal(nil)
+	rm.ControlMaster = nil
+	rm.AI = "WalkRandom"
+	rm.AIGoal = nil
 	return true
 }

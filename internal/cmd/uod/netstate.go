@@ -285,7 +285,7 @@ func (n *NetState) Speech(speaker any, fmtstr string, args ...interface{}) {
 			sid = s.Serial
 			stype = uo.SpeechTypeNormal
 			name = s.DisplayName()
-			body = uo.Body(s.Graphic)
+			body = uo.Body(s.CurrentGraphic())
 		case *game.Mobile:
 			sid = s.Serial
 			stype = uo.SpeechTypeNormal
@@ -318,7 +318,7 @@ func (n *NetState) Cliloc(speaker any, cliloc uo.Cliloc, args ...string) {
 		case *game.Item:
 			sid = s.Serial
 			name = s.DisplayName()
-			body = uo.Body(s.Graphic)
+			body = uo.Body(s.CurrentGraphic())
 		case *game.Mobile:
 			sid = s.Serial
 			name = s.DisplayName()
@@ -353,7 +353,7 @@ func (n *NetState) itemInfo(item *game.Item) {
 		// Item in container
 		n.Send(&serverpacket.AddItemToContainer{
 			Item:      item.Serial,
-			Graphic:   item.Graphic,
+			Graphic:   item.CurrentGraphic(),
 			Amount:    item.Amount,
 			Location:  item.Location,
 			Container: item.Container.Serial,
@@ -363,7 +363,7 @@ func (n *NetState) itemInfo(item *game.Item) {
 		// Item on ground
 		n.Send(&serverpacket.ObjectInfo{
 			Serial:   item.Serial,
-			Graphic:  item.Graphic,
+			Graphic:  item.CurrentGraphic(),
 			Amount:   item.Amount,
 			Location: item.Location,
 			Layer:    layer,
@@ -405,7 +405,7 @@ func (n *NetState) sendMobile(mobile *game.Mobile) {
 		}
 		p.Equipment = append(p.Equipment, &serverpacket.EquippedMobileItem{
 			ID:      e.Serial,
-			Graphic: e.Graphic,
+			Graphic: e.CurrentGraphic(),
 			Layer:   e.Layer,
 			Hue:     e.Hue,
 		})
@@ -570,7 +570,7 @@ func (n *NetState) DrawPlayer() {
 func (n *NetState) WornItem(i *game.Item, wearer *game.Mobile) {
 	n.Send(&serverpacket.WornItem{
 		Item:    i.Serial,
-		Graphic: i.Graphic,
+		Graphic: i.CurrentGraphic(),
 		Layer:   i.Layer,
 		Wearer:  wearer.Serial,
 		Hue:     i.Hue,
@@ -604,7 +604,7 @@ func (n *NetState) DragItem(item *game.Item, srcMob *game.Mobile, srcLoc uo.Poin
 		return
 	}
 	n.Send(&serverpacket.DragItem{
-		Graphic:             item.Graphic,
+		Graphic:             item.CurrentGraphic(),
 		Amount:              item.Amount,
 		Source:              srcSerial,
 		SourceLocation:      srcLoc,
@@ -637,7 +637,7 @@ func (n *NetState) ContainerOpen(c *game.Item) {
 		for _, item := range c.Contents {
 			p.Items = append(p.Items, serverpacket.ContentsItem{
 				Serial:    item.Serial,
-				Graphic:   item.Graphic,
+				Graphic:   item.CurrentGraphic(),
 				Amount:    item.Amount,
 				Location:  item.Location,
 				Container: c.Serial,
@@ -678,7 +678,7 @@ func (n *NetState) ContainerClose(c *game.Item) {
 func (n *NetState) ContainerItemAdded(c *game.Item, item *game.Item) {
 	n.Send(&serverpacket.AddItemToContainer{
 		Item:      item.Serial,
-		Graphic:   item.Graphic,
+		Graphic:   item.CurrentGraphic(),
 		Amount:    item.Amount,
 		Location:  item.Location,
 		Container: c.Serial,

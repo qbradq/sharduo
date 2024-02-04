@@ -35,7 +35,7 @@ func init() {
 				return []error{fmt.Errorf("duplicate item prototype %s", k)}
 			}
 			// Initialize non-zero default values
-			p.Def = World.ItemDefinition(p.Graphic)
+			p.Def = World.ItemDefinition(p.CurrentGraphic())
 			p.TemplateName = k
 			itemPrototypes[k] = p
 		}
@@ -153,17 +153,19 @@ func (f *ItemFlags) UnmarshalJSON(in []byte) error {
 type Item struct {
 	Object
 	// Static variables
-	Def         *uo.StaticDefinition // Item properties pointer
-	Flags       ItemFlags            // Boolean item flags
-	Graphic     uo.Graphic           // Base graphic to use for the item
-	Layer       uo.Layer             // Layer the object is worn on
-	Weight      float64              // Weight of the item, NOT the stack, just one of these items
-	MaxWeight   float64              // Maximum weight that can be held in this container
-	MaxItems    int                  // Maximum number of items that can be held in this container
-	GUMPGraphic uo.GUMP              // GUMP graphic to use for containers
-	Bounds      uo.Bounds            // Container GUMP bounds
-	LiftSound   uo.Sound             // Sound this item makes when lifted
+	Def            *uo.StaticDefinition // Item properties pointer
+	Flags          ItemFlags            // Boolean item flags
+	Graphic        uo.Graphic           // Base graphic to use for the item
+	FlippedGraphic uo.Graphic           // Flipped graphic
+	Layer          uo.Layer             // Layer the object is worn on
+	Weight         float64              // Weight of the item, NOT the stack, just one of these items
+	MaxWeight      float64              // Maximum weight that can be held in this container
+	MaxItems       int                  // Maximum number of items that can be held in this container
+	GUMPGraphic    uo.GUMP              // GUMP graphic to use for containers
+	Bounds         uo.Bounds            // Container GUMP bounds
+	LiftSound      uo.Sound             // Sound this item makes when lifted
 	// Persistent variables
+	Flipped  bool        // If true the item is currently flipped
 	Amount   int         // Stack amount
 	Contents []*Item     // Contents of the container
 	LootType uo.LootType // Persistent loot type so we can bless arbitrary items
@@ -186,6 +188,7 @@ func (i *Item) Write(w io.Writer) {
 	util.PutPoint(w, i.Location)               // Location
 	util.PutByte(w, byte(i.Facing))            // Facing
 	util.PutUInt16(w, uint16(i.Hue))           // Hue
+	util.PutBool(w, i.Flipped)                 // Flipped flag
 	util.PutUInt16(w, uint16(i.Amount))        // Stack amount
 	util.PutByte(w, byte(i.LootType))          // Loot type
 	util.PutUInt32(w, uint32(i.IArg))          // Generic int argument
@@ -206,6 +209,7 @@ func NewItemFromReader(r io.Reader) *Item {
 	i.Location = util.GetPoint(r)             // Location
 	i.Facing = uo.Direction(util.GetByte(r))  // Facing
 	i.Hue = uo.Hue(util.GetUInt16(r))         // Hue
+	i.Flipped = util.GetBool(r)               // Flipped flag
 	i.Amount = int(util.GetUInt16(r))         // Stack amount
 	i.LootType = uo.LootType(util.GetByte(r)) // Loot type
 	i.IArg = int(util.GetUInt32(r))           // Generic int argument
@@ -593,6 +597,14 @@ func (i *Item) ConsumeGold(n int) bool {
 func (i *Item) DropInto(item *Item, force bool) error {
 	item.Location = uo.RandomContainerLocation
 	return i.AddItem(item, force)
+}
+
+// CurrentGraphic returns the current graphic in use by the item.
+func (i *Item) CurrentGraphic() uo.Graphic {
+	if i.Flipped {
+		return i.FlippedGraphic
+	}
+	return i.Graphic
 }
 
 func (i *Item) StandingHeight() int {

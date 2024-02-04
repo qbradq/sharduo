@@ -3,6 +3,7 @@ package game
 import (
 	"time"
 
+	"github.com/qbradq/sharduo/lib/clientpacket"
 	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/uo"
 )
@@ -42,6 +43,8 @@ type NetState interface {
 	ContainerRangeCheck()
 	// Sound makes the client play a sound.
 	Sound(uo.Sound, uo.Point)
+	// TargetSendCursor sends a targeting request to the client.
+	TargetSendCursor(uo.TargetType, func(*clientpacket.TargetResponse))
 }
 
 // ContainerObserver is implemented by anything that can be notified of changes

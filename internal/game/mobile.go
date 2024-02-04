@@ -151,6 +151,8 @@ type Mobile struct {
 	MaxWeight     float64                 // Max carry weight of the mobile
 	ViewRange     int                     // Range at which items are reported to the client, valid values are [5-18]
 	StandingOn    uo.CommonObject         // Object the mobile is standing on
+	AI            string                  // Name of the AI routine to run during mobile think
+	AIGoal        *Mobile                 // What mobile we are paying attention to at the moment
 	opl           *serverpacket.OPLPacket // Cached OPLPacket
 	oplInfo       *serverpacket.OPLInfo   // Cached OPLInfo packet
 }
@@ -434,4 +436,10 @@ func (m *Mobile) DropToBankBox(i *Item, force bool) bool {
 		return false
 	}
 	return true
+}
+
+// CanBeCommandedBy returns true if this mobile will accept control commands
+// from s.
+func (m *Mobile) CanBeCommandedBy(s *Mobile) bool {
+	return m.ControlMaster == s
 }
