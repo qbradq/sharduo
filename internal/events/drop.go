@@ -8,55 +8,42 @@ import (
 )
 
 func init() {
-	reg("DropToContainer", DropToContainer)
-	reg("DropToPlayer", DropToPlayer)
-	reg("DropToPackAnimal", DropToPackAnimal)
+	reg("DropToContainer", dropToContainer)
+	reg("DropToPlayer", dropToPlayer)
+	reg("DropToPackAnimal", dropToPackAnimal)
 }
 
-func DropToContainer(receiver, source game.Object, v any) bool {
-	rc, ok := receiver.(game.Container)
-	if !ok {
+func dropToContainer(receiver, source, v any) bool {
+	ri := receiver.(*game.Item)
+	sm := source.(*game.Mobile)
+	item := v.(*game.Item)
+	if sm.Location.XYDistance(item.Location) > uo.MaxDropRange {
 		return false
 	}
-	sm, ok := source.(game.Mobile)
-	if !ok {
-		return false
-	}
-	item, ok := v.(game.Item)
-	if !ok {
-		return false
-	}
-	if sm.Location().XYDistance(item.Location()) > uo.MaxDropRange {
-		return false
-	}
-	if !sm.CanAccess(rc) {
+	if !sm.CanAccess(ri) {
 		return false
 	}
 	// Line of sight check
-	if !sm.HasLineOfSight(rc) {
-		sm.NetState().Cliloc(nil, 500950) // You cannot see that.
+	if !sm.HasLineOfSight(ri) {
+		sm.NetState.Cliloc(nil, 500950) // You cannot see that.
 		return false
 	}
-	return rc.AddObject(item)
+	if err := ri.AddItem(item, false); err != nil {
+		e := err.(*game.UOError)
+		sm.NetState.Send(e.Packet())
+		return false
+	}
+	return true
 }
 
-func DropToPlayer(receiver, source game.Object, v any) bool {
-	rm, ok := receiver.(game.Mobile)
-	if !ok {
-		return false
-	}
-	sm, ok := source.(game.Mobile)
-	if !ok {
-		return false
-	}
-	item, ok := v.(game.Item)
-	if !ok {
-		return false
-	}
-	if rm.Serial() == sm.Serial() {
+func dropToPlayer(receiver, source, v any) bool {
+	rm := receiver.(*game.Mobile)
+	sm := source.(*game.Mobile)
+	item := v.(*game.Item)
+	if rm == sm {
 		// Drop to self, just put it in the backpack
 		return rm.DropToBackpack(item, false)
-	} else if sm.IsPlayerCharacter() {
+	} else if sm.Player {
 		// TODO Secure trade
 		return false
 	} // Else this is a non-player mobile trying to drop something on us. This
@@ -64,22 +51,13 @@ func DropToPlayer(receiver, source game.Object, v any) bool {
 	return false
 }
 
-func DropToPackAnimal(receiver, source game.Object, v any) bool {
-	rm, ok := receiver.(game.Mobile)
-	if !ok {
-		return false
-	}
-	sm, ok := source.(game.Mobile)
-	if !ok {
-		return false
-	}
+func dropToPackAnimal(receiver, source, v any) bool {
+	rm := receiver.(*game.Mobile)
+	sm := source.(*game.Mobile)
 	// Check control master
-	if rm.ControlMaster().Serial() != sm.Serial() {
+	if rm.ControlMaster != sm {
 		return false
 	}
-	item, ok := v.(game.Item)
-	if !ok {
-		return false
-	}
+	item := v.(*game.Item)
 	return rm.DropToBackpack(item, false)
 }
