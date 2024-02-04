@@ -101,6 +101,9 @@ func constructMobile(which string) *Mobile {
 	}
 	m := &Mobile{}
 	*m = *p
+	for _, en := range m.PostCreationEvents {
+		m.ExecuteEvent(en, nil, nil)
+	}
 	return m
 }
 
@@ -379,9 +382,56 @@ func (m *Mobile) InvalidateOPL() {
 	World.UpdateMobileOPLInfo(m)
 }
 
-// AdjustWeight implements the Object interface
+// AdjustWeight adjusts the mobile's cache of their current carry weight.
 func (m *Mobile) AdjustWeight(n float64) {
 	m.Weight += n
 	m.InvalidateOPL()
 	World.UpdateMobile(m)
+}
+
+// ChargeGold consumes gold from the mobile's backpack, then bank until the
+// amount has been charged. Returns false if there is not enough gold.
+func (m *Mobile) ChargeGold(n int) bool {
+	bp := m.Equipment[uo.LayerBackpack]
+	bb := m.Equipment[uo.LayerBankBox]
+	if bp == nil || bb == nil {
+		return false
+	}
+	if bp.Gold+bb.Gold < n {
+		return false
+	}
+	bg := n - bp.Gold
+	if bg < 1 {
+		bp.ConsumeGold(n)
+	} else {
+		bp.ConsumeGold(n - bg)
+		bb.ConsumeGold(bg)
+	}
+	return true
+}
+
+// DropToBackpack drops the item into the mobile's backpack, forcefully if
+// requested. Returns true on success.
+func (m *Mobile) DropToBackpack(i *Item, force bool) bool {
+	dp := m.Equipment[uo.LayerBackpack]
+	if dp == nil {
+		return false
+	}
+	if err := dp.DropInto(i, force); err != nil {
+		return false
+	}
+	return true
+}
+
+// DropToBankBox drops the item into the mobile's bank box, forcefully if
+// requested. Returns true on success.
+func (m *Mobile) DropToBankBox(i *Item, force bool) bool {
+	bb := m.Equipment[uo.LayerBankBox]
+	if bb == nil {
+		return false
+	}
+	if err := bb.DropInto(i, force); err != nil {
+		return false
+	}
+	return true
 }

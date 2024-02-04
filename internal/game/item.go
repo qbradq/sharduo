@@ -102,7 +102,9 @@ func constructItem(which string) *Item {
 	}
 	i := &Item{}
 	*i = *p
-
+	for _, en := range i.PostCreationEvents {
+		i.ExecuteEvent(en, nil, nil)
+	}
 	return i
 }
 
@@ -159,11 +161,13 @@ type Item struct {
 	MaxWeight   float64              // Maximum weight that can be held in this container
 	MaxItems    int                  // Maximum number of items that can be held in this container
 	GUMPGraphic uo.GUMP              // GUMP graphic to use for containers
+	Bounds      uo.Bounds            // Container GUMP bounds
 	LiftSound   uo.Sound             // Sound this item makes when lifted
 	// Persistent variables
 	Amount   int         // Stack amount
 	Contents []*Item     // Contents of the container
 	LootType uo.LootType // Persistent loot type so we can bless arbitrary items
+	IArg     int         // Generic int argument
 	// Transient values
 	Wearer          *Mobile             // Pointer to the mobile currently wearing this item if any, note this only indicates if the item is directly equipped to the mobile, not within equipped containers
 	Container       *Item               // Pointer to the parent container if any
@@ -184,6 +188,7 @@ func (i *Item) Write(w io.Writer) {
 	util.PutUInt16(w, uint16(i.Hue))           // Hue
 	util.PutUInt16(w, uint16(i.Amount))        // Stack amount
 	util.PutByte(w, byte(i.LootType))          // Loot type
+	util.PutUInt32(w, uint32(i.IArg))          // Generic int argument
 	util.PutUInt32(w, uint32(len(i.Contents))) // Contents
 	for _, item := range i.Contents {
 		item.Write(w)
@@ -203,6 +208,7 @@ func NewItemFromReader(r io.Reader) *Item {
 	i.Hue = uo.Hue(util.GetUInt16(r))         // Hue
 	i.Amount = int(util.GetUInt16(r))         // Stack amount
 	i.LootType = uo.LootType(util.GetByte(r)) // Loot type
+	i.IArg = int(util.GetUInt32(r))           // Generic int argument
 	n := int(util.GetUInt32(r))               // Contents item count
 	i.Contents = make([]*Item, n)             // Contents
 	for idx := 0; idx < n; idx++ {
@@ -395,8 +401,55 @@ func (i *Item) AddItem(item *Item, force bool) error {
 			}
 		}
 	}
+	// Try to stack
+	if item.HasFlags(ItemFlagsStackable) &&
+		item.Location == uo.RandomContainerLocation {
+		for _, oi := range i.Contents {
+			// Same item type and enough stack capacity to accept
+			if item.TemplateName == oi.TemplateName &&
+				item.Hue == oi.Hue &&
+				oi.Amount+item.Amount <= uo.MaxStackAmount {
+				i.AdjustWeightAndCount(item.Weight, 0)
+				oi.Amount = oi.Amount + item.Amount
+				if item.TemplateName == "GoldCoin" {
+					i.AdjustGold(item.Amount)
+				}
+				World.RemoveItem(item)
+				World.UpdateItem(oi)
+				return nil
+			}
+		}
+	}
+	// Handle drop location
+	l := item.Location
+	if l.X == uo.RandomDropX {
+		l.X = util.Random(i.Bounds.X, i.Bounds.X+i.Bounds.W-1)
+	}
+	if l.Y == uo.RandomDropY {
+		l.Y = util.Random(i.Bounds.Y, i.Bounds.Y+i.Bounds.H-1)
+	}
+	if l.X < i.Bounds.X {
+		l.X = i.Bounds.X
+	}
+	if l.X >= i.Bounds.X+i.Bounds.W {
+		l.X = i.Bounds.X + i.Bounds.W - 1
+	}
+	if l.Y < i.Bounds.Y {
+		l.Y = i.Bounds.Y
+	}
+	if l.Y >= i.Bounds.Y+i.Bounds.H {
+		l.Y = i.Bounds.Y + i.Bounds.H - 1
+	}
+	// Add item to container
 	i.Contents = append(i.Contents, item)
 	i.AdjustWeightAndCount(aw, ai)
+	if item.TemplateName == "GoldCoin" {
+		i.AdjustGold(item.Amount)
+	}
+	// Let all observers know about the new item
+	for _, o := range i.Observers {
+		o.ContainerItemAdded(i, item)
+	}
 	return nil
 }
 
@@ -442,11 +495,104 @@ func (i *Item) AdjustWeightAndCount(w float64, n int) {
 	}
 }
 
+// AdjustGold adjusts the cached value of how much gold the container holds
+// including all sub-containers. This function propagates upward to parent
+// containers.
+func (i *Item) AdjustGold(n int) {
+	i.Gold += n
+	if i.Container != nil {
+		i.Container.AdjustGold(n)
+	}
+}
+
 // InvalidateOPL schedules an OPL update.
 func (i *Item) InvalidateOPL() {
 	i.opl = nil
 	i.oplInfo = nil
 	World.UpdateItemOPLInfo(i)
+}
+
+// Consume removes items of the given template name from the container and all
+// sub-containers until the amount specified has been consumed. If there are not
+// enough items to satisfy the amount the function returns false and no items
+// are modified or removed.
+func (i *Item) Consume(tn string, n int) bool {
+	// TODO Stub
+	return false
+}
+
+// ConsumeGold removes gold from the container and all sub-containers until the
+// amount specified has been consumed. If there are not enough gold in coin
+// piles and checks to satisfy the amount the function returns false and no
+// items are modified or removed.
+func (i *Item) ConsumeGold(n int) bool {
+	var remove []*Item
+	ac := 0
+	var getGold func(*Item) bool
+	getGold = func(c *Item) bool {
+		for _, item := range c.Contents {
+			if item.HasFlags(ItemFlagsContainer) {
+				if getGold(item) {
+					return true
+				}
+				continue
+			}
+			if item.TemplateName == "GoldCoin" {
+				if ac+item.Amount >= n {
+					item.Amount -= (n - ac)
+					if item.Amount < 1 {
+						remove = append(remove, item)
+					} else {
+						item.InvalidateOPL()
+					}
+					for _, tr := range remove {
+						tr.Container.RemoveItem(tr)
+						World.RemoveItem(tr)
+					}
+					return true
+				}
+				ac += item.Amount
+				remove = append(remove, item)
+			}
+		}
+		return false
+	}
+	var getCheck func(*Item) bool
+	getCheck = func(c *Item) bool {
+		for _, item := range c.Contents {
+			if item.HasFlags(ItemFlagsContainer) {
+				if getCheck(item) {
+					return true
+				}
+				continue
+			}
+			if item.TemplateName == "Check" {
+				if ac+item.IArg >= n {
+					item.IArg -= (n - ac)
+					if item.IArg < 1 {
+						remove = append(remove, item)
+					} else {
+						item.InvalidateOPL()
+					}
+					for _, tr := range remove {
+						tr.Container.RemoveItem(tr)
+						World.RemoveItem(tr)
+					}
+					return true
+				}
+				ac += item.IArg
+				remove = append(remove, item)
+			}
+		}
+		return false
+	}
+	return getGold(i) || getCheck(i)
+}
+
+// DropInto attempts to add the item to this container at a random location.
+func (i *Item) DropInto(item *Item, force bool) error {
+	item.Location = uo.RandomContainerLocation
+	return i.AddItem(item, force)
 }
 
 func (i *Item) StandingHeight() int {

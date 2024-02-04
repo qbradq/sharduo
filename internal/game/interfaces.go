@@ -40,6 +40,8 @@ type NetState interface {
 	// ContainerRangeCheck checks all observed containers and closes them as
 	// needed based on range.
 	ContainerRangeCheck()
+	// Sound makes the client play a sound.
+	Sound(uo.Sound, uo.Point)
 }
 
 // ContainerObserver is implemented by anything that can be notified of changes
@@ -123,4 +125,8 @@ type WorldInterface interface {
 	// Insert inserts the object into the world's datastores blindly. *Only*
 	// used during a restore from backup.
 	Insert(any)
+	// RemoveItem removes the item from the world datastores.
+	RemoveItem(*Item)
+	// RemoveMobile removes the item from the world datastores.
+	RemoveMobile(*Item)
 }
