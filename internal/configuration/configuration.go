@@ -1,15 +1,14 @@
 package configuration
 
 import (
-	"bytes"
+	"encoding/json"
 	"errors"
-	"fmt"
-	"log"
 	"os"
+	"strconv"
+	"strings"
 
 	"github.com/qbradq/sharduo/data"
 	"github.com/qbradq/sharduo/lib/uo"
-	"github.com/qbradq/sharduo/lib/util"
 )
 
 //
@@ -101,6 +100,58 @@ var StartingFacing uo.Direction
 
 // Load loads the configuration from the file
 func Load() error {
+	dict := map[string]string{}
+	GetString := func(n, d string) string {
+		if v, found := dict[n]; found {
+			return v
+		}
+		return d
+	}
+	GetNumber := func(n string, d int) int {
+		if s, found := dict[n]; found {
+			v, err := strconv.ParseInt(s, 0, 32)
+			if err != nil {
+				panic(err)
+			}
+			return int(v)
+		}
+		return d
+	}
+	GetBool := func(n string, d bool) bool {
+		if s, found := dict[n]; found {
+			v, err := strconv.ParseBool(s)
+			if err != nil {
+				panic(err)
+			}
+			return v
+		}
+		return d
+	}
+	GetPoint := func(n string, d uo.Point) uo.Point {
+		ret := d
+		if s, found := dict[n]; found {
+			parts := strings.Split(s, ",")
+			if len(parts) != 3 {
+				panic("expected three parts")
+			}
+			v, err := strconv.ParseInt(parts[0], 0, 32)
+			if err != nil {
+				panic(err)
+			}
+			ret.X = int(v)
+			v, err = strconv.ParseInt(parts[1], 0, 32)
+			if err != nil {
+				panic(err)
+			}
+			ret.Y = int(v)
+			v, err = strconv.ParseInt(parts[2], 0, 32)
+			if err != nil {
+				panic(err)
+			}
+			ret.Z = int(v)
+		}
+		return ret
+	}
 	d, err := os.ReadFile(ConfigurationFile)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
@@ -111,50 +162,44 @@ func Load() error {
 			// If we reach here we fall through to the rest of the function with
 			// d set to the data of our configuration file
 		} else {
-			return nil
+			return err
 		}
 	}
-	// Read in the tag file object
-	tfr := &util.TagFileReader{}
-	tfr.StartReading(bytes.NewReader(d))
-	tfo := tfr.ReadObject()
-	if tfo == nil || tfr.HasErrors() {
-		for _, err := range tfr.Errors() {
-			log.Println(err)
-		}
-		return fmt.Errorf("error: %d errors while loading configuration", len(tfr.Errors()))
+	// Read in the json file containing all of the configuration options
+	if err := json.Unmarshal(d, &dict); err != nil {
+		return err
 	}
 	//
 	// Read configuration values
 	//
 	// Internal paths
-	TemplatesDirectory = tfo.GetString("TemplatesDirectory", "templates")
-	ListsDirectory = tfo.GetString("ListsDirectory", "templates")
-	TemplateVariablesFile = tfo.GetString("TemplateVariablesFile", "misc/templates")
+	TemplatesDirectory = GetString("TemplatesDirectory", "templates")
+	ListsDirectory = GetString("ListsDirectory", "templates")
+	TemplateVariablesFile = GetString("TemplateVariablesFile", "misc/templates")
 	// External paths
-	SaveDirectory = tfo.GetString("SaveDirectory", "saves")
-	ArchiveDirectory = tfo.GetString("ArchiveDirectory", "archives")
-	ClientFilesDirectory = tfo.GetString("ClientFilesDirectory", "client")
-	CrontabFile = tfo.GetString("CrontabFile", "crontab")
+	SaveDirectory = GetString("SaveDirectory", "saves")
+	ArchiveDirectory = GetString("ArchiveDirectory", "archives")
+	ClientFilesDirectory = GetString("ClientFilesDirectory", "client")
+	CrontabFile = GetString("CrontabFile", "crontab")
 	// Login service configuration
-	LoginServerAddress = tfo.GetString("LoginServerAddress", "0.0.0.0")
-	LoginServerPort = tfo.GetNumber("LoginServerPort", 7775)
+	LoginServerAddress = GetString("LoginServerAddress", "0.0.0.0")
+	LoginServerPort = GetNumber("LoginServerPort", 7775)
 	// Game service configuration
-	GameServerAddress = tfo.GetString("GameServerAddress", "0.0.0.0")
-	GameServerPublicAddress = tfo.GetString("GameServerPublicAddress", "127.0.0.1")
-	GameServerPort = tfo.GetNumber("GameServerPort", 7777)
-	GameSaveType = tfo.GetString("GameSaveType", "Flat")
-	GameServerName = tfo.GetString("GameServerName", "ShardUO TC")
+	GameServerAddress = GetString("GameServerAddress", "0.0.0.0")
+	GameServerPublicAddress = GetString("GameServerPublicAddress", "127.0.0.1")
+	GameServerPort = GetNumber("GameServerPort", 7777)
+	GameSaveType = GetString("GameSaveType", "Flat")
+	GameServerName = GetString("GameServerName", "ShardUO TC")
 	// Debug flags
-	GenerateDebugMaps = tfo.GetBool("GenerateDebugMaps", false)
-	CPUProfile = tfo.GetBool("CPUProfile", false)
+	GenerateDebugMaps = GetBool("GenerateDebugMaps", false)
+	CPUProfile = GetBool("CPUProfile", false)
 	// Game configuration
-	StartingLocation = tfo.GetLocation("StartingLocation", uo.Point{
+	StartingLocation = GetPoint("StartingLocation", uo.Point{
 		X: 0,
 		Y: 0,
 		Z: 0,
 	})
-	StartingFacing = uo.Direction(tfo.GetNumber("StartingFacing", 4))
+	StartingFacing = uo.Direction(GetNumber("StartingFacing", 4))
 
 	return nil
 }
