@@ -50,12 +50,6 @@ type BaseGUMP struct {
 	typeCode uo.Serial
 }
 
-// BaseGUMP does not implement the Layout() function. This forces includers to
-// define their own.
-
-// BaseGUMP does not implement the HandleReply() function. This forces includers
-// to define their own.
-
 // TypeCode implements the GUMP interface.
 func (g *BaseGUMP) TypeCode() uo.Serial { return g.typeCode }
 
@@ -75,8 +69,8 @@ func (g *BaseGUMP) Packet(x, y int, sender, typeCode uo.Serial) serverpacket.Pac
 		TypeCode: typeCode,
 		Layout:   g.l.String(),
 		Location: uo.Point{
-			X: int16(x),
-			Y: int16(y),
+			X: x,
+			Y: y,
 		},
 		Lines: g.lines,
 	}

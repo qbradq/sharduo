@@ -37,3 +37,24 @@ func NewPlayerDataFromReader(r io.Reader) *PlayerData {
 	}
 	return ret
 }
+
+// Claim claims a stabled pet and gives it to the mobile.
+func (d *PlayerData) Claim(m, owner *Mobile) {
+	idx := -1
+	for i, p := range d.StabledPets {
+		if p == m {
+			idx = i
+			break
+		}
+	}
+	if idx < 0 {
+		return
+	}
+	copy(d.StabledPets[idx:], d.StabledPets[idx+1:])
+	d.StabledPets[len(d.StabledPets)-1] = nil
+	d.StabledPets = d.StabledPets[:len(d.StabledPets)-1]
+	m.Location = owner.Location
+	m.AI = "Follow"
+	m.AIGoal = owner
+	World.Map().AddMobile(m, true)
+}

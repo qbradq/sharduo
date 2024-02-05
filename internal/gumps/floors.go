@@ -74,7 +74,7 @@ type floors struct {
 }
 
 // Layout implements the game.GUMP interface.
-func (g *floors) Layout(target, param game.Object) {
+func (g *floors) Layout(target, param any) {
 	pages := len(floorPatches) / 12
 	if len(floorPatches)%12 != 0 {
 		pages++
@@ -85,15 +85,15 @@ func (g *floors) Layout(target, param game.Object) {
 		tx := i % 3
 		ty := (i / 3) % 4
 		g.ReplyButton(tx*6+0, ty*6+0, 6, 1, uo.HueDefault, p.Name, uint32(1001+i))
-		g.Item(tx*6+0, ty*6+1, 0, 44, uo.HueDefault, uo.Graphic(util.RangeExpression(p.NW, game.GetWorld().Random())))
-		g.Item(tx*6+0, ty*6+1, 22, 66, uo.HueDefault, uo.Graphic(util.RangeExpression(p.N, game.GetWorld().Random())))
-		g.Item(tx*6+0, ty*6+1, 44, 88, uo.HueDefault, uo.Graphic(util.RangeExpression(p.NE, game.GetWorld().Random())))
-		g.Item(tx*6+0, ty*6+1, 22, 22, uo.HueDefault, uo.Graphic(util.RangeExpression(p.W, game.GetWorld().Random())))
-		g.Item(tx*6+0, ty*6+1, 44, 44, uo.HueDefault, uo.Graphic(util.RangeExpression(p.C, game.GetWorld().Random())))
-		g.Item(tx*6+0, ty*6+1, 66, 66, uo.HueDefault, uo.Graphic(util.RangeExpression(p.E, game.GetWorld().Random())))
-		g.Item(tx*6+0, ty*6+1, 44, 0, uo.HueDefault, uo.Graphic(util.RangeExpression(p.SW, game.GetWorld().Random())))
-		g.Item(tx*6+0, ty*6+1, 66, 22, uo.HueDefault, uo.Graphic(util.RangeExpression(p.S, game.GetWorld().Random())))
-		g.Item(tx*6+0, ty*6+1, 88, 44, uo.HueDefault, uo.Graphic(util.RangeExpression(p.SE, game.GetWorld().Random())))
+		g.Item(tx*6+0, ty*6+1, 0, 44, uo.HueDefault, uo.Graphic(util.RangeExpression(p.NW)))
+		g.Item(tx*6+0, ty*6+1, 22, 66, uo.HueDefault, uo.Graphic(util.RangeExpression(p.N)))
+		g.Item(tx*6+0, ty*6+1, 44, 88, uo.HueDefault, uo.Graphic(util.RangeExpression(p.NE)))
+		g.Item(tx*6+0, ty*6+1, 22, 22, uo.HueDefault, uo.Graphic(util.RangeExpression(p.W)))
+		g.Item(tx*6+0, ty*6+1, 44, 44, uo.HueDefault, uo.Graphic(util.RangeExpression(p.C)))
+		g.Item(tx*6+0, ty*6+1, 66, 66, uo.HueDefault, uo.Graphic(util.RangeExpression(p.E)))
+		g.Item(tx*6+0, ty*6+1, 44, 0, uo.HueDefault, uo.Graphic(util.RangeExpression(p.SW)))
+		g.Item(tx*6+0, ty*6+1, 66, 22, uo.HueDefault, uo.Graphic(util.RangeExpression(p.S)))
+		g.Item(tx*6+0, ty*6+1, 88, 44, uo.HueDefault, uo.Graphic(util.RangeExpression(p.SE)))
 
 	}
 }

@@ -61,6 +61,13 @@ type NetState interface {
 	Music(uo.Music)
 	// DrawPlayer sends the draw player packet to the client.
 	DrawPlayer()
+	// GetText sends a GUMP for text entry.
+	GetText(string, string, int, func(string))
+	// GetGUMPByID returns a pointer to the identified GUMP or nil if the state
+	// does not currently have a GUMP of that type open.
+	GetGUMPByID(uo.Serial) any
+	// RefreshGUMP refreshes the passed GUMP on the client side.
+	RefreshGUMP(any)
 }
 
 // ContainerObserver is implemented by anything that can be notified of changes

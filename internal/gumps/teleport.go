@@ -38,7 +38,7 @@ type teleport struct {
 }
 
 // Layout implements the GUMP interface.
-func (g *teleport) Layout(target, param game.Object) {
+func (g *teleport) Layout(target, param any) {
 	if teleportGroups == nil {
 		g.LoadTeleportData()
 	}
@@ -84,20 +84,20 @@ func (g *teleport) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 		g.currentPage = 1
 	}
 	if p.Button >= 2000 {
-		didx := int(p.Button - 2000)
+		dIdx := int(p.Button - 2000)
 		if g.currentGroup < 0 {
-			g.currentGroup = didx
+			g.currentGroup = dIdx
 		} else if g.currentGroup < len(teleportGroups) {
 			grp := teleportGroups[g.currentGroup]
-			if didx < 0 || didx >= len(grp.Destinations) {
-				log.Printf("error: bad teleport destination %d in group %d", didx, g.currentGroup)
+			if dIdx < 0 || dIdx >= len(grp.Destinations) {
+				log.Printf("error: bad teleport destination %d in group %d", dIdx, g.currentGroup)
 				return
 			}
-			dest := grp.Destinations[didx]
+			dest := grp.Destinations[dIdx]
 			if n == nil || n.Mobile() == nil {
 				return
 			}
-			game.GetWorld().Map().TeleportMobile(n.Mobile(), dest.Destination)
+			game.World.Map().TeleportMobile(n.Mobile(), dest.Destination)
 		} else {
 			log.Printf("error: bad teleport group %d", g.currentGroup)
 		}
@@ -129,12 +129,12 @@ func (g *teleport) LoadTeleportData() {
 		}
 		teleportGroups = append(teleportGroups, g)
 		for _, line := range s.Contents {
-			name, lstr, err := util.ParseTagLine(line)
+			name, lStr, err := util.ParseTagLine(line)
 			if err != nil {
 				log.Println(err)
 				continue
 			}
-			l, err := util.ParseLocation(lstr)
+			l, err := util.ParseLocation(lStr)
 			if err != nil {
 				log.Println(err)
 				continue

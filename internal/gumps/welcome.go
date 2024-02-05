@@ -22,18 +22,15 @@ type welcome struct {
 }
 
 // Layout implements the game.GUMP interface.
-func (g *welcome) Layout(target, param game.Object) {
-	tm, ok := target.(game.Mobile)
-	if !ok {
-		return
-	}
+func (g *welcome) Layout(target, param any) {
+	tm := target.(*game.Mobile)
 	motd, err := data.FS.ReadFile("html/motd.html")
 	if err != nil {
 		log.Println(err)
 	}
 	email := ""
-	if tm.NetState() != nil {
-		email = tm.NetState().Account().EmailAddress()
+	if tm.Account != nil {
+		email = tm.Account.EmailAddress
 	}
 	if email == "" {
 		email = "example@email.com"
@@ -53,6 +50,6 @@ func (g *welcome) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 	}
 	g.email = p.Text(3001)
 	if p.Button == 1001 {
-		n.Account().SetEmailAddress(g.email)
+		n.Mobile().Account.EmailAddress = g.email
 	}
 }

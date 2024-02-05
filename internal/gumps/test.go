@@ -30,7 +30,7 @@ type test struct {
 }
 
 // Layout implements the GUMP interface.
-func (g *test) Layout(target, param game.Object) {
+func (g *test) Layout(target, param any) {
 	motd, err := data.FS.ReadFile("html/motd.html")
 	if err != nil {
 		log.Println(err)

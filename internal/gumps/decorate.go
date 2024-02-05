@@ -5,7 +5,6 @@ import (
 
 	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/lib/clientpacket"
-	"github.com/qbradq/sharduo/lib/template"
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
 )
@@ -26,13 +25,13 @@ const (
 // decoration menus.
 type decorate struct {
 	StandardGUMP
-	fixedZ int8   // The absolute Z value to use if zMode == zModeFixed
+	fixedZ int    // The absolute Z value to use if zMode == zModeFixed
 	zMode  zMode  // The Z fixing mode
 	hue    uo.Hue // The selected hue
 }
 
 // Layout implements the game.GUMP interface.
-func (g *decorate) Layout(target, param game.Object) {
+func (g *decorate) Layout(target, param any) {
 	g.Window(5, 14, "Decoration Tools Menu", 0, 1)
 	g.ReplyButton(0, 0, 5, 1, uo.HueDefault, "Single-Tile Statics", 1)
 	g.ReplyButton(0, 1, 5, 1, uo.HueDefault, "Multi-Tile Statics", 2)
@@ -69,7 +68,7 @@ func (g *decorate) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 	// Data
 	v, err := strconv.ParseInt(p.Text(9), 0, 32)
 	if err == nil {
-		g.fixedZ = int8(v)
+		g.fixedZ = int(v)
 	}
 	v, err = strconv.ParseInt(p.Text(13), 0, 32)
 	if err == nil {
@@ -82,19 +81,19 @@ func (g *decorate) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 	// Tool buttons
 	switch p.Button {
 	case 1:
-		n.GUMP(New("statics"), nil, nil)
+		n.GUMP(New("statics"), 0, 0)
 	case 2:
-		n.GUMP(New("objects"), nil, nil)
+		n.GUMP(New("objects"), 0, 0)
 	case 3:
-		n.GUMP(New("floors"), nil, nil)
+		n.GUMP(New("floors"), 0, 0)
 	case 4:
-		n.GUMP(New("doors"), nil, nil)
+		n.GUMP(New("doors"), 0, 0)
 	case 5:
-		n.GUMP(New("signs"), nil, nil)
+		n.GUMP(New("signs"), 0, 0)
 	case 7:
-		executeCommand(n, "savestatics")
-		executeCommand(n, "savedoors")
-		executeCommand(n, "savesigns")
+		executeCommand(n, "save_statics")
+		executeCommand(n, "save_doors")
+		executeCommand(n, "save_signs")
 	case 8:
 		g.zMode = zModeFixed
 	case 10:
@@ -109,11 +108,11 @@ func (g *decorate) targetVolume(n game.NetState, fn func(uo.Bounds)) {
 	n.Speech(n.Mobile(), "Starting Point")
 	n.TargetSendCursor(uo.TargetTypeLocation, func(tr *clientpacket.TargetResponse) {
 		start := tr.Location
-		so := game.Find[game.Item](tr.TargetObject)
+		so := game.World.FindItem(tr.TargetObject)
 		n.Speech(n.Mobile(), "Ending Point")
 		n.TargetSendCursor(uo.TargetTypeLocation, func(tr *clientpacket.TargetResponse) {
 			end := tr.Location
-			eo := game.Find[game.Item](tr.TargetObject)
+			eo := game.World.FindItem(tr.TargetObject)
 			lowest := start.Z
 			if end.Z < start.Z {
 				lowest = end.Z
@@ -135,7 +134,7 @@ func (g *decorate) targetVolume(n game.NetState, fn func(uo.Bounds)) {
 				b.D = 1
 			case zModeOnLevel:
 				b.Z = lowest
-				b.D = int16(highest) - int16(lowest)
+				b.D = highest - lowest
 			case zModeOnTop:
 				b.Z = highest
 				b.D = 1
@@ -146,18 +145,14 @@ func (g *decorate) targetVolume(n game.NetState, fn func(uo.Bounds)) {
 }
 
 // place places a single static with regard to a reference item, if any.
-func (g *decorate) place(l uo.Point, exp string, ref game.Item) bool {
-	item := template.Create[*game.StaticItem]("StaticItem")
-	if item == nil {
-		// Something very wrong
-		return false
-	}
-	item.SetBaseGraphic(uo.Graphic(util.RangeExpression(exp, game.GetWorld().Random())))
+func (g *decorate) place(l uo.Point, exp string, ref *game.Item) bool {
+	item := game.NewItem("StaticItem")
+	item.Graphic = uo.Graphic(util.RangeExpression(exp))
 	if item.BaseGraphic() == uo.GraphicNone {
 		// Refuse to place bad objects
 		return false
 	}
-	item.SetHue(g.hue)
+	item.Hue = g.hue
 	switch g.zMode {
 	case zModeFixed:
 		l.Z = g.fixedZ
@@ -170,7 +165,7 @@ func (g *decorate) place(l uo.Point, exp string, ref game.Item) bool {
 			l.Z = ref.Highest()
 		}
 	}
-	item.SetLocation(l)
-	game.GetWorld().Map().ForceAddObject(item)
+	item.Location = l
+	game.World.Map().AddItem(item, true)
 	return true
 }

@@ -27,6 +27,7 @@ const (
 type Account struct {
 	Username       string      // Account username
 	PasswordHash   string      // Hashed password
+	EmailAddress   string      // Email address associated with the account
 	Roles          Role        // Roles of the account
 	Created        time.Time   // Time of account creation
 	SuspendedUntil time.Time   // End of most recent suspension
@@ -49,6 +50,7 @@ func (a *Account) Write(w io.Writer) {
 	util.PutUInt32(w, 0)                     // Version
 	util.PutString(w, a.Username)            // Username
 	util.PutString(w, a.PasswordHash)        // Hash of the password as a hex string
+	util.PutString(w, a.EmailAddress)        // Email address
 	util.PutByte(w, byte(a.Roles))           // Roles bit mask
 	util.PutTime(w, a.Created)               // Time of account creation
 	util.PutTime(w, a.SuspendedUntil)        // End of most recent suspension
@@ -64,6 +66,7 @@ func (a *Account) Read(r io.Reader) {
 	_ = util.GetUInt32(r)               // Version
 	a.Username = util.GetString(r)      // Username
 	a.PasswordHash = util.GetString(r)  // Has of the password as a hex string
+	a.EmailAddress = util.GetString(r)  // Email address
 	a.Roles = Role(util.GetByte(r))     // Roles bit mask
 	a.Created = util.GetTime(r)         // Time of account creation
 	a.SuspendedUntil = util.GetTime(r)  // End of most recent suspension

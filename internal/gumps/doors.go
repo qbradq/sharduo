@@ -8,7 +8,6 @@ import (
 	"github.com/qbradq/sharduo/data"
 	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/lib/clientpacket"
-	"github.com/qbradq/sharduo/lib/template"
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
 )
@@ -79,7 +78,7 @@ type doors struct {
 }
 
 // Layout implements the game.GUMP interface.
-func (g *doors) Layout(target, param game.Object) {
+func (g *doors) Layout(target, param any) {
 	if g.doorType == "" {
 		pages := len(doorTypes) / 8
 		if len(doorTypes)%8 != 0 {
@@ -140,15 +139,15 @@ func (g *doors) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 
 func (g *doors) singlePlacement(n game.NetState) {
 	n.TargetSendCursor(uo.TargetTypeLocation, func(tr *clientpacket.TargetResponse) {
-		door := template.Create[game.Item](g.doorType)
+		door := game.NewItem(g.doorType)
 		if door == nil {
 			// Something wrong
 			return
 		}
-		door.SetBaseGraphic(door.BaseGraphic() + uo.Graphic(g.facing*2))
-		door.SetFlippedGraphic(door.FlippedGraphic() + uo.Graphic(g.facing*2))
-		door.SetLocation(tr.Location)
-		door.SetFacing(uo.Direction(g.facing))
-		game.GetWorld().Map().ForceAddObject(door)
+		door.Graphic = door.Graphic + uo.Graphic(g.facing*2)
+		door.FlippedGraphic = door.FlippedGraphic + uo.Graphic(g.facing*2)
+		door.Location = tr.Location
+		door.Facing = uo.Direction(g.facing)
+		game.World.Map().AddItem(door, true)
 	})
 }

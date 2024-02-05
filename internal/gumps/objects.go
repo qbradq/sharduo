@@ -9,7 +9,6 @@ import (
 	"github.com/qbradq/sharduo/data"
 	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/lib/clientpacket"
-	"github.com/qbradq/sharduo/lib/template"
 	"github.com/qbradq/sharduo/lib/uo"
 	"github.com/qbradq/sharduo/lib/util"
 )
@@ -42,9 +41,9 @@ func init() {
 			}
 			d.Tiles = append(d.Tiles, objectTile{
 				Offset: uo.Point{
-					X: int16(fn(parts[0])),
-					Y: int16(fn(parts[1])),
-					Z: int8(fn(parts[2])),
+					X: fn(parts[0]),
+					Y: fn(parts[1]),
+					Z: fn(parts[2]),
 				},
 				Graphic: uo.Graphic(fn(parts[3])),
 				Hue:     uo.Hue(fn(parts[4])),
@@ -78,14 +77,14 @@ var objectDefinitions []*objectDefinition
 // statics.
 type objects struct {
 	StandardGUMP
-	useFixedZ      bool               // If true we force the Z value to fixedZ
-	fixedZ         int8               // Forced Z value if useFixedZ is true
-	idx            int                // Currently selected object index
-	lastPlacements []*game.StaticItem // All of the items created in the previous operation
+	useFixedZ      bool         // If true we force the Z value to fixedZ
+	fixedZ         int          // Forced Z value if useFixedZ is true
+	idx            int          // Currently selected object index
+	lastPlacements []*game.Item // All of the items created in the previous operation
 }
 
 // Layout implements the game.GUMP interface.
-func (g *objects) Layout(target, param game.Object) {
+func (g *objects) Layout(target, param any) {
 	pages := len(objectDefinitions) / 20
 	if len(objectDefinitions) != 0 {
 		pages++
@@ -111,14 +110,14 @@ func (g *objects) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 	g.useFixedZ = p.Switch(2)
 	z, err := strconv.ParseInt(p.Text(3), 0, 32)
 	if err == nil {
-		g.fixedZ = int8(z)
+		g.fixedZ = int(z)
 	}
 	// Tool buttons
 	switch p.Button {
 	case 1:
 		// Undo
 		for _, s := range g.lastPlacements {
-			game.Remove(s)
+			s.Remove()
 		}
 		g.lastPlacements = nil
 		return
@@ -144,7 +143,7 @@ func (g *objects) place(l uo.Point) {
 	if g.useFixedZ {
 		l.Z = g.fixedZ
 	} else {
-		f, _ := game.GetWorld().Map().GetFloorAndCeiling(l, false, false)
+		f, _ := game.World.Map().GetFloorAndCeiling(l, false, false)
 		if f != nil {
 			l.Z = f.Highest()
 		}
@@ -152,14 +151,14 @@ func (g *objects) place(l uo.Point) {
 	g.lastPlacements = nil
 	def := objectDefinitions[g.idx]
 	for _, t := range def.Tiles {
-		s := template.Create[*game.StaticItem]("StaticItem")
+		s := game.NewItem("StaticItem")
 		nl := l
 		nl.X += t.Offset.X
 		nl.Y += t.Offset.Y
 		nl.Z += t.Offset.Z
-		s.SetBaseGraphic(t.Graphic)
-		s.SetLocation(nl)
-		game.GetWorld().Map().ForceAddObject(s)
+		s.Graphic = t.Graphic
+		s.Location = nl
+		game.World.Map().AddItem(s, true)
 		g.lastPlacements = append(g.lastPlacements, s)
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"github.com/qbradq/sharduo/lib/clientpacket"
 	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/uo"
+	"github.com/qbradq/sharduo/lib/util"
 )
 
 func init() {
@@ -21,9 +22,9 @@ type regions struct {
 }
 
 // Layout implements the game.GUMP interface.
-func (g *regions) Layout(target, param game.Object) {
+func (g *regions) Layout(target, param any) {
 	g.tr = target.(game.Mobile)
-	g.regions = game.GetWorld().Map().RegionsAt(g.tr.Location())
+	g.regions = game.World.Map().RegionsAt(g.tr.Location)
 	pages := len(g.regions) / 5
 	if len(g.regions)%5 != 0 {
 		pages++
@@ -61,26 +62,26 @@ func (g *regions) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 			SpawnMinZ: uo.MapMinZ,
 			SpawnMaxZ: uo.MapMaxZ,
 		}
-		re.Region.AddRect(n.Mobile().Location().BoundsByRadius(0))
-		game.GetWorld().Map().AddRegion(re.Region)
-		n.GUMP(a, nil, nil)
+		re.Region.AddRect(n.Mobile().Location.BoundsByRadius(0))
+		game.World.Map().AddRegion(re.Region)
+		n.GUMP(a, 0, 0)
 		n.RefreshGUMP(g)
 		return
 	case 2: // Refresh view button
 		// Do nothing and let the GUMP refresh
 		return
 	case 3: // Show all regions button
-		b := g.tr.Location().BoundsByRadius(int(g.tr.ViewRange()))
-		for _, r := range game.GetWorld().Map().RegionsWithin(b) {
-			hue := uo.Hue(game.GetWorld().Random().Random(0, 199)*5 + 1)
-			l := g.tr.Location()
+		b := g.tr.Location.BoundsByRadius(g.tr.ViewRange)
+		for _, r := range game.World.Map().RegionsWithin(b) {
+			hue := uo.Hue(util.Random(0, 199)*5 + 1)
+			l := g.tr.Location
 			for l.Y = b.Y; l.Y <= b.South(); l.Y++ {
 				for l.X = b.X; l.X <= b.East(); l.X++ {
 					if !r.Contains(l) {
 						continue
 					}
-					l.Z = g.tr.Location().Z
-					f, _ := game.GetWorld().Map().GetFloorAndCeiling(l, false, false)
+					l.Z = g.tr.Location.Z
+					f, _ := game.World.Map().GetFloorAndCeiling(l, false, false)
 					if f == nil {
 						continue
 					}
@@ -99,9 +100,9 @@ func (g *regions) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 			}
 		}
 	case 4:
-		executeCommand(n, "saveregions")
+		executeCommand(n, "save_regions")
 	case 5:
-		executeCommand(n, "loadregions")
+		executeCommand(n, "load_regions")
 	}
 	// Region copy button
 	if p.Button >= 3001 {
@@ -120,8 +121,8 @@ func (g *regions) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 		a := New("region-edit")
 		re := a.(*regionEdit)
 		re.Region = nr
-		game.GetWorld().Map().AddRegion(nr)
-		n.GUMP(a, nil, nil)
+		game.World.Map().AddRegion(nr)
+		n.GUMP(a, 0, 0)
 		n.RefreshGUMP(g)
 	}
 	// Region delete button
@@ -131,7 +132,7 @@ func (g *regions) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 			return
 		}
 		r := g.regions[i]
-		game.GetWorld().Map().RemoveRegion(r)
+		game.World.Map().RemoveRegion(r)
 		return
 	}
 	// Region button
@@ -143,7 +144,7 @@ func (g *regions) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 		a := New("region-edit")
 		re := a.(*regionEdit)
 		re.Region = g.regions[i]
-		n.GUMP(a, nil, nil)
+		n.GUMP(a, 0, 0)
 		return
 	}
 }

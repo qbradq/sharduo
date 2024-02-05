@@ -36,6 +36,9 @@ func NewMap() *Map {
 func (m *Map) Update(now uo.Time) {
 }
 
+// saRetBuf is the static buffer used for the return value of [Map.StaticsAt].
+var saRetBuf []uo.CommonObject
+
 // rRetBuf is the static buffer used for the return value of the region query
 // functions.
 var rRetBuf []*Region
@@ -1188,7 +1191,6 @@ func (m *Map) ItemBaseQuery(tn string, center uo.Point, r int) []*Item {
 	if b.H%uo.ChunkHeight != 0 {
 		cb.H++
 	}
-	mwRetBuf = mwRetBuf[:0]
 	for p.Y = cb.Y; p.Y < cb.Y+cb.H; p.Y++ {
 		for p.X = cb.X; p.X < cb.X+cb.W; p.X++ {
 			l := p.ChunkBound(center)
@@ -1211,8 +1213,17 @@ func (m *Map) ItemBaseQuery(tn string, center uo.Point, r int) []*Item {
 // searched. WARNING: This can be expensive and will hang the server. Subsequent
 // calls to ItemQuery will reuse the same backing array for the return value.
 func (m *Map) ItemQuery(tn string, center uo.Point, r int) []*Item {
-	iqRetBuf = iqRetBuf[:0]
+	b := center.BoundsByRadius(r)
 	if r == 0 {
+		b = uo.BoundsFullMap
+	}
+	return m.ItemQueryByBounds(tn, b, center)
+}
+
+// ItemQueryByBounds is like ItemQuery but for a specified bounds.
+func (m *Map) ItemQueryByBounds(tn string, b uo.Bounds, r uo.Point) []*Item {
+	iqRetBuf = iqRetBuf[:0]
+	if b == uo.BoundsFullMap {
 		// Full map query
 		for _, c := range m.chunks {
 			for _, i := range c.Items {
@@ -1225,7 +1236,6 @@ func (m *Map) ItemQuery(tn string, center uo.Point, r int) []*Item {
 	}
 	// Spacial query
 	var p uo.Point
-	b := center.BoundsByRadius(r)
 	cb := uo.Bounds{
 		X: b.X / uo.ChunkWidth,
 		Y: b.Y / uo.ChunkHeight,
@@ -1238,10 +1248,9 @@ func (m *Map) ItemQuery(tn string, center uo.Point, r int) []*Item {
 	if b.H%uo.ChunkHeight != 0 {
 		cb.H++
 	}
-	mwRetBuf = mwRetBuf[:0]
 	for p.Y = cb.Y; p.Y < cb.Y+cb.H; p.Y++ {
 		for p.X = cb.X; p.X < cb.X+cb.W; p.X++ {
-			l := p.ChunkBound(center)
+			l := p.ChunkBound(r)
 			c := m.chunks[l.Y*uo.MapChunksWidth+l.X]
 			for _, item := range c.Items {
 				if !b.Contains(item.Location) {
@@ -1505,7 +1514,7 @@ func (m *Map) RemoveRegion(r *Region) {
 // the same backing array for the return value.
 func (m *Map) RegionsAt(l uo.Point) []*Region {
 	rRetBuf = rRetBuf[:0]
-	c := m.GetChunk(l)
+	c := m.chunks[l.Y*uo.MapChunksWidth+l.X]
 	for _, r := range c.Regions {
 		if r.Contains(l) {
 			rRetBuf = append(rRetBuf, r)
@@ -1515,7 +1524,8 @@ func (m *Map) RegionsAt(l uo.Point) []*Region {
 }
 
 // RegionsWithin returns a slice of all of the regions that overlap the given
-// bounds.
+// bounds. Subsequent calls to [Map.RegionsAt] and [Map.RegionsWithin] reuse
+// the same backing array for the return value.
 func (m *Map) RegionsWithin(b uo.Bounds) []*Region {
 	var p uo.Point
 	rSet := make(map[*Region]struct{})
@@ -1543,13 +1553,11 @@ func (m *Map) RegionsWithin(b uo.Bounds) []*Region {
 			}
 		}
 	}
-	ret := make([]*Region, len(rSet))
-	i := 0
+	rRetBuf = rRetBuf[:0]
 	for r := range rSet {
-		ret[i] = r
-		i++
+		rRetBuf = append(rRetBuf, r)
 	}
-	return ret
+	return rRetBuf
 }
 
 // RegionFeaturesAt returns the accumulated region features from all regions at
@@ -1594,4 +1602,26 @@ func (m *Map) TeleportMobile(mob *Mobile, l uo.Point) bool {
 		mob.NetState.DrawPlayer()
 	}
 	return true
+}
+
+// StaticsAt returns a slice of the statics and static items at the given
+// location. Subsequent calls to StaticsAt will reuse the same backing array for
+// the return value.
+func (m *Map) StaticsAt(l uo.Point) []uo.CommonObject {
+	saRetBuf = saRetBuf[:0]
+	c := m.GetChunk(l)
+	for _, s := range c.Statics {
+		if s.Location.X != l.X || s.Location.Y != l.Y {
+			continue
+		}
+		saRetBuf = append(saRetBuf, s)
+	}
+	for _, i := range c.Items {
+		il := i.Location
+		if il.X != l.X || il.Y != l.Y {
+			continue
+		}
+		saRetBuf = append(saRetBuf, i)
+	}
+	return saRetBuf
 }

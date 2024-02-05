@@ -19,7 +19,7 @@ type admin struct {
 }
 
 // Layout implements the game.GUMP interface.
-func (g *admin) Layout(target, param game.Object) {
+func (g *admin) Layout(target, param any) {
 	g.Window(6, 5, "Admin Menu", 0, 1)
 	ty := 0
 	g.ReplyButton(0, ty, 6, 1, uo.HueDefault, "Accounts", 1)
@@ -41,7 +41,7 @@ func (g *admin) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 	}
 	switch p.Button {
 	case 1:
-		n.GUMP(New("accounting"), nil, nil)
+		n.GUMP(New("accounting"), 0, 0)
 	case 2:
 		executeCommand(n, "save")
 	case 3:

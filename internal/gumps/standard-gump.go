@@ -234,7 +234,7 @@ func (g *StandardGUMP) StandardReplyHandler(p *clientpacket.GUMPReply) bool {
 // Window creates a new Window for the GUMP. Window dimensions are given in
 // cells and specifies the inner size of the window. If closable is true a close
 // button is generated and the GUMP may be closed with right-clicking and - in
-// some situations - the escape key. If minimizeable is true a minimize button
+// some situations - the escape key. If minimize-able is true a minimize button
 // is generated and the GUMP will have minimize behavior. If pageButtons is true
 // page buttons are generated for every page.
 func (g *StandardGUMP) Window(w, h int, title string, flags SGFlag, numPages uint32) {
@@ -257,7 +257,7 @@ func (g *StandardGUMP) Window(w, h int, title string, flags SGFlag, numPages uin
 	h *= sgCellHeight
 	w += sgTotalHFill
 	h += sgTotalVFill
-	// Paging seting
+	// Paging setting
 	if g.currentPage == 0 {
 		g.currentPage++
 	}

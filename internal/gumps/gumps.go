@@ -68,13 +68,13 @@ func New(name string) GUMP {
 
 // Edit opens the editing GUMP for the object if any
 func Edit(m *game.Mobile, o any) {
-	if m == nil || o == nil || m.NetState() == nil {
+	if m == nil || o == nil || m.NetState == nil {
 		return
 	}
 	if item, ok := o.(game.Item); ok {
-		if item.TemplateName() == "BaseSign" {
-			m.NetState().GetText(item.Name(), "Please enter the text of the sign.", 30, func(s string) {
-				item.SetName(s)
+		if item.TemplateName == "BaseSign" {
+			m.NetState.GetText(item.Name, "Please enter the text of the sign.", 30, func(s string) {
+				item.Name = s
 			})
 		}
 	}

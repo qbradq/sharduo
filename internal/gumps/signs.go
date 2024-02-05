@@ -58,7 +58,7 @@ type signs struct {
 }
 
 // Layout implements the game.GUMP interface.
-func (g *signs) Layout(target, param game.Object) {
+func (g *signs) Layout(target, param any) {
 	pages := len(signGraphics) / 20
 	if len(signGraphics)%20 != 0 {
 		pages++
@@ -101,7 +101,7 @@ func (g *signs) placeSingle(n game.NetState) {
 			return
 		}
 		l := tr.Location
-		for _, s := range game.GetWorld().Map().StaticsAt(l) {
+		for _, s := range game.World.Map().StaticsAt(l) {
 			for i, p := range signpostGraphics {
 				if s.BaseGraphic() != p {
 					continue

@@ -21,7 +21,7 @@ type spawn struct {
 }
 
 // Layout implements the game.GUMP interface.
-func (g *spawn) Layout(target, param game.Object) {
+func (g *spawn) Layout(target, param any) {
 	pages := len(g.Region.Entries) / 8
 	if len(g.Region.Entries)%8 != 0 {
 		pages++
@@ -65,8 +65,8 @@ func (g *spawn) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 		return int(v)
 	}
 	// Data
-	g.Region.SpawnMinZ = int8(fn(p.Text(1)))
-	g.Region.SpawnMaxZ = int8(fn(p.Text(2)))
+	g.Region.SpawnMinZ = fn(p.Text(1))
+	g.Region.SpawnMaxZ = fn(p.Text(2))
 	for i, e := range g.Region.Entries {
 		s := p.Text(uint16(1001 + i))
 		if len(s) == 0 {
@@ -98,7 +98,7 @@ func (g *spawn) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 		if n.Mobile() == nil {
 			return
 		}
-		g.Region.SpawnMinZ = n.Mobile().Location().Z - uo.PlayerHeight
+		g.Region.SpawnMinZ = n.Mobile().Location.Z - uo.PlayerHeight
 		g.Region.SpawnMaxZ = g.Region.SpawnMinZ + uo.PlayerHeight*2
 		return
 	}
@@ -109,8 +109,14 @@ func (g *spawn) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 			return
 		}
 		e := g.Region.Entries[i]
-		for _, o := range e.Objects {
-			game.Remove(o.Object)
+		for _, so := range e.Objects {
+			o := so.Object
+			if m, ok := o.(*game.Mobile); ok {
+				game.World.Map().RemoveMobile(m)
+				game.World.RemoveMobile(m)
+			} else {
+				(o.(*game.Item)).Remove()
+			}
 		}
 		g.Region.Entries = append(g.Region.Entries[:i], g.Region.Entries[i+1:]...)
 	}

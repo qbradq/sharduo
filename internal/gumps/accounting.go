@@ -19,8 +19,8 @@ type accounting struct {
 }
 
 // Layout implements the game.GUMP interface.
-func (g *accounting) Layout(target, param game.Object) {
-	g.accounts = game.GetWorld().Accounts()
+func (g *accounting) Layout(target, param any) {
+	g.accounts = game.World.Accounts()
 	pages := len(g.accounts) / 20
 	if len(g.accounts)%20 != 0 {
 		pages++
@@ -29,7 +29,7 @@ func (g *accounting) Layout(target, param game.Object) {
 	for i := int(g.currentPage-1) * 20; i < len(g.accounts) && i < int(g.currentPage)*20; i++ {
 		a := g.accounts[i]
 		ty := i % 20
-		g.ReplyButton(0, ty, 6, 1, uo.HueDefault, a.Username(), uint32(1001+i))
+		g.ReplyButton(0, ty, 6, 1, uo.HueDefault, a.Username, uint32(1001+i))
 	}
 }
 
@@ -48,6 +48,6 @@ func (g *accounting) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 		agi := New("account")
 		ag := agi.(*account)
 		ag.Account = a
-		n.GUMP(ag, nil, nil)
+		n.GUMP(ag, 0, 0)
 	}
 }

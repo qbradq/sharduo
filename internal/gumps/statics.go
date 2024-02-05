@@ -82,7 +82,7 @@ type statics struct {
 }
 
 // Layout implements the game.GUMP interface.
-func (g *statics) Layout(target, param game.Object) {
+func (g *statics) Layout(target, param any) {
 	fn := func(dg decorGroup) {
 		for i := int(g.currentPage-1) * 12; i < len(dg.items) && i < int(g.currentPage)*12; i++ {
 			item := dg.items[i]
@@ -90,7 +90,7 @@ func (g *statics) Layout(target, param game.Object) {
 			ty := i / 3
 			ty %= 4
 			g.ReplyButton(tx*6+0, ty*5+0+7, 6, 1, 0, item.name, uint32(1001+i))
-			g.Item(tx*6+2, ty*5+1+8, 0, 0, 0, uo.Graphic(util.RangeExpression(item.expression, game.GetWorld().Random())))
+			g.Item(tx*6+2, ty*5+1+8, 0, 0, 0, uo.Graphic(util.RangeExpression(item.expression)))
 		}
 	}
 	// Display grid
@@ -129,7 +129,7 @@ func (g *statics) Layout(target, param game.Object) {
 func (g *statics) layoutCommonControls() {
 	g.Text(0, 0, 4, 0, "Current")
 	g.Item(1, 1, 0, 0, g.item.hue,
-		uo.Graphic(util.RangeExpression(g.item.expression, game.GetWorld().Random())))
+		uo.Graphic(util.RangeExpression(g.item.expression)))
 	g.ReplyButton(5, 0, 5, 1, 0, "Single Placement", 1)
 	g.ReplyButton(5, 1, 5, 1, 0, "Fill Area", 2)
 	g.ReplyButton(5, 2, 5, 1, 0, "Erase", 3)
@@ -228,14 +228,14 @@ func (g *statics) lift(n game.NetState) {
 			g.lift(n)
 			return
 		}
-		s := game.Find[*game.StaticItem](tr.TargetObject)
+		s := game.World.FindItem(tr.TargetObject)
 		if s == nil {
 			// Something wrong
 			return
 		}
 		g.item.name = s.DisplayName()
 		g.item.expression = strconv.FormatInt(int64(s.BaseGraphic()), 10)
-		d.hue = s.Hue()
+		d.hue = s.Hue
 		n.RefreshGUMP(g)
 		n.RefreshGUMP(d)
 		g.lift(n)
@@ -252,9 +252,9 @@ func (g *statics) eraseArea(n game.NetState) {
 		return
 	}
 	d.targetVolume(n, func(b uo.Bounds) {
-		items := game.GetWorld().Map().ItemQuery("StaticItem", b)
+		items := game.World.Map().ItemQueryByBounds("StaticItem", b, b.TopLeft())
 		for _, item := range items {
-			game.Remove(item)
+			item.Remove()
 		}
 		g.eraseArea(n)
 	})
@@ -266,12 +266,12 @@ func (g *statics) eraseSingle(n game.NetState) {
 		if tr.TargetObject == uo.SerialZero {
 			return
 		}
-		s := game.Find[*game.StaticItem](tr.TargetObject)
+		s := game.World.FindItem(tr.TargetObject)
 		if s == nil {
 			// Something wrong
 			return
 		}
-		game.Remove(s)
+		s.Remove()
 		g.eraseSingle(n)
 	})
 }
@@ -287,7 +287,7 @@ func (g *statics) placeSingle(n game.NetState) {
 		if !ok {
 			return
 		}
-		d.place(tr.Location, g.item.expression, game.Find[game.Item](tr.TargetObject))
+		d.place(tr.Location, g.item.expression, game.World.FindItem(tr.TargetObject))
 		g.placeSingle(n)
 	})
 }

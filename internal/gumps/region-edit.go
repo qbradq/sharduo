@@ -23,7 +23,7 @@ type regionEdit struct {
 }
 
 // Layout implements the game.GUMP interface.
-func (g *regionEdit) Layout(target, param game.Object) {
+func (g *regionEdit) Layout(target, param any) {
 	fn := func(x, y int, flag game.RegionFeature, name string, id uint32) {
 		if g.Region.Features&flag != 0 {
 			g.CheckedReplyButton(x*4, y+7, 4, 1, uo.HueDefault, name, id)
@@ -81,39 +81,39 @@ func (g *regionEdit) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 		}
 		return int(v)
 	}
-	fn2 := func(x, y int16) {
+	fn2 := func(x, y int) {
 		l := uo.Point{
 			X: x,
 			Y: y,
 			Z: uo.MapMaxZ,
 		}
-		f, _ := game.GetWorld().Map().GetFloorAndCeiling(l, false, true)
+		f, _ := game.World.Map().GetFloorAndCeiling(l, false, true)
 		if f == nil {
 			return
 		}
 		l.Z = f.StandingHeight()
-		game.GetWorld().Map().TeleportMobile(n.Mobile(), l)
+		game.World.Map().TeleportMobile(n.Mobile(), l)
 	}
 	// Data
 	g.Region.Name = p.Text(1)
 	g.Region.Music = p.Text(2)
-	game.GetWorld().Map().RemoveRegion(g.Region)
+	game.World.Map().RemoveRegion(g.Region)
 	for i := range g.Region.Rects {
 		s := p.Text(uint16(2001 + i))
 		if s == "" {
 			continue
 		}
 		g.Region.Rects[i] = uo.BoundsOf(uo.Point{
-			X: int16(fn(s)),
-			Y: int16(fn(p.Text(uint16(3001 + i)))),
+			X: fn(s),
+			Y: fn(p.Text(uint16(3001 + i))),
 			Z: uo.MapMinZ,
 		}, uo.Point{
-			X: int16(fn(p.Text(uint16(6001 + i)))),
-			Y: int16(fn(p.Text(uint16(7001 + i)))),
+			X: fn(p.Text(uint16(6001 + i))),
+			Y: fn(p.Text(uint16(7001 + i))),
 			Z: uo.MapMaxZ,
 		})
 	}
-	game.GetWorld().Map().AddRegion(g.Region)
+	game.World.Map().AddRegion(g.Region)
 	defer n.RefreshGUMP(n.GetGUMPByID(GUMPIDRegions))
 	// Standard reply
 	if g.StandardReplyHandler(p) {
@@ -122,25 +122,22 @@ func (g *regionEdit) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 	// Handle replies
 	switch p.Button {
 	case 3: // Test music
-		n.Music(uo.Music(util.RangeExpression(g.Region.Music, game.GetWorld().Random())))
+		n.Music(uo.Music(util.RangeExpression(g.Region.Music)))
 		return
 	case 4: // Show regions
 		m := n.Mobile()
 		if m == nil {
 			break
 		}
-		b := m.Location().BoundsByRadius(int(m.ViewRange()))
-		l := m.Location()
+		b := m.Location.BoundsByRadius(m.ViewRange)
+		l := m.Location
 		for l.Y = b.Y; l.Y <= b.South(); l.Y++ {
 			for l.X = b.X; l.X <= b.East(); l.X++ {
-				if l.X == m.Location().X && l.Y == m.Location().Y {
-					print("debug")
-				}
 				if !g.Region.Contains(l) {
 					continue
 				}
-				l.Z = m.Location().Z
-				f, _ := game.GetWorld().Map().GetFloorAndCeiling(l, false, false)
+				l.Z = m.Location.Z
+				f, _ := game.World.Map().GetFloorAndCeiling(l, false, false)
 				if f == nil {
 					continue
 				}
@@ -163,15 +160,15 @@ func (g *regionEdit) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 		if m == nil {
 			break
 		}
-		game.GetWorld().Map().RemoveRegion(g.Region)
-		g.Region.AddRect(m.Location().BoundsByRadius(0))
-		game.GetWorld().Map().AddRegion(g.Region)
+		game.World.Map().RemoveRegion(g.Region)
+		g.Region.AddRect(m.Location.BoundsByRadius(0))
+		game.World.Map().AddRegion(g.Region)
 		return
 	case 6: // Spawn button
 		a := New("spawn")
 		sg := a.(*spawn)
 		sg.Region = g.Region
-		n.GUMP(a, nil, nil)
+		n.GUMP(a, 0, 0)
 		return
 	}
 	// Delete buttons
@@ -180,10 +177,10 @@ func (g *regionEdit) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 		if i >= len(g.Region.Rects) {
 			return
 		}
-		game.GetWorld().Map().RemoveRegion(g.Region)
+		game.World.Map().RemoveRegion(g.Region)
 		g.Region.Rects = append(g.Region.Rects[:i], g.Region.Rects[i+1:]...)
 		g.Region.ForceRecalculateBounds()
-		game.GetWorld().Map().AddRegion(g.Region)
+		game.World.Map().AddRegion(g.Region)
 		return
 	}
 	// Flag buttons
@@ -222,14 +219,14 @@ func (g *regionEdit) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 		n.TargetSendCursor(uo.TargetTypeLocation, func(tr *clientpacket.TargetResponse) {
 			l := tr.Location
 			l.Z = uo.MapMaxZ
-			game.GetWorld().Map().RemoveRegion(g.Region)
+			game.World.Map().RemoveRegion(g.Region)
 			g.Region.Rects[i] = uo.BoundsOf(uo.Point{
 				X: r.X,
 				Y: r.Y,
 				Z: uo.MapMinZ,
 			}, l)
 			g.Region.ForceRecalculateBounds()
-			game.GetWorld().Map().AddRegion(g.Region)
+			game.World.Map().AddRegion(g.Region)
 			n.RefreshGUMP(g)
 		})
 		return
@@ -254,14 +251,14 @@ func (g *regionEdit) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 		n.TargetSendCursor(uo.TargetTypeLocation, func(tr *clientpacket.TargetResponse) {
 			l := tr.Location
 			l.Z = uo.MapMinZ
-			game.GetWorld().Map().RemoveRegion(g.Region)
+			game.World.Map().RemoveRegion(g.Region)
 			g.Region.Rects[i] = uo.BoundsOf(l, uo.Point{
 				X: r.East(),
 				Y: r.South(),
 				Z: uo.MapMaxZ,
 			})
 			g.Region.ForceRecalculateBounds()
-			game.GetWorld().Map().AddRegion(g.Region)
+			game.World.Map().AddRegion(g.Region)
 			n.RefreshGUMP(g)
 		})
 		return
