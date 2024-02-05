@@ -14,34 +14,34 @@ func init() {
 type eventHandler func(any, any, any) bool
 
 // Event handler registrar
-var evreg *util.Registry[string, *eventHandler] = util.NewRegistry[string, *eventHandler]("events")
+var evReg *util.Registry[string, *eventHandler] = util.NewRegistry[string, *eventHandler]("events")
 
 // Event handler back-reference registrar
-var evbr map[*eventHandler]string = map[*eventHandler]string{}
+var evBr map[*eventHandler]string = map[*eventHandler]string{}
 
 // Event handler index back-reference registrar
-var evhibr map[*eventHandler]uint16 = map[*eventHandler]uint16{}
+var ehIBR map[*eventHandler]uint16 = map[*eventHandler]uint16{}
 
 // Event handlers by index
-var evidx []*eventHandler = []*eventHandler{nil}
+var evIdx []*eventHandler = []*eventHandler{nil}
 
 func reg(name string, fn eventHandler) {
-	evreg.Add(name, &fn)
-	evbr[&fn] = name
-	idx := uint16(len(evidx))
-	evidx = append(evidx, &fn)
-	evhibr[&fn] = idx
+	evReg.Add(name, &fn)
+	evBr[&fn] = name
+	idx := uint16(len(evIdx))
+	evIdx = append(evIdx, &fn)
+	ehIBR[&fn] = idx
 }
 
 // getEventHandler returns the named event handler or nil if it does not exist
 func getEventHandler(which string) *eventHandler {
-	fn, _ := evreg.Get(which)
+	fn, _ := evReg.Get(which)
 	return fn
 }
 
 // getEventName returns the name of the event handler
 func getEventName(fn *eventHandler) string {
-	return evbr[fn]
+	return evBr[fn]
 }
 
 // getEventIndex returns the index number of the event handler. A return value
@@ -49,16 +49,16 @@ func getEventName(fn *eventHandler) string {
 // NOTE: This index number can change when events are added. DO NOT PERSIST THIS
 // VALUE!
 func getEventIndex(fn *eventHandler) uint16 {
-	return evhibr[fn]
+	return ehIBR[fn]
 }
 
 // GetEventHandlerByIndex returns the event handler by index or nil if it does
 // not exist.
 func GetEventHandlerByIndex(idx uint16) *eventHandler {
-	if idx >= uint16(len(evidx)) {
+	if idx >= uint16(len(evIdx)) {
 		return nil
 	}
-	return evidx[idx]
+	return evIdx[idx]
 }
 
 // getEventHandlerIndex returns the event handler index by name. A return value
@@ -70,7 +70,7 @@ func getEventHandlerIndex(which string) uint16 {
 	if fn == nil {
 		return 0
 	}
-	return evhibr[fn]
+	return ehIBR[fn]
 }
 
 // ExecuteEventHandler executes the named event handler with the parameters.

@@ -577,14 +577,14 @@ func (n *NetState) WornItem(i *game.Item, wearer *game.Mobile) {
 	})
 }
 
-// DropReject sends an item move reject packet
+// DropReject sends an item move reject packet.
 func (n *NetState) DropReject(reason uo.MoveItemRejectReason) {
 	n.Send(&serverpacket.MoveItemReject{
 		Reason: reason,
 	})
 }
 
-// DragItem sends the DragItem packet to the given mobile
+// DragItem sends the DragItem packet to the given mobile.
 func (n *NetState) DragItem(item *game.Item, srcMob *game.Mobile, srcLoc uo.Point, destMob *game.Mobile, destLoc uo.Point) {
 	if item == nil {
 		return

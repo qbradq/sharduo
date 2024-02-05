@@ -128,3 +128,19 @@ func (e *UOError) Packet() serverpacket.Packet {
 		Text: e.Message,
 	}
 }
+
+// DynamicDispatch attempts to execute the named dynamic dispatch function on
+// the given object with the receiver. The receiver may not be nil, but the
+// source can.
+func DynamicDispatch(which string, receiver, source, v any) bool {
+	if receiver == nil {
+		return false
+	}
+	var fn string
+	if mob, ok := receiver.(*Mobile); ok {
+		fn = mob.Events[which]
+	} else {
+		fn = receiver.(*Item).Events[which]
+	}
+	return ExecuteEventHandler(fn, receiver, source, v)
+}

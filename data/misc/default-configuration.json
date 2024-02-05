@@ -1,0 +1,20 @@
+{
+    "TemplatesDirectory": "templates",
+    "ListsDirectory": "lists",
+    "TemplateVariablesFile": "misc/template-variables.ini",
+    "SaveDirectory": "saves",
+    "ArchiveDirectory": "archives",
+    "ClientFilesDirectory": "client",
+    "CrontabFile": "crontab",
+    "LoginServerAddress": "0.0.0.0",
+    "LoginServerPort": "7775",
+    "GameServerAddress": "0.0.0.0",
+    "GameServerPublicAddress": "127.0.0.1",
+    "GameServerPort": "7777",
+    "GameSaveType": "Flat",
+    "GameServerName": "ShardUO TC",
+    "GenerateDebugMaps": "false",
+    "CPUProfile": "false",
+    "StartingLocation": "1331,1624,50",
+    "StartingFacing": "6"
+}

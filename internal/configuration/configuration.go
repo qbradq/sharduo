@@ -16,7 +16,7 @@ import (
 //
 
 // Internal data file path for the default configuration ini
-var DefaultConfigurationFile string = "misc/default-configuration.ini"
+var DefaultConfigurationFile string = "misc/default-configuration.json"
 
 // Internal data file path for the default crontab file
 var DefaultCrontabFile string = "misc/default-crontab"
@@ -35,7 +35,7 @@ var TemplateVariablesFile string
 //
 
 // External path to the configuration file
-var ConfigurationFile string = "configuration.ini"
+var ConfigurationFile string = "configuration.json"
 
 // External directory path to write saves to
 var SaveDirectory string

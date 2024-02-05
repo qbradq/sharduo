@@ -159,18 +159,20 @@ func (f *ItemFlags) UnmarshalJSON(in []byte) error {
 type Item struct {
 	Object
 	// Static variables
-	Def            *uo.StaticDefinition // Item properties pointer
-	Flags          ItemFlags            // Boolean item flags
-	Graphic        uo.Graphic           // Base graphic to use for the item
-	FlippedGraphic uo.Graphic           // Flipped graphic
-	Layer          uo.Layer             // Layer the object is worn on
-	Weight         float64              // Weight of the item, NOT the stack, just one of these items
-	MaxWeight      float64              // Maximum weight that can be held in this container
-	MaxItems       int                  // Maximum number of items that can be held in this container
-	GUMPGraphic    uo.GUMP              // GUMP graphic to use for containers
-	Bounds         uo.Bounds            // Container GUMP bounds
-	LiftSound      uo.Sound             // Sound this item makes when lifted
-	Value          int                  // Purchase price of the item if it can be bought
+	Def               *uo.StaticDefinition // Item properties pointer
+	Flags             ItemFlags            // Boolean item flags
+	Graphic           uo.Graphic           // Base graphic to use for the item
+	FlippedGraphic    uo.Graphic           // Flipped graphic
+	Layer             uo.Layer             // Layer the object is worn on
+	Weight            float64              // Weight of the item, NOT the stack, just one of these items
+	MaxWeight         float64              // Maximum weight that can be held in this container
+	MaxItems          int                  // Maximum number of items that can be held in this container
+	GUMPGraphic       uo.GUMP              // GUMP graphic to use for containers
+	Bounds            uo.Bounds            // Container GUMP bounds
+	LiftSound         uo.Sound             // Sound this item makes when lifted
+	DropSound         uo.Sound             // Sound this container makes by default when dropping an item into it
+	Value             int                  // Purchase price of the item if it can be bought
+	DropSoundOverride uo.Sound             // Sound to override the normal drop sound for this item
 	// Persistent variables
 	Flipped       bool        // If true the item is currently flipped
 	Amount        int         // Stack amount
@@ -700,6 +702,14 @@ func (i *Item) Update(t uo.Time) {
 		}
 		i.Remove()
 	}
+}
+
+// DropSoundOverride returns the drop sound override or s if there is none.
+func (i *Item) GetDropSoundOverride(s uo.Sound) uo.Sound {
+	if i.DropSoundOverride != uo.SoundInvalidDrop {
+		return i.DropSoundOverride
+	}
+	return s
 }
 
 func (i *Item) StandingHeight() int {

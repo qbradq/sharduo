@@ -68,6 +68,8 @@ type NetState interface {
 	GetGUMPByID(uo.Serial) any
 	// RefreshGUMP refreshes the passed GUMP on the client side.
 	RefreshGUMP(any)
+	// DragItem sends the DragItem packet to the given mobile.
+	DragItem(*Item, *Mobile, uo.Point, *Mobile, uo.Point)
 }
 
 // ContainerObserver is implemented by anything that can be notified of changes

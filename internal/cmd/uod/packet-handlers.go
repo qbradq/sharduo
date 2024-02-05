@@ -158,15 +158,8 @@ func handleStatusRequest(n *NetState, cp clientpacket.Packet) {
 	p := cp.(*clientpacket.PlayerStatusRequest)
 	switch p.StatusRequestType {
 	case uo.StatusRequestTypeBasic:
-		m := game.Find(p.PlayerMobileID)
-		if m == nil {
-			break
-		}
-		mob, ok := m.(*game.Mobile)
-		if !ok {
-			break
-		}
-		n.SendMobile(mob)
+		m := game.World.FindMobile(p.PlayerMobileID)
+		n.SendMobile(m)
 	case uo.StatusRequestTypeSkills:
 		n.SendAllSkills()
 	}
@@ -297,73 +290,82 @@ func handleDropRequest(n *NetState, cp clientpacket.Packet) {
 		n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		return
 	}
-	if !n.m.IsItemOnCursor() {
+	if n.m.Cursor != nil {
 		n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		return
 	}
 	p := cp.(*clientpacket.DropRequest)
 	// Do not trust the serial coming from the client, only drop what we are
 	// holding.
-	item := n.m.Cursor()
-	n.m.RequestCursorState(game.CursorStateDrop)
+	item := n.m.Cursor
 	if p.Container == uo.SerialSystem {
 		// Drop to map request
 		newLocation := p.Location
-		if n.m.Location().XYDistance(newLocation) > uo.MaxDropRange {
-			n.m.DropItemInCursor()
+		if n.m.Location.XYDistance(newLocation) > uo.MaxDropRange {
+			n.m.DropToFeet(n.m.Cursor)
+			n.m.Cursor = nil
 			n.DropReject(uo.MoveItemRejectReasonOutOfRange)
 			return
 		}
 		// Line of sight check
-		oldLocation := item.Location()
-		item.SetLocation(newLocation)
+		oldLocation := item.Location
+		item.Location = newLocation
 		if !n.m.HasLineOfSight(item) {
-			item.SetLocation(oldLocation)
-			n.m.DropItemInCursor()
+			item.Location = oldLocation
+			n.m.DropToFeet(n.m.Cursor)
+			n.m.Cursor = nil
 			n.DropReject(uo.MoveItemRejectReasonOutOfSight)
 			return
 		}
-		if !world.Map().SetNewParent(item, nil) {
-			n.m.DropItemInCursor()
+		if !world.Map().AddItem(item, false) {
+			n.m.DropToFeet(n.m.Cursor)
+			n.m.Cursor = nil
 			n.DropReject(uo.MoveItemRejectReasonUnspecified)
 			return
 		} else {
-			n.m.PickUp(nil)
+			n.m.Cursor = nil
 			n.Send(&serverpacket.DropApproved{})
-			// Play drop sound
-			n.Sound(item.DropSoundOverride(uo.SoundDefaultDrop), newLocation)
+			n.Sound(item.GetDropSoundOverride(uo.SoundDefaultDrop), newLocation)
 			// Distribute drag packets
-			for _, mob := range world.Map().GetNetStatesInRange(n.m.Location(), uo.MaxViewRange) {
-				mob.NetState().DragItem(item, n.m, n.m.Location(), nil, newLocation)
+			for _, mob := range world.Map().NetStatesInRange(n.m.Location, 0) {
+				mob.NetState.DragItem(item, n.m, n.m.Location, nil, newLocation)
 			}
 		}
 	} else {
 		target := world.Find(p.Container)
 		if target == nil {
-			n.m.DropItemInCursor()
+			n.m.DropToFeet(n.m.Cursor)
+			n.m.Cursor = nil
 			n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		}
-		newLocation := game.RootParent(target).Location()
-		item.SetDropLocation(p.Location)
-		item.SetLocation(newLocation)
+		var nl uo.Point
+		if item, ok := target.(*game.Item); ok {
+			nl = game.MapLocation(item)
+		} else {
+			nl = target.(*game.Mobile).Location
+		}
+		item.Location = nl
 		if !game.DynamicDispatch("Drop", target, n.m, item) {
-			n.m.DropItemInCursor()
+			n.m.DropToFeet(n.m.Cursor)
+			n.m.Cursor = nil
 			n.DropReject(uo.MoveItemRejectReasonUnspecified)
 			return
 		}
-		n.m.PickUp(nil)
+		n.m.Cursor = nil
 		n.Send(&serverpacket.DropApproved{})
 		// Play drop sound
-		if c, ok := target.(game.Container); ok {
-			n.Sound(item.DropSoundOverride(c.DropSound()), newLocation)
-		} else if _, ok := target.(game.Mobile); ok {
-			n.Sound(uo.SoundBagDrop, newLocation)
+		if di, ok := target.(*game.Item); ok {
+			if di.HasFlags(game.ItemFlagsContainer) {
+				n.Sound(item.GetDropSoundOverride(di.DropSound), nl)
+			} else {
+				n.Sound(item.GetDropSoundOverride(uo.SoundDefaultDrop), nl)
+			}
 		} else {
-			n.Sound(item.DropSoundOverride(uo.SoundDefaultDrop), newLocation)
+			n.Sound(uo.SoundBagDrop, nl)
 		}
 		// Distribute drag packets
-		for _, mob := range world.Map().GetNetStatesInRange(n.m.Location(), uo.MaxViewRange) {
-			mob.NetState().DragItem(item, n.m, n.m.Location(), nil, newLocation)
+		for _, mob := range world.Map().NetStatesInRange(n.m.Location, 0) {
+			mob.NetState.DragItem(item, n.m, n.m.Location, nil, nl)
 		}
 	}
 }
@@ -374,39 +376,41 @@ func handleWearItemRequest(n *NetState, cp clientpacket.Packet) {
 		return
 	}
 	p := cp.(*clientpacket.WearItemRequest)
-	item := world.Find(p.Item)
-	wearer := world.Find(p.Wearer)
+	item := world.FindItem(p.Item)
+	wearer := world.FindMobile(p.Wearer)
 	if item == nil || wearer == nil {
-		n.m.DropItemInCursor()
+		n.m.DropToFeet(n.m.Cursor)
+		n.m.Cursor = nil
 		n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		return
 	}
 	// Check if we are allowed to equip items to this mobile
-	if wearer.Serial() != n.m.Serial() {
-		n.m.DropItemInCursor()
+	if wearer != n.m {
+		n.m.DropToFeet(n.m.Cursor)
+		n.m.Cursor = nil
 		n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		return
 	}
-	if item.Serial() != n.m.Cursor().Serial() {
-		n.m.DropItemInCursor()
+	if item != n.m.Cursor {
+		n.m.DropToFeet(n.m.Cursor)
+		n.m.Cursor = nil
 		n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		return
 	}
-	wearable, ok := item.(game.Wearable)
-	if !ok {
-		n.m.DropItemInCursor()
+	if item.Wearable() {
+		n.m.DropToFeet(n.m.Cursor)
+		n.m.Cursor = nil
 		n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		return
 	}
-	n.m.RequestCursorState(game.CursorStateEquip)
-	if !n.m.Equip(wearable) {
-		n.m.PickUp(nil)
+	if !n.m.Equip(item) {
+		n.m.Cursor = nil
 		n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		return
 	} else {
 		n.Send(&serverpacket.DropApproved{})
 	}
-	n.m.PickUp(nil)
+	n.m.Cursor = nil
 	n.Send(&serverpacket.DropApproved{})
 }
 
@@ -424,19 +428,19 @@ func handleBuyRequest(n *NetState, cp clientpacket.Packet) {
 		return
 	}
 	p := cp.(*clientpacket.BuyItems)
-	vendor := game.Find[game.Mobile](p.Vendor)
-	if vendor == nil || vendor.Location().XYDistance(n.m.Location()) > uo.MaxViewRange {
+	vendor := world.FindMobile(p.Vendor)
+	if vendor == nil || vendor.Location.XYDistance(n.m.Location) > uo.MaxViewRange {
 		return
 	}
 	// Calculate total cost
 	total := 0
 	for _, bi := range p.BoughtItems {
-		i := game.Find[game.Item](bi.Item)
+		i := world.FindItem(bi.Item)
 		// Sanity checks
-		if i == nil || game.RootParent(i).Serial() != p.Vendor {
+		if i == nil || i.Wearer.Serial != p.Vendor {
 			return
 		}
-		total += bi.Amount * i.Value()
+		total += bi.Amount * i.Value
 	}
 	// Charge gold
 	if !n.m.ChargeGold(total) {
@@ -445,39 +449,38 @@ func handleBuyRequest(n *NetState, cp clientpacket.Packet) {
 	}
 	// Give items
 	for _, bi := range p.BoughtItems {
-		i := game.Find[game.Item](bi.Item)
+		i := world.FindItem(bi.Item)
 		if i == nil {
 			continue
 		}
-		// Dirty hack for stablemaster NPCs
-		tn := i.TemplateName()
-		if strings.HasPrefix(tn, "StablemasterPlaceholder") {
-			tn = strings.TrimPrefix(tn, "StablemasterPlaceholder")
-			m := template.Create[game.Mobile](tn)
+		// Dirty hack for stable master NPCs
+		tn := i.TemplateName
+		if strings.HasPrefix(tn, "StableMasterPlaceholder") {
+			tn = strings.TrimPrefix(tn, "StableMasterPlaceholder")
+			m := game.NewMobile(tn)
 			if m == nil {
 				// Something very wrong
 				continue
 			}
-			m.SetLocation(n.m.Location())
-			m.SetControlMaster(n.m)
-			m.SetAI("Follow")
-			m.SetAIGoal(n.m)
-			world.Map().AddObject(m)
+			m.Location = n.m.Location
+			m.ControlMaster = n.m
+			m.AI = "Follow"
+			m.AIGoal = n.m
+			world.Map().AddMobile(m, true)
 		} else {
-			ni := template.Create[game.Item](tn)
+			ni := game.NewItem(tn)
 			if ni == nil {
 				// Something very wrong
 				continue
 			}
-			ni.SetAmount(bi.Amount)
-			ni.SetDropLocation(uo.RandomContainerLocation)
+			ni.Amount = bi.Amount
 			if !n.m.DropToBackpack(ni, false) {
 				n.m.DropToFeet(ni)
 			}
 		}
 	}
-	world.Map().SendCliloc(vendor, uo.SpeechNormalRange, 1080013, strconv.Itoa(total)) // The total of thy purchase is ~1_VAL~ gold,
-	n.Sound(0x02E6, n.m.Location())
+	world.Map().SendCliloc(vendor, 1080013, strconv.Itoa(total)) // The total of thy purchase is ~1_VAL~ gold,
+	n.Sound(0x02E6, n.m.Location)
 }
 
 func handleSellRequest(n *NetState, cp clientpacket.Packet) {
@@ -486,50 +489,50 @@ func handleSellRequest(n *NetState, cp clientpacket.Packet) {
 		return
 	}
 	p := cp.(*clientpacket.SellResponse)
-	vm := game.Find[game.Mobile](p.Vendor)
-	if vm == nil || vm.Location().XYDistance(n.m.Location()) > uo.MaxViewRange {
+	vm := world.FindMobile(p.Vendor)
+	if vm == nil || vm.Location.XYDistance(n.m.Location) > uo.MaxViewRange {
 		return
 	}
 	// Remove items and calculate total
 	total := 0
 	for _, si := range p.SellItems {
-		i := game.Find[game.Item](si.Serial)
+		i := world.FindItem(si.Serial)
 		if i == nil {
 			continue
 		}
-		rp := game.RootParent(i)
-		if rp == nil || rp.Serial() != n.m.Serial() {
+		rp := game.Owner(i)
+		if rp == nil || rp != n.m {
 			continue
 		}
 		sa := si.Amount
-		if sa > i.Amount() {
-			sa = i.Amount()
+		if sa > i.Amount {
+			sa = i.Amount
 		} else if sa < 1 {
 			sa = 1
 		}
-		total += (i.Value() / 2) * sa
-		if sa == i.Amount() {
-			game.Remove(i)
+		total += (i.Value / 2) * sa
+		if sa == i.Amount {
+			i.Remove()
 		} else {
-			i.SetAmount(i.Amount() - sa)
-			world.Update(i)
+			i.Amount -= sa
+			world.UpdateItem(i)
 		}
 	}
 	// Payment
-	gc := template.Create[game.Item]("GoldCoin")
-	gc.SetAmount(total)
+	gc := game.NewItem("GoldCoin")
+	gc.Amount = total
 	if !n.m.DropToBackpack(gc, false) {
 		// Try a check instead
-		game.Remove(gc)
-		check := template.Create[*game.Check]("Check")
-		check.SetCheckAmount(total)
+		gc.Remove()
+		check := game.NewItem("Check")
+		check.IArg = total
 		if !n.m.DropToBackpack(check, false) {
 			// Don't over-stuff the backpack, just let the check fall to their
 			// feet.
 			n.m.DropToFeet(check)
 		}
 	}
-	n.Sound(0x02E6, n.m.Location())
+	n.Sound(0x02E6, n.m.Location)
 }
 
 func handleNameRequest(n *NetState, cp clientpacket.Packet) {
@@ -541,10 +544,18 @@ func handleNameRequest(n *NetState, cp clientpacket.Packet) {
 	if o == nil {
 		return
 	}
-	n.Send(&serverpacket.NameResponse{
-		Serial: p.Serial,
-		Name:   o.DisplayName(),
-	})
+	if m, ok := o.(*game.Mobile); ok {
+		n.Send(&serverpacket.NameResponse{
+			Serial: p.Serial,
+			Name:   m.DisplayName(),
+		})
+	} else {
+		n.Send(&serverpacket.NameResponse{
+			Serial: p.Serial,
+			Name:   o.(*game.Item).DisplayName(),
+		})
+
+	}
 }
 
 func handleOPLCacheMiss(n *NetState, cp clientpacket.Packet) {
@@ -557,9 +568,12 @@ func handleOPLCacheMiss(n *NetState, cp clientpacket.Packet) {
 		if o == nil {
 			continue
 		}
-		opl, _ := o.OPLPackets(o)
-		if opl == nil {
-			continue
+		var opl *serverpacket.OPLPacket
+		switch t := o.(type) {
+		case *game.Mobile:
+			opl, _ = t.OPLPackets()
+		case *game.Item:
+			opl, _ = t.OPLPackets()
 		}
 		n.Send(opl)
 	}
@@ -570,12 +584,14 @@ func handleRenameRequest(n *NetState, cp clientpacket.Packet) {
 		return
 	}
 	p := cp.(*clientpacket.RenameRequest)
-	m := game.Find[game.Mobile](p.Serial)
-	if m == nil || m.ControlMaster() == nil || m.ControlMaster().Serial() != n.m.Serial() {
+	m := world.FindMobile(p.Serial)
+	if m == nil || m.ControlMaster != n.m {
 		return
 	}
-	m.SetName(p.Name)
-	game.GetWorld().Update(m)
+	m.Name = p.Name
+	m.ArticleA = false
+	m.ArticleAn = false
+	game.World.UpdateMobile(m)
 }
 
 func handleMacroRequest(n *NetState, cp clientpacket.Packet) {
@@ -585,16 +601,8 @@ func handleMacroRequest(n *NetState, cp clientpacket.Packet) {
 	p := cp.(*clientpacket.MacroRequest)
 	switch p.MacroType {
 	case uo.MacroTypeOpenDoor:
-		l := n.m.Location().Forward(n.m.Facing())
-		b := uo.Bounds{
-			X: l.X,
-			Y: l.Y,
-			Z: l.Z,
-			W: 1,
-			H: 1,
-			D: int16(uo.PlayerHeight),
-		}
-		doors := world.Map().ItemBaseQuery("BaseDoor", b)
+		l := n.m.Location.Forward(n.m.Facing)
+		doors := world.Map().ItemBaseQuery("BaseDoor", l, 0)
 		if len(doors) > 0 {
 			if !n.TakeAction() {
 				n.Cliloc(nil, 500119) // You must wait to perform another action.

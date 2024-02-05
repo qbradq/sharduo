@@ -265,10 +265,16 @@ func (w *World) Add(obj any) {
 
 // Find returns the mobile or item with the given serial or nil.
 func (w *World) Find(id uo.Serial) any {
+	var ret any
 	if id.IsMobile() {
-		return w.ods.Mobile(id)
+		ret = w.ods.Mobile(id)
+	} else {
+		ret = w.ods.Item(id)
 	}
-	return w.ods.Item(id)
+	if ret == nil {
+		return nil
+	}
+	return ret
 }
 
 // FindMobile returns the item with the given serial or nil.
