@@ -15,8 +15,9 @@ import (
 	"golang.org/x/image/colornames"
 )
 
-func init() {
-	// Load all item templates
+// LoadMobilePrototypes loads all mobile prototypes.
+func LoadMobilePrototypes() {
+	// Load all mobile templates
 	errors := false
 	for _, err := range data.Walk("templates/mobiles", func(s string, b []byte) []error {
 		// Ignore legacy files
@@ -61,20 +62,21 @@ func init() {
 		}
 		fn(p)
 		// Merge values
-		pr := reflect.ValueOf(p)
-		ir := reflect.ValueOf(i)
+		pr := reflect.ValueOf(p).Elem()
+		ir := reflect.ValueOf(i).Elem()
 		for i := 0; i < pr.NumField(); i++ {
+			prf := pr.Field(i)
+			irf := ir.Field(i)
+			if !prf.CanInterface() {
+				continue
+			}
 			sf := pr.Type().Field(i)
 			switch sf.Name {
 			case "PostCreationEvents":
 				// Prepend array contents
-				prf := pr.Field(i)
-				irf := ir.Field(i)
 				irf.Set(reflect.AppendSlice(prf, irf))
 			case "Events":
 				// Merge events map
-				prf := pr.Field(i)
-				irf := ir.Field(i)
 				for _, k := range prf.MapKeys() {
 					if irf.MapIndex(k).IsZero() {
 						irf.MapIndex(k).Set(prf.MapIndex(k))
@@ -82,10 +84,10 @@ func init() {
 				}
 			case "Flags":
 				// Merge flag bits
-				ir.Field(i).Set(reflect.ValueOf(ItemFlags(pr.Field(i).Int() | ir.Field(i).Int())))
+				irf.Set(reflect.ValueOf(ItemFlags(prf.Int() | irf.Int())))
 			default:
 				// Just copy the value
-				ir.Field(i).Set(pr.Field(i))
+				irf.Set(prf)
 			}
 		}
 		// Flag prototype as done
@@ -117,6 +119,9 @@ func constructMobile(which string) *Mobile {
 // NewMobile creates a new mobile and adds it to the world datastores.
 func NewMobile(which string) *Mobile {
 	m := constructMobile(which)
+	if m == nil {
+		return nil
+	}
 	World.Add(m)
 	return m
 }

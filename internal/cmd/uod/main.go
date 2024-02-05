@@ -72,17 +72,14 @@ func initialize() {
 		MaxBackups: 3,
 	}))
 	log.Println("info: ShardUO initializing...")
-
 	// Load configuration
 	if err := configuration.Load(); err != nil {
 		log.Fatal(err)
 	}
-
 	// Load crontab
 	if err := InitializeCron(); err != nil {
 		log.Fatal(err)
 	}
-
 	// Load client data files
 	log.Println("info: loading client files")
 	tileDataMul = file.NewTileDataMul(path.Join(configuration.ClientFilesDirectory, "tiledata.mul"))
@@ -102,7 +99,7 @@ func initialize() {
 			log.Fatal("failed to load statics0.mul")
 		}
 	}
-
+	// Generate debug stuffs if requested
 	log.Println("info: misc startup operations")
 	if configuration.GenerateDebugMaps {
 		log.Println("debug: generating debug map...")
@@ -133,7 +130,6 @@ func initialize() {
 		}
 		mapImgF.Close()
 	}
-
 	// Command system initialization
 	commands.RegisterCallbacks(
 		GlobalChat,
@@ -141,17 +137,17 @@ func initialize() {
 		Broadcast,
 		gracefulShutdown,
 		func() string { return world.LatestSavePath() })
-
 	// Initialize our data structures
 	log.Println("info: allocating world data structures")
 	world = NewWorld(configuration.SaveDirectory)
 	game.World = world
 	log.Println("info: populating map data structures")
 	world.Map().LoadFromMuls(mapMul, staticsMul)
-
+	// Load prototypes
+	game.LoadItemPrototypes()
+	game.LoadMobilePrototypes()
 	// Inject server-side dynamic objects
 	log.Println("info: creating dynamic map objects")
-
 	// Try to load the most recent save
 	if err := world.Unmarshal(); err != nil {
 		if errors.Is(err, os.ErrNotExist) {
@@ -172,14 +168,14 @@ func firstStart() {
 func startCommands() {
 	n := NewNetState(nil)
 	n.account = world.superUser
-	commands.Execute(n, "loadregions")
-	commands.Execute(n, "loadstatics")
-	commands.Execute(n, "loaddoors")
-	commands.Execute(n, "loadsigns")
+	commands.Execute(n, "load_regions")
+	commands.Execute(n, "load_statics")
+	commands.Execute(n, "load_doors")
+	commands.Execute(n, "load_signs")
 	commands.Execute(n, "respawn")
 	// This is really hacky, but the mobiles need to update what they are
 	// standing on in this step and what they are standing on won't be there if
-	// it's a dynamic static object created by [loadstatics and friends.
+	// it's a dynamic static object created by [load_statics and friends.
 	world.m.AfterUnmarshal()
 }
 

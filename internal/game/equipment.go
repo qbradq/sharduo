@@ -19,6 +19,9 @@ func (e *Equipment) UnmarshalJSON(in []byte) error {
 	}
 	for _, tn := range tns {
 		i := NewItem(tn)
+		if i == nil {
+			panic(fmt.Errorf("invalid template name %s", tn))
+		}
 		if !i.Layer.Valid() {
 			return fmt.Errorf("invalid layer %d", i.Layer)
 		}

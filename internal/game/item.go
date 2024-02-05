@@ -15,7 +15,8 @@ import (
 	"golang.org/x/image/colornames"
 )
 
-func init() {
+// LoadItemPrototypes loads all item prototypes.
+func LoadItemPrototypes() {
 	// Load all item templates
 	errors := false
 	for _, err := range data.Walk("templates/items", func(s string, b []byte) []error {
@@ -35,7 +36,6 @@ func init() {
 				return []error{fmt.Errorf("duplicate item prototype %s", k)}
 			}
 			// Initialize non-zero default values
-			p.Def = World.ItemDefinition(p.CurrentGraphic())
 			p.TemplateName = k
 			itemPrototypes[k] = p
 		}
@@ -62,20 +62,21 @@ func init() {
 		}
 		fn(p)
 		// Merge values
-		pr := reflect.ValueOf(p)
-		ir := reflect.ValueOf(i)
+		pr := reflect.ValueOf(p).Elem()
+		ir := reflect.ValueOf(i).Elem()
 		for i := 0; i < pr.NumField(); i++ {
 			sf := pr.Type().Field(i)
+			prf := pr.Field(i)
+			irf := ir.Field(i)
+			if !prf.CanInterface() {
+				continue
+			}
 			switch sf.Name {
 			case "PostCreationEvents":
 				// Prepend array contents
-				prf := pr.Field(i)
-				irf := ir.Field(i)
 				irf.Set(reflect.AppendSlice(prf, irf))
 			case "Events":
 				// Merge map
-				prf := pr.Field(i)
-				irf := ir.Field(i)
 				for _, k := range prf.MapKeys() {
 					if irf.MapIndex(k).IsZero() {
 						irf.MapIndex(k).Set(prf.MapIndex(k))
@@ -83,10 +84,10 @@ func init() {
 				}
 			case "Flags":
 				// Merge flag bits
-				ir.Field(i).Set(reflect.ValueOf(ItemFlags(pr.Field(i).Int() | ir.Field(i).Int())))
+				irf.Set(reflect.ValueOf(ItemFlags(prf.Uint() | irf.Uint())))
 			default:
 				// Just copy the value
-				ir.Field(i).Set(pr.Field(i))
+				irf.Set(prf)
 			}
 		}
 		// Flag prototype as done
@@ -105,6 +106,7 @@ func constructItem(which string) *Item {
 	}
 	i := &Item{}
 	*i = *p
+	i.Def = World.ItemDefinition(i.CurrentGraphic())
 	for _, en := range i.PostCreationEvents {
 		i.ExecuteEvent(en, nil, nil)
 	}
@@ -114,12 +116,15 @@ func constructItem(which string) *Item {
 // NewItem creates a new item and adds it to the world datastores.
 func NewItem(which string) *Item {
 	i := constructItem(which)
+	if i == nil {
+		return nil
+	}
 	World.Add(i)
 	return i
 }
 
 // itemPrototypes contains all of the prototype items.
-var itemPrototypes map[string]*Item
+var itemPrototypes = map[string]*Item{}
 
 // ItemFlags encode boolean information about an item.
 type ItemFlags uint8

@@ -33,7 +33,7 @@ client/
 tools/
 
 # Machine-specific configuration files
-/configuration.ini
+/configuration.json
 /crontab
 /blacklist.ini
 

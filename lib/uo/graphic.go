@@ -15,6 +15,12 @@ const (
 	GraphicHueMask      Graphic = 0x7fff
 )
 
+// UnmarshalJSON implements json.Unmarshaler.
+func (i *Graphic) UnmarshalJSON(in []byte) error {
+	*i = Graphic(flexNum(in))
+	return nil
+}
+
 // IsNoDraw tries to determine if this is one of the common no-draw tiles.
 // Please note that this is NOT 100% accurate.
 func (i Graphic) IsNoDraw() bool {
