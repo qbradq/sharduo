@@ -163,6 +163,7 @@ type Mobile struct {
 	AIGoal        *Mobile                 // What mobile we are paying attention to at the moment
 	opl           *serverpacket.OPLPacket // Cached OPLPacket
 	oplInfo       *serverpacket.OPLInfo   // Cached OPLInfo packet
+	lastStepTime  uo.Time                 // Time of the last step taken
 }
 
 // Write writes the persistent data of the item to w.
@@ -649,4 +650,37 @@ func (m *Mobile) SkillCheck(which uo.Skill, min, max int) bool {
 	// If we've gotten this far we need to send a status update for the new stat
 	World.UpdateMobile(m)
 	return success
+}
+
+// CanTakeStep returns true if the mobile can take a step.
+func (m *Mobile) CanTakeStep() bool {
+	var rd uo.Time
+	if m.Equipment[uo.LayerMount] == nil {
+		if !m.Running {
+			rd = uo.WalkDelay
+		} else {
+			rd = uo.RunDelay
+		}
+	} else {
+		if !m.Running {
+			rd = uo.MountedWalkDelay
+		} else {
+			rd = uo.MountedRunDelay
+		}
+	}
+	d := World.Time() - m.lastStepTime
+	return d >= rd
+}
+
+// Step steps the mobile in the given direction, returning true on success.
+func (m *Mobile) Step(d uo.Direction) bool {
+	f := m.Facing
+	m.Facing = d
+	ret := World.Map().MoveMobile(m, d)
+	if !ret {
+		m.Facing = f
+	} else {
+		m.lastStepTime = World.Time()
+	}
+	return ret
 }

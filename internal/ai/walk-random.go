@@ -3,6 +3,7 @@ package ai
 import (
 	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/lib/uo"
+	"github.com/qbradq/sharduo/lib/util"
 )
 
 func init() {
@@ -24,22 +25,24 @@ func (a *walkRandom) Act(m game.Mobile, t uo.Time) {
 	}
 	if a.walking && a.stepsLeft < 1 {
 		a.walking = false
-		a.stepsLeft = game.GetWorld().Random().Random(1, 7)
-		a.nextWalkDeadline = t + uo.Time(game.GetWorld().Random().Random(
+		a.stepsLeft = util.Random(1, 7)
+		a.nextWalkDeadline = t + uo.Time(util.Random(
 			int(uo.DurationSecond)*5,
 			int(uo.DurationSecond)*15))
-		a.walkDirection = uo.Direction(game.GetWorld().Random().Random(0, 7))
+		a.walkDirection = uo.Direction(util.Random(0, 7))
 	}
 	if a.walking && m.CanTakeStep() {
-		if m.SpawnerRegion() != nil && !m.SpawnerRegion().Contains(m.Location().Forward(a.walkDirection)) {
-			a.walkDirection = uo.Direction(game.GetWorld().Random().Random(0, 7))
+		if m.Spawner != nil {
+			if sr, ok := m.Spawner.(*game.Region); ok && !sr.Contains(m.Location.Forward(a.walkDirection)) {
+				a.walkDirection = uo.Direction(util.Random(0, 7))
+			}
 		} else if !m.Step(a.walkDirection) {
 			a.walking = false
 			a.stepsLeft = 0
-			a.nextWalkDeadline = t + uo.Time(game.GetWorld().Random().Random(
+			a.nextWalkDeadline = t + uo.Time(util.Random(
 				int(uo.DurationSecond)*1,
 				int(uo.DurationSecond)*5))
-			a.walkDirection = uo.Direction(game.GetWorld().Random().Random(0, 7))
+			a.walkDirection = uo.Direction(util.Random(0, 7))
 		} else {
 			a.stepsLeft--
 		}

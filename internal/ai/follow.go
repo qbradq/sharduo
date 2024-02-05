@@ -15,15 +15,7 @@ type follow struct {
 
 // Act implements the AIModel interface.
 func (a *follow) Act(m game.Mobile, t uo.Time) {
-	o := m.AIGoal()
-	if o == nil {
-		return
-	}
-	ft, ok := o.(game.Mobile)
-	if !ok {
-		return
-	}
-	if m.Location().XYDistance(ft.Location()) < 3 {
+	if m.Location.XYDistance(m.AIGoal.Location) < 3 {
 		// We don't need to be all up in our target's business
 		return
 	}
@@ -31,7 +23,7 @@ func (a *follow) Act(m game.Mobile, t uo.Time) {
 	if !m.CanTakeStep() {
 		return
 	}
-	d := m.Location().DirectionTo(ft.Location())
+	d := m.Location.DirectionTo(m.AIGoal.Location)
 	if m.Step(d) {
 		return
 	}
