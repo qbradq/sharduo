@@ -53,6 +53,14 @@ type NetState interface {
 	GUMP(any, uo.Serial, uo.Serial)
 	// UpdateSkill implements the game.NetState interface.
 	UpdateSkill(uo.Skill, uo.SkillLock, int)
+	// Mobile returns the mobile associated with the state if any.
+	Mobile() *Mobile
+	// Animate animates a mobile on the client side.
+	Animate(*Mobile, uo.AnimationType, uo.AnimationAction)
+	// Music makes the client play a song.
+	Music(uo.Music)
+	// DrawPlayer sends the draw player packet to the client.
+	DrawPlayer()
 }
 
 // ContainerObserver is implemented by anything that can be notified of changes
@@ -82,6 +90,15 @@ type ContainerObserver interface {
 
 // Spawner implements an interface allowing for the control of object spawning.
 type Spawner interface {
+	// FullRespawn removes all objects spawned by this region and then fully
+	// respawns all entries.
+	FullRespawn()
+	// Spawn spawns an object by template name and returns a pointer to it or
+	// nil.
+	Spawn(string) any
+	// ReleaseObject releases the given object from this spawner so another may
+	// spawn in its place.
+	ReleaseObject(any)
 }
 
 // World is the interface the server's game world model must implement for the

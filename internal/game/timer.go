@@ -69,7 +69,7 @@ func NewTimer(delay uo.Time, event string, receiver, source any, noRent bool, pa
 		ss = o.Serial
 	}
 	t := &Timer{
-		deadline:  Time() + delay,
+		deadline:  World.Time() + delay,
 		event:     event,
 		receiver:  rs,
 		source:    ss,
@@ -176,7 +176,7 @@ func (t *Timer) Execute() {
 	var receiver any
 	var source any
 	if t.receiver != uo.SerialZero {
-		receiver = Find(t.receiver)
+		receiver = World.Find(t.receiver)
 		if receiver == nil {
 			return
 		}
@@ -192,7 +192,7 @@ func (t *Timer) Execute() {
 		}
 	}
 	if t.source != uo.SerialZero {
-		source = Find(t.source)
+		source = World.Find(t.source)
 		if source == nil {
 			return
 		}

@@ -92,13 +92,16 @@ func init() {
 		// Flag prototype as done
 		i.btResolved = true
 	}
+	for _, p := range itemPrototypes {
+		fn(p)
+	}
 }
 
 // constructItem creates a new item from the named template.
 func constructItem(which string) *Item {
 	p := itemPrototypes[which]
 	if p == nil {
-		panic(fmt.Errorf("unknown item prototype %s", which))
+		return nil
 	}
 	i := &Item{}
 	*i = *p
@@ -686,6 +689,17 @@ func (i *Item) ConsumeUse() bool {
 	}
 	i.Durability--
 	return true
+}
+
+// Update implements the Object interface.
+func (i *Item) Update(t uo.Time) {
+	if t >= i.decayAt {
+		if i.Spawner != nil {
+			// If we are being managed by a spawner we don't decay
+			return
+		}
+		i.Remove()
+	}
 }
 
 func (i *Item) StandingHeight() int {

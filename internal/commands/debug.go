@@ -8,14 +8,14 @@ import (
 	"github.com/qbradq/sharduo/internal/gumps"
 	"github.com/qbradq/sharduo/lib/clientpacket"
 	"github.com/qbradq/sharduo/lib/serverpacket"
-	"github.com/qbradq/sharduo/lib/template"
 	"github.com/qbradq/sharduo/lib/uo"
+	"github.com/qbradq/sharduo/lib/util"
 )
 
 // This file just houses the multi-purpose debug command
 
 func init() {
-	regcmd(&cmdesc{"debug", nil, commandDebug, game.RoleDeveloper, "debug command [arguments]", "Executes debug commands"})
+	reg(&cmDesc{"debug", nil, commandDebug, game.RoleDeveloper, "debug command [arguments]", "Executes debug commands"})
 }
 
 func commandDebug(n game.NetState, args CommandArgs, cl string) {
@@ -46,7 +46,7 @@ func commandDebug(n game.NetState, args CommandArgs, cl string) {
 		fallthrough
 	case "panic":
 		fallthrough
-	case "shirtbag":
+	case "shirt_bag":
 		if len(args) != 2 {
 			n.Speech(nil, "debug %s command requires 0 arguments", args[1])
 			return
@@ -76,51 +76,50 @@ func commandDebug(n game.NetState, args CommandArgs, cl string) {
 	// Execute command
 	switch args[1] {
 	case "hue_field":
-		hue := 1
+		var hue uo.Hue = 1
 		for iy := 0; iy < 10; iy++ {
 			for ix := 0; ix < 300; ix++ {
-				r := template.Create[game.Item]("HueSelector")
+				r := game.NewItem("HueSelector")
 				if r == nil {
 					continue
 				}
-				r.SetHue(uo.Hue(hue))
+				r.Hue = hue
 				hue++
 				if hue >= 3000 {
 					hue -= 3000
 				}
-				l := n.Mobile().Location()
-				l.X += int16(ix)
-				l.Y += int16(iy * 2)
-				r.SetLocation(l)
-				game.GetWorld().Map().SetNewParent(r, nil)
+				l := n.Mobile().Location
+				l.X += ix
+				l.Y += iy * 2
+				r.Location = l
+				game.World.Map().AddItem(r, false)
 			}
 		}
 	case "vendor_bag":
 		n.TargetSendCursor(uo.TargetTypeObject, func(tr *clientpacket.TargetResponse) {
-			m := game.Find[game.Mobile](tr.TargetObject)
+			m := game.World.Find(tr.TargetObject).(*game.Mobile)
 			if m == nil {
 				return
 			}
-			w := m.EquipmentInSlot(uo.LayerNPCBuyRestockContainer)
+			w := m.Equipment[uo.LayerNPCBuyRestockContainer]
 			if w == nil {
 				return
 			}
-			c, ok := w.(game.Container)
-			if !ok {
+			if !w.HasFlags(game.ItemFlagsContainer) {
 				return
 			}
-			c.Open(n.Mobile())
+			w.Open(n.Mobile())
 		})
 	case "welcome":
-		n.GUMP(gumps.New("welcome"), n.Mobile(), nil)
+		n.GUMP(gumps.New("welcome"), n.Mobile().Serial, 0)
 	case "gfx_test":
 		n.Send(&serverpacket.GraphicalEffect{
 			GFXType:        uo.GFXTypeFixed,
-			Source:         n.Mobile().Serial(),
-			Target:         n.Mobile().Serial(),
+			Source:         n.Mobile().Serial,
+			Target:         n.Mobile().Serial,
 			Graphic:        0x3728,
-			SourceLocation: n.Mobile().Location(),
-			TargetLocation: n.Mobile().Location(),
+			SourceLocation: n.Mobile().Location,
+			TargetLocation: n.Mobile().Location,
 			Speed:          15,
 			Duration:       10,
 			Fixed:          true,
@@ -131,7 +130,7 @@ func commandDebug(n game.NetState, args CommandArgs, cl string) {
 	case "force_chunk_update":
 		n.Speech(n.Mobile(), "Target the chunk you wish to force-update")
 		n.TargetSendCursor(uo.TargetTypeLocation, func(tr *clientpacket.TargetResponse) {
-			game.GetWorld().Map().GetChunk(tr.Location).Update(game.GetWorld().Time())
+			game.World.Map().GetChunk(tr.Location).Update(game.World.Time())
 		})
 	case "global_light":
 		ll := uo.LightLevel(args.Int(2))
@@ -141,7 +140,7 @@ func commandDebug(n game.NetState, args CommandArgs, cl string) {
 	case "personal_light":
 		ll := uo.LightLevel(args.Int(2))
 		n.Send(&serverpacket.PersonalLightLevel{
-			Serial:     n.Mobile().Serial(),
+			Serial:     n.Mobile().Serial,
 			LightLevel: ll,
 		})
 	case "animate":
@@ -153,42 +152,42 @@ func commandDebug(n game.NetState, args CommandArgs, cl string) {
 		n.Music(which)
 	case "sound":
 		which := uo.Sound(args.Int(2))
-		game.GetWorld().Map().PlaySound(which, n.Mobile().Location())
+		game.World.Map().PlaySound(which, n.Mobile().Location)
 	case "memory_test":
 		start := time.Now()
 		for i := 0; i < 1_000_000; i++ {
-			o := template.Create[game.Object]("FancyShirt")
-			if o == nil {
+			item := game.NewItem("FancyShirt")
+			if item == nil {
 				continue
 			}
 			nl := uo.Point{
-				X: int16(game.GetWorld().Random().Random(100, uo.MapWidth-101)),
-				Y: int16(game.GetWorld().Random().Random(100, uo.MapHeight-101)),
+				X: util.Random(100, uo.MapWidth-101),
+				Y: util.Random(100, uo.MapHeight-101),
 				Z: uo.MapMaxZ,
 			}
-			f, _ := game.GetWorld().Map().GetFloorAndCeiling(nl, false, false)
+			f, _ := game.World.Map().GetFloorAndCeiling(nl, false, false)
 			if f != nil {
 				nl.Z = f.Z()
 			}
-			o.SetLocation(nl)
-			game.GetWorld().Map().ForceAddObject(o)
+			item.Location = nl
+			game.World.Map().AddItem(item, true)
 		}
 		for i := 0; i < 150_000; i++ {
-			o := template.Create[game.Object]("Banker")
-			if o == nil {
+			m := game.NewMobile("Banker")
+			if m == nil {
 				continue
 			}
 			nl := uo.Point{
-				X: int16(game.GetWorld().Random().Random(100, uo.MapWidth-101)),
-				Y: int16(game.GetWorld().Random().Random(100, uo.MapHeight-101)),
+				X: util.Random(100, uo.MapWidth-101),
+				Y: util.Random(100, uo.MapHeight-101),
 				Z: uo.MapMaxZ,
 			}
-			f, _ := game.GetWorld().Map().GetFloorAndCeiling(nl, false, false)
+			f, _ := game.World.Map().GetFloorAndCeiling(nl, false, false)
 			if f != nil {
 				nl.Z = f.Z()
 			}
-			o.SetLocation(nl)
-			game.GetWorld().Map().ForceAddObject(o)
+			m.Location = nl
+			game.World.Map().AddMobile(m, true)
 		}
 		end := time.Now()
 		n.Speech(n.Mobile(), fmt.Sprintf("operation completed in %s", end.Sub(start)))
@@ -207,50 +206,37 @@ func commandDebug(n game.NetState, args CommandArgs, cl string) {
 		game.NewTimer(uo.DurationSecond*60, "WhisperTime", n.Mobile(), n.Mobile(), false, nil)
 		game.NewTimer(uo.DurationSecond*65, "WhisperTime", n.Mobile(), n.Mobile(), false, nil)
 	case "mount":
-		llama := template.Create[game.Mobile]("Llama")
-		if llama == nil {
-			break
-		}
-		llama.SetLocation(n.Mobile().Location())
-		llama.SetHue(0x76) // Llama Energy Vortex hue
-		llama.SetControlMaster(n.Mobile())
-		llama.SetAI("Follow")
-		llama.SetAIGoal(n.Mobile())
-		game.GetWorld().Map().AddObject(llama)
+		llama := game.NewMobile("Llama")
+		llama.Location = n.Mobile().Location
+		llama.Hue = 0x76 // Llama Energy Vortex hue
+		llama.ControlMaster = n.Mobile()
+		llama.AI = "Follow"
+		llama.AIGoal = n.Mobile()
+		game.World.Map().AddMobile(llama, true)
 		game.ExecuteEventHandler("Mount", llama, n.Mobile(), nil)
-	case "shirtbag":
-		backpack := template.Create[game.Container]("Backpack")
-		if backpack == nil {
-			break
-		}
-		backpack.SetLocation(n.Mobile().Location())
-		game.GetWorld().Map().SetNewParent(backpack, nil)
+	case "shirt_bag":
+		backpack := game.NewItem("Backpack")
+		backpack.Location = n.Mobile().Location
+		game.World.Map().AddItem(backpack, true)
 		for i := 0; i < 125; i++ {
-			shirt := template.Create[game.Object]("FancyShirt")
-			if shirt == nil {
-				continue
-			}
-			shirt.SetLocation(uo.RandomContainerLocation)
-			if !game.GetWorld().Map().SetNewParent(shirt, backpack) {
-				n.Speech(n.Mobile(), "failed to add an item to the backpack")
-				break
-			}
+			shirt := game.NewItem("FancyShirt")
+			backpack.DropInto(shirt, true)
 		}
 	case "splat":
 		start := time.Now()
 		count := 0
-		for iy := n.Mobile().Location().Y - 50; iy < n.Mobile().Location().Y+50; iy++ {
-			for ix := n.Mobile().Location().X - 50; ix < n.Mobile().Location().X+50; ix++ {
-				o := template.Create[game.Object](args[2])
-				if o == nil {
+		for iy := n.Mobile().Location.Y - 50; iy < n.Mobile().Location.Y+50; iy++ {
+			for ix := n.Mobile().Location.X - 50; ix < n.Mobile().Location.X+50; ix++ {
+				if m := game.NewMobile(args[2]); m != nil {
+					m.Location = uo.Point{X: ix, Y: iy, Z: n.Mobile().Location.Z}
+					game.World.Map().AddMobile(m, true)
+				} else if i := game.NewItem(args[2]); i != nil {
+					i.Location = uo.Point{X: ix, Y: iy, Z: n.Mobile().Location.Z}
+					game.World.Map().AddItem(i, true)
+				} else {
 					n.Speech(n.Mobile(), "debug splat failed to create object with template %s", args[2])
+					return
 				}
-				o.SetLocation(uo.Point{
-					X: ix,
-					Y: iy,
-					Z: n.Mobile().Location().Z,
-				})
-				game.GetWorld().Map().SetNewParent(o, nil)
 				count++
 			}
 		}
@@ -259,6 +245,6 @@ func commandDebug(n game.NetState, args CommandArgs, cl string) {
 	case "panic":
 		// Force a nil reference panic
 		var m game.Mobile
-		m.AdjustGold(1)
+		m.AdjustWeight(1)
 	}
 }

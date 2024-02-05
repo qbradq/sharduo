@@ -107,3 +107,6 @@ func (b Bounds) South() int { return b.Y + b.H - 1 }
 
 // Top returns the top-most point within these bounds.
 func (b Bounds) Top() int { return b.Z + b.D - 1 }
+
+// TopLeft returns the top-left point of the bounds.
+func (b Bounds) TopLeft() Point { return Point{X: b.X, Y: b.Y} }

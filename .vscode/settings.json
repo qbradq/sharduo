@@ -1,16 +1,27 @@
 {
     "cSpell.words": [
+        "Alloc",
         "clientpacket",
         "Cliloc",
         "colornames",
         "GUMP",
         "gumps",
+        "Mallocs",
+        "Muls",
         "Multis",
+        "natefinch",
         "qbradq",
+        "radarcol",
+        "rects",
+        "respawn",
+        "respawns",
         "serverpacket",
         "sharduo",
         "Sossarian",
+        "Spawnable",
         "Stackable",
+        "staidx",
+        "tiledata",
         "tiledatamul"
     ]
 }

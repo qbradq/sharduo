@@ -497,7 +497,7 @@ func (w *World) Map() *game.Map {
 // GetItemDefinition returns the uo.StaticDefinition that holds the static data
 // for a given item graphic.
 func (w *World) ItemDefinition(g uo.Graphic) *uo.StaticDefinition {
-	return tiledatamul.GetStaticDefinition(int(g))
+	return tileDataMul.GetStaticDefinition(int(g))
 }
 
 // UpdateItem schedules an update packet for the item.

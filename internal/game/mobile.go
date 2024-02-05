@@ -91,13 +91,16 @@ func init() {
 		// Flag prototype as done
 		i.btResolved = true
 	}
+	for _, p := range mobilePrototypes {
+		fn(p)
+	}
 }
 
 // constructMobile creates a new item from the named template.
 func constructMobile(which string) *Mobile {
 	p := mobilePrototypes[which]
 	if p == nil {
-		panic(fmt.Errorf("unknown mobile prototype %s", which))
+		return nil
 	}
 	m := &Mobile{}
 	*m = *p

@@ -24,7 +24,7 @@ import (
 )
 
 // Tile data
-var tiledatamul *file.TileDataMul
+var tileDataMul *file.TileDataMul
 
 // The world we are running
 var world *World
@@ -85,20 +85,20 @@ func initialize() {
 
 	// Load client data files
 	log.Println("info: loading client files")
-	tiledatamul = file.NewTileDataMul(path.Join(configuration.ClientFilesDirectory, "tiledata.mul"))
-	mapmul := file.NewMapMulFromFile(path.Join(configuration.ClientFilesDirectory, "map0.mul"), tiledatamul)
-	staticsmul := file.NewStaticsMulFromFile(
+	tileDataMul = file.NewTileDataMul(path.Join(configuration.ClientFilesDirectory, "tiledata.mul"))
+	mapMul := file.NewMapMulFromFile(path.Join(configuration.ClientFilesDirectory, "map0.mul"), tileDataMul)
+	staticsMul := file.NewStaticsMulFromFile(
 		path.Join(configuration.ClientFilesDirectory, "staidx0.mul"),
 		path.Join(configuration.ClientFilesDirectory, "statics0.mul"),
-		tiledatamul)
-	if tiledatamul == nil || mapmul == nil || staticsmul == nil {
-		if tiledatamul == nil {
+		tileDataMul)
+	if tileDataMul == nil || mapMul == nil || staticsMul == nil {
+		if tileDataMul == nil {
 			log.Fatal("failed to load tiledata.mul")
 		}
-		if mapmul == nil {
+		if mapMul == nil {
 			log.Fatal("failed to load map0.mul")
 		}
-		if staticsmul == nil {
+		if staticsMul == nil {
 			log.Fatal("failed to load statics0.mul")
 		}
 	}
@@ -106,37 +106,32 @@ func initialize() {
 	log.Println("info: misc startup operations")
 	if configuration.GenerateDebugMaps {
 		log.Println("debug: generating debug map...")
-		rcolmul := file.NewRadarColMulFromFile(path.Join(configuration.ClientFilesDirectory, "radarcol.mul"))
-		if rcolmul == nil {
+		rColMul := file.NewRadarColMulFromFile(path.Join(configuration.ClientFilesDirectory, "radarcol.mul"))
+		if rColMul == nil {
 			log.Fatal("failed to load radarcol.mul")
 		}
-		rcols := rcolmul.Colors()
-		mapimg := image.NewRGBA(image.Rect(0, 0, uo.MapWidth, uo.MapHeight))
+		rCols := rColMul.Colors()
+		mapImg := image.NewRGBA(image.Rect(0, 0, uo.MapWidth, uo.MapHeight))
 		// Lay down the tiles
 		for iy := 0; iy < uo.MapHeight; iy++ {
 			for ix := 0; ix < uo.MapWidth; ix++ {
-				t := mapmul.GetTile(ix, iy)
-				mapimg.Set(ix, iy, rcols[t.BaseGraphic()])
+				t := mapMul.GetTile(ix, iy)
+				mapImg.Set(ix, iy, rCols[t.BaseGraphic()])
 			}
 		}
 		// Add statics
-		for _, static := range staticsmul.Statics() {
-			mapimg.Set(int(static.Location.X), int(static.Location.Y), rcols[static.BaseGraphic()+0x4000])
+		for _, static := range staticsMul.Statics() {
+			mapImg.Set(int(static.Location.X), int(static.Location.Y), rCols[static.BaseGraphic()+0x4000])
 		}
 		// Write out the map
-		mapimgf, err := os.Create("debug-map.png")
+		mapImgF, err := os.Create("debug-map.png")
 		if err != nil {
 			log.Fatal(err)
 		}
-		if err := png.Encode(mapimgf, mapimg); err != nil {
+		if err := png.Encode(mapImgF, mapImg); err != nil {
 			log.Fatal(err)
 		}
-		mapimgf.Close()
-	}
-
-	// Game system initialization
-	game.Time = func() uo.Time {
-		return world.time
+		mapImgF.Close()
 	}
 
 	// Command system initialization
@@ -152,7 +147,7 @@ func initialize() {
 	world = NewWorld(configuration.SaveDirectory)
 	game.World = world
 	log.Println("info: populating map data structures")
-	world.Map().LoadFromMuls(mapmul, staticsmul)
+	world.Map().LoadFromMuls(mapMul, staticsMul)
 
 	// Inject server-side dynamic objects
 	log.Println("info: creating dynamic map objects")

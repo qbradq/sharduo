@@ -20,10 +20,10 @@ import (
 // Commands used for automation and crontab are placed here
 
 func init() {
-	regcmd(&cmdesc{"logMemStats", nil, commandLogMemStats, game.RoleAdministrator, "logMemStats", "Forces the server to log memory statistics and echo that to the caller"})
-	regcmd(&cmdesc{"snapshot_clean", nil, commandSnapshotClean, game.RoleAdministrator, "snapshot_clean", "internal command, please do not use"})
-	regcmd(&cmdesc{"snapshot_daily", nil, commandSnapshotDaily, game.RoleAdministrator, "snapshot_daily", "internal command, please do not use"})
-	regcmd(&cmdesc{"snapshot_weekly", nil, commandSnapshotWeekly, game.RoleAdministrator, "snapshot_weekly", "internal command, please do not use"})
+	reg(&cmDesc{"logMemStats", nil, commandLogMemStats, game.RoleAdministrator, "logMemStats", "Forces the server to log memory statistics and echo that to the caller"})
+	reg(&cmDesc{"snapshot_clean", nil, commandSnapshotClean, game.RoleAdministrator, "snapshot_clean", "internal command, please do not use"})
+	reg(&cmDesc{"snapshot_daily", nil, commandSnapshotDaily, game.RoleAdministrator, "snapshot_daily", "internal command, please do not use"})
+	reg(&cmDesc{"snapshot_weekly", nil, commandSnapshotWeekly, game.RoleAdministrator, "snapshot_weekly", "internal command, please do not use"})
 }
 
 func commandLogMemStats(n game.NetState, args CommandArgs, cl string) {

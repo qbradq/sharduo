@@ -11,10 +11,10 @@ import (
 // Holds administrator-level commands
 
 func init() {
-	regcmd(&cmdesc{"broadcast", nil, commandBroadcast, game.RoleAdministrator, "broadcast text", "Broadcasts the given text to all connected players"})
-	regcmd(&cmdesc{"location", []string{"loc"}, commandLocation, game.RoleAdministrator, "location", "Tells the absolute location of the targeted location or object"})
-	regcmd(&cmdesc{"save", nil, commandSave, game.RoleAdministrator, "save", "Executes a game.GetWorld() save immediately"})
-	regcmd(&cmdesc{"shutdown", nil, commandShutdown, game.RoleAdministrator, "shutdown", "Shuts down the server immediately"})
+	reg(&cmDesc{"broadcast", nil, commandBroadcast, game.RoleAdministrator, "broadcast text", "Broadcasts the given text to all connected players"})
+	reg(&cmDesc{"location", []string{"loc"}, commandLocation, game.RoleAdministrator, "location", "Tells the absolute location of the targeted location or object"})
+	reg(&cmDesc{"save", nil, commandSave, game.RoleAdministrator, "save", "Executes a game.GetWorld() save immediately"})
+	reg(&cmDesc{"shutdown", nil, commandShutdown, game.RoleAdministrator, "shutdown", "Shuts down the server immediately"})
 }
 
 func commandLocation(n game.NetState, args CommandArgs, cl string) {

@@ -91,7 +91,7 @@ func useDoor(receiver, source, v any) bool {
 	}
 	ri := receiver.(*game.Item)
 	sm := source.(*game.Mobile)
-	doors := game.World.Map().ItemBaseQuery("BaseDoor", ri.Location.BoundsByRadius(1))
+	doors := game.World.Map().ItemBaseQuery("BaseDoor", ri.Location, 1)
 	for _, d := range doors {
 		if !doUseDoor(d, sm, force) {
 			return false

@@ -4,17 +4,59 @@
 package game
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
+	"path/filepath"
 
+	"github.com/qbradq/sharduo/data"
 	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/uo"
+	"github.com/qbradq/sharduo/lib/util"
 )
 
-// Time must return the current UO time for the world.
-var Time func() uo.Time
+func init() {
+	// Load all object lists
+	errors := false
+	for _, err := range data.Walk("lists", func(s string, b []byte) []error {
+		// Ignore legacy files
+		if filepath.Ext(s) != ".json" {
+			return nil
+		}
+		// Load lists
+		ps := map[string][]string{}
+		if err := json.Unmarshal(b, &ps); err != nil {
+			return []error{err}
+		}
+		// Merge lists
+		for k, p := range ps {
+			// Check for duplicates
+			if _, duplicate := mobilePrototypes[k]; duplicate {
+				return []error{fmt.Errorf("duplicate list %s", k)}
+			}
+			// Initialize non-zero default values
+			TemplateLists[k] = p
+		}
+		return nil
+	}) {
+		errors = true
+		log.Printf("error: during list load: %v", err)
+	}
+	if errors {
+		panic("errors during list load")
+	}
+}
 
-// Find must return a pointer to the object or nil.
-var Find func(uo.Serial) any
+// TemplateLists is a mapping of all template lists by name.
+var TemplateLists = map[string][]string{}
+
+// ListMember returns a random member from the named list.
+func ListMember(which string) string {
+	if l, found := TemplateLists[which]; found {
+		return l[util.Random(0, len(l)-1)]
+	}
+	return ""
+}
 
 // ExecuteEventHandler must execute the named event handler.
 var ExecuteEventHandler func(string, any, any, any) bool

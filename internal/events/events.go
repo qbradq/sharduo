@@ -6,13 +6,7 @@ import (
 )
 
 func init() {
-	game.ExecuteEventHandler = func(e string, r, s, p any) bool {
-		fn := getEventHandler(e)
-		if fn == nil {
-			return true
-		}
-		return (*fn)(r, s, p)
-	}
+	game.ExecuteEventHandler = ExecuteEventHandler
 	game.EventIndex = getEventHandlerIndex
 }
 
@@ -77,4 +71,13 @@ func getEventHandlerIndex(which string) uint16 {
 		return 0
 	}
 	return evhibr[fn]
+}
+
+// ExecuteEventHandler executes the named event handler with the parameters.
+func ExecuteEventHandler(e string, r, s, p any) bool {
+	fn := getEventHandler(e)
+	if fn == nil {
+		return true
+	}
+	return (*fn)(r, s, p)
 }

@@ -2,7 +2,15 @@
     "BaseItem": {
         "LiftSound": "0x57",
         "Amount": 1,
-        "Weight": 255
+        "Weight": 1
+    },
+    "StaticItem": {
+        "BaseTemplate": "BaseItem",
+        "Weight": 255,
+        "Flags": [
+            "Fixed",
+            "Static"
+        ]
     },
     "Check": {
         "BaseTemplate": "BaseItem",

@@ -5,24 +5,23 @@ import (
 	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/internal/gumps"
 	"github.com/qbradq/sharduo/lib/clientpacket"
-	"github.com/qbradq/sharduo/lib/template"
 	"github.com/qbradq/sharduo/lib/uo"
 )
 
 // Most GM-level commands live here
 
 func init() {
-	regcmd(&cmdesc{"account", nil, commandAccount, game.RoleGameMaster, "account", "Opens the account management GUMP for the targeted player"})
-	regcmd(&cmdesc{"admin", nil, commandAdmin, game.RoleGameMaster, "admin", "Opens the admin GUMP"})
-	regcmd(&cmdesc{"bank", nil, commandBank, game.RoleGameMaster, "bank", "Opens the bank box of the targeted mobile, if any"})
-	regcmd(&cmdesc{"edit", nil, commandEdit, game.RoleGameMaster, "edit", "Opens the targeted object's edit GUMP if any"})
-	regcmd(&cmdesc{"new", []string{"add"}, commandNew, game.RoleGameMaster, "new template_name [stack_amount]", "Creates a new item with an optional stack amount"})
-	regcmd(&cmdesc{"remove", []string{"rem", "delete", "del"}, commandRemove, game.RoleGameMaster, "remove", "Removes the targeted object and all of its children from the game game.GetWorld()"})
-	regcmd(&cmdesc{"sethue", nil, commandSetHue, game.RoleGameMaster, "sethue", "Sets the hue of an object"})
-	regcmd(&cmdesc{"setz", nil, commandSetZ, game.RoleGameMaster, "setz", "Adjusts the Z location of the object"})
-	regcmd(&cmdesc{"static", nil, commandStatic, game.RoleGameMaster, "static graphic_number", "Creates a new static object with the given graphic number"})
-	regcmd(&cmdesc{"tame", nil, commandTame, game.RoleGameMaster, "tame", "makes you the control master of the targeted mobile"})
-	regcmd(&cmdesc{"teleport", []string{"tele"}, commandTeleport, game.RoleGameMaster, "teleport [x y|x y z|multi]", "Teleports you to the targeted location - optionally multiple times, or to the top Z of the given X/Y location, or to the absolute location"})
+	reg(&cmDesc{"account", nil, commandAccount, game.RoleGameMaster, "account", "Opens the account management GUMP for the targeted player"})
+	reg(&cmDesc{"admin", nil, commandAdmin, game.RoleGameMaster, "admin", "Opens the admin GUMP"})
+	reg(&cmDesc{"bank", nil, commandBank, game.RoleGameMaster, "bank", "Opens the bank box of the targeted mobile, if any"})
+	reg(&cmDesc{"edit", nil, commandEdit, game.RoleGameMaster, "edit", "Opens the targeted object's edit GUMP if any"})
+	reg(&cmDesc{"new", []string{"add"}, commandNew, game.RoleGameMaster, "new template_name [stack_amount]", "Creates a new item with an optional stack amount"})
+	reg(&cmDesc{"remove", []string{"rem", "delete", "del"}, commandRemove, game.RoleGameMaster, "remove", "Removes the targeted object and all of its children from the game game.GetWorld()"})
+	reg(&cmDesc{"set_hue", nil, commandSetHue, game.RoleGameMaster, "set_hue", "Sets the hue of an object"})
+	reg(&cmDesc{"set_z", nil, commandSetZ, game.RoleGameMaster, "set_z", "Adjusts the Z location of the object"})
+	reg(&cmDesc{"static", nil, commandStatic, game.RoleGameMaster, "static graphic_number", "Creates a new static object with the given graphic number"})
+	reg(&cmDesc{"tame", nil, commandTame, game.RoleGameMaster, "tame", "makes you the control master of the targeted mobile"})
+	reg(&cmDesc{"teleport", []string{"t"}, commandTeleport, game.RoleGameMaster, "teleport [x y|x y z|multi]", "Teleports you to the targeted location - optionally multiple times, or to the top Z of the given X/Y location, or to the absolute location"})
 }
 
 func commandBank(n game.NetState, args CommandArgs, cl string) {
@@ -30,11 +29,11 @@ func commandBank(n game.NetState, args CommandArgs, cl string) {
 		return
 	}
 	n.TargetSendCursor(uo.TargetTypeObject, func(r *clientpacket.TargetResponse) {
-		m := game.Find[game.Mobile](r.TargetObject)
+		m := game.World.FindMobile(r.TargetObject)
 		if m == nil {
 			return
 		}
-		events.OpenBankBox(m, n.Mobile(), nil)
+		events.ExecuteEventHandler("OpenBankBox", m, n.Mobile(), nil)
 	})
 }
 
@@ -46,47 +45,62 @@ func commandNew(n game.NetState, args CommandArgs, cl string) {
 		n.Speech(n.Mobile(), "new command requires 2 or 3 arguments, got %d", len(args))
 	}
 	n.TargetSendCursor(uo.TargetTypeLocation, func(r *clientpacket.TargetResponse) {
-		o := template.Create[game.Object](args[1])
-		if o == nil {
-			n.Speech(n.Mobile(), "failed to create object with template %s", args[1])
-			return
+		var m *game.Mobile
+		var item *game.Item
+		m = game.NewMobile(args[1])
+		if m == nil {
+			item = game.NewItem(args[1])
+			if item == nil {
+				n.Speech(n.Mobile(), "failed to create object with template %s", args[1])
+				return
+			}
 		}
 		if len(args) == 3 {
+			if item == nil {
+				n.Speech(n.Mobile(), "amount specified for non-item %s", args[1])
+				return
+			}
 			v := args.Int(2)
 			if v < 1 {
 				v = 1
 			}
-			if check, ok := o.(*game.Check); ok {
-				check.SetCheckAmount(v)
+			if item.TemplateName == "Check" {
+				item.IArg = v
 			} else {
-				item, ok := o.(game.Item)
-				if !ok {
-					n.Speech(n.Mobile(), "amount specified for non-item %s", args[1])
-					return
-				}
-				if !item.Stackable() {
+				if !item.HasFlags(game.ItemFlagsStackable) {
 					n.Speech(n.Mobile(), "amount specified for non-stackable item %s", args[1])
 					return
 				}
-				item.SetAmount(v)
+				item.Amount = v
 			}
 		}
-		m := game.Find[game.Mobile](r.TargetObject)
-		if m != nil {
-			// If we targeted a mobile force the item into the backpack
-			if item, ok := o.(game.Item); ok {
-				item.SetDropLocation(uo.RandomContainerLocation)
-				m.DropToBackpack(o, true)
+		mob := game.World.FindMobile(r.TargetObject)
+		if mob != nil {
+			if item != nil {
+				m.DropToBackpack(item, true)
+			} else {
+				n.Speech(n.Mobile(), "mobile targeted for new mobile")
+				return
 			}
 		} else {
-			o.SetLocation(r.Location)
-			// Try to add the object to the map legit, but if that fails just
-			// force it so we don't leak it.
-			if !game.GetWorld().Map().AddObject(o) {
-				game.GetWorld().Map().ForceAddObject(o)
+			c := game.World.FindItem(r.TargetObject)
+			if c != nil && c.HasFlags(game.ItemFlagsContainer) {
+				if item != nil {
+					c.DropInto(item, true)
+				} else {
+					n.Speech(n.Mobile(), "container targeted for new mobile")
+					return
+				}
+			} else if c != nil {
+				if item != nil {
+					item.Location = c.Location
+					game.World.Map().AddItem(item, true)
+				} else {
+					m.Location = c.Location
+					game.World.Map().AddMobile(m, true)
+				}
 			}
 		}
-
 	})
 }
 
@@ -103,11 +117,11 @@ func commandTeleport(n game.NetState, args CommandArgs, cl string) {
 		return
 	}
 	if len(args) == 4 {
-		l.Z = int8(args.Int(3))
+		l.Z = args.Int(3)
 	}
 	if len(args) >= 3 {
-		l.Y = int16(args.Int(2))
-		l.X = int16(args.Int(1))
+		l.Y = args.Int(2)
+		l.X = args.Int(1)
 	}
 	if len(args) == 2 {
 		if args[1] == "multi" {
@@ -124,14 +138,14 @@ func commandTeleport(n game.NetState, args CommandArgs, cl string) {
 	l = l.Bound()
 	if !targeted {
 		if l.Z == uo.MapMaxZ {
-			floor, _ := game.GetWorld().Map().GetFloorAndCeiling(l, false, true)
+			floor, _ := game.World.Map().GetFloorAndCeiling(l, false, true)
 			if floor == nil {
 				n.Speech(n.Mobile(), "location has no floor")
 				return
 			}
 			l.Z = floor.Z()
 		}
-		if !game.GetWorld().Map().TeleportMobile(n.Mobile(), l) {
+		if !game.World.Map().TeleportMobile(n.Mobile(), l) {
 			n.Speech(n.Mobile(), "something is blocking that location")
 		}
 		return
@@ -142,7 +156,7 @@ func commandTeleport(n game.NetState, args CommandArgs, cl string) {
 		if n.Mobile() == nil {
 			return
 		}
-		if !game.GetWorld().Map().TeleportMobile(n.Mobile(), r.Location) {
+		if !game.World.Map().TeleportMobile(n.Mobile(), r.Location) {
 			n.Speech(n.Mobile(), "something is blocking that location")
 		}
 		if multi {
@@ -165,18 +179,14 @@ func commandStatic(n game.NetState, args CommandArgs, cl string) {
 		n.Speech(n.Mobile(), "refusing to create no-draw static 0x%04X", g)
 	}
 	n.TargetSendCursor(uo.TargetTypeLocation, func(r *clientpacket.TargetResponse) {
-		i := template.Create[*game.StaticItem]("StaticItem")
-		if i == nil {
-			n.Speech(n.Mobile(), "StaticItem template not found")
-			return
-		}
+		i := game.NewItem("StaticItem")
 		l := r.Location
-		if i := game.Find[game.Item](r.TargetObject); i != nil {
+		if i := game.World.FindItem(r.TargetObject); i != nil {
 			l.Z = i.Highest()
 		}
-		i.SetBaseGraphic(g)
-		i.SetLocation(r.Location)
-		game.GetWorld().Map().ForceAddObject(i)
+		i.Graphic = g
+		i.Location = r.Location
+		game.World.Map().AddItem(i, true)
 	})
 }
 
@@ -186,8 +196,13 @@ func commandRemove(n game.NetState, args CommandArgs, cl string) {
 	}
 	multi := len(args) > 1 && args[1] == "multi"
 	n.TargetSendCursor(uo.TargetTypeObject, func(tr *clientpacket.TargetResponse) {
-		o := game.GetWorld().Find(tr.TargetObject)
-		game.Remove(o)
+		var m *game.Mobile
+		m = game.World.FindMobile(tr.TargetObject)
+		if m == nil {
+			game.World.RemoveMobile(m)
+		} else {
+			game.World.RemoveItem(game.World.FindItem(tr.TargetObject))
+		}
 		if multi {
 			commandRemove(n, args, cl)
 		}
@@ -199,7 +214,7 @@ func commandEdit(n game.NetState, args CommandArgs, cl string) {
 		return
 	}
 	n.TargetSendCursor(uo.TargetTypeObject, func(tr *clientpacket.TargetResponse) {
-		o := game.GetWorld().Find(tr.TargetObject)
+		o := game.World.Find(tr.TargetObject)
 		gumps.Edit(n.Mobile(), o)
 	})
 }
@@ -217,12 +232,13 @@ func commandSetHue(n game.NetState, args CommandArgs, cl string) {
 		return
 	}
 	n.TargetSendCursor(uo.TargetTypeObject, func(tr *clientpacket.TargetResponse) {
-		o := game.GetWorld().Find(tr.TargetObject)
-		if o == nil {
-			return
+		if m := game.World.FindMobile(tr.TargetObject); m != nil {
+			m.Hue = hue
+			game.World.UpdateMobile(m)
+		} else if item := game.World.FindItem(tr.TargetObject); item != nil {
+			item.Hue = hue
+			game.World.UpdateItem(item)
 		}
-		o.SetHue(hue)
-		game.GetWorld().Update(o)
 	})
 }
 
@@ -234,45 +250,46 @@ func commandTame(n game.NetState, args CommandArgs, cl string) {
 		return
 	}
 	n.TargetSendCursor(uo.TargetTypeObject, func(tr *clientpacket.TargetResponse) {
-		m := game.Find[game.Mobile](tr.TargetObject)
+		m := game.World.FindMobile(tr.TargetObject)
 		if m == nil {
 			return
 		}
-		m.SetControlMaster(n.Mobile())
+		m.ControlMaster = n.Mobile()
+		m.AI = "Follow"
+		m.AIGoal = n.Mobile()
 	})
 }
 
 func commandSetZ(n game.NetState, args CommandArgs, cl string) {
-	z := int8(args.Int(1))
+	z := args.Int(1)
 	n.TargetSendCursor(uo.TargetTypeObject, func(tr *clientpacket.TargetResponse) {
-		o := game.Find[game.Object](tr.TargetObject)
-		if o == nil {
-			return
-		}
-		l := o.Location()
-		l.Z = z
-		if o.Parent() == nil {
-			game.GetWorld().Map().ForceRemoveObject(o)
-			o.SetLocation(l)
-			game.GetWorld().Map().ForceAddObject(o)
-		} else {
-			o.SetLocation(l)
+		if m := game.World.FindMobile(tr.TargetObject); m != nil {
+			game.World.Map().RemoveMobile(m)
+			m.Location.Z = z
+			game.World.Map().AddMobile(m, true)
+		} else if item := game.World.FindItem(tr.TargetObject); item != nil {
+			if item.Container != nil || item.Wearer != nil {
+				return
+			}
+			game.World.Map().RemoveItem(item)
+			item.Location.Z = z
+			game.World.Map().AddItem(item, true)
 		}
 	})
 }
 
 func commandAdmin(n game.NetState, args CommandArgs, cl string) {
-	n.GUMP(gumps.New("admin"), nil, nil)
+	n.GUMP(gumps.New("admin"), 0, 0)
 }
 
 func commandAccount(n game.NetState, args CommandArgs, cl string) {
 	n.Speech(n.Mobile(), "Select player")
 	n.TargetSendCursor(uo.TargetTypeObject, func(tr *clientpacket.TargetResponse) {
-		m := game.Find[game.Mobile](tr.TargetObject)
-		if m == nil || m.NetState() == nil || m.NetState().Account() == nil {
+		m := game.World.FindMobile(tr.TargetObject)
+		if m == nil || m.NetState == nil || m.Account == nil {
 			n.Speech(n.Mobile(), "Not a player")
 			return
 		}
-		n.GUMP(gumps.New("account"), m, nil)
+		n.GUMP(gumps.New("account"), m.Serial, 0)
 	})
 }

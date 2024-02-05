@@ -11,22 +11,22 @@ import (
 // Player-facing commands live here
 
 func init() {
-	regcmd(&cmdesc{"chat", []string{"c", "global", "g"}, commandChat, game.RolePlayer, "chat", "Sends global chat speech"})
-	regcmd(&cmdesc{"graphic", nil, commandGraphic, game.RolePlayer, "graphic", "Tells you the item graphic number of the object"})
-	regcmd(&cmdesc{"hue", nil, commandHue, game.RolePlayer, "hue", "Tells you the hue number of the object"})
+	reg(&cmDesc{"chat", []string{"c", "global", "g"}, commandChat, game.RolePlayer, "chat", "Sends global chat speech"})
+	reg(&cmDesc{"graphic", nil, commandGraphic, game.RolePlayer, "graphic", "Tells you the item graphic number of the object"})
+	reg(&cmDesc{"hue", nil, commandHue, game.RolePlayer, "hue", "Tells you the hue number of the object"})
 }
 
 func commandGraphic(n game.NetState, args CommandArgs, cl string) {
 	n.TargetSendCursor(uo.TargetTypeObject, func(tr *clientpacket.TargetResponse) {
 		var bg, ag uo.Graphic
-		var speaker game.Object
+		var speaker any
 		if tr.TargetObject != uo.SerialZero {
-			i := game.Find[game.Item](tr.TargetObject)
+			i := game.World.FindItem(tr.TargetObject)
 			if i == nil {
 				return
 			}
-			ag = i.Graphic()
-			bg = i.BaseGraphic()
+			ag = i.CurrentGraphic()
+			bg = i.Graphic
 			speaker = i
 		} else {
 			bg = tr.Graphic
@@ -68,11 +68,14 @@ func commandHue(n game.NetState, args CommandArgs, cl string) {
 		return
 	}
 	n.TargetSendCursor(uo.TargetTypeObject, func(tr *clientpacket.TargetResponse) {
-		o := game.GetWorld().Find(tr.TargetObject)
-		if o == nil {
+		var h uo.Hue
+		if m := game.World.FindMobile(tr.TargetObject); m != nil {
+			h = m.Hue
+		} else if item := game.World.FindItem(tr.TargetObject); item != nil {
+			h = item.Hue
+		} else {
 			return
 		}
-		h := o.Hue()
 		if h.IsPartial() {
 			n.Speech(n.Mobile(), "Partial Hue %d", h.ClearPartial())
 		} else {

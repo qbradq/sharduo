@@ -16,17 +16,18 @@ import (
 
 // Map holds all of the static data and dynamic objects in the world.
 type Map struct {
-	chunks []*chunk          // Chunks of the map
-	ds     map[uo.Serial]any // Deep storage objects
+	chunks  []*Chunk          // Chunks of the map
+	regions []*Region         // All regions within the map
+	ds      map[uo.Serial]any // Deep storage objects
 }
 
 // NewMap returns a new Map with all large memory areas already allocated.
 func NewMap() *Map {
 	ret := &Map{
-		chunks: make([]*chunk, uo.MapChunksWidth*uo.MapChunksHeight),
+		chunks: make([]*Chunk, uo.MapChunksWidth*uo.MapChunksHeight),
 	}
 	for i := range ret.chunks {
-		ret.chunks[i] = &chunk{}
+		ret.chunks[i] = newChunk(i%uo.MapChunksWidth, i/uo.MapChunksHeight)
 	}
 	return ret
 }
@@ -34,6 +35,10 @@ func NewMap() *Map {
 // Update is responsible for all chunk updates, item decay and mobile AI.
 func (m *Map) Update(now uo.Time) {
 }
+
+// rRetBuf is the static buffer used for the return value of the region query
+// functions.
+var rRetBuf []*Region
 
 // nsRetBuf is the static buffer used for the return value of
 // [Map.NetStatesInRange].
@@ -50,6 +55,10 @@ var iwRetBuf []*Item
 // ibqRetBuf is the static buffer used for the return value of
 // [Map.ItemBaseQuery].
 var ibqRetBuf []*Item
+
+// iqRetBuf is the static buffer used for the return value of
+// [Map.ItemQuery].
+var iqRetBuf []*Item
 
 // NetStatesInRange returns a slice of all of the mobiles with attached net
 // states who's view range is within range of the given point on the map. The
@@ -74,7 +83,8 @@ func (m *Map) NetStatesInRange(cp uo.Point, extra int) []*Mobile {
 	nsRetBuf = nsRetBuf[:0]
 	for p.Y = cb.Y; p.Y < cb.Y+cb.H; p.Y++ {
 		for p.X = cb.X; p.X < cb.X+cb.W; p.X++ {
-			c := m.chunks[p.Y*uo.MapChunksWidth+p.X]
+			l := p.ChunkBound(p)
+			c := m.chunks[l.Y*uo.MapChunksWidth+l.X]
 			for _, m := range c.Mobiles {
 				if m.NetState == nil ||
 					m.Location.XYDistance(cp) > m.ViewRange+extra {
@@ -222,15 +232,15 @@ func (m *Map) LoadFromMuls(mMul *file.MapMul, sMul *file.StaticsMul) {
 		if zBottom > highest {
 			highest = zBottom
 		}
-		tbdif := zTop - zBottom
-		if tbdif < 0 {
-			tbdif *= -1
+		tbDif := zTop - zBottom
+		if tbDif < 0 {
+			tbDif *= -1
 		}
-		lrdif := zLeft - zRight
-		if lrdif < 0 {
-			lrdif *= -1
+		lrDif := zLeft - zRight
+		if lrDif < 0 {
+			lrDif *= -1
 		}
-		if tbdif > lrdif {
+		if tbDif > lrDif {
 			average = zLeft + zRight
 		} else {
 			average = zTop + zBottom
@@ -326,8 +336,9 @@ func (m *Map) RetrieveObject(s uo.Serial) any {
 
 // MobilesWithin returns all mobiles within the bounds. Subsequent calls to
 // MobilesWithin reuse the same backing array for return values.
-func (m *Map) MobilesWithin(b uo.Bounds) []*Mobile {
+func (m *Map) MobilesWithin(center uo.Point, r int) []*Mobile {
 	var p uo.Point
+	b := center.BoundsByRadius(r)
 	cb := uo.Bounds{
 		X: b.X / uo.ChunkWidth,
 		Y: b.Y / uo.ChunkHeight,
@@ -343,7 +354,8 @@ func (m *Map) MobilesWithin(b uo.Bounds) []*Mobile {
 	mwRetBuf = mwRetBuf[:0]
 	for p.Y = cb.Y; p.Y < cb.Y+cb.H; p.Y++ {
 		for p.X = cb.X; p.X < cb.X+cb.W; p.X++ {
-			c := m.chunks[p.Y*uo.MapChunksWidth+p.X]
+			l := p.ChunkBound(center)
+			c := m.chunks[l.Y*uo.MapChunksWidth+l.X]
 			for _, m := range c.Mobiles {
 				if b.Contains(m.Location) {
 					mwRetBuf = append(mwRetBuf, m)
@@ -356,8 +368,9 @@ func (m *Map) MobilesWithin(b uo.Bounds) []*Mobile {
 
 // ItemsWithin returns all items within the bounds. Subsequent calls to
 // ItemsWithin reuse the same backing array for return values.
-func (m *Map) ItemsWithin(b uo.Bounds) []*Item {
+func (m *Map) ItemsWithin(center uo.Point, r int) []*Item {
 	var p uo.Point
+	b := center.BoundsByRadius(r)
 	cb := uo.Bounds{
 		X: b.X / uo.ChunkWidth,
 		Y: b.Y / uo.ChunkHeight,
@@ -373,7 +386,8 @@ func (m *Map) ItemsWithin(b uo.Bounds) []*Item {
 	iwRetBuf = iwRetBuf[:0]
 	for p.Y = cb.Y; p.Y < cb.Y+cb.H; p.Y++ {
 		for p.X = cb.X; p.X < cb.X+cb.W; p.X++ {
-			c := m.chunks[p.Y*uo.MapChunksWidth+p.X]
+			l := p.ChunkBound(center)
+			c := m.chunks[l.Y*uo.MapChunksWidth+l.X]
 			for _, i := range c.Items {
 				if b.Contains(i.Location) {
 					iwRetBuf = append(iwRetBuf, i)
@@ -387,8 +401,9 @@ func (m *Map) ItemsWithin(b uo.Bounds) []*Item {
 // EverythingWithin returns all items and mobiles within the bounds. Subsequent
 // calls to EverythingWithin will reuse the return buffers for
 // [Map.MobilesWithin] and [Map.ItemsWithin].
-func (m *Map) EverythingWithin(b uo.Bounds) ([]*Mobile, []*Item) {
+func (m *Map) EverythingWithin(center uo.Point, r int) ([]*Mobile, []*Item) {
 	var p uo.Point
+	b := center.BoundsByRadius(r)
 	cb := uo.Bounds{
 		X: b.X / uo.ChunkWidth,
 		Y: b.Y / uo.ChunkHeight,
@@ -405,7 +420,8 @@ func (m *Map) EverythingWithin(b uo.Bounds) ([]*Mobile, []*Item) {
 	iwRetBuf = iwRetBuf[:0]
 	for p.Y = cb.Y; p.Y < cb.Y+cb.H; p.Y++ {
 		for p.X = cb.X; p.X < cb.X+cb.W; p.X++ {
-			c := m.chunks[p.Y*uo.MapChunksWidth+p.X]
+			l := p.ChunkBound(center)
+			c := m.chunks[l.Y*uo.MapChunksWidth+l.X]
 			for _, m := range c.Mobiles {
 				if b.Contains(m.Location) {
 					mwRetBuf = append(mwRetBuf, m)
@@ -426,7 +442,7 @@ func (m *Map) SendEverything(mob *Mobile) {
 	if mob.NetState == nil {
 		return
 	}
-	mobs, items := m.EverythingWithin(mob.Location.BoundsByRadius(mob.ViewRange))
+	mobs, items := m.EverythingWithin(mob.Location, mob.ViewRange)
 	for _, m := range mobs {
 		mob.NetState.SendMobile(m)
 	}
@@ -440,7 +456,7 @@ func (m *Map) RemoveEverything(mob *Mobile) {
 	if mob.NetState == nil {
 		return
 	}
-	mobs, items := m.EverythingWithin(mob.Location.BoundsByRadius(mob.ViewRange))
+	mobs, items := m.EverythingWithin(mob.Location, mob.ViewRange)
 	for _, m := range mobs {
 		mob.NetState.RemoveMobile(m)
 	}
@@ -452,7 +468,7 @@ func (m *Map) RemoveEverything(mob *Mobile) {
 // SendSpeech sends speech to all mobiles in range.
 func (m *Map) SendSpeech(from *Mobile, r int, format string, args ...any) {
 	text := fmt.Sprintf(format, args...)
-	mobs := m.MobilesWithin(from.Location.BoundsByRadius(r))
+	mobs := m.MobilesWithin(from.Location, r)
 	sort.Slice(mobs, func(i, j int) bool {
 		return mobs[i].Location.XYDistance(from.Location) <
 			mobs[j].Location.XYDistance(from.Location)
@@ -512,7 +528,7 @@ func (m *Map) MoveMobile(mob *Mobile, dir uo.Direction) bool {
 	// If this is a mobile with an attached net state we need to check for
 	// new and old objects.
 	if mob.NetState != nil {
-		mobs, items := m.EverythingWithin(mob.Location.BoundsByRadius(mob.ViewRange + 1))
+		mobs, items := m.EverythingWithin(mob.Location, mob.ViewRange+1)
 		for _, om := range mobs {
 			if ol.XYDistance(om.Location) <= mob.ViewRange &&
 				nl.XYDistance(om.Location) > mob.ViewRange {
@@ -693,7 +709,7 @@ func (m *Map) GetFloorAndCeiling(l uo.Point, ignoreDynamicItems, considerStepHei
 		}
 		if stz == floor {
 			// Static is even with our current floor position, so we need to
-			// try to defer to the object with the most passability
+			// try to defer to the object with the most pass-ability
 			if floorObject.Impassable() {
 				floorObject = static
 			}
@@ -750,7 +766,7 @@ func (m *Map) GetFloorAndCeiling(l uo.Point, ignoreDynamicItems, considerStepHei
 		}
 		if itz == floor {
 			// Item is even with our current floor, defer to the object with the
-			// most passability.
+			// most pass-ability.
 			if floorObject.Impassable() {
 				floorObject = item
 			}
@@ -807,7 +823,7 @@ func (m *Map) UpdateViewRangeForMobile(mob *Mobile, r int) {
 	}
 	if r < mob.ViewRange {
 		// Look for the set of currently-visible objects that will no longer be
-		mobs, items := m.EverythingWithin(mob.Location.BoundsByRadius(mob.ViewRange))
+		mobs, items := m.EverythingWithin(mob.Location, mob.ViewRange)
 		for _, om := range mobs {
 			if mob.Location.XYDistance(om.Location) > r {
 				mob.NetState.RemoveMobile(om)
@@ -820,7 +836,7 @@ func (m *Map) UpdateViewRangeForMobile(mob *Mobile, r int) {
 		}
 	} else {
 		// Look for the set of currently-non-visible objects that will be
-		mobs, items := m.EverythingWithin(mob.Location.BoundsByRadius(mob.ViewRange))
+		mobs, items := m.EverythingWithin(mob.Location, mob.ViewRange)
 		for _, om := range mobs {
 			if mob.Location.XYDistance(om.Location) > mob.ViewRange {
 				mob.NetState.SendMobile(om)
@@ -1020,35 +1036,37 @@ func (m *Map) plopItems(l uo.Point, drop int) {
 // LineOfSight returns true if there is line of site between the two locations.
 // The reference used for the Bresenham Line Algorithm was
 // https://www.baeldung.com/cs/bresenhams-line-algorithm#:~:text=3.-,Description,words%2C%20only%20very%20cheap%20operations.
-func (m *Map) LineOfSight(a, b uo.Point) bool {
+func (m *Map) LineOfSight(p1, p2 uo.Point) bool {
+	rp := p1
 	// Control variables for the line algorithm
-	dx := b.X - a.X
+	dx := p2.X - p1.X
 	if dx < 0 {
 		dx *= -1
 	}
 	sx := 1
-	if a.X >= b.X {
+	if p1.X >= p2.X {
 		sx = -1
 	}
-	dy := b.Y - a.Y
+	dy := p2.Y - p1.Y
 	if dy < 0 {
 		dy *= -1
 	}
 	dy *= -1
 	sy := 1
-	if a.Y >= b.Y {
+	if p1.Y >= p2.Y {
 		sy = -1
 	}
 	e := dx + dy
 	// Z stepping control
-	dtx := float64(b.X - a.X)
-	dty := float64(b.Y - a.Y)
+	dtx := float64(p2.X - p1.X)
+	dty := float64(p2.Y - p1.Y)
 	dl := math.Sqrt(dtx*dtx + dty*dty)
-	sz := float64(b.Z-a.Z) / dl
-	az := float64(a.Z)
+	sz := float64(p2.Z-p1.Z) / dl
+	az := float64(p1.Z)
 	// Process positions
 	for {
 		// Check point for sight blocking
+		a := p1.WrapAndBound(rp)
 		bottom := a.Z
 		top := int(float64(a.Z) + sz)
 		c := m.chunks[(a.Y/uo.ChunkHeight)*uo.MapChunksWidth+(a.X/uo.ChunkWidth)]
@@ -1104,28 +1122,28 @@ func (m *Map) LineOfSight(a, b uo.Point) bool {
 			break
 		}
 		// Nothing blocking line of site at this location, continue line
-		if a.X == b.X && a.Y == b.Y {
+		if p1.X == p2.X && p1.Y == p2.Y {
 			// If we get here then we have clear LOS
 			return true
 		}
 		// Line algorithm
 		e2 := e * 2
 		if e2 >= dy {
-			if a.X == b.X {
+			if p1.X == p2.X {
 				break
 			}
 			e += dy
-			a.X += sx
+			p1.X += sx
 		}
 		if e2 <= dx {
-			if a.Y == b.Y {
+			if p1.Y == p2.Y {
 				break
 			}
 			e += dx
-			a.Y += sy
+			p1.Y += sy
 		}
 		az += sz
-		a.Z = int(az)
+		p1.Z = int(az)
 	}
 	return false
 }
@@ -1138,13 +1156,13 @@ func (m *Map) PlaySound(which uo.Sound, from uo.Point) {
 }
 
 // ItemBaseQuery returns a slice of all of the items who's direct BaseTemplate
-// property matches the given template name. The second parameter may be the
-// zero value, in which case the entire map is searched. WARNING: This can be
-// expensive and will hang the server. Subsequent calls to ItemBaseQuery will
-// reuse the same backing array for the return value.
-func (m *Map) ItemBaseQuery(tn string, b uo.Bounds) []*Item {
+// property matches the given template name. If the range parameter is zero the
+// entire map is searched. WARNING: This can be expensive and will hang the
+// server. Subsequent calls to ItemBaseQuery will reuse the same backing array
+// for the return value.
+func (m *Map) ItemBaseQuery(tn string, center uo.Point, r int) []*Item {
 	ibqRetBuf = ibqRetBuf[:0]
-	if b == uo.BoundsZero {
+	if r == 0 {
 		// Full map query
 		for _, c := range m.chunks {
 			for _, i := range c.Items {
@@ -1157,6 +1175,7 @@ func (m *Map) ItemBaseQuery(tn string, b uo.Bounds) []*Item {
 	}
 	// Spacial query
 	var p uo.Point
+	b := center.BoundsByRadius(r)
 	cb := uo.Bounds{
 		X: b.X / uo.ChunkWidth,
 		Y: b.Y / uo.ChunkHeight,
@@ -1172,7 +1191,8 @@ func (m *Map) ItemBaseQuery(tn string, b uo.Bounds) []*Item {
 	mwRetBuf = mwRetBuf[:0]
 	for p.Y = cb.Y; p.Y < cb.Y+cb.H; p.Y++ {
 		for p.X = cb.X; p.X < cb.X+cb.W; p.X++ {
-			c := m.chunks[p.Y*uo.MapChunksWidth+p.X]
+			l := p.ChunkBound(center)
+			c := m.chunks[l.Y*uo.MapChunksWidth+l.X]
 			for _, item := range c.Items {
 				if !b.Contains(item.Location) {
 					continue
@@ -1184,6 +1204,56 @@ func (m *Map) ItemBaseQuery(tn string, b uo.Bounds) []*Item {
 		}
 	}
 	return ibqRetBuf
+}
+
+// ItemQuery returns a slice of all of the items who's template property matches
+// the given template name. If the range parameter is zero the entire map is
+// searched. WARNING: This can be expensive and will hang the server. Subsequent
+// calls to ItemQuery will reuse the same backing array for the return value.
+func (m *Map) ItemQuery(tn string, center uo.Point, r int) []*Item {
+	iqRetBuf = iqRetBuf[:0]
+	if r == 0 {
+		// Full map query
+		for _, c := range m.chunks {
+			for _, i := range c.Items {
+				if i.TemplateName == tn {
+					iqRetBuf = append(iqRetBuf, i)
+				}
+			}
+		}
+		return iqRetBuf
+	}
+	// Spacial query
+	var p uo.Point
+	b := center.BoundsByRadius(r)
+	cb := uo.Bounds{
+		X: b.X / uo.ChunkWidth,
+		Y: b.Y / uo.ChunkHeight,
+		W: b.W / uo.ChunkWidth,
+		H: b.H / uo.ChunkHeight,
+	}
+	if b.W%uo.ChunkWidth != 0 {
+		cb.W++
+	}
+	if b.H%uo.ChunkHeight != 0 {
+		cb.H++
+	}
+	mwRetBuf = mwRetBuf[:0]
+	for p.Y = cb.Y; p.Y < cb.Y+cb.H; p.Y++ {
+		for p.X = cb.X; p.X < cb.X+cb.W; p.X++ {
+			l := p.ChunkBound(center)
+			c := m.chunks[l.Y*uo.MapChunksWidth+l.X]
+			for _, item := range c.Items {
+				if !b.Contains(item.Location) {
+					continue
+				}
+				if item.BaseTemplate == tn {
+					iqRetBuf = append(iqRetBuf, item)
+				}
+			}
+		}
+	}
+	return iqRetBuf
 }
 
 // PlayEffect plays a graphic effect with the given parameters for all clients
@@ -1299,29 +1369,24 @@ func (m *Map) ConsumeOre(l uo.Point, n int) int {
 // Query returns true if there is a static or dynamic item within range of the
 // given location who's BaseGraphic property is contained within the given set.
 func (m *Map) Query(center uo.Point, queryRange int, set map[uo.Graphic]struct{}) bool {
-	b := uo.Bounds{
-		X: center.X - queryRange,
-		Y: center.Y - queryRange,
-		W: queryRange*2 + 1,
-		H: queryRange*2 + 1,
+	var p uo.Point
+	b := center.BoundsByRadius(queryRange)
+	cb := uo.Bounds{
+		X: b.X / uo.ChunkWidth,
+		Y: b.Y / uo.ChunkHeight,
+		W: b.W / uo.ChunkWidth,
+		H: b.H / uo.ChunkHeight,
 	}
-	tl := uo.Point{
-		X: b.X,
-		Y: b.Y,
+	if b.W%uo.ChunkWidth != 0 {
+		cb.W++
 	}
-	scx := b.X / uo.ChunkWidth
-	scy := b.Y / uo.ChunkHeight
-	ecx := b.X + b.W - 1/uo.ChunkWidth
-	ecy := b.Y + b.H - 1/uo.ChunkHeight
-	for cy := scy; cy <= ecy; cy++ {
-		for cx := scx; cx <= ecx; cx++ {
-			l := uo.Point{
-				X: cx * uo.ChunkWidth,
-				Y: cy * uo.ChunkHeight,
-			}.WrapAndBound(tl)
-			ccx := int(l.X) / uo.ChunkWidth
-			ccy := int(l.Y) / uo.ChunkHeight
-			c := m.chunks[ccy*uo.MapChunksWidth+ccx]
+	if b.H%uo.ChunkHeight != 0 {
+		cb.H++
+	}
+	for p.Y = cb.Y; p.Y < cb.Y+cb.H; p.Y++ {
+		for p.X = cb.X; p.X < cb.X+cb.W; p.X++ {
+			l := p.ChunkBound(center)
+			c := m.chunks[l.Y*uo.MapChunksWidth+l.X]
 			for _, s := range c.Statics {
 				if _, ok := set[s.BaseGraphic()]; ok && center.XYDistance(s.Location) <= queryRange {
 					return true
@@ -1335,4 +1400,198 @@ func (m *Map) Query(center uo.Point, queryRange int, set map[uo.Graphic]struct{}
 		}
 	}
 	return false
+}
+
+// GetChunk returns the chunk for the given map location. This *should not* be
+// used internally within tight loops.
+func (m *Map) GetChunk(l uo.Point) *Chunk {
+	return m.chunks[(l.Y/uo.ChunkHeight)*uo.MapChunksWidth+(l.X/uo.ChunkWidth)]
+}
+
+// GetSpawnableSurface returns the surface on which something should be spawned
+// in the given location, or nil if no suitable surface for the object was
+// found.
+func (m *Map) GetSpawnableSurface(l uo.Point, maxZ, height int) uo.CommonObject {
+	f, c := m.GetFloorAndCeiling(l, false, true)
+	if f == nil {
+		// If we are below the ground project upward to the next surface and try
+		// again
+		nl := l
+		nl.Z = c.Highest()
+		f, c = m.GetFloorAndCeiling(nl, false, true)
+	}
+	if f == nil {
+		// Failed to find a valid floor
+		return nil
+	}
+	// Flag checks
+	if !f.Surface() || f.Impassable() {
+		return nil
+	}
+	// Z check
+	if f.StandingHeight() < l.Z || f.StandingHeight() > maxZ {
+		return nil
+	}
+	// Height check
+	if c == nil {
+		return f
+	}
+	if int(c.Z())-int(f.StandingHeight()) < height {
+		return nil
+	}
+	return f
+}
+
+// AddRegion adds the given region to the map.
+func (m *Map) AddRegion(r *Region) {
+	m.regions = append(m.regions, r)
+	var p uo.Point
+	cb := uo.Bounds{
+		X: r.Bounds.X / uo.ChunkWidth,
+		Y: r.Bounds.Y / uo.ChunkHeight,
+		W: r.Bounds.W / uo.ChunkWidth,
+		H: r.Bounds.H / uo.ChunkHeight,
+	}
+	if r.Bounds.W%uo.ChunkWidth != 0 {
+		cb.W++
+	}
+	if r.Bounds.H%uo.ChunkHeight != 0 {
+		cb.H++
+	}
+	for p.Y = cb.Y; p.Y < cb.Y+cb.H; p.Y++ {
+		for p.X = cb.X; p.X < cb.X+cb.W; p.X++ {
+			l := p.ChunkBound(r.Bounds.TopLeft())
+			c := m.chunks[l.Y*uo.MapChunksWidth+l.X]
+			c.AddRegion(r)
+		}
+	}
+}
+
+// RemoveRegion removes the given region from the map.
+func (m *Map) RemoveRegion(r *Region) {
+	var p uo.Point
+	idx := -1
+	for i, region := range m.regions {
+		if r == region {
+			idx = i
+			break
+		}
+	}
+	if idx >= 0 {
+		m.regions = append(m.regions[:idx], m.regions[idx+1:]...)
+	}
+	cb := uo.Bounds{
+		X: r.Bounds.X / uo.ChunkWidth,
+		Y: r.Bounds.Y / uo.ChunkHeight,
+		W: r.Bounds.W / uo.ChunkWidth,
+		H: r.Bounds.H / uo.ChunkHeight,
+	}
+	if r.Bounds.W%uo.ChunkWidth != 0 {
+		cb.W++
+	}
+	if r.Bounds.H%uo.ChunkHeight != 0 {
+		cb.H++
+	}
+	for p.Y = cb.Y; p.Y < cb.Y+cb.H; p.Y++ {
+		for p.X = cb.X; p.X < cb.X+cb.W; p.X++ {
+			l := p.ChunkBound(r.Bounds.TopLeft())
+			m.chunks[l.Y*uo.MapChunksWidth+l.X].RemoveRegion(r)
+		}
+	}
+}
+
+// RegionsAt returns a slice of all of the regions that overlap the given
+// location. Subsequent calls to [Map.RegionsAt] and [Map.RegionsWithin] reuse
+// the same backing array for the return value.
+func (m *Map) RegionsAt(l uo.Point) []*Region {
+	rRetBuf = rRetBuf[:0]
+	c := m.GetChunk(l)
+	for _, r := range c.Regions {
+		if r.Contains(l) {
+			rRetBuf = append(rRetBuf, r)
+		}
+	}
+	return rRetBuf
+}
+
+// RegionsWithin returns a slice of all of the regions that overlap the given
+// bounds.
+func (m *Map) RegionsWithin(b uo.Bounds) []*Region {
+	var p uo.Point
+	rSet := make(map[*Region]struct{})
+	cb := uo.Bounds{
+		X: b.X / uo.ChunkWidth,
+		Y: b.Y / uo.ChunkHeight,
+		W: b.W / uo.ChunkWidth,
+		H: b.H / uo.ChunkHeight,
+	}
+	if b.W%uo.ChunkWidth != 0 {
+		cb.W++
+	}
+	if b.H%uo.ChunkHeight != 0 {
+		cb.H++
+	}
+	for p.Y = cb.Y; p.Y < cb.Y+cb.H; p.Y++ {
+		for p.X = cb.X; p.X < cb.X+cb.W; p.X++ {
+			l := p.ChunkBound(b.TopLeft())
+			c := m.chunks[l.Y*uo.MapChunksWidth+l.X]
+			for _, r := range c.Regions {
+				if !r.Overlaps(b) {
+					continue
+				}
+				rSet[r] = struct{}{}
+			}
+		}
+	}
+	ret := make([]*Region, len(rSet))
+	i := 0
+	for r := range rSet {
+		ret[i] = r
+		i++
+	}
+	return ret
+}
+
+// RegionFeaturesAt returns the accumulated region features from all regions at
+// the given location.
+func (m *Map) RegionFeaturesAt(l uo.Point) RegionFeature {
+	var ret RegionFeature
+	c := m.GetChunk(l)
+	for _, r := range c.Regions {
+		if r.Contains(l) {
+			ret |= r.Features
+		}
+	}
+	return ret
+}
+
+// TeleportMobile moves a mobile from where it is now to the new location. This
+// returns false if there is not enough room at that location for the mobile.
+// This will also trigger all events as if the mobile left the tile normally,
+// and arrived at the new tile normally.
+func (m *Map) TeleportMobile(mob *Mobile, l uo.Point) bool {
+	oldLocation := mob.Location
+	World.Map().RemoveMobile(mob) // This triggers on leave events
+	mob.Location = l
+	if !World.Map().AddMobile(mob, false) {
+		// Don't leak the mobile, just force it back where it came from.
+		mob.Location = oldLocation
+		World.Map().AddMobile(mob, true)
+		floor, _ := m.GetFloorAndCeiling(mob.Location, false, false)
+		mob.StandingOn = floor
+		return false
+	}
+	// Update standing
+	floor, _ := m.GetFloorAndCeiling(mob.Location, false, false)
+	mob.StandingOn = floor
+	// If this mobile has a net state attached we need to fully refresh the
+	// client's object collection.
+	if mob.NetState != nil {
+		mob.Location = oldLocation
+		m.RemoveEverything(mob)
+		mob.Location = l
+		m.SendEverything(mob)
+		mob.NetState.DrawPlayer()
+	}
+	return true
 }

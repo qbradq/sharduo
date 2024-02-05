@@ -31,8 +31,8 @@ func RegisterCallbacks(
 	latestSavePath = lLatestSavePath
 }
 
-// regcmd registers a command description
-func regcmd(d *cmdesc) {
+// reg registers a command description
+func reg(d *cmDesc) {
 	commands[d.name] = d
 	for _, alt := range d.alts {
 		commands[alt] = d
@@ -42,8 +42,8 @@ func regcmd(d *cmdesc) {
 // commandFunction is the signature of a command function
 type commandFunction func(game.NetState, CommandArgs, string)
 
-// cmdesc describes a command
-type cmdesc struct {
+// cmDesc describes a command
+type cmDesc struct {
 	name        string
 	alts        []string
 	fn          commandFunction
@@ -53,11 +53,11 @@ type cmdesc struct {
 }
 
 // commands is the mapping of command strings to commandFunction's
-var commands = make(map[string]*cmdesc)
+var commands = make(map[string]*cmDesc)
 
 // Execute executes the command for the given command line
 func Execute(n game.NetState, line string) {
-	if n.Account() == nil {
+	if n.Mobile() == nil || n.Mobile().Account == nil {
 		return
 	}
 	r := csv.NewReader(strings.NewReader(line))
@@ -76,7 +76,7 @@ func Execute(n game.NetState, line string) {
 		n.Speech(nil, "%s is not a command", c[0])
 		return
 	}
-	if !n.Account().HasRole(desc.roles) {
+	if !n.Mobile().Account.HasRole(desc.roles) {
 		n.Speech(nil, "you do not have permission to use the %s command", c[0])
 		return
 	}

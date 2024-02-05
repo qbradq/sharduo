@@ -162,3 +162,13 @@ func (l Point) BoundsByRadius(r int) Bounds {
 		D: MapMaxZ - MapMinZ,
 	}
 }
+
+// ChunkBound returns a Point value that is properly wrapped and bounded.
+func (l Point) ChunkBound(r Point) Point {
+	l.X *= ChunkWidth
+	l.Y *= ChunkHeight
+	l = l.WrapAndBound(r)
+	l.X /= ChunkWidth
+	l.Y /= ChunkHeight
+	return l
+}

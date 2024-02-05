@@ -55,3 +55,11 @@ func HashPassword(password string) string {
 	hd := sha256.Sum256([]byte(password))
 	return hex.EncodeToString(hd[:])
 }
+
+// RandomLocation returns a random point within the bounds.
+func RandomLocation(b uo.Bounds) uo.Point {
+	return uo.Point{
+		X: Random(b.X, b.East()),
+		Y: Random(b.Y, b.South()),
+	}
+}

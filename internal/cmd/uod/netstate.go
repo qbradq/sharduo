@@ -862,7 +862,7 @@ func (n *NetState) Music(song uo.Music) {
 	})
 }
 
-// Animate animates a mobile on the client side
+// Animate animates a mobile on the client side.
 func (n *NetState) Animate(mob *game.Mobile, at uo.AnimationType, aa uo.AnimationAction) {
 	if mob == nil {
 		return
