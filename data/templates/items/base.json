@@ -2,7 +2,7 @@
     "BaseItem": {
         "LiftSound": "0x57",
         "Amount": 1,
-        "Weight": 1
+        "Weight": 255
     },
     "StaticItem": {
         "BaseTemplate": "BaseItem",

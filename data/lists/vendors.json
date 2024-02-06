@@ -1,0 +1,16 @@
+{
+    "VendorSmelter": [
+        "IronOre",
+        "IronIngot",
+        "Pickaxe"
+    ],
+    "VendorStableMaster": [
+        "StableMasterPlaceholderHorseGrey",
+        "StableMasterPlaceholderHorseTan",
+        "StableMasterPlaceholderHorseBrown",
+        "StableMasterPlaceholderHorseDappled",
+        "StableMasterPlaceholderLlama",
+        "StableMasterPlaceholderPackHorse",
+        "StableMasterPlaceholderPackLlama"
+    ]
+}

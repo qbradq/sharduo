@@ -1,0 +1,61 @@
+{
+    "BaseHair": {
+        "BaseTemplate": "BaseWearable",
+        "Layer": "{{.LayerHair}}",
+        "Weight": 0,
+        "PostCreationEvents": [
+            "RandomHue|HairHue"
+        ]
+    },
+    "MohawkHair": {
+        "BaseTemplate": "BaseHair",
+        "Graphic": "0x2044",
+        "Name": "mohawk",
+        "ArticleA": true
+    },
+    "PageboyHair": {
+        "BaseTemplate": "BaseHair",
+        "Graphic": "0x2045",
+        "Name": "pageboy",
+        "ArticleA": true
+    },
+    "BunsHair": {
+        "BaseTemplate": "BaseHair",
+        "Graphic": "0x2046",
+        "Name": "buns"
+    },
+    "LongHair": {
+        "BaseTemplate": "BaseHair",
+        "Graphic": "0x203C",
+        "Name": "long hair"
+    },
+    "ShortHair": {
+        "BaseTemplate": "BaseHair",
+        "Graphic": "0x203B",
+        "Name": "short hair"
+    },
+    "PonyTailHair": {
+        "BaseTemplate": "BaseHair",
+        "Graphic": "0x203D",
+        "Name": "pony tail",
+        "ArticleA": true
+    },
+    "AfroHair": {
+        "BaseTemplate": "BaseHair",
+        "Graphic": "0x2047",
+        "Name": "afro",
+        "ArticleAn": true
+    },
+    "RecedingHair": {
+        "BaseTemplate": "BaseHair",
+        "TemplateName": "RecedingHair",
+        "Graphic": "0x2048",
+        "Name": "receding hair"
+    },
+    "PigTailsHair": {
+        "BaseTemplate": "BaseHair",
+        "TemplateName": "PigTailsHair",
+        "Graphic": "0x2049",
+        "Name": "pig tails"
+    }
+}

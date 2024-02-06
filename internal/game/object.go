@@ -8,13 +8,13 @@ import (
 // Object holds all of the common dynamic data for all items and mobiles.
 type Object struct {
 	// Static variables
-	BaseTemplate       string            // Name of the template this template inherited from
-	Name               string            // Descriptive name without articles
-	ArticleA           bool              // If true the article A is used to refer to this item
-	ArticleAn          bool              // If true the article An is used to refer to this item
-	Events             map[string]string // Raw event names
-	PostCreationEvents []string          // List of events to execute after creation
-	btResolved         bool              // If true this is a prototype object that has already had it's base template resolved
+	BaseTemplate       string               // Name of the template this template inherited from
+	Name               string               // Descriptive name without articles
+	ArticleA           bool                 // If true the article A is used to refer to this item
+	ArticleAn          bool                 // If true the article An is used to refer to this item
+	Events             map[string]string    // Raw event names
+	PostCreationEvents []*postCreationEvent // List of events to execute after creation
+	btResolved         bool                 // If true this is a prototype object that has already had it's base template resolved
 	// Persistent variables
 	TemplateName string       // Name of the template used to create the item
 	Serial       uo.Serial    // Unique serial of the object

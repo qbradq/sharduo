@@ -1,0 +1,30 @@
+{
+    "MaleHair": [
+        "MohawkHair",
+        "PageboyHair",
+        "LongHair",
+        "ShortHair",
+        "PonyTailHair",
+        "AfroHair",
+        "RecedingHair"
+    ],
+    "FemaleHair": [
+        "BunsHair",
+        "LongHair",
+        "ShortHair",
+        "PonyTailHair",
+        "AfroHair",
+        "PigTailsHair"
+    ],
+    "Hair": [
+        "MohawkHair",
+        "PageboyHair",
+        "BunsHair",
+        "LongHair",
+        "ShortHair",
+        "PonyTailHair",
+        "AfroHair",
+        "RecedingHair",
+        "PigTailsHair"
+    ]
+}

@@ -39,19 +39,6 @@ func getEventHandler(which string) *eventHandler {
 	return fn
 }
 
-// getEventName returns the name of the event handler
-func getEventName(fn *eventHandler) string {
-	return evBr[fn]
-}
-
-// getEventIndex returns the index number of the event handler. A return value
-// of 0 means nil or event handler not found.
-// NOTE: This index number can change when events are added. DO NOT PERSIST THIS
-// VALUE!
-func getEventIndex(fn *eventHandler) uint16 {
-	return ehIBR[fn]
-}
-
 // GetEventHandlerByIndex returns the event handler by index or nil if it does
 // not exist.
 func GetEventHandlerByIndex(idx uint16) *eventHandler {

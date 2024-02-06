@@ -1,0 +1,105 @@
+{
+    "BaseOre": {
+        "BaseTemplate": "BaseItem",
+        "Graphic": "0x19B9",
+        "Weight": 12,
+        "Events": {
+            "DoubleClick": "SmeltOre"
+        },
+        "Flags": [
+            "Stackable"
+        ]
+    },
+    "IronOre": {
+        "BaseTemplate": "BaseOre",
+        "Name": "iron ore",
+        "Value": 10
+    },
+    "BaseIngot": {
+        "BaseTemplate": "BaseItem",
+        "Graphic": "0x1BF2",
+        "FlippedGraphic": "0x1BEF",
+        "Weight": 0.1,
+        "Flags": [
+            "Stackable"
+        ]
+    },
+    "IronIngot": {
+        "BaseTemplate": "BaseIngot",
+        "Name": "iron ingot",
+        "ArticleAn": true,
+        "Plural": "iron ingots",
+        "Value": 5
+    },
+    "Cotton": {
+        "BaseTemplate": "BaseItem",
+        "Graphic": "0x0DF9",
+        "Name": "bale of cotton",
+        "Plural": "bales of cotton",
+        "ArticleA": true,
+        "Weight": 4,
+        "Value": 102,
+        "Flags": [
+            "Stackable"
+        ]
+    },
+    "Flax": {
+        "BaseTemplate": "BaseItem",
+        "Graphic": "0x1A9C",
+        "Name": "bundle of flax",
+        "Plural": "bundles of flax",
+        "ArticleA": true,
+        "Weight": 1,
+        "Value": 102,
+        "Flags": [
+            "Stackable"
+        ]
+    },
+    "Wool": {
+        "BaseTemplate": "BaseItem",
+        "Name": "pile of wool",
+        "Plural": "piles of wool",
+        "ArticleA": true,
+        "Weight": 1,
+        "Value": 102,
+        "Flags": [
+            "Stackable"
+        ]
+    },
+    "Wheat": {
+        "BaseTemplate": "BaseItem",
+        "Graphic": "0x1EBD",
+        "Name": "wheat sheaf",
+        "Plural": "wheat sheaves",
+        "ArticleA": true,
+        "Weight": 1,
+        "Value": 0,
+        "Flags": [
+            "Stackable"
+        ]
+    },
+    "Onion": {
+        "BaseTemplate": "BaseItem",
+        "Graphic": "0x0C6D",
+        "Name": "onion",
+        "Plural": "onions",
+        "ArticleAn": true,
+        "Weight": 1,
+        "Value": 0,
+        "Flags": [
+            "Stackable"
+        ]
+    },
+    "Carrot": {
+        "BaseTemplate": "BaseItem",
+        "Graphic": "0x0C77",
+        "Name": "carrot",
+        "Plural": "carrots",
+        "ArticleA": true,
+        "Weight": 1,
+        "Value": 0,
+        "Flags": [
+            "Stackable"
+        ]
+    }
+}

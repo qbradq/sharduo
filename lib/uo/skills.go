@@ -1,5 +1,10 @@
 package uo
 
+import (
+	"fmt"
+	"strings"
+)
+
 // SkillDefinitino holds all of the information about a skill
 type SkillDefinition struct {
 	// ID of the skill
@@ -211,3 +216,15 @@ const (
 	SkillCount                Skill = SkillLast + 1
 	SkillAll                  Skill = 0xFF // Asks for all skills in a status request
 )
+
+// UnmarshalJSON implements the json.Unmarshaler interface.
+func (s *Skill) UnmarshalJSON(in []byte) error {
+	sn := strings.ToLower(string(in[1 : len(in)-1]))
+	for i, usn := range SkillNames {
+		if sn == strings.ToLower(usn) {
+			*s = Skill(i)
+			return nil
+		}
+	}
+	return fmt.Errorf("unsupported skill name %s", sn)
+}

@@ -1,0 +1,24 @@
+{
+    "BaseShirt": {
+        "BaseTemplate": "BaseClothing",
+        "Layer": "Shirt"
+    },
+    "Shirt": {
+        "BaseTemplate": "BaseShirt",
+        "Graphic": "0x1517",
+        "FlippedGraphic": "0x1518",
+        "Name": "shirt",
+        "ArticleA": true,
+        "Weight": 1,
+        "Value": 12
+    },
+    "FancyShirt": {
+        "BaseTemplate": "BaseShirt",
+        "Graphic": "0x1EFD",
+        "FlippedGraphic": "0x1EFE",
+        "Name": "fancy shirt",
+        "ArticleA": true,
+        "Weight": 2,
+        "Value": 21
+    }
+}

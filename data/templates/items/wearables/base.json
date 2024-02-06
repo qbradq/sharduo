@@ -1,0 +1,8 @@
+{
+    "BaseWearable": {
+        "BaseTemplate": "BaseItem",
+        "TemplateName": "BaseWearable",
+        "Layer": "Weapon",
+        "Durability": 10
+    }
+}

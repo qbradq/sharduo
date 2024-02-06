@@ -1,0 +1,57 @@
+{
+    "WearableContainer": {
+        "BaseTemplate": "BaseWearable",
+        "MaxContainerWeight": 400,
+        "MaxContainerItems": 125,
+        "Weight": 0,
+        "Events": {
+            "DoubleClick": "OpenContainer",
+            "Drop": "DropToContainer"
+        }
+    },
+    "PlayerBackpack": {
+        "BaseTemplate": "WearableContainer",
+        "Layer": "{{.LayerBackpack}}",
+        "Graphic": "0x0E75",
+        "FlippedGraphic": "0x09B2",
+        "Name": "backpack",
+        "ArticleA": true,
+        "MaxContainerWeight": 550,
+        "Gump": "0x003C",
+        "Bounds": "44,65,142,94",
+        "DropSound": "0x48"
+    },
+    "NPCBackpack": {
+        "BaseTemplate": "PlayerBackpack",
+        "MaxContainerWeight": 0,
+        "MaxContainerItems": 0
+    },
+    "NPCForSaleContainer": {
+        "BaseTemplate": "NPCBackpack",
+        "Layer": "NPCBuyRestockContainer"
+    },
+    "NPCBoughtContainer": {
+        "BaseTemplate": "NPCBackpack",
+        "Layer": "NPCBuyNoRestockContainer"
+    },
+    "PackAnimalBackpack": {
+        "BaseTemplate": "PlayerBackpack",
+        "MaxContainerWeight": 1600
+    },
+    "PlayerBankBox": {
+        "BaseTemplate": "PlayerBackpack",
+        "Layer": "Bank",
+        "Graphic": "0x0E40",
+        "FlippedGraphic": "0x0E41",
+        "Name": "bank box",
+        "ArticleA": true,
+        "MaxContainerWeight": 0,
+        "Gump": "0x42",
+        "Bounds": "18,105,144,73",
+        "DropSound": "0x42"
+    },
+    "MountItem": {
+        "BaseTemplate": "BaseWearable",
+        "Layer": "Mount"
+    }
+}

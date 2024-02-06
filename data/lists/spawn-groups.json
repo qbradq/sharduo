@@ -1,0 +1,32 @@
+{
+    "Birds": [
+        "Cardinal",
+        "Robin",
+        "MorningDove",
+        "Mockingbird"
+    ],
+    "Horses": [
+        "HorseGrey",
+        "HorseBrown",
+        "HorseTan",
+        "HorseDappled",
+        "Llama"
+    ],
+    "TownAnimals": [
+        "Dog",
+        "Cat",
+        "Rat"
+    ],
+    "FarmAnimals": [
+        "Pig",
+        "Boar",
+        "Rabbit",
+        "Sheep",
+        "Chicken",
+        "Goat",
+        "Cow",
+        "CowBrown",
+        "Bull",
+        "BullBrown"
+    ]
+}

@@ -1,5 +1,11 @@
 package uo
 
+import (
+	"errors"
+	"strconv"
+	"strings"
+)
+
 var BoundsZero = Bounds{} // Bounds zero value
 
 var BoundsFullMap = Bounds{
@@ -23,6 +29,27 @@ type Bounds struct {
 	H int
 	// Depth of the bounds (Z-axis)
 	D int
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface.
+func (b *Bounds) UnmarshalJSON(in []byte) error {
+	fn := func(s string) int {
+		v, err := strconv.ParseInt(s, 0, 32)
+		if err != nil {
+			panic(err)
+		}
+		return int(v)
+	}
+	s := string(in[1 : len(in)-1])
+	parts := strings.Split(s, ",")
+	if len(parts) != 4 {
+		panic(errors.New("expected four parts for bounds"))
+	}
+	b.X = fn(parts[0])
+	b.Y = fn(parts[1])
+	b.W = fn(parts[2]) - b.X
+	b.H = fn(parts[3]) - b.Y
+	return nil
 }
 
 // BoundsFit returns a bounds value that fits both bounds tightly.

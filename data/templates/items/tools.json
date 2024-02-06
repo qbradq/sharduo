@@ -1,0 +1,18 @@
+{
+    "BaseTool": {
+        "BaseTemplate": "BaseItem",
+        "MaxDurability": 50
+    },
+    "Shovel": {
+        "BaseTemplate": "BaseTool",
+        "Name": "shovel",
+        "ArticleA": true,
+        "Graphic": "0x0F39",
+        "FlippedGraphic": "0x0F3A",
+        "Value": 12,
+        "Weight": 5,
+        "Events": {
+            "DoubleClick": "BeginMining"
+        }
+    }
+}

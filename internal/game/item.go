@@ -107,8 +107,11 @@ func constructItem(which string) *Item {
 	i := &Item{}
 	*i = *p
 	i.Def = World.ItemDefinition(i.CurrentGraphic())
-	for _, en := range i.PostCreationEvents {
-		i.ExecuteEvent(en, nil, nil)
+	i.Durability = i.MaxDurability
+	for _, e := range i.PostCreationEvents {
+		if !e.Execute(i) {
+			panic(fmt.Errorf("failed to execute post creation event %s", e.EventName))
+		}
 	}
 	return i
 }
@@ -135,6 +138,7 @@ const (
 	ItemFlagsStatic    ItemFlags = 0b00000100 // Item is static
 	ItemFlagsStackable ItemFlags = 0b00001000 // Item is stackable
 	ItemFlagsUses      ItemFlags = 0b00010000 // Item has uses instead of durability
+	ItemFlagsDyeable   ItemFlags = 0b00100000 // Item can be dyed normally
 )
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
@@ -155,6 +159,8 @@ func (f *ItemFlags) UnmarshalJSON(in []byte) error {
 			*f |= ItemFlagsStackable
 		case "uses":
 			*f |= ItemFlagsUses
+		case "dyeable":
+			*f |= ItemFlagsDyeable
 		}
 	}
 	return nil

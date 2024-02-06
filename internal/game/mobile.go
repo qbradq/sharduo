@@ -106,12 +106,23 @@ func constructMobile(which string) *Mobile {
 	}
 	m := &Mobile{}
 	*m = *p
-	for _, en := range m.PostCreationEvents {
-		m.ExecuteEvent(en, nil, nil)
-	}
 	// Attach new player data struct if needed
 	if m.Player {
 		m.PlayerData = NewPlayerData()
+	}
+	m.Hits = m.MaxHits
+	m.Mana = m.MaxMana
+	m.Stamina = m.MaxStamina
+	m.Strength = m.BaseStrength
+	m.Dexterity = m.BaseDexterity
+	m.Intelligence = m.BaseIntelligence
+	for i := range m.Skills {
+		m.Skills[i] = m.BaseSkills[i]
+	}
+	for _, e := range m.PostCreationEvents {
+		if !e.Execute(m) {
+			panic(fmt.Errorf("failed to execute post creation event %s", e.EventName))
+		}
 	}
 	return m
 }

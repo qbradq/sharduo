@@ -1,0 +1,22 @@
+{
+    "BasePants": {
+        "BaseTemplate": "BaseClothing",
+        "Layer": "Legs"
+    },
+    "ShortPants": {
+        "BaseTemplate": "BasePants",
+        "Graphic": "0x152E",
+        "FlippedGraphic": "0x152F",
+        "Name": "pants",
+        "Weight": 2,
+        "Value": 7
+    },
+    "LongPants": {
+        "BaseTemplate": "BasePants",
+        "Graphic": "0x1539",
+        "FlippedGraphic": "0x153A",
+        "Name": "pants",
+        "Weight": 2,
+        "Value": 10
+    }
+}

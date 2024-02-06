@@ -134,6 +134,77 @@ func (l Layer) Valid() bool {
 	return l >= LayerFirstValid && l <= LayerLastValid
 }
 
+// UnmarshalJSON implements the json.Unmarshaler interface.
+func (l *Layer) UnmarshalJSON(in []byte) error {
+	if len(in) < 1 {
+		return nil
+	}
+	if in[0] == '"' {
+		s := strings.ToLower(string(in[1 : len(in)-1]))
+		switch s {
+		case "weapon":
+			*l = LayerWeapon
+		case "shield":
+			*l = LayerShield
+		case "shoes":
+			*l = LayerShoes
+		case "pants":
+			*l = LayerPants
+		case "shirt":
+			*l = LayerShirt
+		case "hat":
+			*l = LayerHat
+		case "gloves":
+			*l = LayerGloves
+		case "ring":
+			*l = LayerRing
+		case "neck":
+			*l = LayerNeckArmor
+		case "hair":
+			*l = LayerHair
+		case "belt":
+			*l = LayerBelt
+		case "chest":
+			*l = LayerChestArmor
+		case "bracelet":
+			*l = LayerBracelet
+		case "beard":
+			*l = LayerBeard
+		case "coat":
+			*l = LayerCoat
+		case "earrings":
+			*l = LayerEarrings
+		case "arms":
+			*l = LayerArmArmor
+		case "cloak":
+			*l = LayerCloak
+		case "backpack":
+			*l = LayerBackpack
+		case "robe":
+			*l = LayerRobe
+		case "skirt":
+			*l = LayerSkirt
+		case "legs":
+			*l = LayerLegArmor
+		case "mount":
+			*l = LayerMount
+		case "npcbuyrestockcontainer":
+			*l = LayerNPCBuyRestockContainer
+		case "npcbuynorestockcontainer":
+			*l = LayerNPCBuyNoRestockContainer
+		case "npcsellcontainer":
+			*l = LayerNPCSellContainer
+		case "bank":
+			*l = LayerBankBox
+		default:
+			*l = Layer(flexNum(in))
+		}
+	} else {
+		*l = Layer(flexNum(in))
+	}
+	return nil
+}
+
 // A StatusFlag describes the status of a mobile
 type StatusFlag byte
 

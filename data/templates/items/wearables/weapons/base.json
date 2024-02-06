@@ -1,0 +1,8 @@
+{
+    "BaseWeapon": {
+        "BaseTemplate": "BaseWearable",
+        "Layer": "Weapon",
+        "Skill": "Swordsmanship",
+        "Durability": 50
+    }
+}

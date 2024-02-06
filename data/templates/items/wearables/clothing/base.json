@@ -1,0 +1,11 @@
+{
+    "BaseClothing": {
+        "BaseTemplate": "BaseWearable",
+        "Flags": [
+            "Dyeable"
+        ],
+        "PostCreationEvents": [
+            "RandomPartialHue|DyeableHue"
+        ]
+    }
+}

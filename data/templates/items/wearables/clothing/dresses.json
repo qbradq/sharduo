@@ -1,0 +1,33 @@
+{
+    "BaseDress": {
+        "BaseTemplate": "BaseClothing",
+        "Layer": "Robe"
+    },
+    "PlainDress": {
+        "BaseTemplate": "BaseDress",
+        "Name": "plain dress",
+        "ArticleA": true,
+        "Graphic": "0x1F01",
+        "FlippedGraphic": "0x1F02",
+        "Weight": 2,
+        "Value": 13
+    },
+    "FancyDress": {
+        "BaseTemplate": "BaseDress",
+        "Name": "fancy dress",
+        "ArticleA": true,
+        "Graphic": "0x1F00",
+        "FlippedGraphic": "0x1EFF",
+        "Weight": 3,
+        "Value": 26
+    },
+    "Robe": {
+        "BaseTemplate": "BaseDress",
+        "Name": "robe",
+        "ArticleA": true,
+        "Graphic": "0x1F03",
+        "FlippedGraphic": "0x1F03",
+        "Weight": 3,
+        "Value": 18
+    }
+}

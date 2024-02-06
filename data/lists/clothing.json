@@ -1,0 +1,21 @@
+{
+    "Shirt": [
+        "Shirt",
+        "FancyShirt"
+    ],
+    "Dress": [
+        "PlainDress",
+        "FancyDress"
+    ],
+    "Pants": [
+        "ShortPants",
+        "LongPants"
+    ],
+    "Shoes": [
+        "FurBoots",
+        "Boots",
+        "ThighBoots",
+        "Shoes",
+        "Sandles"
+    ]
+}

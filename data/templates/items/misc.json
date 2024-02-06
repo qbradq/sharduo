@@ -1,0 +1,10 @@
+{
+    "BaseSign": {
+        "BaseTemplate": "BaseItem",
+        "LootType": "System",
+        "NoRent": true,
+        "Events": {
+            "DoubleClick": "Edit"
+        }
+    }
+}

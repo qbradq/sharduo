@@ -1,0 +1,83 @@
+{
+    "BaseDoor": {
+        "BaseTemplate": "BaseItem",
+        "Events": {
+            "DoubleClick": "UseDoor"
+        },
+        "Flags": [
+            "Fixed"
+        ],
+        "LootType": "System",
+        "NoRent": true
+    },
+    "IronGateShort": {
+        "BaseTemplate": "BaseDoor",
+        "Graphic": "0x084C",
+        "FlippedGraphic": "0x084D",
+        "Name": "iron grate",
+        "ArticleAn": true
+    },
+    "IronGate": {
+        "BaseTemplate": "BaseDoor",
+        "Graphic": "0x0824",
+        "FlippedGraphic": "0x0825",
+        "Name": "iron grate",
+        "ArticleAn": true
+    },
+    "LightWoodenGate": {
+        "BaseTemplate": "BaseDoor",
+        "Graphic": "0x0839",
+        "FlippedGraphic": "0x083A",
+        "Name": "wooden grate",
+        "ArticleA": true
+    },
+    "DarkWoodenGate": {
+        "BaseTemplate": "BaseDoor",
+        "Graphic": "0x0866",
+        "FlippedGraphic": "0x0867",
+        "Name": "wooden grate",
+        "ArticleA": true
+    },
+    "MetalDoor": {
+        "BaseTemplate": "BaseDoor",
+        "Graphic": "0x0675",
+        "FlippedGraphic": "0x0676",
+        "Name": "metal door",
+        "ArticleA": true
+    },
+    "BarredMetalDoor": {
+        "BaseTemplate": "BaseDoor",
+        "Graphic": "0x0685",
+        "FlippedGraphic": "0x0686",
+        "Name": "metal door",
+        "ArticleA": true
+    },
+    "RattanDoor": {
+        "BaseTemplate": "BaseDoor",
+        "Graphic": "0x0695",
+        "FlippedGraphic": "0x0696",
+        "Name": "rattan door",
+        "ArticleA": true
+    },
+    "WoodenDoor": {
+        "BaseTemplate": "BaseDoor",
+        "Graphic": "0x06B5",
+        "FlippedGraphic": "0x06B6",
+        "Name": "wooden door",
+        "ArticleA": true
+    },
+    "LightWoodenDoor": {
+        "BaseTemplate": "BaseDoor",
+        "Graphic": "0x06D5",
+        "FlippedGraphic": "0x06D6",
+        "Name": "wooden door",
+        "ArticleA": true
+    },
+    "StrongWoodenDoor": {
+        "BaseTemplate": "BaseDoor",
+        "Graphic": "0x06E5",
+        "FlippedGraphic": "0x06E6",
+        "Name": "wooden door",
+        "ArticleA": true
+    }
+}

@@ -1,0 +1,185 @@
+{
+    "BaseContainer": {
+        "BaseTemplate": "BaseItem",
+        "MaxContainerWeight": 400,
+        "MaxContainerItems": 125,
+        "Gump": "0x03E8",
+        "Events": {
+            "DoubleClick": "OpenContainer",
+            "Drop": "DropToContainer"
+        }
+    },
+    "Backpack": {
+        "BaseTemplate": "BaseContainer",
+        "Name": "backpack",
+        "ArticleA": true,
+        "Graphic": "0x0E75",
+        "FlippedGraphic": "0x09B2",
+        "Weight": 3,
+        "Gump": "0x003C",
+        "Bounds": "44,65,142,94",
+        "DropSound": "0x48",
+        "Value": 15
+    },
+    "Pouch": {
+        "BaseTemplate": "BaseContainer",
+        "Name": "pouch",
+        "ArticleA": true,
+        "Graphic": "0x0E79",
+        "Weight": 1,
+        "Gump": "0x003C",
+        "Bounds": "44,65,142,94",
+        "DropSound": "0x48",
+        "Value": 6
+    },
+    "Bag": {
+        "BaseTemplate": "BaseContainer",
+        "Name": "bag",
+        "ArticleA": true,
+        "Graphic": "0x0E76",
+        "Weight": 2,
+        "Gump": "0x003D",
+        "Bounds": "29,34,108,94",
+        "DropSound": "0x48",
+        "Value": 6
+    },
+    "Barrel": {
+        "BaseTemplate": "BaseContainer",
+        "Name": "barrel",
+        "ArticleA": true,
+        "Graphic": "0x0E77",
+        "Weight": 25,
+        "Gump": "0x003D",
+        "Bounds": "33,36,109,112",
+        "DropSound": "0x42",
+        "Value": 50
+    },
+    "Keg": {
+        "BaseTemplate": "BaseContainer",
+        "Name": "keg",
+        "ArticleA": true,
+        "Graphic": "0x0E7F",
+        "Weight": 15,
+        "Gump": "0x003D",
+        "Bounds": "33,36,109,112",
+        "DropSound": "0x42",
+        "Value": 20
+    },
+    "PicnicBasket": {
+        "BaseTemplate": "BaseContainer",
+        "Name": "picnic basket",
+        "ArticleA": true,
+        "Graphic": "0x0E7A",
+        "Weight": 2,
+        "Gump": "0x003F",
+        "Bounds": "19,47,163,76",
+        "DropSound": "0x4F",
+        "Value": 10
+    },
+    "Basket": {
+        "BaseTemplate": "BaseContainer",
+        "Name": "basket",
+        "ArticleA": true,
+        "Graphic": "0x0990",
+        "Weight": 1,
+        "Gump": "0x0041",
+        "Bounds": "35,38,220,78",
+        "DropSound": "0x4F",
+        "Value": 10
+    },
+    "WoodenBox": {
+        "BaseTemplate": "BaseContainer",
+        "Name": "wooden box",
+        "ArticleA": true,
+        "Graphic": "0x09AA",
+        "Weight": 4,
+        "Gump": "0x0043",
+        "Bounds": "16,51,168,73",
+        "DropSound": "0x42",
+        "Value": 15
+    },
+    "SmallCrate": {
+        "BaseTemplate": "BaseContainer",
+        "Name": "small crate",
+        "ArticleA": true,
+        "Graphic": "0x09A9",
+        "FlippedGraphic": "0x0E7E",
+        "Weight": 2,
+        "Gump": "0x0044",
+        "Bounds": "20,10,150,90",
+        "DropSound": "0x42",
+        "Value": 10
+    },
+    "MediumCrate": {
+        "BaseTemplate": "BaseContainer",
+        "Name": "medium crate",
+        "ArticleA": true,
+        "Graphic": "0x0E3F",
+        "FlippedGraphic": "0x0E3E",
+        "Weight": 2,
+        "Gump": "0x0044",
+        "Bounds": "20,10,150,90",
+        "DropSound": "0x42",
+        "Value": 12
+    },
+    "LargeCrate": {
+        "BaseTemplate": "BaseContainer",
+        "Name": "large crate",
+        "ArticleA": true,
+        "Graphic": "0x0E3D",
+        "FlippedGraphic": "0x0E3C",
+        "Weight": 1,
+        "Gump": "0x0044",
+        "Bounds": "20,10,150,90",
+        "DropSound": "0x42",
+        "Value": 15
+    },
+    "MetalBox": {
+        "BaseTemplate": "BaseContainer",
+        "Name": "metal box",
+        "ArticleA": true,
+        "Graphic": "0x09A8",
+        "FlippedGraphic": "0x0E80",
+        "Weight": 1,
+        "Gump": "0x004B",
+        "Bounds": "16,51,168,73",
+        "DropSound": "0x42",
+        "Value": 20
+    },
+    "MetalChest": {
+        "BaseTemplate": "BaseContainer",
+        "Name": "metal chest",
+        "ArticleA": true,
+        "Graphic": "0x09AB",
+        "FlippedGraphic": "0x0E7C",
+        "Weight": 1,
+        "Gump": "0x004A",
+        "Bounds": "18,105,144,73",
+        "DropSound": "0x42",
+        "Value": 40
+    },
+    "GoldMetalChest": {
+        "BaseTemplate": "BaseContainer",
+        "Name": "metal chest",
+        "ArticleA": true,
+        "Graphic": "0x0E41",
+        "FlippedGraphic": "0x0E40",
+        "Weight": 1,
+        "Gump": "0x0042",
+        "Bounds": "18,105,144,73",
+        "DropSound": "0x42",
+        "Value": 140
+    },
+    "WoodenChest": {
+        "BaseTemplate": "BaseContainer",
+        "Name": "wooden chest",
+        "ArticleA": true,
+        "Graphic": "0x0E43",
+        "FlippedGraphic": "0x0E42",
+        "Weight": 2,
+        "Gump": "0x0049",
+        "Bounds": "18,105,144,73",
+        "DropSound": "0x42",
+        "Value": 30
+    }
+}

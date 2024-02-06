@@ -1,0 +1,20 @@
+{
+    "BaseSword": {
+        "BaseTemplate": "BaseWeapon",
+        "Skill": "Swordsmanship",
+        "Animation": "Slash1H"
+    },
+    "Pickaxe": {
+        "BaseTemplate": "BaseSword",
+        "Name": "pickaxe",
+        "ArticleA": true,
+        "Graphic": "0x0E85",
+        "FlippedGraphic": "0x0E85",
+        "Weight": 11,
+        "Value": 22,
+        "Events": {
+            "DoubleClick": "BeginMining"
+        },
+        "Uses": 50
+    }
+}

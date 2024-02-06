@@ -1,0 +1,36 @@
+{
+    "BaseCrop": {
+        "BaseTemplate": "BaseItem",
+        "Events": {
+            "DoubleClick": "HarvestCrop"
+        },
+        "Flags": [
+            "Fixed"
+        ]
+    },
+    "CottonCrop": {
+        "BaseTemplate": "BaseCrop",
+        "Name": "cotton",
+        "Graphic": "0x0C53"
+    },
+    "FlaxCrop": {
+        "BaseTemplate": "BaseCrop",
+        "Name": "flax",
+        "Graphic": "0x1A9B"
+    },
+    "WheatCrop": {
+        "BaseTemplate": "BaseCrop",
+        "Name": "wheat",
+        "Graphic": "0x0C58"
+    },
+    "OnionCrop": {
+        "BaseTemplate": "BaseCrop",
+        "Name": "onions",
+        "Graphic": "0x0C6F"
+    },
+    "CarrotCrop": {
+        "BaseTemplate": "BaseCrop",
+        "Name": "carrots",
+        "Graphic": "0x0C76"
+    }
+}

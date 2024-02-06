@@ -1,0 +1,79 @@
+{
+    "Rock": {
+        "BaseTemplate": "BaseItem",
+        "Name": "rock",
+        "ArticleA": true,
+        "Graphic": "0x1363",
+        "Weight": 200
+    },
+    "HueSelector": {
+        "BaseTemplate": "Robe",
+        "Name": "hue selection robe",
+        "ArticleA": true,
+        "Events": {
+            "DoubleClick": "TransferHue"
+        },
+        "LootType": "System"
+    },
+    "GMGlobe": {
+        "BaseTemplate": "BaseItem",
+        "Graphic": "0x1047",
+        "FlippedGraphic": "0x1048",
+        "Name": "globe of translocation",
+        "ArticleA": true,
+        "Weight": 1,
+        "Events": {
+            "DoubleClick": "OpenTeleportGUMP"
+        },
+        "LootType": "System"
+    },
+    "StableMasterPlaceholderHorseGrey": {
+        "BaseTemplate": "BaseItem",
+        "Graphic": "0x211F",
+        "Name": "white horse",
+        "ArticleA": true,
+        "Value": 600
+    },
+    "StableMasterPlaceholderHorseTan": {
+        "BaseTemplate": "BaseItem",
+        "Graphic": "0x2120",
+        "Name": "tan horse",
+        "ArticleA": true,
+        "Value": 600
+    },
+    "StableMasterPlaceholderHorseBrown": {
+        "BaseTemplate": "BaseItem",
+        "Graphic": "0x2121",
+        "Name": "brown horse",
+        "ArticleA": true,
+        "Value": 600
+    },
+    "StableMasterPlaceholderHorseDappled": {
+        "BaseTemplate": "BaseItem",
+        "Graphic": "0x2124",
+        "Name": "dappled horse",
+        "ArticleA": true,
+        "Value": 600
+    },
+    "StableMasterPlaceholderLlama": {
+        "BaseTemplate": "BaseItem",
+        "Graphic": "0x20F6",
+        "Name": "llama",
+        "ArticleA": true,
+        "Value": 600
+    },
+    "StableMasterPlaceholderPackHorse": {
+        "BaseTemplate": "BaseItem",
+        "Graphic": "0x2126",
+        "Name": "pack horse",
+        "ArticleA": true,
+        "Value": 600
+    },
+    "StableMasterPlaceholderPackLlama": {
+        "BaseTemplate": "BaseItem",
+        "Graphic": "0x2127",
+        "Name": "pack llama",
+        "ArticleA": true,
+        "Value": 600
+    }
+}
