@@ -1,0 +1,18 @@
+{
+    "Townsperson": {
+        "BaseTemplate": "BaseHuman",
+        "Notoriety": "Invulnerable",
+        "EquipmentSet": [
+            "NPCBackpack"
+        ]
+    },
+    "Banker": {
+        "BaseTemplate": "Townsperson",
+        "Events": {
+            "Speech": "KeywordsBanker"
+        },
+        "ContextMenu": [
+            "3006105|OpenBankBox"
+        ]
+    }
+}

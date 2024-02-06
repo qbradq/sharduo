@@ -366,10 +366,13 @@ func (i *Item) UpdateItemOPL(item *Item) {
 	}
 }
 
-// ContextMenu returns a new context menu packet.
-func (i *Item) ContextMenu(p *ContextMenu, m *Mobile) {
+// ContextMenuPacket returns a new context menu packet.
+func (i *Item) ContextMenuPacket(p *ContextMenu, m *Mobile) {
 	if i.HasFlags(ItemFlagsContainer) {
 		p.Append("OpenContainer", 3000362) // Open
+	}
+	for _, e := range i.ContextMenu {
+		p.Append(e.Event, e.Cliloc)
 	}
 }
 

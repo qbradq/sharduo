@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"path/filepath"
+	"strconv"
 
 	"github.com/qbradq/sharduo/data"
 	"github.com/qbradq/sharduo/lib/serverpacket"
@@ -34,8 +35,11 @@ func init() {
 			if _, duplicate := mobilePrototypes[k]; duplicate {
 				return []error{fmt.Errorf("duplicate list %s", k)}
 			}
-			// Initialize non-zero default values
-			TemplateLists[k] = p
+			items := make([]ListItem, len(p))
+			for i := range p {
+				items[i] = ListItem(p[i])
+			}
+			TemplateLists[k] = items
 		}
 		return nil
 	}) {
@@ -47,11 +51,26 @@ func init() {
 	}
 }
 
+// ListItem provides some utility functions over list items.
+type ListItem string
+
+// String returns the item's value as a string.
+func (i ListItem) String() string { return string(i) }
+
+// Int returns the item's value as an int.
+func (i ListItem) Int() int {
+	v, err := strconv.ParseInt(string(i), 0, 32)
+	if err != nil {
+		return 0
+	}
+	return int(v)
+}
+
 // TemplateLists is a mapping of all template lists by name.
-var TemplateLists = map[string][]string{}
+var TemplateLists = map[string][]ListItem{}
 
 // ListMember returns a random member from the named list.
-func ListMember(which string) string {
+func ListMember(which string) ListItem {
 	if l, found := TemplateLists[which]; found {
 		return l[util.Random(0, len(l)-1)]
 	}

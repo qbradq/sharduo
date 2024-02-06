@@ -147,7 +147,7 @@ func (r *Region) Spawn(which string) any {
 	// List expansion
 	tn := which
 	if len(tn) > 0 && tn[0] == '+' {
-		tn = ListMember(tn[1:])
+		tn = ListMember(tn[1:]).String()
 	}
 	// Object creation
 	var m *Mobile

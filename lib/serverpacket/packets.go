@@ -1000,8 +1000,8 @@ func (p *PersonalLightLevel) Write(w io.Writer) {
 	util.PutByte(w, byte(p.LightLevel))
 }
 
-// ctxMenuEntry is an entry for a context menu.
-type ctxMenuEntry struct {
+// ContextMenuEntry is an entry for a context menu.
+type ContextMenuEntry struct {
 	// Unique ID of the entry
 	ID uint16
 	// Cliloc ID - 3,000,000
@@ -1013,14 +1013,14 @@ type ContextMenu struct {
 	// Serial of the object this context menu is to appear over
 	Serial uo.Serial
 	// Entries of the menu
-	Entries []ctxMenuEntry
+	Entries []ContextMenuEntry
 }
 
 // Add adds an entry to the context menu. The cliloc parameter must be in the
 // range 3,000,000 - 3,060,000 inclusive.
 func (p *ContextMenu) Add(id uint16, cliloc uo.Cliloc) {
 	cl := uint16(uint32(cliloc) - 3_000_000)
-	p.Entries = append(p.Entries, ctxMenuEntry{id, cl})
+	p.Entries = append(p.Entries, ContextMenuEntry{id, cl})
 }
 
 // Write implements the Packet interface.

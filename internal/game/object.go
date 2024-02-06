@@ -1,9 +1,33 @@
 package game
 
 import (
+	"strconv"
+	"strings"
+
 	"github.com/qbradq/sharduo/lib/serverpacket"
 	"github.com/qbradq/sharduo/lib/uo"
 )
+
+// ctxMenuEntry is a wrapper around serverpacket.ContextMenuEntry
+type ctxMenuEntry struct {
+	Cliloc uo.Cliloc // Cliloc of the menu entry
+	Event  string    // Name of the event to fire
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface.
+func (e *ctxMenuEntry) UnmarshalJSON(in []byte) error {
+	parts := strings.Split(string(in[1:len(in)-1]), "|")
+	if len(parts) != 2 {
+		panic("expected two parts in context menu entry")
+	}
+	v, err := strconv.ParseInt(parts[0], 0, 32)
+	if err != nil {
+		return err
+	}
+	e.Cliloc = uo.Cliloc(v)
+	e.Event = parts[1]
+	return nil
+}
 
 // Object holds all of the common dynamic data for all items and mobiles.
 type Object struct {
@@ -14,7 +38,8 @@ type Object struct {
 	ArticleAn          bool                 // If true the article An is used to refer to this item
 	Events             map[string]string    // Raw event names
 	PostCreationEvents []*postCreationEvent // List of events to execute after creation
-	btResolved         bool                 // If true this is a prototype object that has already had it's base template resolved
+	ContextMenu        []ctxMenuEntry
+	btResolved         bool // If true this is a prototype object that has already had it's base template resolved
 	// Persistent variables
 	TemplateName string       // Name of the template used to create the item
 	Serial       uo.Serial    // Unique serial of the object

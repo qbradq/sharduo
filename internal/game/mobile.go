@@ -72,6 +72,10 @@ func LoadMobilePrototypes() {
 			}
 			sf := pr.Type().Field(i)
 			switch sf.Name {
+			case "Inventory":
+				fallthrough
+			case "EquipmentSet":
+				fallthrough
 			case "PostCreationEvents":
 				// Prepend array contents
 				irf.Set(reflect.AppendSlice(prf, irf))
@@ -110,6 +114,7 @@ func constructMobile(which string) *Mobile {
 	if m.Player {
 		m.PlayerData = NewPlayerData()
 	}
+	// Establish initial cache values
 	m.Hits = m.MaxHits
 	m.Mana = m.MaxMana
 	m.Stamina = m.MaxStamina
@@ -119,6 +124,25 @@ func constructMobile(which string) *Mobile {
 	for i := range m.Skills {
 		m.Skills[i] = m.BaseSkills[i]
 	}
+	// Generate equipment set
+	for _, tn := range m.EquipmentSet {
+		i := NewItem(tn)
+		if i == nil {
+			panic(fmt.Errorf("failed to create equipment item %s", tn))
+		}
+		if !m.Equip(i) {
+			panic(fmt.Errorf("failed to equip item %s", tn))
+		}
+	}
+	// Generate inventory items
+	for _, tn := range m.Inventory {
+		i := NewItem(tn)
+		if i == nil {
+			panic(fmt.Errorf("failed to create inventory item %s", tn))
+		}
+		m.DropToBackpack(i, true)
+	}
+	// Execute post creation events
 	for _, e := range m.PostCreationEvents {
 		if !e.Execute(m) {
 			panic(fmt.Errorf("failed to execute post creation event %s", e.EventName))
@@ -146,18 +170,20 @@ type Mobile struct {
 	// Static values
 	Body          uo.Body      // Body to use for this mobile
 	BaseNotoriety uo.Notoriety // Base notoriety level for this mobile
+	EquipmentSet  []string     // Set of items to generate along with this mobile and equip
+	Inventory     []string     // Set of items to add to the mobile's backpack at creation time
 	// Persistent values
-	Female           bool               // If true the mobile is female
-	Player           bool               // If true this is a player's character
-	PlayerData       *PlayerData        // Player specific data, only valid if Player is true
-	BaseStrength     int                // Base strength value
-	BaseDexterity    int                // Base dexterity value
-	BaseIntelligence int                // Base intelligence value
-	MaxHits          int                // Current max hit points
-	MaxMana          int                // Current max mana
-	MaxStamina       int                // Current max stamina
-	BaseSkills       [uo.SkillCount]int // Base skill values in tenths of a percent
-	Equipment        Equipment          // Current equipment set
+	Female           bool                 // If true the mobile is female
+	Player           bool                 // If true this is a player's character
+	PlayerData       *PlayerData          // Player specific data, only valid if Player is true
+	BaseStrength     int                  // Base strength value
+	BaseDexterity    int                  // Base dexterity value
+	BaseIntelligence int                  // Base intelligence value
+	MaxHits          int                  // Current max hit points
+	MaxMana          int                  // Current max mana
+	MaxStamina       int                  // Current max stamina
+	BaseSkills       [uo.SkillCount]int   // Base skill values in tenths of a percent
+	Equipment        [uo.LayerCount]*Item // Current equipment set
 	// Transient values
 	Account       *Account                // Connected account if any
 	NetState      NetState                // Connected net state if any
@@ -352,9 +378,11 @@ func (m *Mobile) AfterUnmarshalOntoMap() {
 	// TODO Stub
 }
 
-// ContextMenu returns a new context menu packet.
-func (m *Mobile) ContextMenu(p *ContextMenu, mob *Mobile) {
-	// TODO Stub
+// ContextMenuPacket returns a new context menu packet.
+func (m *Mobile) ContextMenuPacket(p *ContextMenu, mob *Mobile) {
+	for _, e := range m.ContextMenu {
+		p.Append(e.Event, e.Cliloc)
+	}
 }
 
 // AfterMove handles things that happen every time a mobile steps such as

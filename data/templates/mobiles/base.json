@@ -9,7 +9,9 @@
         "MaxHits": 10,
         "MaxMana": 10,
         "MaxStamina": 10,
-        "Equipment": ["NPCBackpack"],
+        "EquipmentSet": [
+            "NPCBackpack"
+        ],
         "Events": {
             "Speech": "KeywordsCommand"
         }
@@ -21,7 +23,8 @@
             "DoubleClick": "OpenPaperDoll"
         },
         "PostCreationEvents": [
-            "ConfigureHuman"
+            "ConfigureHuman",
+            "DressHuman"
         ]
     }
 }

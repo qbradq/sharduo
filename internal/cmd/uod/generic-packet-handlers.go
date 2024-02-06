@@ -32,9 +32,9 @@ func handleContextMenuRequest(n *NetState, cp clientpacket.GeneralInformationPac
 	var menu *game.ContextMenu
 	switch o := obj.(type) {
 	case *game.Mobile:
-		o.ContextMenu(menu, n.m)
+		o.ContextMenuPacket(menu, n.m)
 	case *game.Item:
-		o.ContextMenu(menu, n.m)
+		o.ContextMenuPacket(menu, n.m)
 	}
 	n.Send((*serverpacket.ContextMenu)(menu))
 }

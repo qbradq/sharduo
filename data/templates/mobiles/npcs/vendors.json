@@ -1,0 +1,38 @@
+{
+    "BaseVendor": {
+        "BaseTemplate": "BaseHuman",
+        "Events": {
+            "DoubleClick": "OpenPaperDoll",
+            "Speech": "KeywordsVendor"
+        },
+        "ContextMenu": [
+            "3006103|VendorBuy",
+            "3006104|VendorSell"
+        ]
+    },
+    "Smelter": {
+        "BaseTemplate": "BaseVendor",
+        "Events": {
+            "Speech": "KeywordsVendor"
+        },
+        "PostCreationEvents": [
+            "EquipVendor|VendorSmelter",
+            "DressHuman"
+        ]
+    },
+    "StableMaster": {
+        "BaseTemplate": "BaseVendor",
+        "Events": {
+            "Speech": "KeywordsStableMaster"
+        },
+        "ContextMenu": [
+            "3006103|VendorBuy",
+            "3006126|StablePet",
+            "3006128|ClaimAllPets"
+        ],
+        "PostCreationEvents": [
+            "EquipVendor|VendorStableMaster",
+            "DressHuman"
+        ]
+    }
+}

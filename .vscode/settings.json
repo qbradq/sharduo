@@ -55,6 +55,7 @@
         "tiledata",
         "tiledatamul",
         "tilepic",
-        "tilepichue"
+        "tilepichue",
+        "Townsperson"
     ]
 }

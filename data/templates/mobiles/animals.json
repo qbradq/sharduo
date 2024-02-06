@@ -1,0 +1,178 @@
+{
+    "BaseAnimal": {
+        "BaseTemplate": "BaseMobile"
+    },
+    "HorseGrey": {
+        "BaseTemplate": "BaseAnimal",
+        "Body": "0xE2",
+        "Name": "horse",
+        "ArticleA": true,
+        "Events": {
+            "DoubleClick": "Mount"
+        }
+    },
+    "HorseTan": {
+        "BaseTemplate": "BaseAnimal",
+        "Body": "0xE4",
+        "Name": "horse",
+        "ArticleA": true,
+        "Events": {
+            "DoubleClick": "Mount"
+        }
+    },
+    "HorseBrown": {
+        "BaseTemplate": "BaseAnimal",
+        "Body": "0xCC",
+        "Name": "horse",
+        "ArticleA": true,
+        "Events": {
+            "DoubleClick": "Mount"
+        }
+    },
+    "HorseDappled": {
+        "BaseTemplate": "BaseAnimal",
+        "Body": "0xC8",
+        "Name": "horse",
+        "ArticleA": true,
+        "Events": {
+            "DoubleClick": "Mount"
+        }
+    },
+    "Llama": {
+        "BaseTemplate": "BaseAnimal",
+        "Body": "0xDC",
+        "Name": "llama",
+        "ArticleA": true,
+        "Events": {
+            "DoubleClick": "Mount"
+        }
+    },
+    "BasePackAnimal": {
+        "BaseTemplate": "BaseAnimal",
+        "EquipmentSet": [
+            "PackAnimalBackpack"
+        ],
+        "Events": {
+            "DoubleClick": "OpenBackpack",
+            "Drop": "DropToPackAnimal"
+        }
+    },
+    "PackHorse": {
+        "BaseTemplate": "BasePackAnimal",
+        "Name": "pack horse",
+        "ArticleA": true,
+        "Body": 291
+    },
+    "PackLlama": {
+        "BaseTemplate": "BasePackAnimal",
+        "Name": "pack llama",
+        "ArticleA": true,
+        "Body": 292
+    },
+    "BaseBird": {
+        "BaseTemplate": "BaseAnimal",
+        "Body": 6
+    },
+    "Cardinal": {
+        "BaseTemplate": "BaseBird",
+        "Hue": 2117,
+        "Name": "cardinal",
+        "ArticleA": true
+    },
+    "Robin": {
+        "BaseTemplate": "BaseBird",
+        "Hue": 2115,
+        "Name": "robin",
+        "ArticleA": true
+    },
+    "MorningDove": {
+        "BaseTemplate": "BaseBird",
+        "Hue": 2106,
+        "Name": "morning dove",
+        "ArticleA": true
+    },
+    "MockingBird": {
+        "BaseTemplate": "BaseBird",
+        "Hue": 2100,
+        "Name": "mockingbird",
+        "ArticleA": true
+    },
+    "Dog": {
+        "BaseTemplate": "BaseAnimal",
+        "Body": 217,
+        "Name": "dog",
+        "ArticleA": true
+    },
+    "Cat": {
+        "BaseTemplate": "BaseAnimal",
+        "Body": 201,
+        "Name": "cat",
+        "ArticleA": true
+    },
+    "Rat": {
+        "BaseTemplate": "BaseAnimal",
+        "Body": 238,
+        "Name": "rat",
+        "ArticleA": true
+    },
+    "Pig": {
+        "BaseTemplate": "BaseAnimal",
+        "Body": 203,
+        "Name": "pig",
+        "ArticleA": true
+    },
+    "Boar": {
+        "BaseTemplate": "BaseAnimal",
+        "Body": 290,
+        "Name": "boar",
+        "ArticleA": true
+    },
+    "Rabbit": {
+        "BaseTemplate": "BaseAnimal",
+        "Body": 205,
+        "Name": "rabbit",
+        "ArticleA": true
+    },
+    "Sheep": {
+        "BaseTemplate": "BaseAnimal",
+        "Body": 207,
+        "Name": "sheep",
+        "ArticleA": true
+    },
+    "Chicken": {
+        "BaseTemplate": "BaseAnimal",
+        "Body": 208,
+        "Name": "chicken",
+        "ArticleA": true
+    },
+    "Goat": {
+        "BaseTemplate": "BaseAnimal",
+        "Body": 209,
+        "Name": "goat",
+        "ArticleA": true
+    },
+    "Cow": {
+        "BaseTemplate": "BaseAnimal",
+        "Body": 216,
+        "Name": "cow",
+        "ArticleA": true
+    },
+    "CowBrown": {
+        "BaseTemplate": "BaseAnimal",
+        "Body": 231,
+        "Name": "cow",
+        "ArticleA": true
+    },
+    "Bull": {
+        "BaseTemplate": "BaseAnimal",
+        "Body": 233,
+        "Name": "cow",
+        "ArticleA": true
+    },
+    "BullBrown": {
+        "BaseTemplate": "BaseAnimal",
+        "Body": 232,
+        "Name": "cow",
+        "ArticleA": true
+    }
+}

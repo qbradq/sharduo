@@ -10,7 +10,7 @@ import (
 func init() {
 	reg("KeywordsBanker", keywordsBanker)
 	reg("KeywordsCommand", keywordsCommand)
-	reg("KeywordsStablemaster", keywordsStableMaster)
+	reg("KeywordsStableMaster", keywordsStableMaster)
 	reg("KeywordsVendor", keywordsVendor)
 }
 
@@ -85,7 +85,7 @@ func keywordsVendor(receiver, source, v any) bool {
 	}, receiver, source, words)
 }
 
-// keywordsStableMaster handles stablemaster speech triggers.
+// keywordsStableMaster handles stable master speech triggers.
 func keywordsStableMaster(receiver, source, v any) bool {
 	f, words := speechTarget([]string{"vendor"}, receiver, source, v)
 	if !f {
