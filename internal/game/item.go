@@ -5,8 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"path/filepath"
-	"reflect"
+	"strings"
 
 	"github.com/qbradq/sharduo/data"
 	"github.com/qbradq/sharduo/lib/serverpacket"
@@ -19,25 +18,22 @@ import (
 func LoadItemPrototypes() {
 	// Load all item templates
 	errors := false
+	templates := map[string]*Template{}
 	for _, err := range data.Walk("templates/items", func(s string, b []byte) []error {
-		// Ignore legacy files
-		if filepath.Ext(s) != ".json" {
-			return nil
-		}
 		// Load prototypes
-		ps := map[string]*Item{}
+		ps := map[string]*Template{}
 		if err := json.Unmarshal(b, &ps); err != nil {
 			return []error{err}
 		}
 		// Prototype prep
 		for k, p := range ps {
 			// Check for duplicates
-			if _, duplicate := itemPrototypes[k]; duplicate {
+			if _, duplicate := templates[k]; duplicate {
 				return []error{fmt.Errorf("duplicate item prototype %s", k)}
 			}
 			// Initialize non-zero default values
-			p.TemplateName = k
-			itemPrototypes[k] = p
+			p.Fields["TemplateName"] = k
+			templates[k] = p
 		}
 		return nil
 	}) {
@@ -47,54 +43,18 @@ func LoadItemPrototypes() {
 	if errors {
 		panic("errors during item prototype load")
 	}
-	// Resolve all base templates
-	var fn func(*Item)
-	fn = func(i *Item) {
-		// Skip resolved templates and root templates
-		if i.btResolved || i.BaseTemplate == "" {
-			return
+	// Resolve all base templates and construct their item prototypes
+	for tn, t := range templates {
+		t.Resolve(templates)
+		i := &Item{
+			Object: Object{
+				Events: map[string]string{},
+			},
 		}
-		// Resolve base template
-		p := itemPrototypes[i.BaseTemplate]
-		if p == nil {
-			panic(fmt.Errorf("item template %s referenced non-existent base template %s",
-				i.TemplateName, i.BaseTemplate))
-		}
-		fn(p)
-		// Merge values
-		pr := reflect.ValueOf(p).Elem()
-		ir := reflect.ValueOf(i).Elem()
-		for i := 0; i < pr.NumField(); i++ {
-			sf := pr.Type().Field(i)
-			prf := pr.Field(i)
-			irf := ir.Field(i)
-			if !prf.CanInterface() {
-				continue
-			}
-			switch sf.Name {
-			case "PostCreationEvents":
-				// Prepend array contents
-				irf.Set(reflect.AppendSlice(prf, irf))
-			case "Events":
-				// Merge map
-				for _, k := range prf.MapKeys() {
-					if irf.MapIndex(k).IsZero() {
-						irf.MapIndex(k).Set(prf.MapIndex(k))
-					}
-				}
-			case "Flags":
-				// Merge flag bits
-				irf.Set(reflect.ValueOf(ItemFlags(prf.Uint() | irf.Uint())))
-			default:
-				// Just copy the value
-				irf.Set(prf)
-			}
-		}
-		// Flag prototype as done
-		i.btResolved = true
-	}
-	for _, p := range itemPrototypes {
-		fn(p)
+		t.constructPrototype(i)
+		// Initialize variables
+		i.Def = World.ItemDefinition(i.CurrentGraphic())
+		itemPrototypes[tn] = i
 	}
 }
 
@@ -142,48 +102,46 @@ const (
 )
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
-func (f *ItemFlags) UnmarshalJSON(in []byte) error {
-	flags := []string{}
-	if err := json.Unmarshal(in, &flags); err != nil {
-		return err
+func (f *ItemFlags) AddByName(s string) {
+	switch strings.ToLower(s) {
+	case "container":
+		*f |= ItemFlagsContainer
+	case "fixed":
+		*f |= ItemFlagsFixed
+	case "static":
+		*f |= ItemFlagsStatic
+	case "stackable":
+		*f |= ItemFlagsStackable
+	case "uses":
+		*f |= ItemFlagsUses
+	case "dyeable":
+		*f |= ItemFlagsDyeable
+	default:
+		panic(fmt.Errorf("invalid item flag name %s", s))
 	}
-	for _, s := range flags {
-		switch s {
-		case "container":
-			*f |= ItemFlagsContainer
-		case "fixed":
-			*f |= ItemFlagsFixed
-		case "static":
-			*f |= ItemFlagsStatic
-		case "stackable":
-			*f |= ItemFlagsStackable
-		case "uses":
-			*f |= ItemFlagsUses
-		case "dyeable":
-			*f |= ItemFlagsDyeable
-		}
-	}
-	return nil
 }
 
 // Item describes any item in the world.
 type Item struct {
 	Object
 	// Static variables
-	Def               *uo.StaticDefinition // Item properties pointer
-	Flags             ItemFlags            // Boolean item flags
-	Graphic           uo.Graphic           // Base graphic to use for the item
-	FlippedGraphic    uo.Graphic           // Flipped graphic
-	Layer             uo.Layer             // Layer the object is worn on
-	Weight            float64              // Weight of the item, NOT the stack, just one of these items
-	MaxWeight         float64              // Maximum weight that can be held in this container
-	MaxItems          int                  // Maximum number of items that can be held in this container
-	GUMPGraphic       uo.GUMP              // GUMP graphic to use for containers
-	Bounds            uo.Bounds            // Container GUMP bounds
-	LiftSound         uo.Sound             // Sound this item makes when lifted
-	DropSound         uo.Sound             // Sound this container makes by default when dropping an item into it
-	Value             int                  // Purchase price of the item if it can be bought
-	DropSoundOverride uo.Sound             // Sound to override the normal drop sound for this item
+	Def                *uo.StaticDefinition // Item properties pointer
+	Flags              ItemFlags            // Boolean item flags
+	Graphic            uo.Graphic           // Base graphic to use for the item
+	FlippedGraphic     uo.Graphic           // Flipped graphic
+	Layer              uo.Layer             // Layer the object is worn on
+	Weight             float64              // Weight of the item, NOT the stack, just one of these items
+	MaxContainerWeight float64              // Maximum weight that can be held in this container
+	MaxContainerItems  int                  // Maximum number of items that can be held in this container
+	Gump               uo.GUMP              // GUMP graphic to use for containers
+	Bounds             uo.Bounds            // Container GUMP bounds
+	LiftSound          uo.Sound             // Sound this item makes when lifted
+	DropSound          uo.Sound             // Sound this container makes by default when dropping an item into it
+	Value              int                  // Purchase price of the item if it can be bought
+	DropSoundOverride  uo.Sound             // Sound to override the normal drop sound for this item
+	Plural             string               // String to use for stacks greater than 1
+	UseSkill           uo.Skill             // Skill the item checks on use / attack / parry etc
+	AnimationAction    uo.AnimationAction   // Animation action this item plays
 	// Persistent variables
 	Flipped       bool        // If true the item is currently flipped
 	Amount        int         // Stack amount
@@ -309,8 +267,8 @@ func (i *Item) OPLPackets() (*serverpacket.OPLPacket, *serverpacket.OPLInfo) {
 		if i.HasFlags(ItemFlagsContainer) {
 			i.opl.AppendColor(colornames.Gray, fmt.Sprintf(
 				"%d/%d items, %d/%d stones",
-				i.ItemCount, i.MaxItems,
-				int(i.ContainedWeight), int(i.MaxWeight)),
+				i.ItemCount, i.MaxContainerItems,
+				int(i.ContainedWeight), int(i.MaxContainerWeight)),
 				false)
 		}
 		if i.MaxDurability > 0 {
@@ -437,12 +395,12 @@ func (i *Item) AddItem(item *Item, force bool) error {
 	aw := item.Weight + item.ContainedWeight
 	// Check item and weight limits
 	if !force {
-		if i.ItemCount+ai > i.MaxItems {
+		if i.ItemCount+ai > i.MaxContainerItems {
 			return &UOError{
 				Cliloc: 1080017, // That container cannot hold more items.
 			}
 		}
-		if i.ContainedWeight+aw > i.MaxWeight {
+		if i.ContainedWeight+aw > i.MaxContainerWeight {
 			return &UOError{
 				Cliloc: 1080016, // That container cannot hold more weight.
 			}
@@ -724,6 +682,21 @@ func (i *Item) GetDropSoundOverride(s uo.Sound) uo.Sound {
 		return i.DropSoundOverride
 	}
 	return s
+}
+
+// DisplayName returns the normalized displayable name of the object.
+func (i *Item) DisplayName() string {
+	if i.Amount > 1 {
+		return i.Plural
+	} else {
+		if i.Object.ArticleA {
+			return "a " + i.Name
+		}
+		if i.Object.ArticleAn {
+			return "an " + i.Name
+		}
+	}
+	return i.Name
 }
 
 func (i *Item) StandingHeight() int {

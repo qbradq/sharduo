@@ -1,14 +1,13 @@
 {
     "BasePlayer": {
-        "BaseTemplate": "BaseHuman",
         "AI": "Player",
-        "Strength": 60,
-        "Dexterity": 25,
-        "Intelligence": 15,
-        "HitPoints": 80,
-        "Mana": 15,
-        "Stamina": 25,
-        "Notoriety": "Innocent",
+        "BaseStrength": 60,
+        "BaseDexterity": 25,
+        "BaseIntelligence": 15,
+        "MaxHits": 80,
+        "MaxMana": 15,
+        "MaxStamina": 25,
+        "BaseNotoriety": "Innocent",
         "EquipmentSet": [
             "PlayerBankBox",
             "PlayerBackpack"
@@ -17,20 +16,18 @@
         "Events": {
             "DoubleClick": "PlayerDoubleClick",
             "Drop": "DropToPlayer"
-        }
-    },
-    "BaseStaff": {
-        "BaseTemplate": "BasePlayer",
-        "Body": 987,
-        "Inventory": [
-            "GMGlobe"
+        },
+        "PostCreationEvents": [
+            "ConfigureHuman",
+            "DressHuman"
         ]
     },
     "PlayerMobile": {
+        "BaseTemplate": "BasePlayer"
+    },
+    "BaseStaff": {
         "BaseTemplate": "BasePlayer",
-        "PostCreationEvents": [
-            "DressHuman"
-        ]
+        "Body": 987
     },
     "DeveloperMobile": {
         "BaseTemplate": "BaseStaff",

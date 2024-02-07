@@ -58,7 +58,7 @@ func handleCharacterLogin(n *NetState, cp clientpacket.Packet) {
 		return
 	}
 	ps := n.account.Characters[p.CharacterIndex]
-	m := world.FindMobile(ps)
+	m := world.m.RetrieveObject(ps).(*game.Mobile)
 	if m != nil {
 		if m.NetState != nil {
 			// Connecting to an already connected player, disconnect the
@@ -70,9 +70,13 @@ func handleCharacterLogin(n *NetState, cp clientpacket.Packet) {
 	} else {
 		log.Printf("error: account %s character slot %d mobile not found",
 			n.account.Username, p.CharacterIndex)
+		n.Disconnect()
+		return
 	}
 	// In case the player mobile was in deep storage we try to remove it
 	world.m.RetrieveObject(player.Serial)
+	world.m.RemoveMobile(m)
+	world.m.AddMobile(m, true)
 	world.UpdateMobile(player)
 	n.m = player
 	n.m.NetState = n

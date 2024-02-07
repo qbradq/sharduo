@@ -1,10 +1,15 @@
 {
     "BaseVendor": {
         "BaseTemplate": "BaseHuman",
+        "BaseNotoriety": "Invulnerable",
         "Events": {
             "DoubleClick": "OpenPaperDoll",
             "Speech": "KeywordsVendor"
         },
+        "Inventory": [
+            "NPCBoughtContainer",
+            "NPCForSaleContainer"
+        ],
         "ContextMenu": [
             "3006103|VendorBuy",
             "3006104|VendorSell"
@@ -16,8 +21,7 @@
             "Speech": "KeywordsVendor"
         },
         "PostCreationEvents": [
-            "EquipVendor|VendorSmelter",
-            "DressHuman"
+            "EquipVendor|VendorSmelter"
         ]
     },
     "StableMaster": {
@@ -31,8 +35,7 @@
             "3006128|ClaimAllPets"
         ],
         "PostCreationEvents": [
-            "EquipVendor|VendorStableMaster",
-            "DressHuman"
+            "EquipVendor|VendorStableMaster"
         ]
     }
 }

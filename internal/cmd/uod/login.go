@@ -59,15 +59,16 @@ func cleanStaleLoginConnections(done chan bool) {
 // LoginServerMain is the entry point for the login server.
 func LoginServerMain(wg *sync.WaitGroup) {
 	var err error
-
-	defer func() {
-		if p := recover(); p != nil {
-			log.Printf("panic: %v\n%s\n", p, debug.Stack())
-			panic(p)
-		}
-	}()
+	if configuration.LogPanics {
+		defer func() {
+			if p := recover(); p != nil {
+				log.Printf("panic: %v\n%s\n", p, debug.Stack())
+				panic(p)
+			}
+		}()
+	}
 	defer wg.Done()
-
+	// Open listener
 	loginServerListener, err = net.ListenTCP("tcp", &net.TCPAddr{
 		IP:   net.ParseIP(configuration.LoginServerAddress),
 		Port: configuration.LoginServerPort,
@@ -78,10 +79,10 @@ func LoginServerMain(wg *sync.WaitGroup) {
 	}
 	defer loginServerListener.Close()
 	log.Printf("info: login server listening at %s:%d\n", configuration.LoginServerAddress, configuration.LoginServerPort)
-
+	// Kick off goroutines
 	done := make(chan bool)
 	go cleanStaleLoginConnections(done)
-
+	// Main service loop
 	for {
 		c, err := loginServerListener.AcceptTCP()
 		if err != nil {
@@ -104,7 +105,7 @@ func LoginServerMain(wg *sync.WaitGroup) {
 		}
 		go handleLoginConnection(c)
 	}
-
+	// Cleanup
 	done <- true
 	loginServerListener.Close()
 	loginServerConnections.Range(func(key, value interface{}) bool {
@@ -116,14 +117,14 @@ func LoginServerMain(wg *sync.WaitGroup) {
 
 func handleLoginConnection(conn *net.TCPConn) {
 	var err error
-
-	defer func() {
-		if p := recover(); p != nil {
-			log.Printf("panic: %v\n%s\n", p, debug.Stack())
-		}
-	}()
+	if configuration.LogPanics {
+		defer func() {
+			if p := recover(); p != nil {
+				log.Printf("panic: %v\n%s\n", p, debug.Stack())
+			}
+		}()
+	}
 	defer conn.Close()
-
 	// Setup QoS options
 	conn.SetKeepAlive(false)
 	conn.SetLinger(0)
@@ -132,7 +133,6 @@ func handleLoginConnection(conn *net.TCPConn) {
 	conn.SetWriteBuffer(64 * 1024)
 	conn.SetDeadline(time.Now().Add(time.Minute * 5))
 	r := clientpacket.NewReader(conn)
-
 	// Connection registration
 	c := &loginServerConnection{
 		c:        conn,
@@ -140,10 +140,8 @@ func handleLoginConnection(conn *net.TCPConn) {
 	}
 	loginServerConnections.Store(c, true)
 	defer loginServerConnections.Delete(c)
-
 	// Packet writer
 	pw := bufio.NewWriterSize(conn, 64*1024)
-
 	// Login seed packet
 	var vMajor, vMinor, vPatch, vExtra int = 7, 0, 15, 1
 	cp, err := r.ReadPacket()
@@ -162,7 +160,6 @@ func handleLoginConnection(conn *net.TCPConn) {
 			vMajor, vMinor, vPatch, vExtra)
 		return
 	}
-
 	// Account login
 	cp, err = r.ReadPacket()
 	if err != nil {
@@ -199,7 +196,6 @@ func handleLoginConnection(conn *net.TCPConn) {
 		return
 	}
 	log.Printf("info: user login successful for %s", account.Username)
-
 	// Server list packet
 	var sp serverpacket.Packet
 	sp = &serverpacket.ServerList{
@@ -215,7 +211,6 @@ func handleLoginConnection(conn *net.TCPConn) {
 		log.Println("error: flushing server list packet", err)
 		return
 	}
-
 	// Select server packet
 	cp, err = r.ReadPacket()
 	if err != nil {
@@ -227,7 +222,6 @@ func handleLoginConnection(conn *net.TCPConn) {
 		log.Println("warning: client sent wrong packet waiting for select server", cp)
 		return
 	}
-
 	// Connect to game server packet
 	sp = &serverpacket.ConnectToGameServer{
 		IP:   net.ParseIP(configuration.GameServerPublicAddress),
@@ -239,10 +233,8 @@ func handleLoginConnection(conn *net.TCPConn) {
 		log.Println("error: flushing game server redirect", err)
 		return
 	}
-
 	// Giving the client a moment to process all the network traffic. This is
-	// required for ClassicUO compatibility.
+	// required for ClassicUO compatibility, at least prior to v1.0.0.0.
 	time.Sleep(time.Second * 5)
-
 	// End of login session
 }

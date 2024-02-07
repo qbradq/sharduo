@@ -9,15 +9,15 @@ type postCreationEvent struct {
 	Argument  string // String argument
 }
 
-// UnmarshalJSON implements the json.Unmarshaler interface.
-func (e *postCreationEvent) UnmarshalJSON(in []byte) error {
-	es := string(in[1 : len(in)-1])
+// parsePostCreationEvent parses a creation event from a string.
+func parsePostCreationEvent(es string) *postCreationEvent {
+	e := &postCreationEvent{}
 	parts := strings.SplitN(es, "|", 2)
 	e.EventName = parts[0]
 	if len(parts) == 2 {
 		e.Argument = parts[1]
 	}
-	return nil
+	return e
 }
 
 // Execute executes the post creation event returning the status bool.

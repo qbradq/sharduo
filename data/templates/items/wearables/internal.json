@@ -11,7 +11,7 @@
     },
     "PlayerBackpack": {
         "BaseTemplate": "WearableContainer",
-        "Layer": "{{.LayerBackpack}}",
+        "Layer": "Backpack",
         "Graphic": "0x0E75",
         "FlippedGraphic": "0x09B2",
         "Name": "backpack",

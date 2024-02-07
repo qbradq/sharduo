@@ -17,7 +17,7 @@ const (
 
 // UnmarshalJSON implements json.Unmarshaler.
 func (i *Graphic) UnmarshalJSON(in []byte) error {
-	*i = Graphic(flexNum(in))
+	*i = Graphic(FlexNumber(in))
 	return nil
 }
 

@@ -145,7 +145,7 @@ func (n *NetState) TakeAction() bool {
 	return true
 }
 
-// Service is the goroutine that services the netstate.
+// Service is the goroutine that services the net state.
 func (n *NetState) Service() {
 	// When this goroutine ends so will the TCP connection.
 	defer n.Disconnect()
@@ -173,12 +173,12 @@ func (n *NetState) Service() {
 		log.Printf("error: %s", err.Error())
 		return
 	}
-	gslp, ok := cp.(*clientpacket.GameServerLogin)
+	gslP, ok := cp.(*clientpacket.GameServerLogin)
 	if !ok {
 		log.Printf("error: expected GameServerLogin packet")
 		return
 	}
-	account := world.AuthenticateAccount(gslp.Username, util.HashPassword(gslp.Password))
+	account := world.AuthenticateAccount(gslP.Username, util.HashPassword(gslP.Password))
 	if account == nil {
 		log.Println("error: failed to create new account, reason unknown")
 		return
@@ -271,24 +271,24 @@ func (n *NetState) readLoop(r *clientpacket.Reader) {
 }
 
 // Speech sends a speech packet to the attached client.
-func (n *NetState) Speech(speaker any, fmtstr string, args ...interface{}) {
+func (n *NetState) Speech(speaker any, fs string, args ...interface{}) {
 	sid := uo.SerialSystem
 	body := uo.BodySystem
 	font := uo.FontNormal
 	hue := uo.Hue(1153)
 	name := ""
-	text := fmt.Sprintf(fmtstr, args...)
-	stype := uo.SpeechTypeSystem
+	text := fmt.Sprintf(fs, args...)
+	sType := uo.SpeechTypeSystem
 	if speaker != nil {
 		switch s := speaker.(type) {
 		case *game.Item:
 			sid = s.Serial
-			stype = uo.SpeechTypeNormal
+			sType = uo.SpeechTypeNormal
 			name = s.DisplayName()
 			body = uo.Body(s.CurrentGraphic())
 		case *game.Mobile:
 			sid = s.Serial
-			stype = uo.SpeechTypeNormal
+			sType = uo.SpeechTypeNormal
 			name = s.DisplayName()
 			body = s.Body
 		default:
@@ -302,7 +302,7 @@ func (n *NetState) Speech(speaker any, fmtstr string, args ...interface{}) {
 		Hue:     hue,
 		Name:    name,
 		Text:    text,
-		Type:    stype,
+		Type:    sType,
 	})
 }
 
@@ -402,6 +402,9 @@ func (n *NetState) sendMobile(mobile *game.Mobile) {
 		}
 		if i > int(uo.LayerLastValid) {
 			break
+		}
+		if e == nil {
+			continue
 		}
 		p.Equipment = append(p.Equipment, &serverpacket.EquippedMobileItem{
 			ID:      e.Serial,
@@ -516,9 +519,9 @@ func (n *NetState) SendItem(i *game.Item) {
 
 // MoveMobile sends a packet to inform the client that the mobile moved.
 func (n *NetState) MoveMobile(mob *game.Mobile) {
-	noto := uo.NotorietyAttackable
+	nt := uo.NotorietyAttackable
 	if n.m != nil {
-		noto = mob.NotorietyFor(n.m)
+		nt = mob.NotorietyFor(n.m)
 		if !mob.CanSee(&n.m.Object) {
 			return
 		}
@@ -531,7 +534,7 @@ func (n *NetState) MoveMobile(mob *game.Mobile) {
 		Running:   mob.Running,
 		Hue:       mob.Hue,
 		Flags:     mob.Flags(),
-		Notoriety: noto,
+		Notoriety: nt,
 	})
 }
 
@@ -629,7 +632,7 @@ func (n *NetState) ContainerOpen(c *game.Item) {
 	n.observedContainers[c.Serial] = c
 	n.Send(&serverpacket.OpenContainerGump{
 		GumpSerial: c.Serial,
-		Gump:       uo.GUMP(c.GUMPGraphic),
+		Gump:       uo.GUMP(c.Gump),
 	})
 	if c.ItemCount > 0 {
 		p := &serverpacket.Contents{}

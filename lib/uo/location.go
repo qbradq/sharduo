@@ -22,10 +22,10 @@ var RandomContainerLocation Point = Point{X: RandomDropX, Y: RandomDropY}
 // map.
 func (l Point) WrapToOverworld() Point {
 	for l.X < 0 {
-		l.X += MapOverworldWidth
+		l.X += MapOverWorldWidth
 	}
-	for l.X >= MapOverworldWidth {
-		l.X -= MapOverworldWidth
+	for l.X >= MapOverWorldWidth {
+		l.X -= MapOverWorldWidth
 	}
 	for l.Y < 0 {
 		l.Y += MapHeight
@@ -39,11 +39,11 @@ func (l Point) WrapToOverworld() Point {
 // WrapToDungeonServer returns the location wrapped to the dungeon server
 // section of the map.
 func (l Point) WrapToDungeonServer() Point {
-	for l.X < MapOverworldWidth {
-		l.X += MapWidth - MapOverworldWidth
+	for l.X < MapOverWorldWidth {
+		l.X += MapWidth - MapOverWorldWidth
 	}
 	for l.X > MapWidth {
-		l.X -= MapWidth - MapOverworldWidth
+		l.X -= MapWidth - MapOverWorldWidth
 	}
 	for l.Y < 0 {
 		l.Y += MapHeight
@@ -59,7 +59,7 @@ func (l Point) WrapToDungeonServer() Point {
 // wrapping as appropriate based on the reference location.
 func (l Point) WrapAndBound(ref Point) Point {
 	ref = ref.Bound()
-	if ref.X < MapOverworldWidth {
+	if ref.X < MapOverWorldWidth {
 		return l.WrapToOverworld()
 	} else {
 		return l.WrapToDungeonServer()

@@ -33,9 +33,9 @@ client/
 tools/
 
 # Machine-specific configuration files
-/configuration.json
-/crontab
-/blacklist.ini
+configuration.json
+crontab
+blacklist.ini
 
 # Profiling files
 *.pprof

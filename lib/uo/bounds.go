@@ -33,6 +33,12 @@ type Bounds struct {
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
 func (b *Bounds) UnmarshalJSON(in []byte) error {
+	*b = ParseBounds(string(in[1 : len(in)-1]))
+	return nil
+}
+
+// ParseBounds parses a bounds value from string.
+func ParseBounds(s string) Bounds {
 	fn := func(s string) int {
 		v, err := strconv.ParseInt(s, 0, 32)
 		if err != nil {
@@ -40,16 +46,16 @@ func (b *Bounds) UnmarshalJSON(in []byte) error {
 		}
 		return int(v)
 	}
-	s := string(in[1 : len(in)-1])
 	parts := strings.Split(s, ",")
 	if len(parts) != 4 {
 		panic(errors.New("expected four parts for bounds"))
 	}
+	var b Bounds
 	b.X = fn(parts[0])
 	b.Y = fn(parts[1])
 	b.W = fn(parts[2]) - b.X
 	b.H = fn(parts[3]) - b.Y
-	return nil
+	return b
 }
 
 // BoundsFit returns a bounds value that fits both bounds tightly.

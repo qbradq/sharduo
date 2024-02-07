@@ -27,9 +27,6 @@ var TemplatesDirectory string
 // Internal data directory where lists are loaded from
 var ListsDirectory string
 
-// Internal data file path for the template variables
-var TemplateVariablesFile string
-
 //
 // External data paths
 //
@@ -72,9 +69,6 @@ var GameServerPublicAddress string
 // TCP port to bind to
 var GameServerPort int
 
-// Save file type
-var GameSaveType string
-
 // Name of the game server
 var GameServerName string
 
@@ -87,6 +81,9 @@ var GenerateDebugMaps bool
 
 // If true we should enter CPU profiling mode for the main server loop
 var CPUProfile bool
+
+// If true panics will be logged I.E. for production servers
+var LogPanics bool
 
 //
 // Game configuration
@@ -175,7 +172,6 @@ func Load() error {
 	// Internal paths
 	TemplatesDirectory = GetString("TemplatesDirectory", "templates")
 	ListsDirectory = GetString("ListsDirectory", "templates")
-	TemplateVariablesFile = GetString("TemplateVariablesFile", "misc/templates")
 	// External paths
 	SaveDirectory = GetString("SaveDirectory", "saves")
 	ArchiveDirectory = GetString("ArchiveDirectory", "archives")
@@ -188,11 +184,11 @@ func Load() error {
 	GameServerAddress = GetString("GameServerAddress", "0.0.0.0")
 	GameServerPublicAddress = GetString("GameServerPublicAddress", "127.0.0.1")
 	GameServerPort = GetNumber("GameServerPort", 7777)
-	GameSaveType = GetString("GameSaveType", "Flat")
 	GameServerName = GetString("GameServerName", "ShardUO TC")
 	// Debug flags
 	GenerateDebugMaps = GetBool("GenerateDebugMaps", false)
 	CPUProfile = GetBool("CPUProfile", false)
+	LogPanics = GetBool("LogPanics", false)
 	// Game configuration
 	StartingLocation = GetPoint("StartingLocation", uo.Point{
 		X: 0,

@@ -16,6 +16,8 @@ func NewDatastore() *Datastore {
 	return &Datastore{
 		spMobiles: uo.NewSerialPool(uo.SerialFirstMobile, uo.SerialLastMobile, uo.SerialMobileNil),
 		spItems:   uo.NewSerialPool(uo.SerialFirstItem, uo.SerialLastItem, uo.SerialItemNil),
+		mobiles:   map[uo.Serial]*Mobile{},
+		items:     map[uo.Serial]*Item{},
 	}
 }
 

@@ -11,6 +11,7 @@ import (
 func init() {
 	reg("ConfigureHuman", configureHuman)
 	reg("DressHuman", dressHuman)
+	reg("EquipVendor", equipVendor)
 	reg("PartialHue", partialHue)
 	reg("RandomHue", randomHue)
 	reg("RandomPartialHue", randomPartialHue)
@@ -98,5 +99,14 @@ func dressHuman(r, s, v any) bool {
 		rm.Equip(game.NewItem(string(game.ListMember("MaleHair"))))
 	}
 	rm.Equip(game.NewItem(string(game.ListMember("Shoes"))))
+	return true
+}
+
+func equipVendor(r, s, v any) bool {
+	rm := r.(*game.Mobile)
+	bp := rm.Equipment[uo.LayerNPCSellContainer]
+	for _, tn := range game.TemplateLists[v.(string)] {
+		bp.DropInto(game.NewItem(tn.String()), true)
+	}
 	return true
 }

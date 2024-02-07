@@ -9,6 +9,7 @@
         "MaxHits": 10,
         "MaxMana": 10,
         "MaxStamina": 10,
+        "BaseNotoriety": "Criminal",
         "EquipmentSet": [
             "NPCBackpack"
         ],

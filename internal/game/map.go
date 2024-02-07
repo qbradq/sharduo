@@ -25,6 +25,7 @@ type Map struct {
 func NewMap() *Map {
 	ret := &Map{
 		chunks: make([]*Chunk, uo.MapChunksWidth*uo.MapChunksHeight),
+		ds:     map[uo.Serial]any{},
 	}
 	for i := range ret.chunks {
 		ret.chunks[i] = newChunk(i%uo.MapChunksWidth, i/uo.MapChunksHeight)

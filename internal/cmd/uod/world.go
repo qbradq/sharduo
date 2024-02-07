@@ -14,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/qbradq/sharduo/internal/configuration"
 	"github.com/qbradq/sharduo/internal/game"
 	"github.com/qbradq/sharduo/lib/clientpacket"
 	"github.com/qbradq/sharduo/lib/serverpacket"
@@ -99,6 +100,9 @@ func (w *World) Unmarshal() error {
 	defer w.lock.Unlock()
 	start := time.Now()
 	fp := w.LatestSavePath()
+	if fp == "" {
+		return os.ErrNotExist
+	}
 	tf, err := util.ZipRead(fp)
 	if err != nil {
 		log.Fatalf("fatal: failed reading save file %s", fp)
@@ -235,12 +239,7 @@ func (w *World) Marshal() (*sync.WaitGroup, error) {
 
 // SendPacket sends a packet to the world's goroutine. Returns true on success.
 // This never blocks.
-func (w *World) SendPacket(p clientpacket.Packet, ns *NetState) (closed bool) {
-	defer func() {
-		if recover() != nil {
-			closed = true
-		}
-	}()
+func (w *World) SendPacket(p clientpacket.Packet, ns *NetState) bool {
 	w.requestQueue <- worldPacket{
 		Packet:   p,
 		NetState: ns,
@@ -340,6 +339,20 @@ func (w *World) AuthenticateAccount(username, passwordHash string) *game.Account
 			log.Printf("warning: new user %s granted all roles and marked as the super-user", username)
 			w.superUser = a
 		}
+		// TODO DEBUG REMOVE Create the player mobile
+		tn := "PlayerMobile"
+		if a.HasRole(game.RoleDeveloper) {
+			tn = "DeveloperMobile"
+		} else if a.HasRole(game.RoleAdministrator) {
+			tn = "AdministratorMobile"
+		} else if a.HasRole(game.RoleGameMaster) {
+			tn = "GameMasterMobile"
+		}
+		m := game.NewMobile(tn)
+		m.Location = configuration.StartingLocation
+		m.Name = a.Username
+		world.m.StoreObject(m)
+		a.Characters = append(a.Characters, m.Serial)
 		w.accounts[username] = a
 	}
 	return a
@@ -359,12 +372,14 @@ func (w *World) Stop() {
 // Main is the goroutine that services the command queue and is the only
 // goroutine allowed to interact with the contents of the world.
 func (w *World) Main(wg *sync.WaitGroup) {
-	defer func() {
-		if p := recover(); p != nil {
-			log.Printf("panic: %v\n%s\n", p, debug.Stack())
-			panic(p)
-		}
-	}()
+	if configuration.LogPanics {
+		defer func() {
+			if p := recover(); p != nil {
+				log.Printf("panic: %v\n%s\n", p, debug.Stack())
+				panic(p)
+			}
+		}()
+	}
 	defer wg.Done()
 	var done bool
 	ticker := time.NewTicker(time.Second / time.Duration(uo.DurationSecond))

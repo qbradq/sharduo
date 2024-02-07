@@ -1,8 +1,8 @@
 {
     "BaseSword": {
         "BaseTemplate": "BaseWeapon",
-        "Skill": "Swordsmanship",
-        "Animation": "Slash1H"
+        "UseSkill": "Swordsmanship",
+        "AnimationAction": "Slash1H"
     },
     "Pickaxe": {
         "BaseTemplate": "BaseSword",
@@ -15,6 +15,6 @@
         "Events": {
             "DoubleClick": "BeginMining"
         },
-        "Uses": 50
+        "Durability": 50
     }
 }

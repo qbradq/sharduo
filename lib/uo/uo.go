@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func flexNum(in []byte) int {
+func FlexNumber(in []byte) int64 {
 	if len(in) < 1 {
 		return 0
 	}
@@ -15,13 +15,13 @@ func flexNum(in []byte) int {
 		if err != nil {
 			return 0
 		}
-		return int(v)
+		return v
 	}
 	v, err := strconv.ParseInt(string(in[1:len(in)-1]), 0, 32)
 	if err != nil {
 		return 0
 	}
-	return int(v)
+	return v
 }
 
 // Random constants
@@ -35,7 +35,7 @@ const (
 	ChunkHeight               int  = 8
 	MapWidth                  int  = 7168
 	MapHeight                 int  = 4096
-	MapOverworldWidth         int  = 5120
+	MapOverWorldWidth         int  = 5120
 	MapChunksWidth            int  = MapWidth / ChunkWidth
 	MapChunksHeight           int  = MapHeight / ChunkHeight
 	MapMinZ                   int  = -128
@@ -136,76 +136,73 @@ func (l Layer) Valid() bool {
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
 func (l *Layer) UnmarshalJSON(in []byte) error {
-	if len(in) < 1 {
-		return nil
-	}
-	if in[0] == '"' {
-		s := strings.ToLower(string(in[1 : len(in)-1]))
-		switch s {
-		case "weapon":
-			*l = LayerWeapon
-		case "shield":
-			*l = LayerShield
-		case "shoes":
-			*l = LayerShoes
-		case "pants":
-			*l = LayerPants
-		case "shirt":
-			*l = LayerShirt
-		case "hat":
-			*l = LayerHat
-		case "gloves":
-			*l = LayerGloves
-		case "ring":
-			*l = LayerRing
-		case "neck":
-			*l = LayerNeckArmor
-		case "hair":
-			*l = LayerHair
-		case "belt":
-			*l = LayerBelt
-		case "chest":
-			*l = LayerChestArmor
-		case "bracelet":
-			*l = LayerBracelet
-		case "beard":
-			*l = LayerBeard
-		case "coat":
-			*l = LayerCoat
-		case "earrings":
-			*l = LayerEarrings
-		case "arms":
-			*l = LayerArmArmor
-		case "cloak":
-			*l = LayerCloak
-		case "backpack":
-			*l = LayerBackpack
-		case "robe":
-			*l = LayerRobe
-		case "skirt":
-			*l = LayerSkirt
-		case "legs":
-			*l = LayerLegArmor
-		case "mount":
-			*l = LayerMount
-		case "npcbuyrestockcontainer":
-			*l = LayerNPCBuyRestockContainer
-		case "npcbuynorestockcontainer":
-			*l = LayerNPCBuyNoRestockContainer
-		case "npcsellcontainer":
-			*l = LayerNPCSellContainer
-		case "bank":
-			*l = LayerBankBox
-		default:
-			*l = Layer(flexNum(in))
-		}
-	} else {
-		*l = Layer(flexNum(in))
-	}
+	*l = ParseLayer(string(in[1 : len(in)-1]))
 	return nil
 }
 
-// A StatusFlag describes the status of a mobile
+// ParseLayer parses a layer value from string.
+func ParseLayer(s string) Layer {
+	switch strings.ToLower(s) {
+	case "weapon":
+		return LayerWeapon
+	case "shield":
+		return LayerShield
+	case "shoes":
+		return LayerShoes
+	case "pants":
+		return LayerPants
+	case "shirt":
+		return LayerShirt
+	case "hat":
+		return LayerHat
+	case "gloves":
+		return LayerGloves
+	case "ring":
+		return LayerRing
+	case "neck":
+		return LayerNeckArmor
+	case "hair":
+		return LayerHair
+	case "belt":
+		return LayerBelt
+	case "chest":
+		return LayerChestArmor
+	case "bracelet":
+		return LayerBracelet
+	case "beard":
+		return LayerBeard
+	case "coat":
+		return LayerCoat
+	case "earrings":
+		return LayerEarrings
+	case "arms":
+		return LayerArmArmor
+	case "cloak":
+		return LayerCloak
+	case "backpack":
+		return LayerBackpack
+	case "robe":
+		return LayerRobe
+	case "skirt":
+		return LayerSkirt
+	case "legs":
+		return LayerLegArmor
+	case "mount":
+		return LayerMount
+	case "npcbuyrestockcontainer":
+		return LayerNPCBuyRestockContainer
+	case "npcbuynorestockcontainer":
+		return LayerNPCBuyNoRestockContainer
+	case "npcsellcontainer":
+		return LayerNPCSellContainer
+	case "bank":
+		return LayerBankBox
+	default:
+		panic(fmt.Errorf("unknown layer name %s", s))
+	}
+}
+
+// StatusFlag describes the status of a mobile
 type StatusFlag byte
 
 // StatusFlag constants
@@ -213,7 +210,7 @@ const (
 	StatusNormal StatusFlag = 0
 )
 
-// A Noto is a 3-bit value describing the notoriety status of a mobile
+// Notoriety is a 3-bit value describing the notoriety status of a mobile
 // The zero-value is invalid
 type Notoriety byte
 
@@ -228,6 +225,36 @@ const (
 	NotorietyMurderer     Notoriety = 6 // Red - attackable, murderer
 	NotorietyInvulnerable Notoriety = 7 // Yellow - invulnerable, vendors etc
 )
+
+// UnmarshalJSON implements the json.Unmarshal interface.
+func (n *Notoriety) UnmarshalJSON(in []byte) error {
+	*n = ParseNotoriety(string(in[1 : len(in)-1]))
+	return nil
+}
+
+// ParseNotoriety parses a notoriety value from a string.
+func ParseNotoriety(s string) Notoriety {
+	switch strings.ToLower(s) {
+	case "invalid":
+		return NotorietyInvalid
+	case "innocent":
+		return NotorietyInnocent
+	case "friend":
+		return NotorietyFriend
+	case "attackable":
+		return NotorietyAttackable
+	case "criminal":
+		return NotorietyCriminal
+	case "enemy":
+		return NotorietyEnemy
+	case "murderer":
+		return NotorietyMurderer
+	case "invulnerable":
+		return NotorietyInvulnerable
+	default:
+		panic(fmt.Errorf("unknown notoriety %s", s))
+	}
+}
 
 // FeatureFlag represents the client features flags sent in packet 0xA9
 type FeatureFlag uint32
@@ -357,7 +384,7 @@ const (
 
 // UnmarshalJSON implements json.Unmarshaler.
 func (b *Body) UnmarshalJSON(in []byte) error {
-	*b = Body(flexNum(in))
+	*b = Body(FlexNumber(in))
 	return nil
 }
 
@@ -409,7 +436,7 @@ const (
 
 // UnmarshalJSON implements json.Unmarshaler.
 func (g *GUMP) UnmarshalJSON(in []byte) error {
-	*g = GUMP(flexNum(in))
+	*g = GUMP(FlexNumber(in))
 	return nil
 }
 
@@ -465,7 +492,7 @@ const (
 
 // UnmarshalJSON implements json.Unmarshaler.
 func (s *Sound) UnmarshalJSON(in []byte) error {
-	*s = Sound(flexNum(in))
+	*s = Sound(FlexNumber(in))
 	return nil
 }
 
@@ -509,6 +536,40 @@ const (
 	AnimationActionWrestle   AnimationAction = 31
 	AnimationActionThrowing  AnimationAction = 32
 )
+
+// UnmarshalJSON implements the json.Unmarshaler interface.
+func (a *AnimationAction) UnmarshalJSON(in []byte) error {
+	*a = ParseAnimationAction(string(in[1 : len(in)-1]))
+	return nil
+}
+
+// ParseAnimationAction parses an animation action from a string.
+func ParseAnimationAction(s string) AnimationAction {
+	switch strings.ToLower(s) {
+	case "slash1h":
+		return AnimationActionSlash1H
+	case "pierce1h":
+		return AnimationActionPierce1H
+	case "bash1h":
+		return AnimationActionBash1H
+	case "bash2h":
+		return AnimationActionBash2H
+	case "slash2h":
+		return AnimationActionSlash2H
+	case "pierce2h":
+		return AnimationActionPierce2H
+	case "shootbow":
+		return AnimationActionShootBow
+	case "shootxbow":
+		return AnimationActionShootXBow
+	case "wrestle":
+		return AnimationActionWrestle
+	case "throwing":
+		return AnimationActionThrowing
+	default:
+		panic(fmt.Errorf("unknown animation action %s", s))
+	}
+}
 
 // LightLevel indicates how bright a light is.
 type LightLevel byte
@@ -567,22 +628,22 @@ const (
 
 // UnmarshalJSON implements json.Unmarshaler.
 func (t *LootType) UnmarshalJSON(in []byte) error {
-	if len(in) < 1 {
-		*t = LootTypeNormal
-	} else if in[0] == '"' {
-		s := strings.ToLower(string(in[1 : len(in)-1]))
-		switch s {
-		case "blessed":
-			*t = LootTypeBlessed
-		case "newbie":
-			*t = LootTypeNewbie
-		case "system":
-			*t = LootTypeSystem
-		default:
-			panic(fmt.Errorf("unsupported loot type %s", s))
-		}
-	}
+	*t = ParseLootType(string(in[1 : len(in)-1]))
 	return nil
+}
+
+// ParseLootType parses a loot type value from a string.
+func ParseLootType(s string) LootType {
+	switch strings.ToLower(s) {
+	case "blessed":
+		return LootTypeBlessed
+	case "newbie":
+		return LootTypeNewbie
+	case "system":
+		return LootTypeSystem
+	default:
+		panic(fmt.Errorf("unsupported loot type %s", s))
+	}
 }
 
 // Door location offsets

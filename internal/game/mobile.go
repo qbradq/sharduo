@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"path/filepath"
-	"reflect"
 
 	"github.com/qbradq/sharduo/data"
 	"github.com/qbradq/sharduo/lib/serverpacket"
@@ -19,25 +17,22 @@ import (
 func LoadMobilePrototypes() {
 	// Load all mobile templates
 	errors := false
+	templates := map[string]*Template{}
 	for _, err := range data.Walk("templates/mobiles", func(s string, b []byte) []error {
-		// Ignore legacy files
-		if filepath.Ext(s) != ".json" {
-			return nil
-		}
 		// Load prototypes
-		ps := map[string]*Mobile{}
+		ps := map[string]*Template{}
 		if err := json.Unmarshal(b, &ps); err != nil {
 			return []error{err}
 		}
 		// Prototype prep
 		for k, p := range ps {
 			// Check for duplicates
-			if _, duplicate := mobilePrototypes[k]; duplicate {
+			if _, duplicate := templates[k]; duplicate {
 				return []error{fmt.Errorf("duplicate mobile prototype %s", k)}
 			}
 			// Initialize non-zero default values
-			p.TemplateName = k
-			mobilePrototypes[k] = p
+			p.Fields["TemplateName"] = k
+			templates[k] = p
 		}
 		return nil
 	}) {
@@ -47,58 +42,16 @@ func LoadMobilePrototypes() {
 	if errors {
 		panic("errors during mobile prototype load")
 	}
-	// Resolve all base templates
-	var fn func(*Mobile)
-	fn = func(i *Mobile) {
-		// Skip resolved templates and root templates
-		if i.btResolved || i.BaseTemplate == "" {
-			return
+	// Resolve all base templates and construct their item prototypes
+	for tn, t := range templates {
+		t.Resolve(templates)
+		m := &Mobile{
+			Object: Object{
+				Events: map[string]string{},
+			},
 		}
-		// Resolve base template
-		p := mobilePrototypes[i.BaseTemplate]
-		if p == nil {
-			panic(fmt.Errorf("mobile template %s referenced non-existent base template %s",
-				i.TemplateName, i.BaseTemplate))
-		}
-		fn(p)
-		// Merge values
-		pr := reflect.ValueOf(p).Elem()
-		ir := reflect.ValueOf(i).Elem()
-		for i := 0; i < pr.NumField(); i++ {
-			prf := pr.Field(i)
-			irf := ir.Field(i)
-			if !prf.CanInterface() {
-				continue
-			}
-			sf := pr.Type().Field(i)
-			switch sf.Name {
-			case "Inventory":
-				fallthrough
-			case "EquipmentSet":
-				fallthrough
-			case "PostCreationEvents":
-				// Prepend array contents
-				irf.Set(reflect.AppendSlice(prf, irf))
-			case "Events":
-				// Merge events map
-				for _, k := range prf.MapKeys() {
-					if irf.MapIndex(k).IsZero() {
-						irf.MapIndex(k).Set(prf.MapIndex(k))
-					}
-				}
-			case "Flags":
-				// Merge flag bits
-				irf.Set(reflect.ValueOf(ItemFlags(prf.Int() | irf.Int())))
-			default:
-				// Just copy the value
-				irf.Set(prf)
-			}
-		}
-		// Flag prototype as done
-		i.btResolved = true
-	}
-	for _, p := range mobilePrototypes {
-		fn(p)
+		t.constructPrototype(m)
+		mobilePrototypes[tn] = m
 	}
 }
 
