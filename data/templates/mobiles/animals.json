@@ -48,11 +48,21 @@
         }
     },
     "BasePackAnimal": {
-        "BaseTemplate": "BaseAnimal",
+        "ViewRange": 18,
+        "AI": "WalkRandom",
+        "Body": 991,
+        "BaseStrength": 10,
+        "BaseDexterity": 10,
+        "BaseIntelligence": 10,
+        "MaxHits": 10,
+        "MaxMana": 10,
+        "MaxStamina": 10,
+        "BaseNotoriety": "Criminal",
         "EquipmentSet": [
             "PackAnimalBackpack"
         ],
         "Events": {
+            "Speech": "KeywordsCommand",
             "DoubleClick": "OpenBackpack",
             "Drop": "DropToPackAnimal"
         }

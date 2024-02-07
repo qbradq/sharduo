@@ -878,6 +878,12 @@ func (m *Map) AddItem(i *Item, force bool) bool {
 
 // AddMobile adds a mobile to the map sending all proper updates.
 func (m *Map) AddMobile(mob *Mobile, force bool) bool {
+	c := m.chunks[(mob.Location.Y/uo.ChunkHeight)*uo.MapChunksWidth+(mob.Location.X/uo.ChunkWidth)]
+	c.AddMobile(mob)
+	// We need to send the new mobile to all net states in range
+	for _, om := range m.NetStatesInRange(mob.Location, 0) {
+		om.NetState.SendMobile(mob)
+	}
 	// If this is a mobile with a NetState we have to send all of the items
 	// and mobiles in range.
 	if mob.NetState != nil {

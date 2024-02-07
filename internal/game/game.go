@@ -91,10 +91,10 @@ var World WorldInterface
 // the map, or the location of the mobile who is wearing the top-most container.
 // This function is useful during range checks.
 func MapLocation(i *Item) uo.Point {
-	if i.Wearer != nil {
-		return i.Wearer.Location
-	}
 	for {
+		if i.Wearer != nil {
+			return i.Wearer.Location
+		}
 		if i.Container == nil {
 			return i.Location
 		}

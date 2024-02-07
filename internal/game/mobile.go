@@ -20,19 +20,20 @@ func LoadMobilePrototypes() {
 	templates := map[string]*Template{}
 	for _, err := range data.Walk("templates/mobiles", func(s string, b []byte) []error {
 		// Load prototypes
-		ps := map[string]*Template{}
-		if err := json.Unmarshal(b, &ps); err != nil {
+		ts := map[string]*Template{}
+		if err := json.Unmarshal(b, &ts); err != nil {
 			return []error{err}
 		}
 		// Prototype prep
-		for k, p := range ps {
+		for k, t := range ts {
 			// Check for duplicates
 			if _, duplicate := templates[k]; duplicate {
 				return []error{fmt.Errorf("duplicate mobile prototype %s", k)}
 			}
 			// Initialize non-zero default values
-			p.Fields["TemplateName"] = k
-			templates[k] = p
+			t.Name = k
+			t.Fields["TemplateName"] = k
+			templates[k] = t
 		}
 		return nil
 	}) {
@@ -680,4 +681,14 @@ func (m *Mobile) Step(d uo.Direction) bool {
 		m.lastStepTime = World.Time()
 	}
 	return ret
+}
+
+// ExecuteEvent executes the named event handler if any is configured. Returns
+// true if the handler was found and also returned true.
+func (m *Mobile) ExecuteEvent(which string, s, v any) bool {
+	hn, ok := m.Events[which]
+	if !ok {
+		return false
+	}
+	return ExecuteEventHandler(hn, m, s, v)
 }

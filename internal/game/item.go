@@ -32,6 +32,7 @@ func LoadItemPrototypes() {
 				return []error{fmt.Errorf("duplicate item prototype %s", k)}
 			}
 			// Initialize non-zero default values
+			p.Name = k
 			p.Fields["TemplateName"] = k
 			templates[k] = p
 		}
@@ -697,6 +698,16 @@ func (i *Item) DisplayName() string {
 		}
 	}
 	return i.Name
+}
+
+// ExecuteEvent executes the named event handler if any is configured. Returns
+// true if the handler was found and also returned true.
+func (i *Item) ExecuteEvent(which string, s, v any) bool {
+	hn, ok := i.Events[which]
+	if !ok {
+		return false
+	}
+	return ExecuteEventHandler(hn, i, s, v)
 }
 
 func (i *Item) StandingHeight() int {

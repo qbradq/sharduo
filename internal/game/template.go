@@ -12,6 +12,7 @@ import (
 // Template represents a JSON template in textual form and can handle its own
 // inheritance resolution.
 type Template struct {
+	Name     string         // Name of the template
 	Fields   map[string]any // All of the fields of the template
 	Resolved bool           // If true this template has been fully resolved
 }
@@ -65,7 +66,7 @@ func (t *Template) Resolve(templates map[string]*Template) {
 			}
 		}
 	}
-	bt.Resolved = true
+	t.Resolved = true
 }
 
 // constructPrototype copies template values to the object.

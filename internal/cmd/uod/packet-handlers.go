@@ -163,7 +163,7 @@ func handleStatusRequest(n *NetState, cp clientpacket.Packet) {
 	switch p.StatusRequestType {
 	case uo.StatusRequestTypeBasic:
 		m := game.World.FindMobile(p.PlayerMobileID)
-		n.SendMobile(m)
+		n.UpdateMobile(m)
 	case uo.StatusRequestTypeSkills:
 		n.SendAllSkills()
 	}

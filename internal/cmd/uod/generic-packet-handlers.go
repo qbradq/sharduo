@@ -29,7 +29,7 @@ func handleContextMenuRequest(n *NetState, cp clientpacket.GeneralInformationPac
 	if obj == nil {
 		return
 	}
-	var menu *game.ContextMenu
+	menu := &game.ContextMenu{}
 	switch o := obj.(type) {
 	case *game.Mobile:
 		o.ContextMenuPacket(menu, n.m)

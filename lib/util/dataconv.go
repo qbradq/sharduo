@@ -74,12 +74,18 @@ func PutString(w io.Writer, s string) {
 
 // Writes a fixed-length string
 func PutStringN(w io.Writer, s string, n int) {
+	for i := 0; i < n; i++ {
+		dcBuf[i] = 0
+	}
 	copy(dcBuf[:n], s)
 	w.Write(dcBuf[:n])
 }
 
 // Writes a fixed-length string that always ends with a null
 func PutStringNWithNull(w io.Writer, s string, n int) {
+	for i := 0; i < n; i++ {
+		dcBuf[i] = 0
+	}
 	copy(dcBuf[:n], s)
 	dcBuf[n-1] = 0
 	w.Write(dcBuf[:n])
