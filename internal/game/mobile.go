@@ -385,7 +385,7 @@ func (m *Mobile) HasLineOfSight(target any) bool {
 		t = o.Location
 		t.Z += uo.PlayerHeight // Look other mobiles in the eye
 	case *Item:
-		t = o.Location
+		t = MapLocation(o)
 	}
 	return World.Map().LineOfSight(l, t)
 }
@@ -460,7 +460,7 @@ func (m *Mobile) CanBeCommandedBy(s *Mobile) bool {
 // Dismount implements the Mobile interface.
 func (m *Mobile) Dismount() {
 	mi := m.Equipment[uo.LayerMount]
-	m.Equipment[uo.LayerMount] = nil
+	m.UnEquip(mi)
 	mi.MArg.Location = m.Location
 	mi.MArg.Facing = m.Facing
 	World.Map().AddMobile(mi.MArg, true)
@@ -476,8 +476,11 @@ func (m *Mobile) Mount(mount *Mobile) {
 	mi.SetBaseGraphicForBody(mount.Body)
 	mi.Hue = mount.Hue
 	mi.MArg = mount
+	if !m.Equip(mi) {
+		log.Println("warning: failed to equip mount item")
+		World.RemoveItem(mi)
+	}
 	World.Map().RemoveMobile(mount)
-	m.Equipment[uo.LayerMount] = mi
 	World.UpdateMobile(m)
 }
 
@@ -490,6 +493,7 @@ func (m *Mobile) Equip(i *Item) bool {
 		return false
 	}
 	m.Equipment[i.Layer] = i
+	i.Wearer = m
 	m.Weight += i.Weight + i.ContainedWeight
 	for _, om := range World.Map().NetStatesInRange(m.Location, 0) {
 		om.NetState.WornItem(i, m)
@@ -503,6 +507,8 @@ func (m *Mobile) UnEquip(i *Item) bool {
 		return false
 	}
 	m.Equipment[i.Layer] = nil
+	i.Wearer = nil
+	m.Weight -= i.Weight + i.ContainedWeight
 	for _, om := range World.Map().NetStatesInRange(m.Location, 0) {
 		om.NetState.RemoveItem(i)
 	}

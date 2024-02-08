@@ -393,7 +393,7 @@ func (i *Item) RefreshDecayDeadline() {
 // AddItem adds an item to this item's inventory.
 func (i *Item) AddItem(item *Item, force bool) error {
 	ai := 1 + item.ItemCount
-	aw := item.Weight + item.ContainedWeight
+	aw := item.Weight*float64(item.Amount) + item.ContainedWeight
 	// Check item and weight limits
 	if !force {
 		if i.ItemCount+ai > i.MaxContainerItems {
@@ -415,7 +415,7 @@ func (i *Item) AddItem(item *Item, force bool) error {
 			if item.TemplateName == oi.TemplateName &&
 				item.Hue == oi.Hue &&
 				oi.Amount+item.Amount <= uo.MaxStackAmount {
-				i.AdjustWeightAndCount(item.Weight, 0)
+				i.AdjustWeightAndCount(aw, 0)
 				oi.Amount = oi.Amount + item.Amount
 				if item.TemplateName == "GoldCoin" {
 					i.AdjustGold(item.Amount)
@@ -448,6 +448,7 @@ func (i *Item) AddItem(item *Item, force bool) error {
 	}
 	// Add item to container
 	i.Contents = append(i.Contents, item)
+	item.Container = i
 	i.AdjustWeightAndCount(aw, ai)
 	if item.TemplateName == "GoldCoin" {
 		i.AdjustGold(item.Amount)
@@ -474,6 +475,7 @@ func (i *Item) RemoveItem(item *Item) {
 	copy(i.Contents[idx:], i.Contents[idx+1:])
 	i.Contents[len(i.Contents)-1] = nil
 	i.Contents = i.Contents[:len(i.Contents)-1]
+	item.Container = nil
 	i.AdjustWeightAndCount(-item.Weight+item.ContainedWeight, -item.ItemCount+1)
 }
 

@@ -4,6 +4,9 @@
         "MaxContainerWeight": 400,
         "MaxContainerItems": 125,
         "Weight": 0,
+        "Flags": [
+            "Container"
+        ],
         "Events": {
             "DoubleClick": "OpenContainer",
             "Drop": "DropToContainer"
@@ -52,6 +55,7 @@
     },
     "MountItem": {
         "BaseTemplate": "BaseWearable",
-        "Layer": "Mount"
+        "Layer": "Mount",
+        "Weight": 0
     }
 }

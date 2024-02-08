@@ -108,7 +108,8 @@ func handleCharacterLogin(n *NetState, cp clientpacket.Packet) {
 }
 
 func handleCharacterLogout(n *NetState, cp clientpacket.Packet) {
-	game.NewTimer(uo.DurationMinute*10, "PlayerLogout", n.m, nil, false, nil)
+	p := cp.(*CharacterLogout)
+	game.NewTimer(uo.DurationMinute*10, "PlayerLogout", p.Mobile, nil, false, nil)
 }
 
 func handlePing(n *NetState, cp clientpacket.Packet) {
@@ -401,7 +402,7 @@ func handleWearItemRequest(n *NetState, cp clientpacket.Packet) {
 		n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		return
 	}
-	if item.Wearable() {
+	if !item.Wearable() {
 		n.m.DropToFeet(n.m.Cursor)
 		n.m.Cursor = nil
 		n.DropReject(uo.MoveItemRejectReasonUnspecified)

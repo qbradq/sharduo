@@ -328,14 +328,14 @@ func (m *Map) StoreObject(obj any) {
 	}
 }
 
-// RetrieveObject removes an object from deep storage and returns it.
+// RetrieveObject finds an object in deep storage by ID and returns it.
 func (m *Map) RetrieveObject(s uo.Serial) any {
-	o, found := m.ds[s]
-	if found {
-		delete(m.ds, s)
-		return o
-	}
-	return nil
+	return m.ds[s]
+}
+
+// RemoveObject removes an object in deep storage by ID.
+func (m *Map) RemoveObject(s uo.Serial) {
+	delete(m.ds, s)
 }
 
 // MobilesWithin returns all mobiles within the bounds. Subsequent calls to

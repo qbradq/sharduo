@@ -4,6 +4,9 @@
         "MaxContainerWeight": 400,
         "MaxContainerItems": 125,
         "Gump": "0x03E8",
+        "Flags": [
+            "Container"
+        ],
         "Events": {
             "DoubleClick": "OpenContainer",
             "Drop": "DropToContainer"

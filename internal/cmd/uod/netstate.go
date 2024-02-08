@@ -730,11 +730,11 @@ func (n *NetState) ContainerRangeCheck() {
 				if n.m.Location.XYDistance(c.Location) > uo.MaxContainerViewRange {
 					n.ContainerClose(c)
 				}
-			} else if rc.Wearer == n.m {
+			} else if c.Wearer == n.m {
 				// Container is being worn by our player, so either the bank box
 				// or backpack. We always close the bank box on every step and
 				// we never close our own backpack.
-				if rc.Layer == uo.LayerBankBox {
+				if c.Layer == uo.LayerBankBox {
 					n.ContainerClose(c)
 				}
 			} else {

@@ -77,7 +77,7 @@ func commandNew(n game.NetState, args CommandArgs, cl string) {
 		mob := game.World.FindMobile(r.TargetObject)
 		if mob != nil {
 			if item != nil {
-				m.DropToBackpack(item, true)
+				mob.DropToBackpack(item, true)
 			} else {
 				n.Speech(n.Mobile(), "mobile targeted for new mobile")
 				return
@@ -196,8 +196,7 @@ func commandRemove(n game.NetState, args CommandArgs, cl string) {
 	}
 	multi := len(args) > 1 && args[1] == "multi"
 	n.TargetSendCursor(uo.TargetTypeObject, func(tr *clientpacket.TargetResponse) {
-		var m *game.Mobile
-		m = game.World.FindMobile(tr.TargetObject)
+		m := game.World.FindMobile(tr.TargetObject)
 		if m == nil {
 			game.World.RemoveMobile(m)
 		} else {
