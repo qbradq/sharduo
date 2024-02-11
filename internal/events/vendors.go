@@ -17,11 +17,11 @@ func init() {
 
 // vendorBuy opens the vendor buy screen for a vendor.
 func vendorBuy(receiver, source, v any) bool {
-	sm := source.(game.Mobile)
+	sm := source.(*game.Mobile)
 	if sm.NetState == nil {
 		return false
 	}
-	rm := receiver.(game.Mobile)
+	rm := receiver.(*game.Mobile)
 	if sm.Location.XYDistance(rm.Location) > uo.MaxViewRange {
 		return false
 	}
@@ -110,8 +110,8 @@ func stablePet(receiver, source, v any) bool {
 		return false
 	}
 	sm.NetState.TargetSendCursor(uo.TargetTypeObject, func(tr *clientpacket.TargetResponse) {
-		pm := game.World.FindMobile(tr.TargetObject)
-		if pm == nil {
+		pm, found := game.World.FindMobile(tr.TargetObject)
+		if !found {
 			sm.NetState.Cliloc(receiver, 1048053) // You can't stable that!
 			return
 		}

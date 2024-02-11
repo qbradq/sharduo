@@ -97,8 +97,8 @@ func commandDebug(n game.NetState, args CommandArgs, cl string) {
 		}
 	case "vendor_bag":
 		n.TargetSendCursor(uo.TargetTypeObject, func(tr *clientpacket.TargetResponse) {
-			m := game.World.Find(tr.TargetObject).(*game.Mobile)
-			if m == nil {
+			m, found := game.World.FindMobile(tr.TargetObject)
+			if !found {
 				return
 			}
 			w := m.Equipment[uo.LayerNPCBuyRestockContainer]

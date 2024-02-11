@@ -163,8 +163,9 @@ func handleStatusRequest(n *NetState, cp clientpacket.Packet) {
 	p := cp.(*clientpacket.PlayerStatusRequest)
 	switch p.StatusRequestType {
 	case uo.StatusRequestTypeBasic:
-		m := game.World.FindMobile(p.PlayerMobileID)
-		n.UpdateMobile(m)
+		if m, found := game.World.FindMobile(p.PlayerMobileID); found {
+			n.UpdateMobile(m)
+		}
 	case uo.StatusRequestTypeSkills:
 		n.SendAllSkills()
 	}
@@ -195,11 +196,10 @@ func handleSingleClickRequest(n *NetState, cp clientpacket.Packet) {
 		return
 	}
 	p := cp.(*clientpacket.SingleClick)
-	switch o := world.Find(p.Object).(type) {
-	case *game.Mobile:
-		n.Speech(o, o.DisplayName())
-	case *game.Item:
-		n.Speech(o, o.DisplayName())
+	if m, found := world.FindMobile(p.Object); found {
+		n.Speech(m, m.DisplayName())
+	} else if i, found := world.FindItem(p.Object); found {
+		n.Speech(i, i.DisplayName())
 	}
 }
 
@@ -219,19 +219,19 @@ func handleDoubleClickRequest(n *NetState, cp clientpacket.Packet) {
 		}
 		return
 	}
-	switch o := world.Find(p.Object.StripSelfFlag()).(type) {
-	case *game.Mobile:
+	s := p.Object.StripSelfFlag()
+	if m, found := world.FindMobile(s); found {
 		// Range check just to make sure the player can actually see this thing
 		// on-screen
-		if n.m.Location.XYDistance(o.Location) > n.m.ViewRange {
+		if n.m.Location.XYDistance(m.Location) > n.m.ViewRange {
 			return
 		}
-		o.ExecuteEvent("DoubleClick", n.m, nil)
-	case *game.Item:
-		if !n.m.CanAccess(o) {
+		m.ExecuteEvent("DoubleClick", n.m, nil)
+	} else if i, found := world.FindItem(s); found {
+		if !n.m.CanAccess(i) {
 			return
 		}
-		o.ExecuteEvent("DoubleClick", n.m, nil)
+		i.ExecuteEvent("DoubleClick", n.m, nil)
 	}
 }
 
@@ -262,8 +262,8 @@ func handleLiftRequest(n *NetState, cp clientpacket.Packet) {
 		return
 	}
 	p := cp.(*clientpacket.LiftRequest)
-	item := world.FindItem(p.Item)
-	if item == nil {
+	item, found := world.FindItem(p.Item)
+	if !found {
 		n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		return
 	}
@@ -337,17 +337,18 @@ func handleDropRequest(n *NetState, cp clientpacket.Packet) {
 			}
 		}
 	} else {
-		target := world.Find(p.Container)
-		if target == nil {
+		var nl uo.Point
+		var target any
+		if i, found := world.FindItem(p.Container); found {
+			nl = game.MapLocation(i)
+			target = i
+		} else if m, found := world.FindMobile(p.Container); found {
+			nl = m.Location
+			target = m
+		} else {
 			n.m.DropToFeet(n.m.Cursor)
 			n.m.Cursor = nil
 			n.DropReject(uo.MoveItemRejectReasonUnspecified)
-		}
-		var nl uo.Point
-		if item, ok := target.(*game.Item); ok {
-			nl = game.MapLocation(item)
-		} else {
-			nl = target.(*game.Mobile).Location
 		}
 		item.Location = nl
 		if !game.DynamicDispatch("Drop", target, n.m, item) {
@@ -381,9 +382,9 @@ func handleWearItemRequest(n *NetState, cp clientpacket.Packet) {
 		return
 	}
 	p := cp.(*clientpacket.WearItemRequest)
-	item := world.FindItem(p.Item)
-	wearer := world.FindMobile(p.Wearer)
-	if item == nil || wearer == nil {
+	item, itemFound := world.FindItem(p.Item)
+	wearer, wearerFound := world.FindMobile(p.Wearer)
+	if !itemFound || !wearerFound {
 		n.m.DropToFeet(n.m.Cursor)
 		n.m.Cursor = nil
 		n.DropReject(uo.MoveItemRejectReasonUnspecified)
@@ -433,16 +434,16 @@ func handleBuyRequest(n *NetState, cp clientpacket.Packet) {
 		return
 	}
 	p := cp.(*clientpacket.BuyItems)
-	vendor := world.FindMobile(p.Vendor)
-	if vendor == nil || vendor.Location.XYDistance(n.m.Location) > uo.MaxViewRange {
+	vendor, found := world.FindMobile(p.Vendor)
+	if !found || vendor.Location.XYDistance(n.m.Location) > uo.MaxViewRange {
 		return
 	}
 	// Calculate total cost
 	total := 0
 	for _, bi := range p.BoughtItems {
-		i := world.FindItem(bi.Item)
+		i, found := world.FindItem(bi.Item)
 		// Sanity checks
-		if i == nil || i.Wearer.Serial != p.Vendor {
+		if !found || i.Wearer.Serial != p.Vendor {
 			return
 		}
 		total += bi.Amount * i.Value
@@ -454,8 +455,8 @@ func handleBuyRequest(n *NetState, cp clientpacket.Packet) {
 	}
 	// Give items
 	for _, bi := range p.BoughtItems {
-		i := world.FindItem(bi.Item)
-		if i == nil {
+		i, found := world.FindItem(bi.Item)
+		if !found {
 			continue
 		}
 		// Dirty hack for stable master NPCs
@@ -494,15 +495,15 @@ func handleSellRequest(n *NetState, cp clientpacket.Packet) {
 		return
 	}
 	p := cp.(*clientpacket.SellResponse)
-	vm := world.FindMobile(p.Vendor)
-	if vm == nil || vm.Location.XYDistance(n.m.Location) > uo.MaxViewRange {
+	vm, found := world.FindMobile(p.Vendor)
+	if !found || vm.Location.XYDistance(n.m.Location) > uo.MaxViewRange {
 		return
 	}
 	// Remove items and calculate total
 	total := 0
 	for _, si := range p.SellItems {
-		i := world.FindItem(si.Serial)
-		if i == nil {
+		i, found := world.FindItem(si.Serial)
+		if !found {
 			continue
 		}
 		rp := game.Owner(i)
@@ -545,40 +546,33 @@ func handleNameRequest(n *NetState, cp clientpacket.Packet) {
 		return
 	}
 	p := cp.(*clientpacket.NameRequest)
-	o := world.Find(p.Serial)
-	if o == nil {
-		return
-	}
-	if m, ok := o.(*game.Mobile); ok {
+	if m, found := world.FindMobile(p.Serial); found {
 		n.Send(&serverpacket.NameResponse{
 			Serial: p.Serial,
 			Name:   m.DisplayName(),
 		})
-	} else {
+	} else if i, found := world.FindItem(p.Serial); found {
 		n.Send(&serverpacket.NameResponse{
 			Serial: p.Serial,
-			Name:   o.(*game.Item).DisplayName(),
+			Name:   i.DisplayName(),
 		})
-
 	}
 }
 
 func handleOPLCacheMiss(n *NetState, cp clientpacket.Packet) {
+	var opl *serverpacket.OPLPacket
 	if n == nil {
 		return
 	}
 	p := cp.(*clientpacket.OPLCacheMiss)
 	for _, s := range p.Serials {
-		o := world.Find(s)
-		if o == nil {
+		if m, found := world.FindMobile(s); found {
+			opl, _ = m.OPLPackets()
+		} else if i, found := world.FindItem(s); found {
+			opl, _ = i.OPLPackets()
+		} else {
+			log.Printf("warning: opl cache miss packet for non-existent object %s", s.String())
 			continue
-		}
-		var opl *serverpacket.OPLPacket
-		switch t := o.(type) {
-		case *game.Mobile:
-			opl, _ = t.OPLPackets()
-		case *game.Item:
-			opl, _ = t.OPLPackets()
 		}
 		n.Send(opl)
 	}
@@ -589,8 +583,8 @@ func handleRenameRequest(n *NetState, cp clientpacket.Packet) {
 		return
 	}
 	p := cp.(*clientpacket.RenameRequest)
-	m := world.FindMobile(p.Serial)
-	if m == nil || m.ControlMaster != n.m {
+	m, found := world.FindMobile(p.Serial)
+	if !found || m.ControlMaster != n.m {
 		return
 	}
 	m.Name = p.Name

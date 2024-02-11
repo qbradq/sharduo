@@ -108,23 +108,23 @@ func (g *decorate) targetVolume(n game.NetState, fn func(uo.Bounds)) {
 	n.Speech(n.Mobile(), "Starting Point")
 	n.TargetSendCursor(uo.TargetTypeLocation, func(tr *clientpacket.TargetResponse) {
 		start := tr.Location
-		so := game.World.FindItem(tr.TargetObject)
+		so, soFound := game.World.FindItem(tr.TargetObject)
 		n.Speech(n.Mobile(), "Ending Point")
 		n.TargetSendCursor(uo.TargetTypeLocation, func(tr *clientpacket.TargetResponse) {
 			end := tr.Location
-			eo := game.World.FindItem(tr.TargetObject)
+			eo, eoFound := game.World.FindItem(tr.TargetObject)
 			lowest := start.Z
 			if end.Z < start.Z {
 				lowest = end.Z
 			}
 			highest := start.Z
-			if so != nil && so.Highest() > highest {
+			if soFound && so.Highest() > highest {
 				highest = so.Highest()
 			}
 			if end.Z > highest {
 				highest = end.Z
 			}
-			if eo != nil && eo.Highest() > highest {
+			if eoFound && eo.Highest() > highest {
 				highest = eo.Highest()
 			}
 			b := uo.BoundsOf(start, end)

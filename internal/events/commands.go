@@ -28,8 +28,8 @@ func commandFollow(receiver, source, v any) bool {
 		return false
 	}
 	sm.NetState.TargetSendCursor(uo.TargetTypeObject, func(tr *clientpacket.TargetResponse) {
-		tm := game.World.FindMobile(tr.TargetObject)
-		if tm == nil {
+		tm, found := game.World.FindMobile(tr.TargetObject)
+		if !found {
 			return
 		}
 		rm.AI = "Follow"

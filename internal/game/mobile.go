@@ -139,27 +139,25 @@ type Mobile struct {
 	BaseSkills       [uo.SkillCount]int   // Base skill values in tenths of a percent
 	Equipment        [uo.LayerCount]*Item // Current equipment set
 	// Transient values
-	Account       *Account                // Connected account if any
-	NetState      NetState                // Connected net state if any
-	ControlMaster *Mobile                 // Mobile that is currently commanding this mobile
-	Cursor        *Item                   // The item in the mobile's cursor if any
-	Hits          int                     // Current hit points
-	Mana          int                     // Current mana
-	Stamina       int                     // Current stamina
-	Strength      int                     // Current strength value
-	Dexterity     int                     // Current dexterity value
-	Intelligence  int                     // Current intelligence value
-	Skills        [uo.SkillCount]int      // Current skill values in tenths of a percent
-	Running       bool                    // If true the mobile is running
-	Weight        float64                 // Current weight of all equipment plus the contents of the backpack
-	MaxWeight     float64                 // Max carry weight of the mobile
-	ViewRange     int                     // Range at which items are reported to the client, valid values are [5-18]
-	StandingOn    uo.CommonObject         // Object the mobile is standing on
-	AI            string                  // Name of the AI routine to run during mobile think
-	AIGoal        *Mobile                 // What mobile we are paying attention to at the moment
-	opl           *serverpacket.OPLPacket // Cached OPLPacket
-	oplInfo       *serverpacket.OPLInfo   // Cached OPLInfo packet
-	lastStepTime  uo.Time                 // Time of the last step taken
+	Account       *Account           // Connected account if any
+	NetState      NetState           // Connected net state if any
+	ControlMaster *Mobile            // Mobile that is currently commanding this mobile
+	Cursor        *Item              // The item in the mobile's cursor if any
+	Hits          int                // Current hit points
+	Mana          int                // Current mana
+	Stamina       int                // Current stamina
+	Strength      int                // Current strength value
+	Dexterity     int                // Current dexterity value
+	Intelligence  int                // Current intelligence value
+	Skills        [uo.SkillCount]int // Current skill values in tenths of a percent
+	Running       bool               // If true the mobile is running
+	Weight        float64            // Current weight of all equipment plus the contents of the backpack
+	MaxWeight     float64            // Max carry weight of the mobile
+	ViewRange     int                // Range at which items are reported to the client, valid values are [5-18]
+	StandingOn    uo.CommonObject    // Object the mobile is standing on
+	AI            string             // Name of the AI routine to run during mobile think
+	AIGoal        *Mobile            // What mobile we are paying attention to at the moment
+	lastStepTime  uo.Time            // Time of the last step taken
 }
 
 // Write writes the persistent data of the item to w.

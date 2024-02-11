@@ -262,53 +262,24 @@ func (w *World) Add(obj any) {
 	}
 }
 
-// Find returns the mobile or item with the given serial or nil.
-func (w *World) Find(id uo.Serial) any {
-	var ret any
-	if id.IsMobile() {
-		ret = w.ods.Mobile(id)
-	} else {
-		ret = w.ods.Item(id)
-	}
-	if ret == nil {
-		return nil
-	}
-	return ret
-}
-
 // FindMobile returns the item with the given serial or nil.
-func (w *World) FindMobile(id uo.Serial) *game.Mobile {
+func (w *World) FindMobile(id uo.Serial) (*game.Mobile, bool) {
 	return w.ods.Mobile(id)
 }
 
 // FindItem returns the item with the given serial or nil.
-func (w *World) FindItem(id uo.Serial) *game.Item {
+func (w *World) FindItem(id uo.Serial) (*game.Item, bool) {
 	return w.ods.Item(id)
 }
 
-// Mobile returns the mobile with the given serial or nil.
-func (w *World) Mobile(id uo.Serial) *game.Mobile {
-	return w.ods.Mobile(id)
+// DeleteMobile deletes the mobile from the world.
+func (w *World) DeleteMobile(m *game.Mobile) {
+	w.ods.RemoveMobile(m)
 }
 
-// Item returns the item with the given serial or nil.
-func (w *World) Item(id uo.Serial) *game.Item {
-	return w.ods.Item(id)
-}
-
-// Delete removes an item or mobile from the world.
-func (w *World) Delete(obj any) {
-	if obj == nil {
-		return
-	}
-	switch o := obj.(type) {
-	case *game.Mobile:
-		w.ods.RemoveMobile(o)
-	case *game.Item:
-		w.ods.RemoveItem(o)
-	default:
-		panic("invalid type sent to World.Delete")
-	}
+// DeleteItem deletes the item from the world.
+func (w *World) DeleteItem(i *game.Item) {
+	w.ods.RemoveItem(i)
 }
 
 // AuthenticateAccount attempts to authenticate an account by username and
@@ -401,15 +372,7 @@ func (w *World) Main(wg *sync.WaitGroup) {
 			w.m.Update(w.time)
 			// OPLInfo updates
 			for s := range w.oplUpdateList {
-				// Bind object
-				obj := w.Find(s)
-				if obj == nil {
-					// Ignore objects that have already been removed
-					continue
-				}
-				// Handle items and mobiles
-				switch o := obj.(type) {
-				case *game.Item:
+				if o, found := w.FindItem(s); found {
 					if o.Removed {
 						// Ignore items slated for removal
 						continue
@@ -433,7 +396,7 @@ func (w *World) Main(wg *sync.WaitGroup) {
 							m.NetState.Send(info)
 						}
 					}
-				case *game.Mobile:
+				} else if o, found := world.FindMobile(s); found {
 					if o.Removed {
 						// Ignore items slated for removal
 						continue
@@ -450,43 +413,37 @@ func (w *World) Main(wg *sync.WaitGroup) {
 			w.oplUpdateList = make(map[uo.Serial]struct{})
 			// Update objects
 			for s := range w.updateList {
-				obj := w.Find(s)
-				if obj == nil {
-					// Ignore objects that have already been removed
-					continue
-				}
-				switch o := obj.(type) {
-				case *game.Item:
-					if o.Removed {
+				if i, found := w.FindItem(s); found {
+					if i.Removed {
 						// Ignore objects that are slated for removal
 						continue
 					}
-					if o.Container != nil {
+					if i.Container != nil {
 						// For items within a container the container has to
 						// distribute the update to all container observers
-						o.Container.UpdateItem(o)
-					} else if o.Wearer != nil {
+						i.Container.UpdateItem(i)
+					} else if i.Wearer != nil {
 						// For items being worn by a mobile we need to
 						// distribute the update to all net states in range of
 						// the mobile wearing the item.
-						for _, m := range w.m.NetStatesInRange(o.Wearer.Location, 0) {
-							m.NetState.UpdateItem(o)
+						for _, m := range w.m.NetStatesInRange(i.Wearer.Location, 0) {
+							m.NetState.UpdateItem(i)
 						}
 					} else {
 						// For items on the ground we need to distribute the
 						// update to all net states in range of the item.
-						for _, m := range w.m.NetStatesInRange(o.Location, 0) {
-							m.NetState.UpdateItem(o)
+						for _, mob := range w.m.NetStatesInRange(i.Location, 0) {
+							mob.NetState.UpdateItem(i)
 						}
 					}
-				case *game.Mobile:
-					if o.Removed {
+				} else if m, found := w.FindMobile(s); found {
+					if m.Removed {
 						// Ignore objects that are slated for removal
 						continue
 					}
 					// Distribute the update to all net states in range
-					for _, m := range w.m.NetStatesInRange(o.Location, 0) {
-						m.NetState.UpdateMobile(o)
+					for _, mob := range w.m.NetStatesInRange(m.Location, 0) {
+						mob.NetState.UpdateMobile(m)
 					}
 				}
 			}

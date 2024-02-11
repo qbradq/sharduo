@@ -17,12 +17,12 @@ type player struct {
 }
 
 // Act implements the AIModel interface.
-func (a *player) Act(m game.Mobile, t uo.Time) {
+func (a *player) Act(m *game.Mobile, t uo.Time) {
 	// Do nothing, ever
 }
 
 // Target implements the AIModel interface.
-func (a *player) Target(m game.Mobile, t uo.Time) {
+func (a *player) Target(m *game.Mobile, t uo.Time) {
 	if m.NetState == nil {
 		return
 	}

@@ -163,17 +163,12 @@ func transferHue(receiver, source, v any) bool {
 	}
 	sm.NetState.Speech(source, "Target object to set hue %d", hue)
 	sm.NetState.TargetSendCursor(uo.TargetTypeObject, func(tr *clientpacket.TargetResponse) {
-		obj := game.World.Find(tr.TargetObject)
-		if obj == nil {
-			return
-		}
-		switch o := obj.(type) {
-		case *game.Mobile:
-			o.Hue = hue
-			game.World.UpdateMobile(o)
-		case *game.Item:
-			o.Hue = hue
-			game.World.UpdateItem(o)
+		if m, found := game.World.FindMobile(tr.TargetObject); found {
+			m.Hue = hue
+			game.World.UpdateMobile(m)
+		} else if i, found := game.World.FindItem(tr.TargetObject); found {
+			i.Hue = hue
+			game.World.UpdateItem(i)
 		}
 	})
 	return true

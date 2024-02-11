@@ -228,8 +228,8 @@ func (g *statics) lift(n game.NetState) {
 			g.lift(n)
 			return
 		}
-		s := game.World.FindItem(tr.TargetObject)
-		if s == nil {
+		s, found := game.World.FindItem(tr.TargetObject)
+		if !found {
 			// Something wrong
 			return
 		}
@@ -266,8 +266,8 @@ func (g *statics) eraseSingle(n game.NetState) {
 		if tr.TargetObject == uo.SerialZero {
 			return
 		}
-		s := game.World.FindItem(tr.TargetObject)
-		if s == nil {
+		s, found := game.World.FindItem(tr.TargetObject)
+		if !found {
 			// Something wrong
 			return
 		}
@@ -287,7 +287,11 @@ func (g *statics) placeSingle(n game.NetState) {
 		if !ok {
 			return
 		}
-		d.place(tr.Location, g.item.expression, game.World.FindItem(tr.TargetObject))
+		i, found := game.World.FindItem(tr.TargetObject)
+		if !found {
+			return
+		}
+		d.place(tr.Location, g.item.expression, i)
 		g.placeSingle(n)
 	})
 }

@@ -12,7 +12,7 @@ func init() {
 
 // whisperTime whispers the current Sossarian time to the source.
 func whisperTime(receiver, source, v any) bool {
-	sm := source.(game.Mobile)
+	sm := source.(*game.Mobile)
 	if sm.NetState == nil {
 		return false
 	}
@@ -22,7 +22,7 @@ func whisperTime(receiver, source, v any) bool {
 
 // playerLogout logs out the player mobile receiver.
 func playerLogout(receiver, source, v any) bool {
-	rm := receiver.(game.Mobile)
+	rm := receiver.(*game.Mobile)
 	if rm.NetState != nil {
 		return false
 	}

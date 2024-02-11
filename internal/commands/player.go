@@ -21,8 +21,8 @@ func commandGraphic(n game.NetState, args CommandArgs, cl string) {
 		var bg, ag uo.Graphic
 		var speaker any
 		if tr.TargetObject != uo.SerialZero {
-			i := game.World.FindItem(tr.TargetObject)
-			if i == nil {
+			i, found := game.World.FindItem(tr.TargetObject)
+			if !found {
 				return
 			}
 			ag = i.CurrentGraphic()
@@ -69,9 +69,9 @@ func commandHue(n game.NetState, args CommandArgs, cl string) {
 	}
 	n.TargetSendCursor(uo.TargetTypeObject, func(tr *clientpacket.TargetResponse) {
 		var h uo.Hue
-		if m := game.World.FindMobile(tr.TargetObject); m != nil {
+		if m, found := game.World.FindMobile(tr.TargetObject); found {
 			h = m.Hue
-		} else if item := game.World.FindItem(tr.TargetObject); item != nil {
+		} else if item, found := game.World.FindItem(tr.TargetObject); found {
 			h = item.Hue
 		} else {
 			return

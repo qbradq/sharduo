@@ -176,36 +176,32 @@ func (t *Timer) Execute() {
 	var receiver any
 	var source any
 	if t.receiver != uo.SerialZero {
-		receiver = World.Find(t.receiver)
-		if receiver == nil {
+		if i, found := World.FindItem(t.receiver); found {
+			if i.Removed {
+				return
+			}
+			receiver = i
+		} else if m, found := World.FindMobile(t.receiver); found {
+			if m.Removed {
+				return
+			}
+			receiver = m
+		} else {
 			return
-		}
-		switch o := receiver.(type) {
-		case *Item:
-			if o.Removed {
-				return
-			}
-		case *Mobile:
-			if o.Removed {
-				return
-			}
 		}
 	}
-	if t.source != uo.SerialZero {
-		source = World.Find(t.source)
-		if source == nil {
+	if i, found := World.FindItem(t.source); found {
+		if i.Removed {
 			return
 		}
-		switch o := source.(type) {
-		case *Item:
-			if o.Removed {
-				return
-			}
-		case *Mobile:
-			if o.Removed {
-				return
-			}
+		source = i
+	} else if m, found := World.FindMobile(t.source); found {
+		if m.Removed {
+			return
 		}
+		source = m
+	} else {
+		return
 	}
 	ExecuteEventHandler(t.event, receiver, source, t.parameter)
 }

@@ -344,7 +344,7 @@ func (n *NetState) itemInfo(item *game.Item) {
 		return
 	}
 	var layer uo.Layer
-	if item.Layer == uo.LayerInvalid || item.Layer > uo.LayerLastVisible {
+	if item.Layer != uo.LayerInvalid && !item.Layer.Valid() {
 		// Dirty hack to prevent things like mount items from being sent
 		// like a normal item.
 		return
@@ -928,8 +928,11 @@ func (n *NetState) RefreshGUMP(gi any) {
 	// Resolve objects
 	var tg any
 	if d.t != uo.SerialSystem {
-		tg = world.Find(d.t)
-		if tg == nil {
+		if i, found := world.FindItem(d.t); found {
+			tg = i
+		} else if m, found := world.FindMobile(d.t); found {
+			tg = m
+		} else {
 			// Target of the GUMP has been removed, close the GUMP
 			delete(n.gumps, s)
 			return
@@ -937,8 +940,11 @@ func (n *NetState) RefreshGUMP(gi any) {
 	}
 	var pm any
 	if d.p != uo.SerialSystem {
-		pm = world.Find(d.p)
-		if pm == nil {
+		if i, found := world.FindItem(d.p); found {
+			pm = i
+		} else if m, found := world.FindMobile(d.p); found {
+			pm = m
+		} else {
 			// Parameter of the GUMP has been removed, close the GUMP
 			delete(n.gumps, s)
 			return

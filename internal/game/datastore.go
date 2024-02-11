@@ -35,12 +35,16 @@ func (s *Datastore) InsertMobile(m *Mobile) {
 }
 
 // Mobile returns the mobile with the given serial or nil.
-func (s *Datastore) Mobile(k uo.Serial) *Mobile {
-	return s.mobiles[k]
+func (s *Datastore) Mobile(k uo.Serial) (*Mobile, bool) {
+	v, found := s.mobiles[k]
+	return v, found
 }
 
 // RemoveMobile removes a mobile from the datastore and releases its serial.
 func (s *Datastore) RemoveMobile(m *Mobile) {
+	if m == nil {
+		return
+	}
 	delete(s.mobiles, m.Serial)
 	s.spMobiles.Release(m.Serial)
 }
@@ -59,12 +63,16 @@ func (s *Datastore) InsertItem(i *Item) {
 }
 
 // Item returns the item with the given serial or nil.
-func (s *Datastore) Item(k uo.Serial) *Item {
-	return s.items[k]
+func (s *Datastore) Item(k uo.Serial) (*Item, bool) {
+	v, found := s.items[k]
+	return v, found
 }
 
 // RemoveItem removes an item from the datastore and releases its serial.
 func (s *Datastore) RemoveItem(i *Item) {
+	if i == nil {
+		return
+	}
 	delete(s.items, i.Serial)
 	s.spItems.Release(i.Serial)
 }

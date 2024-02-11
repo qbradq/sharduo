@@ -113,15 +113,13 @@ type Spawner interface {
 // World is the interface the server's game world model must implement for the
 // internal game objects to work properly.
 type WorldInterface interface {
-	// Find returns a pointer to the object with the given ID or nil
-	Find(uo.Serial) any
-	// FindMobile returns the item with the given serial or nil.
-	FindMobile(uo.Serial) *Mobile
+	FindMobile(uo.Serial) (*Mobile, bool)
 	// FindItem returns the item with the given serial or nil.
-	FindItem(uo.Serial) *Item
-	// Delete removes the given object from the world and deletes it from the
-	// data stores.
-	Delete(any)
+	FindItem(uo.Serial) (*Item, bool)
+	// DeleteMobile deletes the mobile from the world.
+	DeleteMobile(*Mobile)
+	// DeleteItem deletes the item from the world.
+	DeleteItem(*Item)
 	// UpdateItem schedules an update packet for the item. It is safe to update
 	// the same object rapidly in succession. No duplicate packets will be sent.
 	UpdateItem(*Item)

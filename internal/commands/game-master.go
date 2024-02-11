@@ -29,8 +29,8 @@ func commandBank(n game.NetState, args CommandArgs, cl string) {
 		return
 	}
 	n.TargetSendCursor(uo.TargetTypeObject, func(r *clientpacket.TargetResponse) {
-		m := game.World.FindMobile(r.TargetObject)
-		if m == nil {
+		m, found := game.World.FindMobile(r.TargetObject)
+		if !found {
 			return
 		}
 		events.ExecuteEventHandler("OpenBankBox", m, n.Mobile(), nil)
@@ -74,16 +74,14 @@ func commandNew(n game.NetState, args CommandArgs, cl string) {
 				item.Amount = v
 			}
 		}
-		mob := game.World.FindMobile(r.TargetObject)
-		if mob != nil {
+		if mob, found := game.World.FindMobile(r.TargetObject); found {
 			if item != nil {
 				mob.DropToBackpack(item, true)
 			} else {
 				n.Speech(n.Mobile(), "mobile targeted for new mobile")
 				return
 			}
-		} else {
-			c := game.World.FindItem(r.TargetObject)
+		} else if c, found := game.World.FindItem(r.TargetObject); found {
 			if c != nil && c.HasFlags(game.ItemFlagsContainer) {
 				if item != nil {
 					c.DropInto(item, true)
@@ -181,7 +179,7 @@ func commandStatic(n game.NetState, args CommandArgs, cl string) {
 	n.TargetSendCursor(uo.TargetTypeLocation, func(r *clientpacket.TargetResponse) {
 		i := game.NewItem("StaticItem")
 		l := r.Location
-		if i := game.World.FindItem(r.TargetObject); i != nil {
+		if i, found := game.World.FindItem(r.TargetObject); found {
 			l.Z = i.Highest()
 		}
 		i.Graphic = g
@@ -196,11 +194,10 @@ func commandRemove(n game.NetState, args CommandArgs, cl string) {
 	}
 	multi := len(args) > 1 && args[1] == "multi"
 	n.TargetSendCursor(uo.TargetTypeObject, func(tr *clientpacket.TargetResponse) {
-		m := game.World.FindMobile(tr.TargetObject)
-		if m == nil {
+		if m, found := game.World.FindMobile(tr.TargetObject); found {
 			game.World.RemoveMobile(m)
-		} else {
-			game.World.RemoveItem(game.World.FindItem(tr.TargetObject))
+		} else if i, found := game.World.FindItem(tr.TargetObject); found {
+			game.World.RemoveItem(i)
 		}
 		if multi {
 			commandRemove(n, args, cl)
@@ -213,8 +210,11 @@ func commandEdit(n game.NetState, args CommandArgs, cl string) {
 		return
 	}
 	n.TargetSendCursor(uo.TargetTypeObject, func(tr *clientpacket.TargetResponse) {
-		o := game.World.Find(tr.TargetObject)
-		gumps.Edit(n.Mobile(), o)
+		if m, found := game.World.FindMobile(tr.TargetObject); found {
+			gumps.Edit(n.Mobile(), m)
+		} else if i, found := game.World.FindItem(tr.TargetObject); found {
+			gumps.Edit(n.Mobile(), i)
+		}
 	})
 }
 
@@ -231,10 +231,10 @@ func commandSetHue(n game.NetState, args CommandArgs, cl string) {
 		return
 	}
 	n.TargetSendCursor(uo.TargetTypeObject, func(tr *clientpacket.TargetResponse) {
-		if m := game.World.FindMobile(tr.TargetObject); m != nil {
+		if m, found := game.World.FindMobile(tr.TargetObject); found {
 			m.Hue = hue
 			game.World.UpdateMobile(m)
-		} else if item := game.World.FindItem(tr.TargetObject); item != nil {
+		} else if item, found := game.World.FindItem(tr.TargetObject); found {
 			item.Hue = hue
 			game.World.UpdateItem(item)
 		}
@@ -249,8 +249,8 @@ func commandTame(n game.NetState, args CommandArgs, cl string) {
 		return
 	}
 	n.TargetSendCursor(uo.TargetTypeObject, func(tr *clientpacket.TargetResponse) {
-		m := game.World.FindMobile(tr.TargetObject)
-		if m == nil {
+		m, found := game.World.FindMobile(tr.TargetObject)
+		if !found {
 			return
 		}
 		m.ControlMaster = n.Mobile()
@@ -262,11 +262,11 @@ func commandTame(n game.NetState, args CommandArgs, cl string) {
 func commandSetZ(n game.NetState, args CommandArgs, cl string) {
 	z := args.Int(1)
 	n.TargetSendCursor(uo.TargetTypeObject, func(tr *clientpacket.TargetResponse) {
-		if m := game.World.FindMobile(tr.TargetObject); m != nil {
+		if m, found := game.World.FindMobile(tr.TargetObject); found {
 			game.World.Map().RemoveMobile(m)
 			m.Location.Z = z
 			game.World.Map().AddMobile(m, true)
-		} else if item := game.World.FindItem(tr.TargetObject); item != nil {
+		} else if item, found := game.World.FindItem(tr.TargetObject); found {
 			if item.Container != nil || item.Wearer != nil {
 				return
 			}
@@ -284,8 +284,8 @@ func commandAdmin(n game.NetState, args CommandArgs, cl string) {
 func commandAccount(n game.NetState, args CommandArgs, cl string) {
 	n.Speech(n.Mobile(), "Select player")
 	n.TargetSendCursor(uo.TargetTypeObject, func(tr *clientpacket.TargetResponse) {
-		m := game.World.FindMobile(tr.TargetObject)
-		if m == nil || m.NetState == nil || m.Account == nil {
+		m, found := game.World.FindMobile(tr.TargetObject)
+		if !found || m.NetState == nil || m.Account == nil {
 			n.Speech(n.Mobile(), "Not a player")
 			return
 		}

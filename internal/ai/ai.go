@@ -9,9 +9,9 @@ import (
 // AIModel is the interface all AI models implement
 type AIModel interface {
 	// Act is called every tick and is responsible for making the mobile take all actions
-	Act(game.Mobile, uo.Time)
+	Act(*game.Mobile, uo.Time)
 	// Target is called every fifteen seconds and is responsible for target and goal selection
-	Target(game.Mobile, uo.Time)
+	Target(*game.Mobile, uo.Time)
 }
 
 // ctor is a Thinker constructor function

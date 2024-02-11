@@ -307,7 +307,7 @@ func (p *EquippedMobile) Write(w io.Writer) {
 	util.PutUInt32(w, 0x00000000) // End of list marker
 }
 
-// Target is used to send and recieve targeting commands to the client
+// Target is used to send and receive targeting commands to the client
 type Target struct {
 	// Serial of the targeting cursor
 	Serial uo.Serial
@@ -422,6 +422,9 @@ type ObjectInfo struct {
 
 // Write implements the Packet interface.
 func (p *ObjectInfo) Write(w io.Writer) {
+	if p.Serial > uo.SerialLastItem {
+		print("debug\n")
+	}
 	util.PutByte(w, 0xF3)     // Packet ID
 	util.PutUInt16(w, 0x0001) // Always 0x0001 on OSI according to POL
 	// Data type
@@ -508,7 +511,7 @@ func (p *OpenPaperDoll) Write(w io.Writer) {
 }
 
 // MoveSpeed sets the movement speed of the player on the client. This is a
-// psuedo-packet for General Information packet 0xBF-0x0026. Note that this does
+// pseudo-packet for General Information packet 0xBF-0x0026. Note that this does
 // NOT set the walk/run/mount state of the client. This is for God mode stuff I
 // guess.
 type MoveSpeed struct {
@@ -1029,7 +1032,7 @@ func (p *ContextMenu) Write(w io.Writer) {
 	util.PutUInt16(w, uint16(12+len(p.Entries)*6)) // Packet length
 	util.PutUInt16(w, 0x0014)                      // Subcommand ID
 	util.Pad(w, 1)
-	util.PutByte(w, 0x01) // Subsubcommand
+	util.PutByte(w, 0x01) // Sub-subcommand
 	util.PutUInt32(w, uint32(p.Serial))
 	util.PutByte(w, byte(len(p.Entries)))
 	for _, e := range p.Entries {
@@ -1088,16 +1091,16 @@ func (p *GUMP) Write(w io.Writer) {
 		fz.Close()
 		fd := fb.Bytes()
 		// Build the line data
-		lbraw := bytes.NewBuffer(nil)
+		lbRaw := bytes.NewBuffer(nil)
 		for _, line := range p.Lines {
 			lrc := utf8.RuneCountInString(line)
-			util.PutUInt16(lbraw, uint16(lrc))
-			util.PutUTF16StringN(lbraw, line, lrc)
+			util.PutUInt16(lbRaw, uint16(lrc))
+			util.PutUTF16StringN(lbRaw, line, lrc)
 		}
-		ldraw := lbraw.Bytes()
+		ldRaw := lbRaw.Bytes()
 		lb := bytes.NewBuffer(nil)
 		lz := zlib.NewWriter(lb)
-		lz.Write(ldraw)
+		lz.Write(ldRaw)
 		lz.Close()
 		ld := lb.Bytes()
 		// Calculate packet length
@@ -1114,7 +1117,7 @@ func (p *GUMP) Write(w io.Writer) {
 		w.Write(fd)                              // Compressed layout
 		util.PutUInt32(w, uint32(len(p.Lines)))  // Number of lines
 		util.PutUInt32(w, uint32(len(ld)+4))     // Compressed lines length
-		util.PutUInt32(w, uint32(len(ldraw)))    // Decompressed lines length
+		util.PutUInt32(w, uint32(len(ldRaw)))    // Decompressed lines length
 		w.Write(ld)                              // Compressed lines
 	}
 }
@@ -1290,7 +1293,7 @@ func (p *SellWindow) Write(w io.Writer) {
 		util.PutUInt16(w, uint16(i.Amount))                   // Item amount
 		util.PutUInt16(w, uint16(i.Price)/2)                  // Item price per unit
 		util.PutUInt16(w, uint16(len(i.Description)))         // Length of the description string
-		util.PutStringN(w, i.Description, len(i.Description)) // Item descrition
+		util.PutStringN(w, i.Description, len(i.Description)) // Item description
 	}
 }
 

@@ -10,12 +10,6 @@ import (
 	"github.com/qbradq/sharduo/lib/uo"
 )
 
-// utf16Buf is an internal buffer for various routines.
-var utf16Buf [1024 * 16]uint16
-
-// dcBuf is an internal buffer for various routines.
-var dcBuf [1024 * 16]byte
-
 // ParseNullString returns the next null-terminated string from the byte slice.
 func ParseNullString(buf []byte) string {
 	for i, b := range buf {
@@ -28,6 +22,7 @@ func ParseNullString(buf []byte) string {
 
 // ParseUTF16String returns the next UTF16-encoded string from the byte slice.
 func ParseUTF16String(b []byte) string {
+	utf16Buf := make([]uint16, 1024*16)
 	ib := 0
 	iu := 0
 	for {
@@ -67,25 +62,21 @@ func PutBool(w io.Writer, v bool) {
 
 // PutString writes a null-terminated string
 func PutString(w io.Writer, s string) {
-	dcBuf[0] = 0
+	dcBuf := []byte{0}
 	w.Write([]byte(s))
 	w.Write(dcBuf[:1])
 }
 
 // Writes a fixed-length string
 func PutStringN(w io.Writer, s string, n int) {
-	for i := 0; i < n; i++ {
-		dcBuf[i] = 0
-	}
+	dcBuf := make([]byte, n)
 	copy(dcBuf[:n], s)
 	w.Write(dcBuf[:n])
 }
 
 // Writes a fixed-length string that always ends with a null
 func PutStringNWithNull(w io.Writer, s string, n int) {
-	for i := 0; i < n; i++ {
-		dcBuf[i] = 0
-	}
+	dcBuf := make([]byte, n)
 	copy(dcBuf[:n], s)
 	dcBuf[n-1] = 0
 	w.Write(dcBuf[:n])
@@ -93,6 +84,7 @@ func PutStringNWithNull(w io.Writer, s string, n int) {
 
 // PutUTF16String writes a null-terminated UTF16 string in Big Endian format
 func PutUTF16String(w io.Writer, s string) {
+	dcBuf := make([]byte, 1024*16)
 	utf := utf16.Encode([]rune(s))
 	ofs := 0
 	for _, r := range utf {
@@ -106,6 +98,7 @@ func PutUTF16String(w io.Writer, s string) {
 
 // Writes a UTF16 string in Big Endian format with no terminator
 func PutUTF16StringN(w io.Writer, s string, n int) {
+	dcBuf := make([]byte, 1024*16)
 	utf := utf16.Encode([]rune(s))
 	for idx := 0; idx < n; idx++ {
 		r := uint16(0)
@@ -119,6 +112,7 @@ func PutUTF16StringN(w io.Writer, s string, n int) {
 
 // Writes a null-terminated UTF16 string in Little Endian format
 func PutUTF16LEString(w io.Writer, s string) {
+	dcBuf := make([]byte, 1024*16)
 	utf := utf16.Encode([]rune(s))
 	ofs := 0
 	for _, r := range utf {
@@ -131,6 +125,7 @@ func PutUTF16LEString(w io.Writer, s string) {
 
 // Writes a UTF16 string in Little Endian format with no terminator
 func PutUTF16LEStringN(w io.Writer, s string, n int) {
+	dcBuf := make([]byte, 1024*16)
 	utf := utf16.Encode([]rune(s))
 	for idx := 0; idx < n; idx++ {
 		r := uint16(0)
@@ -144,40 +139,42 @@ func PutUTF16LEStringN(w io.Writer, s string, n int) {
 
 // Pad writes zero-padding
 func Pad(w io.Writer, l int) {
-	for i := 0; i < l; i++ {
-		dcBuf[i] = 0
-	}
-	w.Write(dcBuf[:l])
+	dcBuf := make([]byte, l)
+	w.Write(dcBuf)
 }
 
 // Fill fills with a given byte
 func Fill(w io.Writer, v byte, l int) {
+	dcBuf := make([]byte, l)
 	for i := 0; i < l; i++ {
 		dcBuf[i] = v
 	}
-	w.Write(dcBuf[:l])
+	w.Write(dcBuf)
 }
 
 // PutByte writes a single byte
 func PutByte(w io.Writer, v byte) {
-	dcBuf[0] = v
-	w.Write(dcBuf[:1])
+	dcBuf := []byte{v}
+	w.Write(dcBuf)
 }
 
 // PutUInt16 writes a 16-bit numeric value
 func PutUInt16(w io.Writer, v uint16) {
+	dcBuf := []byte{0, 0}
 	binary.BigEndian.PutUint16(dcBuf[:2], v)
 	w.Write(dcBuf[:2])
 }
 
 // PutUInt32 writes a 32-bit numeric value
 func PutUInt32(w io.Writer, v uint32) {
+	dcBuf := []byte{0, 0, 0, 0}
 	binary.BigEndian.PutUint32(dcBuf[:4], v)
 	w.Write(dcBuf[:4])
 }
 
 // PutUInt64 writes a 64-bit numeric value
 func PutUInt64(w io.Writer, v uint64) {
+	dcBuf := []byte{0, 0, 0, 0, 0, 0, 0, 0}
 	binary.BigEndian.PutUint64(dcBuf[:8], v)
 	w.Write(dcBuf[:8])
 }
@@ -222,7 +219,7 @@ func GetBool(r io.Reader) bool {
 
 // GetString returns the next null-terminated string in the data buffer.
 func GetString(r io.Reader) string {
-	var buf = dcBuf[:1]
+	buf := make([]byte, 1024*16)
 	var ret []byte
 	for {
 		r.Read(buf)
@@ -235,28 +232,28 @@ func GetString(r io.Reader) string {
 
 // GetByte is a convenience function that returns the next byte in the buffer.
 func GetByte(r io.Reader) byte {
-	var buf = dcBuf[:1]
+	buf := []byte{0}
 	r.Read(buf)
 	return buf[0]
 }
 
 // GetUInt16 returns the next unsigned 16-bit integer in the data buffer.
 func GetUInt16(r io.Reader) uint16 {
-	var buf = dcBuf[:2]
+	buf := []byte{0, 0}
 	r.Read(buf)
 	return binary.BigEndian.Uint16(buf)
 }
 
 // GetUInt32 returns the next unsigned 32-bit integer in the data buffer.
 func GetUInt32(r io.Reader) uint32 {
-	var buf = dcBuf[:4]
+	buf := []byte{0, 0, 0, 0}
 	r.Read(buf)
 	return binary.BigEndian.Uint32(buf)
 }
 
 // GetUInt64 returns the next unsigned 64-bit integer in the data buffer.
 func GetUInt64(r io.Reader) uint64 {
-	var buf = dcBuf[:8]
+	buf := []byte{0, 0, 0, 0, 0, 0, 0, 0}
 	r.Read(buf)
 	return binary.BigEndian.Uint64(buf)
 }

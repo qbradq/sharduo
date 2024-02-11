@@ -18,12 +18,12 @@ func init() {
 type regions struct {
 	StandardGUMP
 	regions []*game.Region
-	tr      game.Mobile
+	tr      *game.Mobile
 }
 
 // Layout implements the game.GUMP interface.
 func (g *regions) Layout(target, param any) {
-	g.tr = target.(game.Mobile)
+	g.tr = target.(*game.Mobile)
 	g.regions = game.World.Map().RegionsAt(g.tr.Location)
 	pages := len(g.regions) / 5
 	if len(g.regions)%5 != 0 {

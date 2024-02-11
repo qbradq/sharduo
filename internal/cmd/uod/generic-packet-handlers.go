@@ -25,29 +25,23 @@ func handleGeneralInformation(n *NetState, cp clientpacket.Packet) {
 
 func handleContextMenuRequest(n *NetState, cp clientpacket.GeneralInformationPacket) {
 	p := cp.(*clientpacket.ContextMenuRequest)
-	obj := world.Find(p.Serial)
-	if obj == nil {
-		return
-	}
 	menu := &game.ContextMenu{}
-	switch o := obj.(type) {
-	case *game.Mobile:
-		o.ContextMenuPacket(menu, n.m)
-	case *game.Item:
-		o.ContextMenuPacket(menu, n.m)
+	if m, found := world.FindMobile(p.Serial); found {
+		m.ContextMenuPacket(menu, n.m)
+	} else if i, found := world.FindItem(p.Serial); found {
+		i.ContextMenuPacket(menu, n.m)
+	} else {
+		return
 	}
 	n.Send((*serverpacket.ContextMenu)(menu))
 }
 
 func handleContextMenuSelection(n *NetState, cp clientpacket.GeneralInformationPacket) {
 	p := cp.(*clientpacket.ContextMenuSelection)
-	o := world.Find(p.Serial)
-	if o == nil {
-		return
-	}
 	fn := events.GetEventHandlerByIndex(p.EntryID)
-	if fn == nil {
-		return
+	if m, found := world.FindMobile(p.Serial); found {
+		(*fn)(m, n.m, nil)
+	} else if i, found := world.FindItem(p.Serial); found {
+		(*fn)(i, n.m, nil)
 	}
-	(*fn)(o, n.m, nil)
 }

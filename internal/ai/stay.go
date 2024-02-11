@@ -14,11 +14,11 @@ type stay struct {
 }
 
 // Act implements the AIModel interface.
-func (a *stay) Act(m game.Mobile, t uo.Time) {
+func (a *stay) Act(m *game.Mobile, t uo.Time) {
 	// Do nothing, ever
 }
 
 // Target implements the AIModel interface.
-func (a *stay) Target(m game.Mobile, t uo.Time) {
+func (a *stay) Target(m *game.Mobile, t uo.Time) {
 	// No target selection
 }

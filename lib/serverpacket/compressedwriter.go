@@ -7,7 +7,7 @@ import (
 	"github.com/qbradq/sharduo/lib/uo"
 )
 
-// CompressedWriter wraps the process of writting compressed server packets.
+// CompressedWriter wraps the process of writing compressed server packets.
 type CompressedWriter struct {
 	cpBuf *bytes.Buffer
 }

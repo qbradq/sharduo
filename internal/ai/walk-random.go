@@ -19,7 +19,7 @@ type walkRandom struct {
 }
 
 // Act implements the AIModel interface.
-func (a *walkRandom) Act(m game.Mobile, t uo.Time) {
+func (a *walkRandom) Act(m *game.Mobile, t uo.Time) {
 	if t >= a.nextWalkDeadline {
 		a.walking = true
 	}
@@ -50,6 +50,6 @@ func (a *walkRandom) Act(m game.Mobile, t uo.Time) {
 }
 
 // Target implements the AIModel interface.
-func (a *walkRandom) Target(m game.Mobile, t uo.Time) {
+func (a *walkRandom) Target(m *game.Mobile, t uo.Time) {
 	// No target selection
 }

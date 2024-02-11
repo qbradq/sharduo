@@ -14,7 +14,7 @@ type follow struct {
 }
 
 // Act implements the AIModel interface.
-func (a *follow) Act(m game.Mobile, t uo.Time) {
+func (a *follow) Act(m *game.Mobile, t uo.Time) {
 	if m.Location.XYDistance(m.AIGoal.Location) < 3 {
 		// We don't need to be all up in our target's business
 		return
@@ -41,6 +41,6 @@ func (a *follow) Act(m game.Mobile, t uo.Time) {
 }
 
 // Target implements the AIModel interface.
-func (a *follow) Target(m game.Mobile, t uo.Time) {
+func (a *follow) Target(m *game.Mobile, t uo.Time) {
 	// No target selection
 }

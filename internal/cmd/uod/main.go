@@ -168,6 +168,8 @@ func firstStart() {
 func startCommands() {
 	n := NewNetState(nil)
 	n.account = world.superUser
+	n.m, _ = world.FindMobile(world.superUser.Characters[0])
+	n.m.Account = world.superUser
 	commands.Execute(n, "load_regions")
 	commands.Execute(n, "load_statics")
 	commands.Execute(n, "load_doors")
