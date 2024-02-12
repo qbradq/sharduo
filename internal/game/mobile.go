@@ -158,6 +158,8 @@ type Mobile struct {
 	AI            string             // Name of the AI routine to run during mobile think
 	AIGoal        *Mobile            // What mobile we are paying attention to at the moment
 	lastStepTime  uo.Time            // Time of the last step taken
+	crParent      uo.Serial          // Parent to return the current cursor item to
+	crLocation    uo.Point           // Location to return the current cursor item to
 }
 
 // Write writes the persistent data of the item to w.
@@ -500,9 +502,9 @@ func (m *Mobile) Equip(i *Item) bool {
 }
 
 // UnEquip attempts to remove the item, returns true on success.
-func (m *Mobile) UnEquip(i *Item) bool {
+func (m *Mobile) UnEquip(i *Item) {
 	if m.Equipment[i.Layer] != i {
-		return false
+		return
 	}
 	m.Equipment[i.Layer] = nil
 	i.Wearer = nil
@@ -510,7 +512,6 @@ func (m *Mobile) UnEquip(i *Item) bool {
 	for _, om := range World.Map().NetStatesInRange(m.Location, 0) {
 		om.NetState.RemoveItem(i)
 	}
-	return true
 }
 
 // InBank returns true if the item is somewhere within the mobile's bank box.
@@ -695,4 +696,66 @@ func (m *Mobile) ExecuteEvent(which string, s, v any) bool {
 		return false
 	}
 	return ExecuteEventHandler(hn, m, s, v)
+}
+
+// ItemInCursor returns true if there is an item on the mobile's cursor.
+func (m *Mobile) ItemInCursor() bool { return m.Cursor != nil }
+
+// LiftItemToCursor cleanly adds an item to the cursor.
+func (m *Mobile) LiftItemToCursor(i *Item) bool {
+	if i == nil || m.Cursor != nil {
+		return false
+	}
+	m.Cursor = i
+	if i.Wearer != nil {
+		m.crParent = i.Wearer.Serial
+	} else if i.Container != nil {
+		m.crParent = i.Container.Serial
+	} else {
+		m.crParent = uo.SerialSystem
+	}
+	m.crLocation = i.Location
+	m.Weight += i.Weight*float64(i.Amount) + i.ContainedWeight
+	World.UpdateMobile(m)
+	return true
+}
+
+// DropItemInCursor cleanly drops the item on the cursor.
+func (m *Mobile) DropItemInCursor() {
+	if m.Cursor == nil {
+		return
+	}
+	m.DropToFeet(m.Cursor)
+	m.LetGoItemInCursor()
+}
+
+// LetGoItemInCursor cleans up internal cursor variables.
+func (m *Mobile) LetGoItemInCursor() {
+	m.Weight -= m.Cursor.Weight*float64(m.Cursor.Amount) + m.Cursor.ContainedWeight
+	m.Cursor = nil
+	World.UpdateMobile(m)
+}
+
+// ReturnItemInCursor returns the item held in the cursor to where it was when
+// we picked it up.
+func (m *Mobile) ReturnItemInCursor() bool {
+	if m.Cursor == nil {
+		return false
+	}
+	m.Cursor.Location = m.crLocation
+	if m.crParent == uo.SerialSystem {
+		if !World.Map().AddItem(m.Cursor, false) {
+			m.DropItemInCursor()
+		}
+	} else if p, ok := World.FindMobile(m.crParent); ok {
+		if !p.Equip(m.Cursor) {
+			m.DropItemInCursor()
+		}
+	} else if p, ok := World.FindItem(m.crParent); ok {
+		if err := p.AddItem(m.Cursor, false); err != nil {
+			m.DropItemInCursor()
+		}
+	}
+	m.LetGoItemInCursor()
+	return true
 }

@@ -74,8 +74,16 @@ func commandNew(n game.NetState, args CommandArgs, cl string) {
 				item.Amount = v
 			}
 		}
-		if mob, found := game.World.FindMobile(r.TargetObject); found {
+		if r.TargetObject == uo.SerialZero {
 			if item != nil {
+				item.Location = r.Location.Bound()
+				game.World.Map().AddItem(item, true)
+			} else {
+				m.Location = r.Location.Bound()
+				game.World.Map().AddMobile(m, true)
+			}
+		} else if mob, found := game.World.FindMobile(r.TargetObject); found {
+			if item == nil {
 				mob.DropToBackpack(item, true)
 			} else {
 				n.Speech(n.Mobile(), "mobile targeted for new mobile")

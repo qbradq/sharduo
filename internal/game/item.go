@@ -337,13 +337,8 @@ func (i *Item) ContextMenuPacket(p *ContextMenu, m *Mobile) {
 
 // Split splits off a number of items from a stack. nil is returned if
 // n < 1 || n >= item.Amount(). nil is also returned for all non-stackable
-// items. In the event of an error during duplication the error will be
-// logged and nil will be returned. Otherwise a new duplicate item is
-// created with the remaining amount. This item is removed from its parent.
-// If this remove operation fails this function returns nil. The new
-// object is then force-added to the old parent in the same location.
-// The parent of this item is then set to the new item. If nil is returned
-// this item's amount and parent has not changed.
+// items. Otherwise a new duplicate item is created with the remaining amount
+// and replaced this item.
 func (i *Item) Split(n int) *Item {
 	// No new item required in these cases
 	if !i.HasFlags(ItemFlagsStackable) || n < 1 || n >= i.Amount {
@@ -351,22 +346,9 @@ func (i *Item) Split(n int) *Item {
 	}
 	// Create the new item
 	item := NewItem(i.TemplateName)
-	// Remove this item from its parent
-	if i.Container == nil {
-		World.Map().RemoveItem(i)
-	} else {
-		i.Container.RemoveItem(i)
-	}
 	item.Amount = i.Amount - n
 	i.Amount = n
-	// Force the remainder back where we came from
 	item.Location = i.Location
-	if i.Container == nil {
-		World.Map().AddItem(item, false)
-	} else {
-		i.Container.AddItem(item, false)
-	}
-	i.Container = item
 	i.Container.AdjustWeightAndCount(i.Weight*float64(-n), -n)
 	return item
 }

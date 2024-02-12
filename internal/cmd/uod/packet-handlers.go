@@ -255,9 +255,8 @@ func handleLiftRequest(n *NetState, cp clientpacket.Packet) {
 		n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		return
 	}
-	if n.m.Cursor != nil {
-		n.m.DropToFeet(n.m.Cursor)
-		n.m.Cursor = nil
+	if n.m.ItemInCursor() {
+		n.m.DropItemInCursor()
 		n.DropReject(uo.MoveItemRejectReasonAlreadyHoldingItem)
 		return
 	}
@@ -279,23 +278,31 @@ func handleLiftRequest(n *NetState, cp clientpacket.Packet) {
 		n.DropReject(uo.MoveItemRejectReasonBelongsToAnother)
 		return
 	}
-	// Line of sight check
 	if !n.m.HasLineOfSight(item) {
 		n.DropReject(uo.MoveItemRejectReasonOutOfSight)
 		return
 	}
-	item.Split(p.Amount)
-	n.m.Cursor = item
-	// Play lift sound
+	ni := item.Split(p.Amount)
+	if ni != nil {
+		if item.Container != nil {
+			item.Container.AddItem(ni, true)
+		} else {
+			world.m.AddItem(ni, true)
+		}
+	}
+	if item.Wearer != nil {
+		item.Wearer.UnEquip(item)
+	} else if item.Container != nil {
+		item.Container.RemoveItem(item)
+	} else {
+		world.m.RemoveItem(item)
+	}
+	n.m.LiftItemToCursor(item)
 	n.Sound(item.LiftSound, game.MapLocation(item))
 }
 
 func handleDropRequest(n *NetState, cp clientpacket.Packet) {
-	if n.m == nil {
-		n.DropReject(uo.MoveItemRejectReasonUnspecified)
-		return
-	}
-	if n.m.Cursor != nil {
+	if n.m == nil || !n.m.ItemInCursor() {
 		n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		return
 	}
@@ -307,28 +314,23 @@ func handleDropRequest(n *NetState, cp clientpacket.Packet) {
 		// Drop to map request
 		newLocation := p.Location
 		if n.m.Location.XYDistance(newLocation) > uo.MaxDropRange {
-			n.m.DropToFeet(n.m.Cursor)
-			n.m.Cursor = nil
+			n.m.ReturnItemInCursor()
 			n.DropReject(uo.MoveItemRejectReasonOutOfRange)
 			return
 		}
 		// Line of sight check
-		oldLocation := item.Location
 		item.Location = newLocation
 		if !n.m.HasLineOfSight(item) {
-			item.Location = oldLocation
-			n.m.DropToFeet(n.m.Cursor)
-			n.m.Cursor = nil
+			n.m.ReturnItemInCursor()
 			n.DropReject(uo.MoveItemRejectReasonOutOfSight)
 			return
 		}
 		if !world.Map().AddItem(item, false) {
-			n.m.DropToFeet(n.m.Cursor)
-			n.m.Cursor = nil
+			n.m.ReturnItemInCursor()
 			n.DropReject(uo.MoveItemRejectReasonUnspecified)
 			return
 		} else {
-			n.m.Cursor = nil
+			n.m.LetGoItemInCursor()
 			n.Send(&serverpacket.DropApproved{})
 			n.Sound(item.GetDropSoundOverride(uo.SoundDefaultDrop), newLocation)
 			// Distribute drag packets
@@ -346,18 +348,16 @@ func handleDropRequest(n *NetState, cp clientpacket.Packet) {
 			nl = m.Location
 			target = m
 		} else {
-			n.m.DropToFeet(n.m.Cursor)
-			n.m.Cursor = nil
+			n.m.ReturnItemInCursor()
 			n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		}
 		item.Location = nl
 		if !game.DynamicDispatch("Drop", target, n.m, item) {
-			n.m.DropToFeet(n.m.Cursor)
-			n.m.Cursor = nil
+			n.m.ReturnItemInCursor()
 			n.DropReject(uo.MoveItemRejectReasonUnspecified)
 			return
 		}
-		n.m.Cursor = nil
+		n.m.LetGoItemInCursor()
 		n.Send(&serverpacket.DropApproved{})
 		// Play drop sound
 		if di, ok := target.(*game.Item); ok {
@@ -385,38 +385,34 @@ func handleWearItemRequest(n *NetState, cp clientpacket.Packet) {
 	item, itemFound := world.FindItem(p.Item)
 	wearer, wearerFound := world.FindMobile(p.Wearer)
 	if !itemFound || !wearerFound {
-		n.m.DropToFeet(n.m.Cursor)
-		n.m.Cursor = nil
+		n.m.ReturnItemInCursor()
 		n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		return
 	}
 	// Check if we are allowed to equip items to this mobile
 	if wearer != n.m {
-		n.m.DropToFeet(n.m.Cursor)
-		n.m.Cursor = nil
+		n.m.ReturnItemInCursor()
 		n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		return
 	}
 	if item != n.m.Cursor {
-		n.m.DropToFeet(n.m.Cursor)
-		n.m.Cursor = nil
+		n.m.ReturnItemInCursor()
 		n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		return
 	}
 	if !item.Wearable() {
-		n.m.DropToFeet(n.m.Cursor)
-		n.m.Cursor = nil
+		n.m.ReturnItemInCursor()
 		n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		return
 	}
 	if !n.m.Equip(item) {
-		n.m.Cursor = nil
+		n.m.ReturnItemInCursor()
 		n.DropReject(uo.MoveItemRejectReasonUnspecified)
 		return
 	} else {
 		n.Send(&serverpacket.DropApproved{})
 	}
-	n.m.Cursor = nil
+	n.m.LetGoItemInCursor()
 	n.Send(&serverpacket.DropApproved{})
 }
 
