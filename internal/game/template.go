@@ -43,12 +43,12 @@ func (t *Template) Resolve(templates map[string]*Template) {
 		panic(fmt.Errorf("nonexistent base template %s", btn))
 	}
 	bt.Resolve(templates)
-	for k, tv := range bt.Fields {
+	for k, btv := range bt.Fields {
 		// If the field appears in the base template and not in the current
 		// template then the base template value will be copied
-		btv, found := t.Fields[k]
+		tv, found := t.Fields[k]
 		if !found {
-			t.Fields[k] = tv
+			t.Fields[k] = btv
 			continue
 		}
 		// If the field appears in both the base template and in the current
@@ -56,12 +56,12 @@ func (t *Template) Resolve(templates map[string]*Template) {
 		switch bt := btv.(type) {
 		case []any:
 			// Prepend the base template elements
-			t.Fields[k] = append(bt, t.Fields[k].([]any)...)
+			t.Fields[k] = append(bt, tv.([]any)...)
 		case map[string]any:
 			// Copy over base template elements that are not in this template
 			for bk, bv := range bt {
-				if _, found := t.Fields[k].(map[string]any)[bk]; !found {
-					t.Fields[k] = bv
+				if _, found := tv.(map[string]any)[bk]; !found {
+					t.Fields[k].(map[string]any)[bk] = bv
 				}
 			}
 		}

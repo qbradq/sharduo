@@ -57,6 +57,7 @@
         "MaxHits": 10,
         "MaxMana": 10,
         "MaxStamina": 10,
+        "MaxWeight": 1800,
         "BaseNotoriety": "Criminal",
         "EquipmentSet": [
             "PackAnimalBackpack"

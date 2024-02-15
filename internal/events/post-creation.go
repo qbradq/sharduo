@@ -1,6 +1,7 @@
 package events
 
 import (
+	"log"
 	"strconv"
 
 	"github.com/qbradq/sharduo/internal/game"
@@ -66,10 +67,10 @@ func partialHue(r, s, v any) bool {
 func configureHuman(r, s, v any) bool {
 	rm := r.(*game.Mobile)
 	rm.Female = util.RandomBool()
-	if rm.Female {
+	if rm.Body != uo.BodyCounselor && rm.Female {
 		rm.Name = game.ListMember("FemaleName").String()
 		rm.Body = uo.BodyHumanFemale
-	} else {
+	} else if rm.Body != uo.BodyCounselor && !rm.Female {
 		rm.Name = game.ListMember("MaleName").String()
 		rm.Body = uo.BodyHumanMale
 	}
@@ -79,6 +80,9 @@ func configureHuman(r, s, v any) bool {
 
 func dressHuman(r, s, v any) bool {
 	rm := r.(*game.Mobile)
+	if rm.Body == uo.BodyCounselor {
+		return true
+	}
 	if rm.Female {
 		if util.Random(1, 20) > 17 {
 			// 15% of women in Britannia wear pants
@@ -104,9 +108,15 @@ func dressHuman(r, s, v any) bool {
 
 func equipVendor(r, s, v any) bool {
 	rm := r.(*game.Mobile)
-	bp := rm.Equipment[uo.LayerNPCSellContainer]
+	bp := rm.Equipment[uo.LayerNPCBuyRestockContainer]
 	for _, tn := range game.TemplateLists[v.(string)] {
-		bp.DropInto(game.NewItem(tn.String()), true)
+		i := game.NewItem(tn.String())
+		if i == nil {
+			log.Printf("warning: vendor list %s references non-existent item template %s",
+				v.(string), tn.String())
+			continue
+		}
+		bp.DropInto(i, true)
 	}
 	return true
 }

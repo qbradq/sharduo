@@ -927,7 +927,7 @@ func (n *NetState) RefreshGUMP(gi any) {
 	}
 	// Resolve objects
 	var tg any
-	if d.t != uo.SerialSystem {
+	if d.t != uo.SerialSystem && d.t != uo.SerialZero {
 		if i, found := world.FindItem(d.t); found {
 			tg = i
 		} else if m, found := world.FindMobile(d.t); found {
@@ -939,7 +939,7 @@ func (n *NetState) RefreshGUMP(gi any) {
 		}
 	}
 	var pm any
-	if d.p != uo.SerialSystem {
+	if d.p != uo.SerialSystem && d.p != uo.SerialZero {
 		if i, found := world.FindItem(d.p); found {
 			pm = i
 		} else if m, found := world.FindMobile(d.p); found {

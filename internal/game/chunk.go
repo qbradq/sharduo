@@ -20,6 +20,7 @@ type Chunk struct {
 	Regions     []*Region                               // All regions that overlap this chunk
 	Ore         int                                     // Amount of ore left in the chunk
 	oreDeadline uo.Time                                 // Next ore respawn
+	x, y        int
 }
 
 // newChunk creates a new chunk struct ready for use.
@@ -33,6 +34,8 @@ func newChunk(cx, cy int) *Chunk {
 			H: uo.ChunkHeight,
 			D: uo.MapMaxZ - uo.MapMinZ,
 		},
+		x: cx,
+		y: cy,
 	}
 }
 

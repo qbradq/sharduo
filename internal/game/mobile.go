@@ -67,6 +67,10 @@ func constructMobile(which string) *Mobile {
 	// Attach new player data struct if needed
 	if m.Player {
 		m.PlayerData = NewPlayerData()
+		m.MaxHits = m.BaseStrength/2 + 50
+		m.MaxMana = m.BaseIntelligence
+		m.MaxStamina = m.BaseDexterity
+		m.MaxWeight = float64(int(float64(m.BaseStrength)*3.5 + 40))
 	}
 	// Establish initial cache values
 	m.Hits = m.MaxHits
@@ -240,19 +244,7 @@ func NewMobileFromReader(r io.Reader) *Mobile {
 
 // RecalculateStats recalculates all internal cache states.
 func (m *Mobile) RecalculateStats() {
-	m.Strength = m.BaseStrength
-	m.Dexterity = m.BaseDexterity
-	m.Intelligence = m.BaseIntelligence
-	if m.Player {
-		m.MaxHits = m.Strength/2 + 50
-		m.MaxMana = m.Intelligence
-		m.MaxStamina = m.Dexterity
-		m.MaxWeight = float64(int(float64(m.Strength)*3.5 + 40))
-	}
-	m.Hits = m.MaxHits
-	m.Mana = m.MaxMana
-	m.Stamina = m.MaxStamina
-	m.Skills = m.BaseSkills // Note to self, this does an array copy
+	// Construct weight cache value
 	m.Weight = 0
 	for layer, e := range m.Equipment {
 		if layer < int(uo.LayerFirstValid) || layer == int(uo.LayerBankBox) {

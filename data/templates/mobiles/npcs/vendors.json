@@ -6,7 +6,7 @@
             "DoubleClick": "OpenPaperDoll",
             "Speech": "KeywordsVendor"
         },
-        "Inventory": [
+        "EquipmentSet": [
             "NPCBoughtContainer",
             "NPCForSaleContainer"
         ],

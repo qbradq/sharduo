@@ -1,6 +1,7 @@
 package uo
 
 import (
+	"encoding/json"
 	"errors"
 	"strconv"
 	"strings"
@@ -33,7 +34,24 @@ type Bounds struct {
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
 func (b *Bounds) UnmarshalJSON(in []byte) error {
-	*b = ParseBounds(string(in[1 : len(in)-1]))
+	type s struct {
+		X, Y, Z, W, H, D int
+	}
+	if in[0] == '"' {
+		*b = ParseBounds(string(in[1 : len(in)-1]))
+	} else {
+		a := &s{}
+		err := json.Unmarshal(in, &a)
+		if err != nil {
+			return err
+		}
+		b.X = a.X
+		b.Y = a.Y
+		b.Z = a.Z
+		b.W = a.W
+		b.H = a.H
+		b.D = a.D
+	}
 	return nil
 }
 
@@ -53,8 +71,10 @@ func ParseBounds(s string) Bounds {
 	var b Bounds
 	b.X = fn(parts[0])
 	b.Y = fn(parts[1])
-	b.W = fn(parts[2]) - b.X
-	b.H = fn(parts[3]) - b.Y
+	b.W = fn(parts[2])
+	b.H = fn(parts[3])
+	b.Z = MapMinZ
+	b.D = MapMaxZ - MapMinZ
 	return b
 }
 

@@ -597,7 +597,7 @@ func handleMacroRequest(n *NetState, cp clientpacket.Packet) {
 	switch p.MacroType {
 	case uo.MacroTypeOpenDoor:
 		l := n.m.Location.Forward(n.m.Facing)
-		doors := world.Map().ItemBaseQuery("BaseDoor", l, 0)
+		doors := world.Map().ItemBaseQuery("BaseDoor", l, 1)
 		if len(doors) > 0 {
 			if !n.TakeAction() {
 				n.Cliloc(nil, 500119) // You must wait to perform another action.

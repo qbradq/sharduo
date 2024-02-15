@@ -32,12 +32,18 @@
     },
     "DeveloperMobile": {
         "BaseTemplate": "BaseStaff",
+        "Inventory": [
+            "GMGlobe"
+        ],
         "PostCreationEvents": [
             "PartialHue|38"
         ]
     },
     "GameMasterMobile": {
         "BaseTemplate": "BaseStaff",
+        "Inventory": [
+            "GMGlobe"
+        ],
         "PostCreationEvents": [
             "PartialHue|13"
         ]

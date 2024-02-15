@@ -1,0 +1,671 @@
+[
+    {
+        "Name": "Overworld",
+        "Rects": [
+            {
+                "X": 0,
+                "Y": 0,
+                "Z": -128,
+                "W": 5120,
+                "H": 4096,
+                "D": 255
+            }
+        ],
+        "Features": 0,
+        "Music": "10,15,20,30,32,38",
+        "Spawns": null,
+        "SpawnMinZ": -128,
+        "SpawnMaxZ": 127
+    },
+    {
+        "Name": "Britain",
+        "Rects": [
+            {
+                "X": 1085,
+                "Y": 1536,
+                "Z": -128,
+                "W": 361,
+                "H": 375,
+                "D": 255
+            },
+            {
+                "X": 1446,
+                "Y": 1536,
+                "Z": -128,
+                "W": 351,
+                "H": 290,
+                "D": 255
+            },
+            {
+                "X": 1411,
+                "Y": 1490,
+                "Z": -128,
+                "W": 259,
+                "H": 46,
+                "D": 255
+            }
+        ],
+        "Features": 10,
+        "Music": "1,2",
+        "Spawns": [
+            {
+                "Template": "+Birds",
+                "Amount": 50,
+                "Delay": 3600
+            },
+            {
+                "Template": "+TownAnimals",
+                "Amount": 100,
+                "Delay": 3600
+            }
+        ],
+        "SpawnMinZ": -128,
+        "SpawnMaxZ": 127
+    },
+    {
+        "Name": "Wheat Field",
+        "Rects": [
+            {
+                "X": 1105,
+                "Y": 1609,
+                "Z": -128,
+                "W": 30,
+                "H": 30,
+                "D": 255
+            }
+        ],
+        "Features": 0,
+        "Music": "",
+        "Spawns": [
+            {
+                "Template": "WheatCrop",
+                "Amount": 50,
+                "Delay": 21600
+            }
+        ],
+        "SpawnMinZ": -128,
+        "SpawnMaxZ": 127
+    },
+    {
+        "Name": "Flax Field",
+        "Rects": [
+            {
+                "X": 1121,
+                "Y": 1777,
+                "Z": -128,
+                "W": 30,
+                "H": 30,
+                "D": 255
+            }
+        ],
+        "Features": 0,
+        "Music": "",
+        "Spawns": [
+            {
+                "Template": "FlaxCrop",
+                "Amount": 50,
+                "Delay": 21600
+            }
+        ],
+        "SpawnMinZ": -128,
+        "SpawnMaxZ": 127
+    },
+    {
+        "Name": "Wheat Field",
+        "Rects": [
+            {
+                "X": 1137,
+                "Y": 1561,
+                "Z": -128,
+                "W": 30,
+                "H": 30,
+                "D": 255
+            }
+        ],
+        "Features": 0,
+        "Music": "",
+        "Spawns": [
+            {
+                "Template": "WheatCrop",
+                "Amount": 50,
+                "Delay": 21600
+            }
+        ],
+        "SpawnMinZ": -128,
+        "SpawnMaxZ": 127
+    },
+    {
+        "Name": "Cotton Field",
+        "Rects": [
+            {
+                "X": 1177,
+                "Y": 1673,
+                "Z": -128,
+                "W": 30,
+                "H": 22,
+                "D": 255
+            }
+        ],
+        "Features": 0,
+        "Music": "",
+        "Spawns": [
+            {
+                "Template": "CottonCrop",
+                "Amount": 50,
+                "Delay": 21600
+            }
+        ],
+        "SpawnMinZ": -128,
+        "SpawnMaxZ": 127
+    },
+    {
+        "Name": "Wheat Field",
+        "Rects": [
+            {
+                "X": 1185,
+                "Y": 1809,
+                "Z": -128,
+                "W": 30,
+                "H": 30,
+                "D": 255
+            }
+        ],
+        "Features": 0,
+        "Music": "",
+        "Spawns": [
+            {
+                "Template": "WheatCrop",
+                "Amount": 50,
+                "Delay": 21600
+            }
+        ],
+        "SpawnMinZ": -128,
+        "SpawnMaxZ": 127
+    },
+    {
+        "Name": "Cotton Field",
+        "Rects": [
+            {
+                "X": 1209,
+                "Y": 1593,
+                "Z": -128,
+                "W": 30,
+                "H": 22,
+                "D": 255
+            }
+        ],
+        "Features": 0,
+        "Music": "",
+        "Spawns": [
+            {
+                "Template": "CottonCrop",
+                "Amount": 50,
+                "Delay": 21600
+            }
+        ],
+        "SpawnMinZ": -128,
+        "SpawnMaxZ": 127
+    },
+    {
+        "Name": "Vegetable Field",
+        "Rects": [
+            {
+                "X": 1209,
+                "Y": 1713,
+                "Z": -128,
+                "W": 30,
+                "H": 22,
+                "D": 255
+            }
+        ],
+        "Features": 0,
+        "Music": "",
+        "Spawns": [
+            {
+                "Template": "CarrotCrop",
+                "Amount": 25,
+                "Delay": 21600
+            },
+            {
+                "Template": "OnionCrop",
+                "Amount": 25,
+                "Delay": 21600
+            }
+        ],
+        "SpawnMinZ": -128,
+        "SpawnMaxZ": 127
+    },
+    {
+        "Name": "Wheat Field",
+        "Rects": [
+            {
+                "X": 1217,
+                "Y": 1873,
+                "Z": -128,
+                "W": 30,
+                "H": 30,
+                "D": 255
+            }
+        ],
+        "Features": 0,
+        "Music": "",
+        "Spawns": [
+            {
+                "Template": "WheatCrop",
+                "Amount": 50,
+                "Delay": 21600
+            }
+        ],
+        "SpawnMinZ": -128,
+        "SpawnMaxZ": 127
+    },
+    {
+        "Name": "Stable",
+        "Rects": [
+            {
+                "X": 1288,
+                "Y": 1752,
+                "Z": -128,
+                "W": 16,
+                "H": 31,
+                "D": 255
+            }
+        ],
+        "Features": 0,
+        "Music": "",
+        "Spawns": [
+            {
+                "Template": "StableMaster",
+                "Amount": 2,
+                "Delay": 3600
+            },
+            {
+                "Template": "+FarmAnimals",
+                "Amount": 10,
+                "Delay": 3600
+            }
+        ],
+        "SpawnMinZ": -6,
+        "SpawnMaxZ": 26
+    },
+    {
+        "Name": "Lord British's Castle",
+        "Rects": [
+            {
+                "X": 1296,
+                "Y": 1560,
+                "Z": -128,
+                "W": 111,
+                "H": 135,
+                "D": 255
+            }
+        ],
+        "Features": 0,
+        "Music": "19",
+        "Spawns": null,
+        "SpawnMinZ": -128,
+        "SpawnMaxZ": 127
+    },
+    {
+        "Name": "Forge",
+        "Rects": [
+            {
+                "X": 1344,
+                "Y": 1768,
+                "Z": -128,
+                "W": 15,
+                "H": 21,
+                "D": 255
+            }
+        ],
+        "Features": 0,
+        "Music": "",
+        "Spawns": [
+            {
+                "Template": "Smelter",
+                "Amount": 2,
+                "Delay": 3600
+            }
+        ],
+        "SpawnMinZ": -128,
+        "SpawnMaxZ": 127
+    },
+    {
+        "Name": "Stable",
+        "Rects": [
+            {
+                "X": 1384,
+                "Y": 1640,
+                "Z": -128,
+                "W": 9,
+                "H": 23,
+                "D": 255
+            }
+        ],
+        "Features": 0,
+        "Music": "",
+        "Spawns": [
+            {
+                "Template": "StableMaster",
+                "Amount": 2,
+                "Delay": 3600
+            },
+            {
+                "Template": "+FarmAnimals",
+                "Amount": 10,
+                "Delay": 3600
+            }
+        ],
+        "SpawnMinZ": 14,
+        "SpawnMaxZ": 46
+    },
+    {
+        "Name": "Forge",
+        "Rects": [
+            {
+                "X": 1422,
+                "Y": 1552,
+                "Z": -128,
+                "W": 6,
+                "H": 8,
+                "D": 255
+            }
+        ],
+        "Features": 0,
+        "Music": "",
+        "Spawns": [
+            {
+                "Template": "Smelter",
+                "Amount": 1,
+                "Delay": 3600
+            }
+        ],
+        "SpawnMinZ": 14,
+        "SpawnMaxZ": 46
+    },
+    {
+        "Name": "Bank",
+        "Rects": [
+            {
+                "X": 1424,
+                "Y": 1675,
+                "Z": -128,
+                "W": 8,
+                "H": 17,
+                "D": 255
+            },
+            {
+                "X": 1432,
+                "Y": 1683,
+                "Z": -128,
+                "W": 9,
+                "H": 9,
+                "D": 255
+            }
+        ],
+        "Features": 0,
+        "Music": "",
+        "Spawns": [
+            {
+                "Template": "Banker",
+                "Amount": 2,
+                "Delay": 3600
+            }
+        ],
+        "SpawnMinZ": -16,
+        "SpawnMaxZ": 16
+    },
+    {
+        "Name": "Tavern",
+        "Rects": [
+            {
+                "X": 1424,
+                "Y": 1712,
+                "Z": -128,
+                "W": 7,
+                "H": 23,
+                "D": 255
+            },
+            {
+                "X": 1431,
+                "Y": 1712,
+                "Z": -128,
+                "W": 8,
+                "H": 11,
+                "D": 255
+            }
+        ],
+        "Features": 1,
+        "Music": "40-43",
+        "Spawns": null,
+        "SpawnMinZ": -128,
+        "SpawnMaxZ": 127
+    },
+    {
+        "Name": "Inn",
+        "Rects": [
+            {
+                "X": 1456,
+                "Y": 1512,
+                "Z": -128,
+                "W": 15,
+                "H": 15,
+                "D": 255
+            },
+            {
+                "X": 1471,
+                "Y": 1512,
+                "Z": -128,
+                "W": 8,
+                "H": 7,
+                "D": 255
+            }
+        ],
+        "Features": 1,
+        "Music": "",
+        "Spawns": null,
+        "SpawnMinZ": -128,
+        "SpawnMaxZ": 127
+    },
+    {
+        "Name": "Tavern",
+        "Rects": [
+            {
+                "X": 1494,
+                "Y": 1676,
+                "Z": -128,
+                "W": 7,
+                "H": 23,
+                "D": 255
+            },
+            {
+                "X": 1486,
+                "Y": 1684,
+                "Z": -128,
+                "W": 8,
+                "H": 7,
+                "D": 255
+            }
+        ],
+        "Features": 1,
+        "Music": "40-43",
+        "Spawns": null,
+        "SpawnMinZ": -128,
+        "SpawnMaxZ": 127
+    },
+    {
+        "Name": "Inn",
+        "Rects": [
+            {
+                "X": 1492,
+                "Y": 1609,
+                "Z": -128,
+                "W": 15,
+                "H": 16,
+                "D": 255
+            },
+            {
+                "X": 1492,
+                "Y": 1602,
+                "Z": -128,
+                "W": 7,
+                "H": 7,
+                "D": 255
+            }
+        ],
+        "Features": 1,
+        "Music": "",
+        "Spawns": null,
+        "SpawnMinZ": -128,
+        "SpawnMaxZ": 127
+    },
+    {
+        "Name": "Lord Blackthorn's Castle",
+        "Rects": [
+            {
+                "X": 1496,
+                "Y": 1400,
+                "Z": -128,
+                "W": 52,
+                "H": 90,
+                "D": 255
+            }
+        ],
+        "Features": 2,
+        "Music": "3",
+        "Spawns": null,
+        "SpawnMinZ": -128,
+        "SpawnMaxZ": 127
+    },
+    {
+        "Name": "Stable",
+        "Rects": [
+            {
+                "X": 1508,
+                "Y": 1540,
+                "Z": -128,
+                "W": 19,
+                "H": 11,
+                "D": 255
+            }
+        ],
+        "Features": 0,
+        "Music": "",
+        "Spawns": [
+            {
+                "Template": "StableMaster",
+                "Amount": 2,
+                "Delay": 3600
+            },
+            {
+                "Template": "+FarmAnimals",
+                "Amount": 10,
+                "Delay": 3600
+            }
+        ],
+        "SpawnMinZ": 9,
+        "SpawnMaxZ": 41
+    },
+    {
+        "Name": "Tavern",
+        "Rects": [
+            {
+                "X": 1544,
+                "Y": 1760,
+                "Z": -128,
+                "W": 15,
+                "H": 15,
+                "D": 255
+            },
+            {
+                "X": 1559,
+                "Y": 1760,
+                "Z": -128,
+                "W": 8,
+                "H": 7,
+                "D": 255
+            }
+        ],
+        "Features": 1,
+        "Music": "40-43",
+        "Spawns": null,
+        "SpawnMinZ": -128,
+        "SpawnMaxZ": 127
+    },
+    {
+        "Name": "Inn",
+        "Rects": [
+            {
+                "X": 1576,
+                "Y": 1584,
+                "Z": -128,
+                "W": 23,
+                "H": 15,
+                "D": 255
+            }
+        ],
+        "Features": 1,
+        "Music": "",
+        "Spawns": null,
+        "SpawnMinZ": -128,
+        "SpawnMaxZ": 127
+    },
+    {
+        "Name": "Tavern",
+        "Rects": [
+            {
+                "X": 1607,
+                "Y": 1583,
+                "Z": -128,
+                "W": 24,
+                "H": 8,
+                "D": 255
+            },
+            {
+                "X": 1616,
+                "Y": 1576,
+                "Z": -128,
+                "W": 7,
+                "H": 8,
+                "D": 255
+            }
+        ],
+        "Features": 1,
+        "Music": "40-43",
+        "Spawns": null,
+        "SpawnMinZ": -128,
+        "SpawnMaxZ": 127
+    },
+    {
+        "Name": "Bank",
+        "Rects": [
+            {
+                "X": 1648,
+                "Y": 1600,
+                "Z": -128,
+                "W": 15,
+                "H": 7,
+                "D": 255
+            },
+            {
+                "X": 1648,
+                "Y": 1607,
+                "Z": -128,
+                "W": 7,
+                "H": 8,
+                "D": 255
+            }
+        ],
+        "Features": 0,
+        "Music": "",
+        "Spawns": [
+            {
+                "Template": "Banker",
+                "Amount": 2,
+                "Delay": 3600
+            }
+        ],
+        "SpawnMinZ": 4,
+        "SpawnMaxZ": 36
+    }
+]

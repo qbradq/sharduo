@@ -16,8 +16,8 @@ const (
 	RegionFeatureSpawnOnGround RegionFeature = 0b0000000000001000 // Forces spawned objects to follow the terrain
 )
 
-// SpawnedObject describes one object that was spawned.
-type SpawnedObject struct {
+// spawnedObject describes one object that was spawned.
+type spawnedObject struct {
 	Object            any     // Pointer to the object that was spawned
 	NextSpawnDeadline uo.Time // When should the object be spawned again
 }
@@ -27,18 +27,32 @@ type SpawnerEntry struct {
 	Template string           // Name of the template of the object
 	Amount   int              // Amount of objects to spawn in the area
 	Delay    uo.Time          // Delay between object disappearance and respawn
-	Objects  []*SpawnedObject // Pointers to the spawned objects
+	objects  []*spawnedObject // Pointers to the spawned objects
+}
+
+// RemoveObjects removes all objects that have been spawned by this entry.
+func (e *SpawnerEntry) RemoveObjects() {
+	for _, obj := range e.objects {
+		switch o := obj.Object.(type) {
+		case *Mobile:
+			World.Map().RemoveMobile(o)
+			World.RemoveMobile(o)
+		case *Item:
+			o.Remove()
+			World.RemoveItem(o)
+		}
+	}
 }
 
 // Region defines a geographical bounding area and data that defines various
 // behaviors.
 type Region struct {
 	Name      string          // Name of the region
-	Bounds    uo.Bounds       // Bounds of all bounding rects for first-level inclusion detection
+	Bounds    uo.Bounds       `json:"-"` // Bounds of all bounding rects for first-level inclusion detection
 	Rects     []uo.Bounds     // Bounds of all the rects region
 	Features  RegionFeature   // Feature flags for this region
 	Music     string          // Music track to play for the region as a range expression
-	Entries   []*SpawnerEntry // All of the entries for region spawning
+	Spawns    []*SpawnerEntry // All of the entries for region spawning
 	SpawnMinZ int             // Minimum Z position for spawned objects
 	SpawnMaxZ int             // Maximum Z position for spawned objects
 }
@@ -96,8 +110,8 @@ func (r *Region) Overlaps(b uo.Bounds) bool {
 // Update is the periodic update function for the region.
 func (r *Region) Update(t uo.Time) {
 	// Process all owned objects
-	for _, e := range r.Entries {
-		for _, o := range e.Objects {
+	for _, e := range r.Spawns {
+		for _, o := range e.objects {
 			if o.Object == nil {
 				// Try to respawn
 				if t >= o.NextSpawnDeadline {
@@ -124,8 +138,8 @@ func (r *Region) Update(t uo.Time) {
 // FullRespawn removes all objects spawned by this region and then fully
 // respawns all entries.
 func (r *Region) FullRespawn() {
-	for _, e := range r.Entries {
-		for _, o := range e.Objects {
+	for _, e := range r.Spawns {
+		for _, o := range e.objects {
 			switch t := o.Object.(type) {
 			case *Mobile:
 				World.RemoveMobile(t)
@@ -133,9 +147,9 @@ func (r *Region) FullRespawn() {
 				World.RemoveItem(t)
 			}
 		}
-		e.Objects = make([]*SpawnedObject, e.Amount)
-		for i := range e.Objects {
-			e.Objects[i] = &SpawnedObject{
+		e.objects = make([]*spawnedObject, e.Amount)
+		for i := range e.objects {
+			e.objects[i] = &spawnedObject{
 				Object: r.Spawn(e.Template),
 			}
 		}
@@ -215,8 +229,8 @@ func (r *Region) ReleaseObject(o any) {
 	if o == nil {
 		return
 	}
-	for _, e := range r.Entries {
-		for _, oo := range e.Objects {
+	for _, e := range r.Spawns {
+		for _, oo := range e.objects {
 			if oo.Object == o {
 				oo.Object = nil
 				oo.NextSpawnDeadline = World.Time() + e.Delay

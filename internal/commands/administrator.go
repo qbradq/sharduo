@@ -22,7 +22,13 @@ func commandLocation(n game.NetState, args CommandArgs, cl string) {
 		return
 	}
 	n.TargetSendCursor(uo.TargetTypeLocation, func(r *clientpacket.TargetResponse) {
-		n.Speech(n.Mobile(), "Location X=%d Y=%d Z=%d", r.Location.X, r.Location.Y, r.Location.Z)
+		if m, found := game.World.FindMobile(r.TargetObject); found {
+			n.Speech(n.Mobile(), "Location X=%d Y=%d Z=%d", m.Location.X, m.Location.Y, m.Location.Z)
+		} else if i, found := game.World.FindItem(r.TargetObject); found {
+			n.Speech(n.Mobile(), "Location X=%d Y=%d Z=%d", i.Location.X, i.Location.Y, i.Location.Z)
+		} else {
+			n.Speech(n.Mobile(), "Location X=%d Y=%d Z=%d", r.Location.X, r.Location.Y, r.Location.Z)
+		}
 	})
 }
 

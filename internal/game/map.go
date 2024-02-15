@@ -28,7 +28,7 @@ func NewMap() *Map {
 		ds:     map[uo.Serial]any{},
 	}
 	for i := range ret.chunks {
-		ret.chunks[i] = newChunk(i%uo.MapChunksWidth, i/uo.MapChunksHeight)
+		ret.chunks[i] = newChunk(i%uo.MapChunksWidth, i/uo.MapChunksWidth)
 	}
 	return ret
 }
@@ -71,12 +71,12 @@ var iqRetBuf []*Item
 // NetStatesInRange reuses the same return array.
 func (m *Map) NetStatesInRange(cp uo.Point, extra int) []*Mobile {
 	var p uo.Point
-	b := cp.BoundsByRadius(uo.MaxViewRange)
+	b := cp.BoundsByRadius(uo.MaxViewRange + extra)
 	cb := uo.Bounds{
 		X: b.X / uo.ChunkWidth,
 		Y: b.Y / uo.ChunkHeight,
-		W: b.W / uo.ChunkWidth,
-		H: b.H / uo.ChunkHeight,
+		W: b.W/uo.ChunkWidth + 1,
+		H: b.H/uo.ChunkHeight + 1,
 	}
 	if b.W%uo.ChunkWidth != 0 {
 		cb.W++
@@ -87,7 +87,7 @@ func (m *Map) NetStatesInRange(cp uo.Point, extra int) []*Mobile {
 	nsRetBuf = nsRetBuf[:0]
 	for p.Y = cb.Y; p.Y < cb.Y+cb.H; p.Y++ {
 		for p.X = cb.X; p.X < cb.X+cb.W; p.X++ {
-			l := p.ChunkBound(p)
+			l := p.ChunkBound(cp)
 			c := m.chunks[l.Y*uo.MapChunksWidth+l.X]
 			for _, m := range c.Mobiles {
 				if m.NetState == nil ||
@@ -346,8 +346,8 @@ func (m *Map) MobilesWithin(center uo.Point, r int) []*Mobile {
 	cb := uo.Bounds{
 		X: b.X / uo.ChunkWidth,
 		Y: b.Y / uo.ChunkHeight,
-		W: b.W / uo.ChunkWidth,
-		H: b.H / uo.ChunkHeight,
+		W: b.W/uo.ChunkWidth + 1,
+		H: b.H/uo.ChunkHeight + 1,
 	}
 	if b.W%uo.ChunkWidth != 0 {
 		cb.W++
@@ -378,8 +378,8 @@ func (m *Map) ItemsWithin(center uo.Point, r int) []*Item {
 	cb := uo.Bounds{
 		X: b.X / uo.ChunkWidth,
 		Y: b.Y / uo.ChunkHeight,
-		W: b.W / uo.ChunkWidth,
-		H: b.H / uo.ChunkHeight,
+		W: b.W/uo.ChunkWidth + 1,
+		H: b.H/uo.ChunkHeight + 1,
 	}
 	if b.W%uo.ChunkWidth != 0 {
 		cb.W++
@@ -411,8 +411,8 @@ func (m *Map) EverythingWithin(center uo.Point, r int) ([]*Mobile, []*Item) {
 	cb := uo.Bounds{
 		X: b.X / uo.ChunkWidth,
 		Y: b.Y / uo.ChunkHeight,
-		W: b.W / uo.ChunkWidth,
-		H: b.H / uo.ChunkHeight,
+		W: b.W/uo.ChunkWidth + 1,
+		H: b.H/uo.ChunkHeight + 1,
 	}
 	if b.W%uo.ChunkWidth != 0 {
 		cb.W++
@@ -530,7 +530,7 @@ func (m *Map) MoveMobile(mob *Mobile, dir uo.Direction) bool {
 	oc := m.chunks[(ol.Y/uo.ChunkHeight)*uo.MapChunksWidth+(ol.X/uo.ChunkWidth)]
 	nc := m.chunks[(nl.Y/uo.ChunkHeight)*uo.MapChunksWidth+(nl.X/uo.ChunkWidth)]
 	// If this is a mobile with an attached net state we need to check for
-	// new and old objects.
+	// new and old objects
 	if mob.NetState != nil {
 		mobs, items := m.EverythingWithin(mob.Location, mob.ViewRange+1)
 		for _, om := range mobs {
@@ -1189,8 +1189,8 @@ func (m *Map) ItemBaseQuery(tn string, center uo.Point, r int) []*Item {
 	cb := uo.Bounds{
 		X: b.X / uo.ChunkWidth,
 		Y: b.Y / uo.ChunkHeight,
-		W: b.W / uo.ChunkWidth,
-		H: b.H / uo.ChunkHeight,
+		W: b.W/uo.ChunkWidth + 1,
+		H: b.H/uo.ChunkHeight + 1,
 	}
 	if b.W%uo.ChunkWidth != 0 {
 		cb.W++
@@ -1246,8 +1246,8 @@ func (m *Map) ItemQueryByBounds(tn string, b uo.Bounds, r uo.Point) []*Item {
 	cb := uo.Bounds{
 		X: b.X / uo.ChunkWidth,
 		Y: b.Y / uo.ChunkHeight,
-		W: b.W / uo.ChunkWidth,
-		H: b.H / uo.ChunkHeight,
+		W: b.W/uo.ChunkWidth + 1,
+		H: b.H/uo.ChunkHeight + 1,
 	}
 	if b.W%uo.ChunkWidth != 0 {
 		cb.W++
@@ -1390,8 +1390,8 @@ func (m *Map) Query(center uo.Point, queryRange int, set map[uo.Graphic]struct{}
 	cb := uo.Bounds{
 		X: b.X / uo.ChunkWidth,
 		Y: b.Y / uo.ChunkHeight,
-		W: b.W / uo.ChunkWidth,
-		H: b.H / uo.ChunkHeight,
+		W: b.W/uo.ChunkWidth + 1,
+		H: b.H/uo.ChunkHeight + 1,
 	}
 	if b.W%uo.ChunkWidth != 0 {
 		cb.W++
@@ -1465,8 +1465,8 @@ func (m *Map) AddRegion(r *Region) {
 	cb := uo.Bounds{
 		X: r.Bounds.X / uo.ChunkWidth,
 		Y: r.Bounds.Y / uo.ChunkHeight,
-		W: r.Bounds.W / uo.ChunkWidth,
-		H: r.Bounds.H / uo.ChunkHeight,
+		W: r.Bounds.W/uo.ChunkWidth + 1,
+		H: r.Bounds.H/uo.ChunkHeight + 1,
 	}
 	if r.Bounds.W%uo.ChunkWidth != 0 {
 		cb.W++
@@ -1499,8 +1499,8 @@ func (m *Map) RemoveRegion(r *Region) {
 	cb := uo.Bounds{
 		X: r.Bounds.X / uo.ChunkWidth,
 		Y: r.Bounds.Y / uo.ChunkHeight,
-		W: r.Bounds.W / uo.ChunkWidth,
-		H: r.Bounds.H / uo.ChunkHeight,
+		W: r.Bounds.W/uo.ChunkWidth + 1,
+		H: r.Bounds.H/uo.ChunkHeight + 1,
 	}
 	if r.Bounds.W%uo.ChunkWidth != 0 {
 		cb.W++
@@ -1521,7 +1521,8 @@ func (m *Map) RemoveRegion(r *Region) {
 // the same backing array for the return value.
 func (m *Map) RegionsAt(l uo.Point) []*Region {
 	rRetBuf = rRetBuf[:0]
-	c := m.chunks[l.Y*uo.MapChunksWidth+l.X]
+	l = l.WrapAndBound(l)
+	c := m.chunks[(l.Y/uo.ChunkHeight)*uo.MapChunksWidth+(l.X/uo.ChunkWidth)]
 	for _, r := range c.Regions {
 		if r.Contains(l) {
 			rRetBuf = append(rRetBuf, r)
@@ -1539,8 +1540,8 @@ func (m *Map) RegionsWithin(b uo.Bounds) []*Region {
 	cb := uo.Bounds{
 		X: b.X / uo.ChunkWidth,
 		Y: b.Y / uo.ChunkHeight,
-		W: b.W / uo.ChunkWidth,
-		H: b.H / uo.ChunkHeight,
+		W: b.W/uo.ChunkWidth + 1,
+		H: b.H/uo.ChunkHeight + 1,
 	}
 	if b.W%uo.ChunkWidth != 0 {
 		cb.W++

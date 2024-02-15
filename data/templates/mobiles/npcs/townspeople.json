@@ -1,10 +1,7 @@
 {
     "Townsperson": {
         "BaseTemplate": "BaseHuman",
-        "BaseNotoriety": "Invulnerable",
-        "EquipmentSet": [
-            "NPCBackpack"
-        ]
+        "BaseNotoriety": "Invulnerable"
     },
     "Banker": {
         "BaseTemplate": "Townsperson",

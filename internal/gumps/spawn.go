@@ -22,8 +22,8 @@ type spawn struct {
 
 // Layout implements the game.GUMP interface.
 func (g *spawn) Layout(target, param any) {
-	pages := len(g.Region.Entries) / 8
-	if len(g.Region.Entries)%8 != 0 {
+	pages := len(g.Region.Spawns) / 8
+	if len(g.Region.Spawns)%8 != 0 {
 		pages++
 	}
 	if pages < 1 {
@@ -39,9 +39,9 @@ func (g *spawn) Layout(target, param any) {
 	g.ReplyButton(12, 0, 2, 1, uo.HueDefault, "Apply", 4)
 	g.HorizontalBar(0, 1, 16)
 	var i int
-	for i = int(g.currentPage-1) * 8; i < len(g.Region.Entries) && i < int(g.currentPage)*8; i++ {
+	for i = int(g.currentPage-1) * 8; i < len(g.Region.Spawns) && i < int(g.currentPage)*8; i++ {
 		ty := i%8 + 2
-		e := g.Region.Entries[i]
+		e := g.Region.Spawns[i]
 		g.TextEntry(0, ty, 2, uo.HueDefault, strconv.FormatInt(int64(e.Amount), 10), 3, uint32(1001+i))
 		g.TextEntry(2, ty, 8, uo.HueDefault, e.Template, 256, uint32(2001+i))
 		g.Text(10, ty, 1, uo.HueDefault, "Every")
@@ -49,7 +49,7 @@ func (g *spawn) Layout(target, param any) {
 		g.Text(13, ty, 1, uo.HueDefault, "Mins")
 		g.GemButton(14, ty, SGGemButtonDelete, uint32(4001+i))
 	}
-	if i == len(g.Region.Entries) && g.currentPage == uint32(pages) {
+	if i == len(g.Region.Spawns) && g.currentPage == uint32(pages) {
 		ty := i%8 + 2
 		g.GemButton(0, ty, SGGemButtonAdd, 5)
 	}
@@ -67,7 +67,7 @@ func (g *spawn) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 	// Data
 	g.Region.SpawnMinZ = fn(p.Text(1))
 	g.Region.SpawnMaxZ = fn(p.Text(2))
-	for i, e := range g.Region.Entries {
+	for i, e := range g.Region.Spawns {
 		s := p.Text(uint16(1001 + i))
 		if len(s) == 0 {
 			continue
@@ -89,7 +89,7 @@ func (g *spawn) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 		// Do nothing and let the GUMP refresh
 		return
 	case 5: // Add entry
-		g.Region.Entries = append(g.Region.Entries, &game.SpawnerEntry{
+		g.Region.Spawns = append(g.Region.Spawns, &game.SpawnerEntry{
 			Delay:  uo.DurationMinute * 5,
 			Amount: 1,
 		})
@@ -105,19 +105,10 @@ func (g *spawn) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 	// Delete buttons
 	if p.Button >= 4001 {
 		i := int(p.Button - 4001)
-		if i >= len(g.Region.Entries) {
+		if i >= len(g.Region.Spawns) {
 			return
 		}
-		e := g.Region.Entries[i]
-		for _, so := range e.Objects {
-			o := so.Object
-			if m, ok := o.(*game.Mobile); ok {
-				game.World.Map().RemoveMobile(m)
-				game.World.RemoveMobile(m)
-			} else {
-				(o.(*game.Item)).Remove()
-			}
-		}
-		g.Region.Entries = append(g.Region.Entries[:i], g.Region.Entries[i+1:]...)
+		g.Region.Spawns[i].RemoveObjects()
+		g.Region.Spawns = append(g.Region.Spawns[:i], g.Region.Spawns[i+1:]...)
 	}
 }
