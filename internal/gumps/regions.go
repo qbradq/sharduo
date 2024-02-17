@@ -100,9 +100,9 @@ func (g *regions) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 			}
 		}
 	case 4:
-		executeCommand(n, "save_regions")
+		ExecuteCommand(n, "save_regions")
 	case 5:
-		executeCommand(n, "load_regions")
+		ExecuteCommand(n, "load_regions")
 	}
 	// Region copy button
 	if p.Button >= 3001 {

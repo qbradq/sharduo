@@ -5,8 +5,13 @@ import (
 	"strings"
 
 	"github.com/qbradq/sharduo/internal/game"
+	"github.com/qbradq/sharduo/internal/gumps"
 	"github.com/qbradq/sharduo/lib/uo"
 )
+
+func init() {
+	gumps.ExecuteCommand = Execute
+}
 
 // Server callbacks
 var globalChat func(uo.Hue, string, string)

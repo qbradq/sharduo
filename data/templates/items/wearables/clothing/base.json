@@ -5,7 +5,7 @@
             "Dyeable"
         ],
         "PostCreationEvents": [
-            "RandomPartialHue|DyeableHue"
+            "RandomHue|DyeableHue"
         ]
     }
 }

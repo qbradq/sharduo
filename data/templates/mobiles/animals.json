@@ -49,7 +49,7 @@
     },
     "BasePackAnimal": {
         "ViewRange": 18,
-        "AI": "WalkRandom",
+        "AIModel": "WalkRandom",
         "Body": 991,
         "BaseStrength": 10,
         "BaseDexterity": 10,

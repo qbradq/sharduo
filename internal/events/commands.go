@@ -32,8 +32,7 @@ func commandFollow(receiver, source, v any) bool {
 		if !found {
 			return
 		}
-		rm.AI = "Follow"
-		rm.AIGoal = tm
+		rm.SetAI("Follow", tm)
 	})
 	return true
 }
@@ -46,8 +45,7 @@ func commandFollowMe(receiver, source, v any) bool {
 	if !rm.CanBeCommandedBy(sm) {
 		return false
 	}
-	rm.AI = "Follow"
-	rm.AIGoal = sm
+	rm.SetAI("Follow", sm)
 	return true
 }
 
@@ -59,8 +57,7 @@ func commandStay(receiver, source, v any) bool {
 	if !rm.CanBeCommandedBy(sm) {
 		return false
 	}
-	rm.AI = "Stay"
-	rm.AIGoal = nil
+	rm.SetAI("Stay", nil)
 	return true
 }
 
@@ -92,7 +89,6 @@ func commandRelease(receiver, source, v any) bool {
 		return false
 	}
 	rm.ControlMaster = nil
-	rm.AI = "WalkRandom"
-	rm.AIGoal = nil
+	rm.SetAI("WalkRandom", nil)
 	return true
 }

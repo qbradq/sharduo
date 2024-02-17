@@ -439,7 +439,7 @@ func handleBuyRequest(n *NetState, cp clientpacket.Packet) {
 	for _, bi := range p.BoughtItems {
 		i, found := world.FindItem(bi.Item)
 		// Sanity checks
-		if !found || i.Wearer.Serial != p.Vendor {
+		if !found || (i.Wearer != nil && i.Wearer.Serial != p.Vendor) {
 			return
 		}
 		total += bi.Amount * i.Value
@@ -466,8 +466,7 @@ func handleBuyRequest(n *NetState, cp clientpacket.Packet) {
 			}
 			m.Location = n.m.Location
 			m.ControlMaster = n.m
-			m.AI = "Follow"
-			m.AIGoal = n.m
+			m.SetAI("Follow", n.m)
 			world.Map().AddMobile(m, true)
 		} else {
 			ni := game.NewItem(tn)

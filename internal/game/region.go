@@ -142,15 +142,17 @@ func (r *Region) FullRespawn() {
 		for _, o := range e.objects {
 			switch t := o.Object.(type) {
 			case *Mobile:
+				World.Map().RemoveMobile(t)
 				World.RemoveMobile(t)
 			case *Item:
-				World.RemoveItem(t)
+				t.Remove()
 			}
 		}
 		e.objects = make([]*spawnedObject, e.Amount)
 		for i := range e.objects {
 			e.objects[i] = &spawnedObject{
-				Object: r.Spawn(e.Template),
+				Object:            r.Spawn(e.Template),
+				NextSpawnDeadline: World.Time() + e.Delay,
 			}
 		}
 	}

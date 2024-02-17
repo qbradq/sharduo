@@ -49,8 +49,8 @@ const (
 	MaxItemStackHeight        int  = 18
 	DefaultMaxContainerWeight int  = 400
 	DefaultMaxContainerItems  int  = 125
-	RandomDropX               int  = -1
-	RandomDropY               int  = -1
+	RandomDropX               int  = 0xFFFF
+	RandomDropY               int  = 0xFFFF
 	TargetCanceledX           int  = -1
 	TargetCanceledY           int  = -1
 	ContainerOpenLowerLimit   int  = -8

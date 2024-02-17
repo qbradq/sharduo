@@ -91,9 +91,9 @@ func (g *decorate) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 	case 5:
 		n.GUMP(New("signs"), 0, 0)
 	case 7:
-		executeCommand(n, "save_statics")
-		executeCommand(n, "save_doors")
-		executeCommand(n, "save_signs")
+		ExecuteCommand(n, "save_statics")
+		ExecuteCommand(n, "save_doors")
+		ExecuteCommand(n, "save_signs")
 	case 8:
 		g.zMode = zModeFixed
 	case 10:

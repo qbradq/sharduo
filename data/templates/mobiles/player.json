@@ -1,7 +1,7 @@
 {
     "BasePlayer": {
         "ViewRange": 18,
-        "AI": "Player",
+        "AIModel": "Player",
         "BaseStrength": 60,
         "BaseDexterity": 25,
         "BaseIntelligence": 15,

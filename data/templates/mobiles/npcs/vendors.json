@@ -25,10 +25,16 @@
         ]
     },
     "StableMaster": {
-        "BaseTemplate": "BaseVendor",
+        "BaseTemplate": "BaseHuman",
+        "BaseNotoriety": "Invulnerable",
         "Events": {
+            "DoubleClick": "OpenPaperDoll",
             "Speech": "KeywordsStableMaster"
         },
+        "EquipmentSet": [
+            "NPCBoughtContainer",
+            "NPCForSaleContainer"
+        ],
         "ContextMenu": [
             "3006103|VendorBuy",
             "3006126|StablePet",

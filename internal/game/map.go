@@ -33,8 +33,38 @@ func NewMap() *Map {
 	return ret
 }
 
-// Update is responsible for all chunk updates, item decay and mobile AI.
-func (m *Map) Update(now uo.Time) {
+// uMobBuffer is the buffer used for collecting all mobiles on the map for
+// update.
+var uMobBuffer = []*Mobile{}
+
+// Update calls Update on a few chunks every tick such that every chunk gets an
+// Update call once every real-world minute or twelve in-game minutes. It also
+// calls Update on a few regions every tick such that every region is updated
+// over fifteen real-world seconds or three in-game minutes. Finally Update
+// calls Update for every mobile on the map.
+func (m *Map) Update(t uo.Time) {
+	// Interleaved chunk updates, updates every chunk over a minute
+	nChunks := uint64(uo.MapChunksWidth * uo.MapChunksHeight)
+	step := uint64(uo.DurationMinute)
+	start := uint64(t % uo.Time(step))
+	for idx := start; idx < nChunks; idx += step {
+		m.chunks[idx].Update(t)
+	}
+	// Interleaved region updates, updates every region over fifteen seconds
+	nRegions := uint64(len(m.regions))
+	step = uint64(uo.DurationSecond * 15)
+	start = uint64(t % uo.Time(step))
+	for idx := start; idx < nRegions; idx += step {
+		m.regions[idx].Update(t)
+	}
+	// Update all mobiles
+	uMobBuffer = uMobBuffer[:0]
+	for _, c := range m.chunks {
+		uMobBuffer = append(uMobBuffer, c.Mobiles...)
+	}
+	for _, m := range uMobBuffer {
+		m.Update(t)
+	}
 }
 
 // saRetBuf is the static buffer used for the return value of [Map.StaticsAt].

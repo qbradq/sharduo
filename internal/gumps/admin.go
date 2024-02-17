@@ -43,11 +43,11 @@ func (g *admin) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 	case 1:
 		n.GUMP(New("accounting"), 0, 0)
 	case 2:
-		executeCommand(n, "save")
+		ExecuteCommand(n, "save")
 	case 3:
 		// Spam the restart message so you can actually see it
 		for i := 0; i < 10; i++ {
-			executeCommand(n, "broadcast The server will be restarting in 1 minute!")
+			ExecuteCommand(n, "broadcast The server will be restarting in 1 minute!")
 		}
 		g.shutdownTimer = game.NewTimer(uo.DurationMinute*1, "ServerShutdown", nil, n.Mobile(), true, nil)
 	case 4:
@@ -56,7 +56,7 @@ func (g *admin) HandleReply(n game.NetState, p *clientpacket.GUMPReply) {
 		}
 		// Spam the restart message so you can actually see it
 		for i := 0; i < 10; i++ {
-			executeCommand(n, "broadcast Server restart aborted.")
+			ExecuteCommand(n, "broadcast Server restart aborted.")
 		}
 		game.CancelTimer(g.shutdownTimer)
 	}

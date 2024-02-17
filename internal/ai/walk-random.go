@@ -7,7 +7,7 @@ import (
 )
 
 func init() {
-	reg("WalkRandom", func() AIModel { return &walkRandom{} })
+	reg("WalkRandom", func() game.AIModel { return &walkRandom{} })
 }
 
 // walkRandom implements a Thinker that stands in place and reacts to nothing.
@@ -32,11 +32,10 @@ func (a *walkRandom) Act(m *game.Mobile, t uo.Time) {
 		a.walkDirection = uo.Direction(util.Random(0, 7))
 	}
 	if a.walking && m.CanTakeStep() {
-		if m.Spawner != nil {
-			if sr, ok := m.Spawner.(*game.Region); ok && !sr.Contains(m.Location.Forward(a.walkDirection)) {
-				a.walkDirection = uo.Direction(util.Random(0, 7))
-			}
-		} else if !m.Step(a.walkDirection) {
+		if m.Spawner != nil && !m.Spawner.Contains(m.Location.Forward(a.walkDirection)) {
+			a.walkDirection = uo.Direction(util.Random(0, 7))
+		}
+		if !m.Step(a.walkDirection) {
 			a.walking = false
 			a.stepsLeft = 0
 			a.nextWalkDeadline = t + uo.Time(util.Random(

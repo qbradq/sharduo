@@ -6,7 +6,7 @@ import (
 )
 
 func init() {
-	reg("Stay", func() AIModel { return &stay{} })
+	reg("Stay", func() game.AIModel { return &stay{} })
 }
 
 // stay implements a Thinker that stands in place and reacts to nothing.

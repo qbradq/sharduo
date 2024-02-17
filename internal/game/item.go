@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"strconv"
 	"strings"
 
 	"github.com/qbradq/sharduo/data"
@@ -459,6 +460,9 @@ func (i *Item) RemoveItem(item *Item) {
 	i.Contents = i.Contents[:len(i.Contents)-1]
 	item.Container = nil
 	i.AdjustWeightAndCount(-item.Weight+item.ContainedWeight, -item.ItemCount+1)
+	if item.TemplateName == "GoldCoin" {
+		i.AdjustGold(-item.Amount)
+	}
 }
 
 // AdjustWeightAndCount adjusts the contained weight and item count of the
@@ -475,12 +479,12 @@ func (i *Item) AdjustWeightAndCount(w float64, n int) {
 		// We are a sub-container, propagate the adjustment up
 		i.Container.AdjustWeightAndCount(w, n)
 	} else if i.Wearer != nil {
-		i.Wearer.InvalidateOPL()
 		if i.Wearer.Cursor == i {
 			// We are being held by a mobile's cursor, don't need to do anything
 			return
 		}
 		// We are a mobile's backpack, send the weight adjustment up
+		i.Wearer.InvalidateOPL()
 		i.Wearer.AdjustWeight(w)
 	}
 }
@@ -492,6 +496,10 @@ func (i *Item) AdjustGold(n int) {
 	i.Gold += n
 	if i.Container != nil {
 		i.Container.AdjustGold(n)
+	}
+	if i.Wearer != nil && i.Wearer.Player && i.TemplateName != "BankBox" {
+		i.Wearer.InvalidateOPL()
+		World.UpdateMobile(i.Wearer)
 	}
 }
 
@@ -519,8 +527,11 @@ func (i *Item) Consume(n int) bool {
 		return false
 	}
 	i.Amount -= n
+	i.AdjustWeightAndCount(-i.Weight*float64(n), 0)
 	if i.Amount == 0 {
 		i.Remove()
+	} else if i.TemplateName == "GoldCoin" {
+		i.AdjustGold(-n)
 	}
 	return true
 }
@@ -543,15 +554,16 @@ func (i *Item) ConsumeGold(n int) bool {
 			}
 			if item.TemplateName == "GoldCoin" {
 				if ac+item.Amount >= n {
-					item.Amount -= (n - ac)
+					tt := n - ac
+					item.Amount -= tt
 					if item.Amount < 1 {
 						remove = append(remove, item)
 					} else {
 						item.InvalidateOPL()
+						World.UpdateItem(item)
 					}
 					for _, tr := range remove {
-						tr.Container.RemoveItem(tr)
-						World.RemoveItem(tr)
+						tr.Remove()
 					}
 					return true
 				}
@@ -577,10 +589,10 @@ func (i *Item) ConsumeGold(n int) bool {
 						remove = append(remove, item)
 					} else {
 						item.InvalidateOPL()
+						World.UpdateItem(item)
 					}
 					for _, tr := range remove {
-						tr.Container.RemoveItem(tr)
-						World.RemoveItem(tr)
+						tr.Remove()
 					}
 					return true
 				}
@@ -672,7 +684,7 @@ func (i *Item) GetDropSoundOverride(s uo.Sound) uo.Sound {
 // DisplayName returns the normalized displayable name of the object.
 func (i *Item) DisplayName() string {
 	if i.Amount > 1 {
-		return i.Plural
+		return strconv.FormatInt(int64(i.Amount), 10) + " " + i.Plural
 	} else {
 		if i.Object.ArticleA {
 			return "a " + i.Name

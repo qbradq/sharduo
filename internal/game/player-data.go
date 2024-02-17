@@ -54,7 +54,6 @@ func (d *PlayerData) Claim(m, owner *Mobile) {
 	d.StabledPets[len(d.StabledPets)-1] = nil
 	d.StabledPets = d.StabledPets[:len(d.StabledPets)-1]
 	m.Location = owner.Location
-	m.AI = "Follow"
-	m.AIGoal = owner
+	m.SetAI("Follow", owner)
 	World.Map().AddMobile(m, true)
 }

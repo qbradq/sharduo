@@ -27,8 +27,10 @@ func handleContextMenuRequest(n *NetState, cp clientpacket.GeneralInformationPac
 	p := cp.(*clientpacket.ContextMenuRequest)
 	menu := &game.ContextMenu{}
 	if m, found := world.FindMobile(p.Serial); found {
+		menu.Serial = m.Serial
 		m.ContextMenuPacket(menu, n.m)
 	} else if i, found := world.FindItem(p.Serial); found {
+		menu.Serial = i.Serial
 		i.ContextMenuPacket(menu, n.m)
 	} else {
 		return

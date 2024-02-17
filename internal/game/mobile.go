@@ -72,6 +72,8 @@ func constructMobile(which string) *Mobile {
 		m.MaxStamina = m.BaseDexterity
 		m.MaxWeight = float64(int(float64(m.BaseStrength)*3.5 + 40))
 	}
+	// Attach new AI model
+	m.SetAI(m.AIModel, nil)
 	// Establish initial cache values
 	m.Hits = m.MaxHits
 	m.Mana = m.MaxMana
@@ -128,6 +130,7 @@ type Mobile struct {
 	// Static values
 	Body          uo.Body      // Body to use for this mobile
 	BaseNotoriety uo.Notoriety // Base notoriety level for this mobile
+	AIModel       string       // What AI model to create for this mobile initially
 	EquipmentSet  []string     // Set of items to generate along with this mobile and equip
 	Inventory     []string     // Set of items to add to the mobile's backpack at creation time
 	// Persistent values
@@ -159,7 +162,7 @@ type Mobile struct {
 	MaxWeight     float64            // Max carry weight of the mobile
 	ViewRange     int                // Range at which items are reported to the client, valid values are [5-18]
 	StandingOn    uo.CommonObject    // Object the mobile is standing on
-	AI            string             // Name of the AI routine to run during mobile think
+	AI            AIModel            // Name of the AI routine to run during mobile think
 	AIGoal        *Mobile            // What mobile we are paying attention to at the moment
 	lastStepTime  uo.Time            // Time of the last step taken
 	crParent      uo.Serial          // Parent to return the current cursor item to
@@ -750,4 +753,50 @@ func (m *Mobile) ReturnItemInCursor() bool {
 	}
 	m.LetGoItemInCursor()
 	return true
+}
+
+// Update is responsible for regen and AI.
+func (m *Mobile) Update(t uo.Time) {
+	// HP regen, 1 per 3 seconds
+	if t%(uo.DurationSecond*3) == 0 {
+		if m.Hits < m.MaxHits {
+			m.Hits++
+			World.UpdateMobile(m)
+		}
+	}
+	// SP regen, 1 per 2 seconds
+	if t%(uo.DurationSecond*2) == 0 {
+		if m.Stamina < m.MaxStamina {
+			m.Stamina++
+			World.UpdateMobile(m)
+		}
+	}
+	// MP regen, 1 per second
+	if t%(uo.DurationSecond) == 0 {
+		if m.Mana < m.MaxMana {
+			m.Mana++
+			World.UpdateMobile(m)
+		}
+	}
+	// AI handling
+	if m.AI != nil {
+		// Interleaved target selection every 15 seconds
+		step := uint64(uo.DurationSecond * 15)
+		base := uint64(m.Serial) % step
+		if (base+uint64(t))%step == 0 {
+			m.AI.Target(m, t)
+		}
+		m.AI.Act(m, t)
+	}
+}
+
+// SetAI creates and attaches a new AI model.
+func (m *Mobile) SetAI(which string, goal *Mobile) {
+	aim := GetModel(which)
+	if aim == nil {
+		log.Printf("error: unknown AI model %s", which)
+		return
+	}
+	m.AI = aim
+	m.AIGoal = goal
 }

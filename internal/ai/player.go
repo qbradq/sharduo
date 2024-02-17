@@ -7,7 +7,7 @@ import (
 )
 
 func init() {
-	reg("Player", func() AIModel { return &player{} })
+	reg("Player", func() game.AIModel { return &player{} })
 }
 
 // player implements an AI that is responsible for periodic updates to player

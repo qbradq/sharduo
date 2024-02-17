@@ -6,7 +6,7 @@ import (
 )
 
 func init() {
-	reg("Follow", func() AIModel { return &follow{} })
+	reg("Follow", func() game.AIModel { return &follow{} })
 }
 
 // follow implements a Thinker that follows its goal.

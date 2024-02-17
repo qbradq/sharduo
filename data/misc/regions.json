@@ -50,12 +50,12 @@
         "Spawns": [
             {
                 "Template": "+Birds",
-                "Amount": 50,
+                "Amount": 150,
                 "Delay": 3600
             },
             {
                 "Template": "+TownAnimals",
-                "Amount": 100,
+                "Amount": 250,
                 "Delay": 3600
             }
         ],

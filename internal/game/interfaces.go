@@ -97,19 +97,6 @@ type ContainerObserver interface {
 	ContainerIsObserving(*Item) bool
 }
 
-// Spawner implements an interface allowing for the control of object spawning.
-type Spawner interface {
-	// FullRespawn removes all objects spawned by this region and then fully
-	// respawns all entries.
-	FullRespawn()
-	// Spawn spawns an object by template name and returns a pointer to it or
-	// nil.
-	Spawn(string) any
-	// ReleaseObject releases the given object from this spawner so another may
-	// spawn in its place.
-	ReleaseObject(any)
-}
-
 // World is the interface the server's game world model must implement for the
 // internal game objects to work properly.
 type WorldInterface interface {
@@ -164,4 +151,14 @@ type WorldInterface interface {
 	RemoveItem(*Item)
 	// RemoveMobile removes the item from the world datastores.
 	RemoveMobile(*Mobile)
+}
+
+// AIModel is the interface all AI models implement.
+type AIModel interface {
+	// Act is called every tick and is responsible for making the mobile take
+	// all actions.
+	Act(*Mobile, uo.Time)
+	// Target is called every fifteen seconds and is responsible for target and
+	// goal selection.
+	Target(*Mobile, uo.Time)
 }

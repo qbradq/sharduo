@@ -30,7 +30,7 @@ type gumpDefinition struct {
 var gumpDefs = map[string]gumpDefinition{}
 
 // Command execution function
-var executeCommand func(game.NetState, string)
+var ExecuteCommand func(game.NetState, string)
 
 // reg registers a GUMP constructor and generates its type code
 func reg(name string, tc uo.Serial, fn func() GUMP) {
@@ -78,10 +78,4 @@ func Edit(m *game.Mobile, o any) {
 			})
 		}
 	}
-}
-
-// InjectMethods is responsible for injecting methods for cross-package
-// communication.
-func InjectMethods(fn func(game.NetState, string)) {
-	executeCommand = fn
 }

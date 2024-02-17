@@ -163,3 +163,6 @@ func DynamicDispatch(which string, receiver, source, v any) bool {
 	}
 	return ExecuteEventHandler(fn, receiver, source, v)
 }
+
+// GetModel is the AI model factory.
+var GetModel func(string) AIModel

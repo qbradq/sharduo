@@ -14,6 +14,7 @@ import (
 	"syscall"
 
 	"github.com/pkg/profile"
+	_ "github.com/qbradq/sharduo/internal/ai"
 	"github.com/qbradq/sharduo/internal/commands"
 	"github.com/qbradq/sharduo/internal/configuration"
 	"github.com/qbradq/sharduo/internal/game"

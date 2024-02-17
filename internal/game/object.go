@@ -24,7 +24,7 @@ type Object struct {
 	// Transient values
 	Removed    bool                    // If true the object is slated for removal from the game
 	NoRent     bool                    // If true the object will not be persisted to backup saves
-	Spawner    Spawner                 // The spawner managing this object if any
+	Spawner    *Region                 // The spawner managing this object if any
 	Visibility uo.Visibility           // Current visibility state of the object
 	opl        *serverpacket.OPLPacket // Cached OPLPacket
 	oplInfo    *serverpacket.OPLInfo   // Cached OPLInfo

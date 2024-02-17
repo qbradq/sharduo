@@ -210,8 +210,7 @@ func commandDebug(n game.NetState, args CommandArgs, cl string) {
 		llama.Location = n.Mobile().Location
 		llama.Hue = 0x76 // Llama Energy Vortex hue
 		llama.ControlMaster = n.Mobile()
-		llama.AI = "Follow"
-		llama.AIGoal = n.Mobile()
+		llama.SetAI("Follow", n.Mobile())
 		game.World.Map().AddMobile(llama, true)
 		game.ExecuteEventHandler("Mount", llama, n.Mobile(), nil)
 	case "shirt_bag":

@@ -162,6 +162,9 @@ func commandTeleport(n game.NetState, args CommandArgs, cl string) {
 		if n.Mobile() == nil {
 			return
 		}
+		if r.Location == uo.RandomContainerLocation {
+			return
+		}
 		if !game.World.Map().TeleportMobile(n.Mobile(), r.Location) {
 			n.Speech(n.Mobile(), "something is blocking that location")
 		}
@@ -262,8 +265,7 @@ func commandTame(n game.NetState, args CommandArgs, cl string) {
 			return
 		}
 		m.ControlMaster = n.Mobile()
-		m.AI = "Follow"
-		m.AIGoal = n.Mobile()
+		m.SetAI("Follow", n.Mobile())
 	})
 }
 
